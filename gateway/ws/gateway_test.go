@@ -3,8 +3,8 @@ package websocketGateway_test
 import (
 	"context"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/metrics"
+	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	"git.ronaksoftware.com/ronak/rony/testEnv"
 	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -29,8 +29,7 @@ var (
 )
 
 func init() {
-	log.InitLogger(log.DebugLevel, "")
-	metrics.Run("Test", "Test", 8000)
+	testEnv.Init()
 }
 
 func TestGateway(t *testing.T) {

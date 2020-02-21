@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-	"git.ronaksoftware.com/ronak/rony/config"
 	"git.ronaksoftware.com/ronak/rony/errors"
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap/zapcore"
@@ -24,15 +22,14 @@ type sentryCore struct {
 	tags map[string]string
 }
 
-func NewSentryCore(level zapcore.Level, tags map[string]string) (zapcore.Core, error) {
-	sentryDSN := config.GetString(config.SentryDSN)
+func NewSentryCore(sentryDSN, release, environment string, level zapcore.Level, tags map[string]string) (zapcore.Core, error) {
 	if len(sentryDSN) == 0 {
 		return nil, errors.ErrEmpty
 	}
 	client, err := sentry.NewClient(sentry.ClientOptions{
 		Dsn:         sentryDSN,
-		Release:     config.RiverVersion,
-		Environment: fmt.Sprintf("%s.%s", config.GetString(config.BundleID), config.GetString(config.InstanceID)),
+		Release:     release,
+		Environment: environment,
 	})
 	if err != nil {
 		return zapcore.NewNopCore(), err
@@ -76,7 +73,7 @@ func (c *sentryCore) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 	event.Message = ent.Message
 	event.Timestamp = ent.Time.Unix()
 	event.Level = sentryLevel(ent.Level)
-	event.Platform = config.RiverVersion
+	// event.Platform = config.RiverVersion
 	event.Extra = m
 	event.Tags = c.tags
 	c.hub.CaptureEvent(event)

@@ -2,7 +2,7 @@ package tools
 
 import (
 	"fmt"
-	log "git.ronaksoftware.com/ronak/rony/logger"
+	"git.ronaksoftware.com/ronak/rony/testEnv"
 	"runtime"
 	"testing"
 	"time"
@@ -17,49 +17,9 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-func stringPrinter(s string) {
-	for i := 0; i < 5; i++ {
-		fmt.Println(s)
-		time.Sleep(time.Second)
-	}
+func init() {
+	testEnv.Init()
 }
-
-func bytesPrinter(b []byte) {
-	for i := 0; i < 5; i++ {
-		fmt.Println(b)
-		time.Sleep(time.Second)
-	}
-}
-
-// func TestByteToStr1(t *testing.T) {
-// 	b := []byte("Sample Text")
-// 	go stringPrinter(ByteToStr(b))
-// 	for i := 0; i < 10; i++ {
-// 		j := RandomInt(len(b))
-// 		b[j] = []byte(RandomID(1))[0]
-// 		time.Sleep(time.Millisecond * 100)
-// 	}
-// }
-//
-// func TestByteToStr2(t *testing.T) {
-// 	b := []byte("Sample Text")
-// 	go stringPrinter(ByteToStr(b))
-// 	for i := 0; i < 10; i++ {
-// 		b = []byte(RandomID(10))
-// 		_ = b
-// 		time.Sleep(time.Millisecond * 100)
-// 		runtime.GC()
-// 	}
-// }
-//
-// func TestStrToByte(t *testing.T) {
-// 	s := "Sample Text"
-// 	go bytesPrinter(StrToByte(s))
-// 	for i := 0; i < 10; i++ {
-// 		s = RandomID(10)
-// 		time.Sleep(time.Millisecond * 100)
-// 	}
-// }
 
 func BenchmarkRandomInt64(b *testing.B) {
 	b.ReportAllocs()
@@ -92,7 +52,6 @@ func TestRandomID(t *testing.T) {
 }
 
 func TestSanitizePhone(t *testing.T) {
-	log.InitLogger(log.WarnLevel, "")
 	phones := map[string]string{
 		"989121228718":  "989121228718",
 		"+989121228718": "989121228718",

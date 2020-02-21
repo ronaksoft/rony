@@ -22,5 +22,13 @@ func Init() {
 		return
 	}
 
-	log.InitLogger(log.WarnLevel, "")
+	log.InitLogger(log.Config{
+		Level:       log.WarnLevel,
+		DirPath:     "",
+		Filename:    "",
+		SentryDSN:   "",
+		SentryLevel: log.WarnLevel,
+		Release:     "",
+		Environment: "",
+	})
 }

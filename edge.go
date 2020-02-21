@@ -149,6 +149,7 @@ func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, re
 		edge.execute(ctx, req, res)
 		pools.ReleaseContext(ctx)
 	}
+	return nil
 }
 
 func (edge EdgeServer) execute(ctx *context.Context, req, res *msg.MessageEnvelope) error {
@@ -219,8 +220,7 @@ func (edge EdgeServer) GetServerID() string {
 
 // Run runs the selected gateway, if gateway is not setup it panics
 func (edge EdgeServer) Run() {
-	// Initialize API
-	log.Info("API Server Started",
+	log.Info("Edge Server Started",
 		zap.String("BundleID", edge.bundleID),
 		zap.String("InstanceID", edge.instanceID),
 		zap.String("Gateway", string(gatewayProtocol)),
@@ -231,10 +231,8 @@ func (edge EdgeServer) Run() {
 		gatewayWebsocket.Run()
 	case gateway.HTTP:
 		gatewayHTTP.Run()
-	case gateway.Quic:
+	case gateway.QUIC:
 		gatewayQuic.Run()
-	case gateway.Grpc:
-		gatewayGRPC.Run()
 	default:
 		panic("unknown gateway mode")
 	}
@@ -250,14 +248,10 @@ func (edge EdgeServer) Shutdown() {
 		log.Info("Http Gateway Shutting down")
 		// gatewayHTTP.Shutdown()
 		log.Info("Http Gateway Shutdown")
-	case gateway.Quic:
+	case gateway.QUIC:
 		log.Info("Quic Gateway Shutting down")
 		// gatewayQuic.Shutdown()
 		log.Info("Quic Gateway Shutdown")
-	case gateway.Grpc:
-		log.Info("Grpc Gateway Shutting down")
-		// gatewayGRPC.Shutdown()
-		log.Info("Grpc Gateway Shutdown")
 	default:
 		panic("unknown gateway mode")
 	}

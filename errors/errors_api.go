@@ -37,18 +37,3 @@ func (e *Error) ToMessageEnvelope(m *msg.MessageEnvelope) {
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s:%s", e.Code, e.Item)
 }
-
-var (
-	ErrInvalidMessageID   = NewError(msg.ErrCodeInvalid, msg.ErrItemMessageID)
-	ErrInvalidAuthKey     = NewError(msg.ErrCodeInvalid, msg.ErrItemAuth)
-	ErrInvalidEncryption  = NewError(msg.ErrCodeInvalid, msg.ErrItemEncryption)
-	ErrInvalidRequest     = NewError(msg.ErrCodeInvalid, msg.ErrItemRequest)
-	ErrInvalidProto       = NewError(msg.ErrCodeInvalid, msg.ErrItemProto)
-	ErrInternalSalt       = NewError(msg.ErrCodeInternal, msg.ErrItemSalt)
-	ErrInvalidSalt        = NewError(msg.ErrCodeInvalid, msg.ErrItemSalt)
-	ErrUnboundUser        = NewError(msg.ErrCodeUnavailable, msg.ErrItemBindUser)
-	ErrFlood              = NewError(msg.ErrCodeTooMany, msg.ErrItemRequest)
-	ErrAuthorizationReset = NewError(msg.ErrCodeInvalid, msg.ErrItemAuthID)
-	ErrInternalAuthID     = NewError(msg.ErrCodeInternal, msg.ErrItemAuthID)
-	ErrInternalEncryption = NewError(msg.ErrCodeInternal, msg.ErrItemEncryption)
-)

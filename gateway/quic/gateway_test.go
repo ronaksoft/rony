@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
-	"git.ronaksoftware.com/ronak/rony/gateway/quic/testdata"
-	log "git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/metrics"
+	"git.ronaksoftware.com/ronak/rony/internal/testdata"
+	"git.ronaksoftware.com/ronak/rony/testEnv"
 	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/lucas-clemente/quic-go"
 	. "github.com/smartystreets/goconvey/convey"
@@ -27,15 +26,12 @@ import (
 */
 
 var (
-	cntServerReceived int32
-	cntServerFlush    int32
-	gw                *quicGateway.Gateway
-	cert              tls.Certificate
+	gw   *quicGateway.Gateway
+	cert tls.Certificate
 )
 
 func init() {
-	log.InitLogger(log.WarnLevel, "")
-	metrics.Run("Test", "Test", 8000)
+	testEnv.Init()
 	testdata.GenerateSelfSignedCerts("./_key.pem", "./_cert.pem")
 	cert = testdata.GetCertificate("./_key.pem", "./_cert.pem")
 }

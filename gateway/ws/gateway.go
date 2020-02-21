@@ -3,7 +3,6 @@ package websocketGateway
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/metrics"
 	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/gobwas/ws"
@@ -278,7 +277,6 @@ func (g *Gateway) removeConnection(wcID uint64) {
 func (g *Gateway) readPump() {
 	defer g.waitGroupReaders.Done()
 	for wc := range g.connsInQ {
-		startTime := time.Now()
 		var ms []wsutil.Message
 
 		_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
@@ -323,7 +321,6 @@ func (g *Gateway) readPump() {
 			}
 		}
 
-		metrics.Histogram(metrics.HistWebsocketReadTimeMS).Observe(float64(time.Now().Sub(startTime) / time.Millisecond))
 	}
 
 }
@@ -331,7 +328,6 @@ func (g *Gateway) readPump() {
 func (g *Gateway) writePump() {
 	defer g.waitGroupWriters.Done()
 	for wr := range g.connsOutQ {
-		startTime := time.Now()
 		if wr.wc.closed {
 			continue
 		}
@@ -361,9 +357,6 @@ func (g *Gateway) writePump() {
 				g.removeConnection(wr.wc.ConnID)
 			}
 		}
-
-		// Update the metrics
-		metrics.Histogram(metrics.HistWebsocketWriteTimeMS).Observe(float64(time.Now().Sub(startTime) / time.Millisecond))
 	}
 }
 

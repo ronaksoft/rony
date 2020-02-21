@@ -36,7 +36,6 @@ var (
 func main() {
 	n := 1
 	m := 100
-	_Log = log.NewConsoleLogger()
 	runServer()
 	time.Sleep(time.Second * 3)
 	startTime := time.Now()

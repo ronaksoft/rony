@@ -3,7 +3,6 @@ package rony
 import (
 	"git.ronaksoftware.com/ronak/rony/errors"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	grpcGateway "git.ronaksoftware.com/ronak/rony/gateway/grpc"
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
@@ -22,7 +21,6 @@ var (
 	gatewayProtocol  gateway.Protocol
 	gatewayWebsocket *websocketGateway.Gateway
 	gatewayHTTP      *httpGateway.Gateway
-	gatewayGRPC      *grpcGateway.Gateway
 	gatewayQuic      *quicGateway.Gateway
 )
 
@@ -47,15 +45,6 @@ func InitHttpGateway(config httpGateway.Config) (err error) {
 	return
 }
 
-func InitGrpcGateway(config grpcGateway.Config) (err error) {
-	if gatewayProtocol != gateway.Undefined {
-		return errors.ErrGatewayAlreadyInitialized
-	}
-	gatewayGRPC = grpcGateway.New(config)
-	gatewayProtocol = gateway.Grpc
-	return
-}
-
 func InitQuicGateway(config quicGateway.Config) (err error) {
 	if gatewayProtocol != gateway.Undefined {
 		return errors.ErrGatewayAlreadyInitialized
@@ -64,6 +53,6 @@ func InitQuicGateway(config quicGateway.Config) (err error) {
 	if err != nil {
 		return
 	}
-	gatewayProtocol = gateway.Quic
+	gatewayProtocol = gateway.QUIC
 	return
 }

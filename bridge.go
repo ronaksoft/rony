@@ -41,15 +41,15 @@ func bridgeNotifyHandler(connIDs []uint64) {
 			}
 			wsConn.Flush()
 		}
-	case gateway.Grpc:
-		for idx := range connIDs {
-			conn := gatewayGRPC.GetConnection(connIDs[idx])
-			if conn == nil {
-				log.Warn("Flush Signal For Nil Grpc stream", zap.Uint64("ConnID", connIDs[idx]))
-				continue
-			}
-			conn.Flush()
-		}
+	// case gateway.Grpc:
+	// 	for idx := range connIDs {
+	// 		conn := gatewayGRPC.GetConnection(connIDs[idx])
+	// 		if conn == nil {
+	// 			log.Warn("Flush Signal For Nil Grpc stream", zap.Uint64("ConnID", connIDs[idx]))
+	// 			continue
+	// 		}
+	// 		conn.Flush()
+	// 	}
 	default:
 
 	}

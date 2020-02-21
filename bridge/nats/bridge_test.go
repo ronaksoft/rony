@@ -2,19 +2,15 @@ package natsBridge_test
 
 import (
 	"fmt"
+	natsBridge "git.ronaksoftware.com/ronak/rony/bridge/nats"
 	"git.ronaksoftware.com/ronak/rony/testEnv"
-
-	"git.ronaksoftware.com/ronak/rony/config"
+	"git.ronaksoftware.com/ronak/rony/tools"
+	"github.com/nats-io/nats.go"
+	. "github.com/smartystreets/goconvey/convey"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	natsBridge "git.ronaksoftware.com/ronak/rony/bridge/nats"
-	"git.ronaksoftware.com/ronak/rony/tools"
-	"github.com/nats-io/nats.go"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 /*
@@ -36,14 +32,13 @@ func TestBridge(t *testing.T) {
 	}
 	var bridgeSender, bridgeReceiver *natsBridge.Bridge
 	Convey("Bridge Suite Test", t, func() {
-
 		Convey("Initialize Two Bridge Ends", func(c C) {
 			notifyCount := int32(0)
 			messageCount := int32(0)
 			_ = messageCount
 
 			natsConfig := nats.GetDefaultOptions()
-			natsConfig.Url = config.GetString(config.NatsURL)
+			natsConfig.Url = "nats://127.0.0.1:4222"
 			natsConfig.AsyncErrorCB = natsErrHandler
 
 			var err error
@@ -51,35 +46,34 @@ func TestBridge(t *testing.T) {
 				BundleID:   "Sender",
 				InstanceID: "001",
 				Options:    natsConfig,
-				ErrHandler: errHandler,
-				MessageHandler: func(c *natsBridge.Container) bool {
-					atomic.AddInt32(&messageCount, int32(len(c.Messages)))
-					time.Sleep(125 * time.Millisecond)
-					return true
-				},
-				NotifyHandler: func(connIDs []uint64) {
-					atomic.AddInt32(&notifyCount, 1)
-				},
 			})
 			c.So(err, ShouldBeNil)
 			c.So(bridgeSender, ShouldNotBeNil)
-
+			bridgeSender.ErrHandler = errHandler
+			bridgeSender.MessageHandler = func(c *natsBridge.Container) bool {
+				atomic.AddInt32(&messageCount, int32(len(c.Messages)))
+				time.Sleep(125 * time.Millisecond)
+				return true
+			}
+			bridgeSender.NotifyHandler = func(connIDs []uint64) {
+				atomic.AddInt32(&notifyCount, 1)
+			}
 			bridgeReceiver, err = natsBridge.NewBridge(natsBridge.Config{
 				BundleID:   "Receiver",
 				InstanceID: "001",
 				Options:    natsConfig,
-				ErrHandler: errHandler,
-				MessageHandler: func(container *natsBridge.Container) bool {
-					atomic.AddInt32(&messageCount, int32(len(container.Messages)))
-					time.Sleep(125 * time.Millisecond)
-					return true
-				},
-				NotifyHandler: func(connIDs []uint64) {
-					atomic.AddInt32(&notifyCount, 1)
-				},
 			})
 			c.So(err, ShouldBeNil)
 			c.So(bridgeReceiver, ShouldNotBeNil)
+			bridgeReceiver.ErrHandler = errHandler
+			bridgeReceiver.NotifyHandler = func(connIDs []uint64) {
+				atomic.AddInt32(&notifyCount, 1)
+			}
+			bridgeReceiver.MessageHandler = func(container *natsBridge.Container) bool {
+				atomic.AddInt32(&messageCount, int32(len(container.Messages)))
+				time.Sleep(125 * time.Millisecond)
+				return true
+			}
 		})
 
 		Convey("Wait 2 Seconds for bridges to connect to NATS", func(c C) {

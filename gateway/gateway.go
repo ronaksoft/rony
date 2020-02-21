@@ -18,9 +18,8 @@ type Protocol string
 const (
 	Undefined Protocol = ""
 	Websocket Protocol = "websocket"
-	Quic      Protocol = "quic"
+	QUIC      Protocol = "quic"
 	HTTP      Protocol = "http"
-	Grpc      Protocol = "grpc"
 )
 
 type Client string

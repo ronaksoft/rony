@@ -26,13 +26,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-var (
-	_Log log.Logger
-)
-
-func init() {
-	_Log = log.NewConsoleLogger()
-}
 
 // helper function to create a cert template with a serial number and other required fields
 func CertTemplate() (*x509.Certificate, error) {
@@ -74,12 +67,12 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 	// generate a new key-pair
 	rootKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		_Log.Fatal("generating random key:", zap.Error(err))
+		log.Fatal("generating random key:", zap.Error(err))
 	}
 
 	rootCertTmpl, err := CertTemplate()
 	if err != nil {
-		_Log.Fatal("creating cert template:", zap.Error(err))
+		log.Fatal("creating cert template:", zap.Error(err))
 	}
 	// describe what the certificate will be used for
 	rootCertTmpl.IsCA = true
@@ -89,7 +82,7 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 
 	rootCert, rootCertPEM, err := CreateCert(rootCertTmpl, rootCertTmpl, &rootKey.PublicKey, rootKey)
 	if err != nil {
-		_Log.Fatal("error creating cert", zap.Error(err))
+		log.Fatal("error creating cert", zap.Error(err))
 	}
 	// fmt.Printf("%s\n", rootCertPEM)
 	// fmt.Printf("%#x\n", rootCert.Signature) // more ugly binary
@@ -112,7 +105,7 @@ func GetCertificate(keyPath, certPath string) tls.Certificate {
 	// Create a TLS cert using the private key and certificate
 	rootTLSCert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
-		_Log.Fatal("invalid key pair", zap.Error(err))
+		log.Fatal("invalid key pair", zap.Error(err))
 	}
 	return rootTLSCert
 

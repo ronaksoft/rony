@@ -10,6 +10,19 @@ package msg
 */
 //go:generate protoc -I=. --gogofaster_out=. msg.proto
 //go:generate protoc -I=. --gohelpers_out=. msg.proto
-func init() {
+var (
+	ConstructorNames map[int64]string
+)
 
+func init() {
+	ConstructorNames = make(map[int64]string)
+}
+
+func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
+	errMessage := PoolError.Get()
+	errMessage.Code = errCode
+	errMessage.Items = errItem
+	ResultError(out, errMessage)
+	PoolError.Put(errMessage)
+	return
 }

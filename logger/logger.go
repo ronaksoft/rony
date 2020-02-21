@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-	"git.ronaksoftware.com/ronak/rony/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -39,59 +37,14 @@ type Logger interface {
 	SetLevel(level Level)
 }
 
-func NewConsoleLogger() *zapLogger {
-	l := new(zapLogger)
-	l.AtomicLevel = zap.NewAtomicLevel()
-	consoleWriteSyncer := zapcore.Lock(os.Stdout)
-	consoleEncoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "zapLogger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalColorLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	})
-	l.Logger = zap.New(
-		zapcore.NewCore(consoleEncoder, consoleWriteSyncer, l.AtomicLevel),
-		zap.AddCaller(),
-		zap.AddCallerSkip(2),
-		zap.AddStacktrace(ErrorLevel),
-	)
-
-	return l
-}
-
-func newFileLogger(filename string) *zapLogger {
-	l := new(zapLogger)
-
-	l.AtomicLevel = zap.NewAtomicLevelAt(DebugLevel)
-	fileLog, _ := os.Create(filename)
-
-	syncer := zapcore.Lock(fileLog)
-	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.EpochTimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	})
-	l.Logger = zap.New(
-		zapcore.NewCore(encoder, syncer, l.AtomicLevel),
-		zap.AddCaller(),
-		zap.AddCallerSkip(2),
-	)
-	return l
+type Config struct {
+	Level       Level
+	DirPath     string
+	Filename    string
+	SentryDSN   string
+	SentryLevel Level
+	Release     string
+	Environment string
 }
 
 func newZapLogger(core zapcore.Core, skip int) *zapLogger {
@@ -105,15 +58,8 @@ func newZapLogger(core zapcore.Core, skip int) *zapLogger {
 	return l
 }
 
-func NewNop() *zapLogger {
-	l := new(zapLogger)
-	l.AtomicLevel = zap.NewAtomicLevel()
-	l.Logger = zap.NewNop()
-	return l
-}
-
-func InitLogger(logLevel zapcore.Level, sentryDSN string) Logger {
-	atomicLevel = zap.NewAtomicLevelAt(logLevel)
+func InitLogger(config Config) Logger {
+	atomicLevel = zap.NewAtomicLevelAt(config.Level)
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		TimeKey:        "ts",
 		LevelKey:       "level",
@@ -132,17 +78,14 @@ func InitLogger(logLevel zapcore.Level, sentryDSN string) Logger {
 		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), atomicLevel),
 	)
 
-	logFile := filepath.Join(
-		config.GetString(config.LogFilePath),
-		fmt.Sprintf("%s-%s.log", config.GetString(config.BundleID), config.GetString(config.InstanceID)),
-	)
+	logFile := filepath.Join(config.DirPath, config.Filename)
 	if f, err := os.Create(logFile); err == nil {
 		cores = append(cores,
 			zapcore.NewCore(encoder, zapcore.AddSync(f), zap.NewAtomicLevelAt(WarnLevel)),
 		)
 	}
 
-	sentryCore, err := NewSentryCore(WarnLevel, nil)
+	sentryCore, err := NewSentryCore(config.SentryDSN, config.Release, config.Environment, config.SentryLevel, nil)
 	if err == nil {
 		cores = append(cores, sentryCore)
 	}

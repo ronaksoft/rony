@@ -25,7 +25,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-
 type ErrHandler func(err error)
 type NotifyHandler func(connIDs []uint64)
 type MessageHandler func(c *Container) bool
@@ -84,9 +83,9 @@ type Counters struct {
 
 func NewBridge(conf Config) (*Bridge, error) {
 	b := &Bridge{
-		bundleID: conf.BundleID,
-		instanceID: conf.InstanceID,
-		bridgeID: fmt.Sprintf("%s.%s", conf.BundleID, conf.InstanceID),
+		bundleID:    conf.BundleID,
+		instanceID:  conf.InstanceID,
+		bridgeID:    fmt.Sprintf("%s.%s", conf.BundleID, conf.InstanceID),
 		unconfirmed: make(map[uint64]chan bool),
 	}
 
@@ -463,7 +462,6 @@ func (b *Bridge) messageReceiver(ch <-chan *nats.Msg) {
 				zap.String("InstanceID", b.instanceID),
 			)
 		}
-
 
 		// for debugging purpose
 		atomic.AddInt32(&b.counters.MessageReceived, 1)

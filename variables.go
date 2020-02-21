@@ -14,7 +14,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-
 const (
 	longRequestThreshold = 500 * time.Millisecond
 )
