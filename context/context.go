@@ -2,9 +2,7 @@ package context
 
 import (
 	"git.ronaksoftware.com/ronak/rony/tools"
-	"hash"
 	"hash/crc32"
-	"hash/crc64"
 	"sync"
 )
 
@@ -16,12 +14,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2018
 */
-
-var crcGen hash.Hash64
-
-func init() {
-	crcGen = crc64.New(crc64.MakeTable(crc64.ISO))
-}
 
 type Context struct {
 	AuthID      int64

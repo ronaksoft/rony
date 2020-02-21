@@ -25,17 +25,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-var (
-	_Log log.Logger
-)
-
-func init() {
-	_Log = log.NewNop()
-}
-
-func SetLogger(l log.Logger) {
-	_Log = l
-}
 
 type ErrHandler func(err error)
 type NotifyHandler func(connIDs []uint64)
@@ -47,9 +36,6 @@ type Config struct {
 	Retries    int
 	Options    nats.Options
 	MaxWorkers int
-	NotifyHandler
-	MessageHandler
-	ErrHandler
 }
 
 type Bridge struct {
@@ -97,11 +83,13 @@ type Counters struct {
 }
 
 func NewBridge(conf Config) (*Bridge, error) {
-	b := new(Bridge)
-	b.bundleID = conf.BundleID
-	b.instanceID = conf.InstanceID
-	b.bridgeID = fmt.Sprintf("%s.%s", b.bundleID, b.instanceID)
-	b.unconfirmed = make(map[uint64]chan bool)
+	b := &Bridge{
+		bundleID: conf.BundleID,
+		instanceID: conf.InstanceID,
+		bridgeID: fmt.Sprintf("%s.%s", conf.BundleID, conf.InstanceID),
+		unconfirmed: make(map[uint64]chan bool),
+	}
+
 	if conf.MaxWorkers <= 0 {
 		b.maxWorkers = defaultMaxWorkers
 	} else {
@@ -110,19 +98,8 @@ func NewBridge(conf Config) (*Bridge, error) {
 	b.prefixMessageID = uint64(tools.RandomInt(1<<31)) << 32
 
 	b.ErrHandler = func(err error) {}
-	if conf.ErrHandler != nil {
-		b.ErrHandler = conf.ErrHandler
-	}
-
 	b.NotifyHandler = func(connIDs []uint64) {}
-	if conf.NotifyHandler != nil {
-		b.NotifyHandler = conf.NotifyHandler
-	}
-
 	b.MessageHandler = func(c *Container) bool { return false }
-	if conf.MessageHandler != nil {
-		b.MessageHandler = conf.MessageHandler
-	}
 
 	conf.Options.Name = fmt.Sprintf("%s.%s", b.bundleID, b.instanceID)
 	conf.Options.MaxReconnect = -1
@@ -202,7 +179,7 @@ func (b *Bridge) deliverySender(items []flusher.Entry) {
 	}
 
 	for subject := range m {
-		if ce := _Log.Check(log.DebugLevel, "Bridge Delivery Sent"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Bridge Delivery Sent"); ce != nil {
 			ce.Write(
 				zap.Int("Count", m[subject].Size()),
 				zap.String("BundleID", b.bundleID),
@@ -250,7 +227,7 @@ func (b *Bridge) notifySender(items []flusher.Entry) {
 	}
 
 	for subject := range m {
-		if ce := _Log.Check(log.DebugLevel, "Bridge Notify Sent"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Bridge Notify Sent"); ce != nil {
 			ce.Write(
 				zap.Int("Count", m[subject].Size()),
 				zap.String("BundleID", b.bundleID),
@@ -326,7 +303,7 @@ func (b *Bridge) messageSender(items []flusher.Entry) {
 	waitGroup.Add(len(m))
 	for subject := range m {
 		go func(subject string) {
-			if ce := _Log.Check(log.DebugLevel, "Bridge Message Sent"); ce != nil {
+			if ce := log.Check(log.DebugLevel, "Bridge Message Sent"); ce != nil {
 				ce.Write(
 					zap.Int("Count", len(m[subject])),
 					zap.String("BundleID", b.bundleID),
@@ -417,7 +394,7 @@ func (b *Bridge) deliveryReceiver(ch <-chan *nats.Msg) {
 	defer b.waitGroup.Done()
 	deliveryReport := new(DeliveryReport)
 	for m := range ch {
-		if ce := _Log.Check(log.DebugLevel, "Bridge Delivery Received"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Bridge Delivery Received"); ce != nil {
 			ce.Write(
 				zap.String("BundleID", b.bundleID),
 				zap.String("InstanceID", b.instanceID),
@@ -451,7 +428,7 @@ func (b *Bridge) notifierReceiver(ch <-chan *nats.Msg) {
 	defer b.waitGroup.Done()
 	notifier := new(Notifier)
 	for m := range ch {
-		if ce := _Log.Check(log.DebugLevel, "Bridge Notifier Received"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Bridge Notifier Received"); ce != nil {
 			ce.Write(
 				zap.String("BundleID", b.bundleID),
 				zap.String("InstanceID", b.instanceID),
@@ -480,18 +457,19 @@ func (b *Bridge) messageReceiver(ch <-chan *nats.Msg) {
 	b.waitGroup.Add(1)
 	defer b.waitGroup.Done()
 	for m := range ch {
-		if ce := _Log.Check(log.DebugLevel, "Bridge Message Received"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Bridge Message Received"); ce != nil {
 			ce.Write(
 				zap.String("BundleID", b.bundleID),
 				zap.String("InstanceID", b.instanceID),
 			)
 		}
-		container := new(Container)
+
 
 		// for debugging purpose
 		atomic.AddInt32(&b.counters.MessageReceived, 1)
 
 		// Try to unmarshal the message
+		container := &Container{}
 		if err := container.Unmarshal(m.Data); err != nil {
 			b.ErrHandler(err)
 			continue

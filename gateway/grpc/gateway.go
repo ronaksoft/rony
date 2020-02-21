@@ -83,7 +83,7 @@ func (g *Gateway) Run() {
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
-			log.Fatal("GRPC listen error.", zap.Error(err))
+			log.Fatal("Grpc listen error.", zap.Error(err))
 		}
 	}()
 }

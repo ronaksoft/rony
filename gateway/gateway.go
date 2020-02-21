@@ -16,10 +16,11 @@ import (
 type Protocol string
 
 const (
+	Undefined Protocol = ""
 	Websocket Protocol = "websocket"
-	QUIC      Protocol = "quic"
+	Quic      Protocol = "quic"
 	HTTP      Protocol = "http"
-	GRPC      Protocol = "grpc"
+	Grpc      Protocol = "grpc"
 )
 
 type Client string

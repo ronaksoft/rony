@@ -9,6 +9,14 @@ package bridge
    Copyright Ronak Software Group 2018
 */
 
+type Medium string
+
+const (
+	Undefined Medium = ""
+	Nats      Medium = "Nats"
+	Redis     Medium = "Redis"
+)
+
 type Bridge interface {
 	GetID() string
 	SendNotifier(bridgeID string, connID uint64)

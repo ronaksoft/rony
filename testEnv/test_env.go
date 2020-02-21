@@ -1,13 +1,7 @@
 package testEnv
 
 import (
-	"git.ronaksoftware.com/ronak/rony/config"
-	"git.ronaksoftware.com/ronak/rony/db/redis"
-	"git.ronaksoftware.com/ronak/rony/db/scylla"
 	log "git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/metrics"
-	"path"
-	"runtime"
 )
 
 /*
@@ -27,20 +21,6 @@ func Init() {
 	} else {
 		return
 	}
-	_, filename, _, _ := runtime.Caller(0)
-	config.Read("testConfig", path.Dir(filename))
+
 	log.InitLogger(log.WarnLevel, "")
-	metrics.Run("Test", "01", 2374)
-	dbConf := scylla.DefaultConfig
-	dbConf.Host = config.GetString(config.DbScyllaDsn)
-	dbConf.Keyspace = "river"
-	scylla.Init(dbConf)
-
-	redisConf := redis.DefaultConfig
-	redisConf.Host = config.GetString(config.RedisPermDsn)
-	redisConf.Password = "ehsan2374"
-	redis.InitPermCache(redis.New(redisConf))
-	redis.InitTempCache(redis.New(redisConf))
-	redis.InitCounterCache(redis.New(redisConf))
-
 }

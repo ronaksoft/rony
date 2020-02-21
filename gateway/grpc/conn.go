@@ -61,7 +61,7 @@ func (c *Conn) Persistent() bool {
 
 func (c *Conn) SendProto(streamID int64, message gateway.ProtoBufferMessage) error {
 	if message == nil {
-		log.Warn("Received nil MessageEnvelope in GRPC Connection SendProto.",
+		log.Warn("Received nil MessageEnvelope in Grpc Connection SendProto.",
 			zap.Uint64("ConnID", c.ConnID),
 		)
 		return errors.ErrInvalidData
