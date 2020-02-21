@@ -1,0 +1,28 @@
+syntax = "proto2";
+package natsBridge;
+
+
+// MessageContainer
+message Container {
+    required uint64 MessageID = 1;
+    repeated Message Messages = 2;
+}
+
+// Message
+message Message {
+    required bytes Payload = 2;
+    required int64 AuthID = 3;
+    optional int64 UserID = 4;
+}
+
+// Notifier
+message Notifier {
+    required uint64 MessageID = 1;
+    repeated uint64 ConnectionIDs = 2;
+}
+
+// DeliveryReport
+message DeliveryReport {
+    repeated uint64 MessageIDs = 1;
+}
+

@@ -1,0 +1,30 @@
+bundle.id: Test
+instance.id: T01
+
+db.scylla.dsn: "docker"
+db.scylla.user: "cassandra"
+db.scylla.pass: "cassandra"
+db.scylla.connections: 10
+
+redis.perm.dsn: "docker:6379"
+redis.perm.pass: "ehsan2374"
+redis.perm.pool.max.size: 50
+redis.perm.pool.size: 50
+
+redis.counter.dsn: "docker:6379"
+redis.counter.pass: "ehsan2374"
+redis.counter.pool.max.size: 50
+redis.counter.pool.size: 50
+
+redis.temp.dsn: "docker:6379"
+redis.temp.pass: "ehsan2374"
+redis.temp.pool.max.size: 50
+redis.temp.pool.size: 50
+
+nats.url: "nats://docker:4222"
+nats.cluster.id: "test-cluster"
+
+quark.path: "/builds/river/server/cmd/cli-doctor/quark.so"
+gateway.protocol: "websocket"
+gateway.listen: ":83"
+mongo.tls: false

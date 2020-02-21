@@ -1,0 +1,1 @@
+2020-01-23T18:58:17.252+0330	WARN	scramble/scramble.go:40	Plugin not found.	{"error": "plugin.Open(\"/ronak/plugins/quark.so\"): realpath failed"}
