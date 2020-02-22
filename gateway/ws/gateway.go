@@ -2,8 +2,8 @@ package websocketGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	"git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"

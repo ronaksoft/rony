@@ -4,10 +4,15 @@
 package msg
 
 import (
+	context "context"
 	encoding_binary "encoding/binary"
 	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
 	github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 	proto "github.com/gogo/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -148,6 +153,83 @@ func (m *MessageEnvelope) GetMessage() []byte {
 	return nil
 }
 
+// UpdateEnvelope
+type UpdateEnvelope struct {
+	Constructor int64  `protobuf:"varint,1,req,name=Constructor" json:"Constructor"`
+	Update      []byte `protobuf:"bytes,2,req,name=Update" json:"Update"`
+	UCount      int32  `protobuf:"varint,3,req,name=UCount" json:"UCount"`
+	UpdateID    int64  `protobuf:"varint,4,req,name=UpdateID" json:"UpdateID"`
+	Timestamp   int64  `protobuf:"varint,5,req,name=Timestamp" json:"Timestamp"`
+}
+
+func (m *UpdateEnvelope) Reset()         { *m = UpdateEnvelope{} }
+func (m *UpdateEnvelope) String() string { return proto.CompactTextString(m) }
+func (*UpdateEnvelope) ProtoMessage()    {}
+func (*UpdateEnvelope) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c06e4cca6c2cc899, []int{2}
+}
+func (m *UpdateEnvelope) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateEnvelope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateEnvelope.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateEnvelope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateEnvelope.Merge(m, src)
+}
+func (m *UpdateEnvelope) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateEnvelope) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateEnvelope.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateEnvelope proto.InternalMessageInfo
+
+func (m *UpdateEnvelope) GetConstructor() int64 {
+	if m != nil {
+		return m.Constructor
+	}
+	return 0
+}
+
+func (m *UpdateEnvelope) GetUpdate() []byte {
+	if m != nil {
+		return m.Update
+	}
+	return nil
+}
+
+func (m *UpdateEnvelope) GetUCount() int32 {
+	if m != nil {
+		return m.UCount
+	}
+	return 0
+}
+
+func (m *UpdateEnvelope) GetUpdateID() int64 {
+	if m != nil {
+		return m.UpdateID
+	}
+	return 0
+}
+
+func (m *UpdateEnvelope) GetTimestamp() int64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
 // ProtoMessageEncryptedPayload
 type ProtoEncryptedPayload struct {
 	ServerSalt int64            `protobuf:"varint,1,req,name=ServerSalt" json:"ServerSalt"`
@@ -160,7 +242,7 @@ func (m *ProtoEncryptedPayload) Reset()         { *m = ProtoEncryptedPayload{} }
 func (m *ProtoEncryptedPayload) String() string { return proto.CompactTextString(m) }
 func (*ProtoEncryptedPayload) ProtoMessage()    {}
 func (*ProtoEncryptedPayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c06e4cca6c2cc899, []int{2}
+	return fileDescriptor_c06e4cca6c2cc899, []int{3}
 }
 func (m *ProtoEncryptedPayload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -228,7 +310,7 @@ func (m *MessageContainer) Reset()         { *m = MessageContainer{} }
 func (m *MessageContainer) String() string { return proto.CompactTextString(m) }
 func (*MessageContainer) ProtoMessage()    {}
 func (*MessageContainer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c06e4cca6c2cc899, []int{3}
+	return fileDescriptor_c06e4cca6c2cc899, []int{4}
 }
 func (m *MessageContainer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -281,7 +363,7 @@ func (m *Error) Reset()         { *m = Error{} }
 func (m *Error) String() string { return proto.CompactTextString(m) }
 func (*Error) ProtoMessage()    {}
 func (*Error) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c06e4cca6c2cc899, []int{4}
+	return fileDescriptor_c06e4cca6c2cc899, []int{5}
 }
 func (m *Error) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -327,6 +409,7 @@ func (m *Error) GetItems() string {
 func init() {
 	proto.RegisterType((*ProtoMessage)(nil), "msg.ProtoMessage")
 	proto.RegisterType((*MessageEnvelope)(nil), "msg.MessageEnvelope")
+	proto.RegisterType((*UpdateEnvelope)(nil), "msg.UpdateEnvelope")
 	proto.RegisterType((*ProtoEncryptedPayload)(nil), "msg.ProtoEncryptedPayload")
 	proto.RegisterType((*MessageContainer)(nil), "msg.MessageContainer")
 	proto.RegisterType((*Error)(nil), "msg.Error")
@@ -335,30 +418,150 @@ func init() {
 func init() { proto.RegisterFile("msg.proto", fileDescriptor_c06e4cca6c2cc899) }
 
 var fileDescriptor_c06e4cca6c2cc899 = []byte{
-	// 368 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0xcf, 0x6a, 0xea, 0x40,
-	0x14, 0xc6, 0x33, 0x49, 0xf4, 0xde, 0x1c, 0x85, 0x7b, 0x19, 0x5a, 0x18, 0x4a, 0x49, 0x43, 0x28,
-	0xc5, 0x95, 0x14, 0xf7, 0x5d, 0xd4, 0x3f, 0x8b, 0xd0, 0x16, 0x44, 0x9f, 0x20, 0x98, 0x43, 0x14,
-	0x34, 0x63, 0x67, 0x46, 0xc1, 0x45, 0xdf, 0xa1, 0x6f, 0xd3, 0x57, 0x70, 0xe9, 0xb2, 0xab, 0x52,
-	0xf4, 0x45, 0x4a, 0xe2, 0x4c, 0x4c, 0x0b, 0x5d, 0xe6, 0x77, 0xbe, 0x7c, 0xe7, 0xfb, 0xe6, 0x80,
-	0xb7, 0x90, 0x69, 0x7b, 0x29, 0xb8, 0xe2, 0xd4, 0x59, 0xc8, 0x34, 0x14, 0xd0, 0x1c, 0xe6, 0x5f,
-	0x4f, 0x28, 0x65, 0x9c, 0x22, 0xbd, 0x84, 0xfa, 0xfd, 0x4a, 0x4d, 0xa3, 0x3e, 0x23, 0x01, 0x69,
-	0x39, 0x5d, 0x77, 0xfb, 0x71, 0x65, 0x8d, 0x34, 0xa3, 0xd7, 0x00, 0x5a, 0xf8, 0x80, 0x1b, 0x66,
-	0x07, 0xa4, 0xd5, 0xd4, 0x8a, 0x0a, 0xa7, 0x3e, 0xfc, 0x19, 0xc6, 0x9b, 0x39, 0x8f, 0x13, 0xe6,
-	0x04, 0x76, 0x29, 0x31, 0x30, 0x7c, 0x81, 0x7f, 0x5a, 0x3d, 0xc8, 0xd6, 0x38, 0xe7, 0x4b, 0xa4,
-	0x37, 0xd0, 0xe8, 0xf1, 0x4c, 0x2a, 0xb1, 0x9a, 0x28, 0x2e, 0x18, 0x09, 0xec, 0x72, 0x77, 0x75,
-	0x40, 0x43, 0xf0, 0x46, 0xf8, 0xbc, 0x42, 0xa9, 0xa2, 0x3e, 0xb3, 0x03, 0xbb, 0x55, 0xd7, 0xaa,
-	0x13, 0xce, 0xd7, 0x6b, 0x7b, 0xe6, 0x56, 0xd7, 0x6b, 0x18, 0xbe, 0x11, 0x38, 0x2f, 0x3a, 0x0f,
-	0xb2, 0x89, 0xd8, 0x2c, 0x15, 0x26, 0x3a, 0x58, 0x5e, 0x6f, 0x8c, 0x62, 0x8d, 0x62, 0x1c, 0xcf,
-	0xd5, 0xb7, 0x10, 0x15, 0x9e, 0x67, 0xd0, 0x56, 0x3a, 0x83, 0x6b, 0x32, 0x94, 0x38, 0xd7, 0x8c,
-	0x51, 0xca, 0x19, 0xcf, 0xa2, 0x7e, 0xf1, 0x08, 0xc6, 0xe8, 0x84, 0xe9, 0x2d, 0xfc, 0x35, 0xfd,
-	0x8b, 0xa0, 0x8d, 0xce, 0x59, 0x3b, 0xbf, 0xce, 0x8f, 0xb7, 0x19, 0x95, 0xaa, 0x30, 0x81, 0xff,
-	0x7a, 0xd8, 0xe3, 0x99, 0x8a, 0x67, 0x19, 0x8a, 0xfc, 0x60, 0x8f, 0x98, 0xa5, 0x6a, 0x5a, 0xe4,
-	0xad, 0x99, 0x83, 0x1d, 0x19, 0xed, 0x80, 0x67, 0xfe, 0x96, 0xcc, 0x0e, 0x9c, 0x5f, 0x97, 0x9c,
-	0x64, 0xe1, 0x1d, 0xd4, 0x06, 0x42, 0x70, 0x41, 0x19, 0xb8, 0x3d, 0x9e, 0x60, 0x61, 0xec, 0x69,
-	0xe3, 0x82, 0xd0, 0x0b, 0xa8, 0x45, 0x0a, 0x17, 0xb2, 0xa8, 0x6f, 0x46, 0x47, 0xd4, 0x65, 0xdb,
-	0xbd, 0x4f, 0x76, 0x7b, 0x9f, 0x7c, 0xee, 0x7d, 0xf2, 0x7a, 0xf0, 0xad, 0xdd, 0xc1, 0xb7, 0xde,
-	0x0f, 0xbe, 0xf5, 0x15, 0x00, 0x00, 0xff, 0xff, 0x16, 0x55, 0xeb, 0xb3, 0x7c, 0x02, 0x00, 0x00,
+	// 485 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0xcd, 0x8e, 0xd3, 0x30,
+	0x14, 0x85, 0xe3, 0x34, 0x1d, 0xa6, 0x77, 0x2a, 0x7e, 0x2c, 0x90, 0xac, 0x6a, 0x14, 0xa2, 0x08,
+	0xa1, 0x6e, 0xe8, 0x8c, 0xba, 0x44, 0x62, 0x41, 0x7f, 0x16, 0x11, 0x20, 0x8d, 0x5a, 0x78, 0x80,
+	0x4c, 0x63, 0xd2, 0x4a, 0x4d, 0x1c, 0x6c, 0x67, 0xa4, 0x2e, 0x78, 0x07, 0xde, 0x06, 0x89, 0x27,
+	0x98, 0xe5, 0x2c, 0x59, 0x21, 0xd4, 0xbe, 0x08, 0xca, 0x8d, 0xe3, 0x06, 0x10, 0x0b, 0x76, 0xf1,
+	0x77, 0x8f, 0xef, 0xf1, 0x3d, 0x76, 0xa0, 0x97, 0xa9, 0x74, 0x54, 0x48, 0xa1, 0x05, 0xed, 0x64,
+	0x2a, 0x1d, 0xbc, 0x48, 0x37, 0x7a, 0x5d, 0x5e, 0x8f, 0x56, 0x22, 0xbb, 0x48, 0x45, 0x2a, 0x2e,
+	0xb0, 0x76, 0x5d, 0x7e, 0xc4, 0x15, 0x2e, 0xf0, 0xab, 0xde, 0x13, 0x4a, 0xe8, 0x5f, 0x55, 0x1f,
+	0xef, 0xb8, 0x52, 0x71, 0xca, 0xe9, 0x39, 0x9c, 0xbc, 0x2e, 0xf5, 0x3a, 0x9a, 0x31, 0x12, 0x90,
+	0x61, 0x67, 0xe2, 0xdd, 0xfe, 0x78, 0xea, 0x2c, 0x0c, 0xa3, 0xcf, 0x00, 0x8c, 0xf0, 0x0d, 0xdf,
+	0x31, 0x37, 0x20, 0xc3, 0xbe, 0x51, 0xb4, 0x38, 0xf5, 0xe1, 0xde, 0x55, 0xbc, 0xdb, 0x8a, 0x38,
+	0x61, 0x9d, 0xc0, 0xb5, 0x92, 0x06, 0x86, 0x9f, 0xe1, 0x81, 0x51, 0xcf, 0xf3, 0x1b, 0xbe, 0x15,
+	0x05, 0xa7, 0xcf, 0xe1, 0x6c, 0x2a, 0x72, 0xa5, 0x65, 0xb9, 0xd2, 0x42, 0x32, 0x12, 0xb8, 0xd6,
+	0xbb, 0x5d, 0xa0, 0x21, 0xf4, 0x16, 0xfc, 0x53, 0xc9, 0x95, 0x8e, 0x66, 0xcc, 0x0d, 0xdc, 0xe1,
+	0x89, 0x51, 0x1d, 0x71, 0x65, 0x6f, 0xda, 0x33, 0xaf, 0x6d, 0x6f, 0x60, 0xf8, 0x8d, 0xc0, 0xfd,
+	0x0f, 0x45, 0x12, 0xeb, 0xff, 0xb7, 0x3f, 0x87, 0x93, 0x7a, 0x27, 0x7a, 0x37, 0x9d, 0x0d, 0xc3,
+	0xea, 0x54, 0x94, 0xb9, 0xc6, 0xb1, 0xbb, 0xb6, 0x8a, 0x8c, 0x06, 0x70, 0x5a, 0xeb, 0xa2, 0x19,
+	0x9e, 0xab, 0x31, 0xb0, 0xb4, 0x1a, 0xee, 0xfd, 0x26, 0xe3, 0x4a, 0xc7, 0x59, 0xc1, 0xba, 0x2d,
+	0xc9, 0x11, 0x87, 0x5f, 0x09, 0x3c, 0xc1, 0x0b, 0x9b, 0xe7, 0x2b, 0xb9, 0x2b, 0x34, 0x4f, 0x4c,
+	0xaa, 0xd5, 0xdd, 0x2c, 0xb9, 0xbc, 0xe1, 0x72, 0x19, 0x6f, 0xf5, 0x6f, 0x23, 0xb4, 0x78, 0xe5,
+	0x61, 0x72, 0x30, 0x01, 0x7a, 0x8d, 0x87, 0xc5, 0x95, 0x66, 0xc9, 0x95, 0xda, 0x88, 0x3c, 0x9a,
+	0xe1, 0x28, 0xf6, 0x1c, 0x16, 0xd3, 0x4b, 0x38, 0x6d, 0xd2, 0xc3, 0x69, 0xce, 0xc6, 0x8f, 0x47,
+	0xd5, 0x4b, 0xfc, 0xe3, 0x62, 0x17, 0x56, 0x15, 0x26, 0xf0, 0xd0, 0x14, 0xa7, 0x22, 0xd7, 0xf1,
+	0x26, 0xe7, 0x98, 0xe7, 0x5b, 0x9e, 0xa7, 0x7a, 0x8d, 0xe7, 0xb5, 0x89, 0xd5, 0x8c, 0x8e, 0xa1,
+	0xd7, 0xec, 0x56, 0xcc, 0x0d, 0x3a, 0xff, 0x34, 0x39, 0xca, 0xc2, 0x57, 0xd0, 0x9d, 0x4b, 0x29,
+	0x24, 0x65, 0xe0, 0x4d, 0x45, 0xc2, 0xb1, 0x71, 0xcf, 0x34, 0x46, 0x42, 0x07, 0xd0, 0x8d, 0x34,
+	0xcf, 0x14, 0x8e, 0xdf, 0x94, 0x6a, 0x34, 0x9e, 0x80, 0x37, 0x4f, 0x52, 0x4e, 0x5f, 0x42, 0x1f,
+	0x43, 0x33, 0xaf, 0x8a, 0x3e, 0x42, 0xdf, 0xf6, 0x9f, 0x32, 0xf8, 0x1b, 0x85, 0xce, 0x90, 0x5c,
+	0x92, 0x09, 0xbb, 0xdd, 0xfb, 0xe4, 0x6e, 0xef, 0x93, 0x9f, 0x7b, 0x9f, 0x7c, 0x39, 0xf8, 0xce,
+	0xdd, 0xc1, 0x77, 0xbe, 0x1f, 0x7c, 0xe7, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x89, 0x1f, 0x87,
+	0x3e, 0xac, 0x03, 0x00, 0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// EdgeClient is the client API for Edge service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type EdgeClient interface {
+	ServeRequest(ctx context.Context, opts ...grpc.CallOption) (Edge_ServeRequestClient, error)
+}
+
+type edgeClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewEdgeClient(cc *grpc.ClientConn) EdgeClient {
+	return &edgeClient{cc}
+}
+
+func (c *edgeClient) ServeRequest(ctx context.Context, opts ...grpc.CallOption) (Edge_ServeRequestClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Edge_serviceDesc.Streams[0], "/msg.Edge/ServeRequest", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &edgeServeRequestClient{stream}
+	return x, nil
+}
+
+type Edge_ServeRequestClient interface {
+	Send(*ProtoMessage) error
+	Recv() (*ProtoMessage, error)
+	grpc.ClientStream
+}
+
+type edgeServeRequestClient struct {
+	grpc.ClientStream
+}
+
+func (x *edgeServeRequestClient) Send(m *ProtoMessage) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *edgeServeRequestClient) Recv() (*ProtoMessage, error) {
+	m := new(ProtoMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// EdgeServer is the server API for Edge service.
+type EdgeServer interface {
+	ServeRequest(Edge_ServeRequestServer) error
+}
+
+// UnimplementedEdgeServer can be embedded to have forward compatible implementations.
+type UnimplementedEdgeServer struct {
+}
+
+func (*UnimplementedEdgeServer) ServeRequest(srv Edge_ServeRequestServer) error {
+	return status.Errorf(codes.Unimplemented, "method ServeRequest not implemented")
+}
+
+func RegisterEdgeServer(s *grpc.Server, srv EdgeServer) {
+	s.RegisterService(&_Edge_serviceDesc, srv)
+}
+
+func _Edge_ServeRequest_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(EdgeServer).ServeRequest(&edgeServeRequestServer{stream})
+}
+
+type Edge_ServeRequestServer interface {
+	Send(*ProtoMessage) error
+	Recv() (*ProtoMessage, error)
+	grpc.ServerStream
+}
+
+type edgeServeRequestServer struct {
+	grpc.ServerStream
+}
+
+func (x *edgeServeRequestServer) Send(m *ProtoMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *edgeServeRequestServer) Recv() (*ProtoMessage, error) {
+	m := new(ProtoMessage)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _Edge_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "msg.Edge",
+	HandlerType: (*EdgeServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ServeRequest",
+			Handler:       _Edge_ServeRequest_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "msg.proto",
 }
 
 func (m *ProtoMessage) Marshal() (dAtA []byte, err error) {
@@ -432,6 +635,48 @@ func (m *MessageEnvelope) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.RequestID))
 	i--
 	dAtA[i] = 0x11
+	i = encodeVarintMsg(dAtA, i, uint64(m.Constructor))
+	i--
+	dAtA[i] = 0x8
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateEnvelope) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateEnvelope) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateEnvelope) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	i = encodeVarintMsg(dAtA, i, uint64(m.Timestamp))
+	i--
+	dAtA[i] = 0x28
+	i = encodeVarintMsg(dAtA, i, uint64(m.UpdateID))
+	i--
+	dAtA[i] = 0x20
+	i = encodeVarintMsg(dAtA, i, uint64(m.UCount))
+	i--
+	dAtA[i] = 0x18
+	if m.Update != nil {
+		i -= len(m.Update)
+		copy(dAtA[i:], m.Update)
+		i = encodeVarintMsg(dAtA, i, uint64(len(m.Update)))
+		i--
+		dAtA[i] = 0x12
+	}
 	i = encodeVarintMsg(dAtA, i, uint64(m.Constructor))
 	i--
 	dAtA[i] = 0x8
@@ -598,6 +843,23 @@ func (m *MessageEnvelope) Size() (n int) {
 		l = len(m.Message)
 		n += 1 + l + sovMsg(uint64(l))
 	}
+	return n
+}
+
+func (m *UpdateEnvelope) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovMsg(uint64(m.Constructor))
+	if m.Update != nil {
+		l = len(m.Update)
+		n += 1 + l + sovMsg(uint64(l))
+	}
+	n += 1 + sovMsg(uint64(m.UCount))
+	n += 1 + sovMsg(uint64(m.UpdateID))
+	n += 1 + sovMsg(uint64(m.Timestamp))
 	return n
 }
 
@@ -919,6 +1181,190 @@ func (m *MessageEnvelope) Unmarshal(dAtA []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Message")
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateEnvelope) Unmarshal(dAtA []byte) error {
+	var hasFields [1]uint64
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsg
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateEnvelope: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateEnvelope: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Constructor", wireType)
+			}
+			m.Constructor = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Constructor |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Update", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMsg
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsg
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Update = append(m.Update[:0], dAtA[iNdEx:postIndex]...)
+			if m.Update == nil {
+				m.Update = []byte{}
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UCount", wireType)
+			}
+			m.UCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UCount |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateID", wireType)
+			}
+			m.UpdateID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UpdateID |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			hasFields[0] |= uint64(0x00000008)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Timestamp |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			hasFields[0] |= uint64(0x00000010)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsg(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMsg
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMsg
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Constructor")
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Update")
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("UCount")
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("UpdateID")
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Timestamp")
 	}
 
 	if iNdEx > l {

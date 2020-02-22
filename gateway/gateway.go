@@ -20,6 +20,7 @@ const (
 	Websocket Protocol = "websocket"
 	QUIC      Protocol = "quic"
 	HTTP      Protocol = "http"
+	GRPC      Protocol = "grpc"
 )
 
 type Client string

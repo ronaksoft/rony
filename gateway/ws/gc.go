@@ -2,7 +2,7 @@ package websocketGateway
 
 import (
 	"encoding/binary"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/allegro/bigcache/v2"
 	"time"
 )

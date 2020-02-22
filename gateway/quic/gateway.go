@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"github.com/lucas-clemente/quic-go"
 	"go.uber.org/zap"
 	"io/ioutil"

@@ -5,7 +5,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"git.ronaksoftware.com/ronak/rony/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/logger"
 	websocketGateway "git.ronaksoftware.com/ronak/toolbox/gateway/ws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"

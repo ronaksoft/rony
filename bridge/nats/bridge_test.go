@@ -3,8 +3,8 @@ package natsBridge_test
 import (
 	"fmt"
 	natsBridge "git.ronaksoftware.com/ronak/rony/bridge/nats"
-	"git.ronaksoftware.com/ronak/rony/testEnv"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/nats-io/nats.go"
 	. "github.com/smartystreets/goconvey/convey"
 	"sync"

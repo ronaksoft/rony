@@ -1,7 +1,7 @@
 package context
 
 import (
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"hash/crc32"
 	"testing"
 )

@@ -1,7 +1,6 @@
 package rony
 
 import (
-	"hash/crc64"
 	"time"
 )
 
@@ -17,15 +16,3 @@ import (
 const (
 	longRequestThreshold = 500 * time.Millisecond
 )
-
-// Context Values
-const (
-	CtxAuthKey   = "AUTH_KEY"
-	CtxServerSeq = "S_SEQ"
-	CtxClientSeq = "C_SEQ"
-	CtxUser      = "USER"
-	CtxStreamID  = "SID"
-	CtxTemp      = "TEMP"
-)
-
-var AccessHashTable = crc64.MakeTable(0x23740630002374)

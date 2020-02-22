@@ -5,7 +5,7 @@ import (
 	natsBridge "git.ronaksoftware.com/ronak/rony/bridge/nats"
 	"git.ronaksoftware.com/ronak/rony/errors"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"go.uber.org/zap"
 )
 

@@ -2,7 +2,7 @@ package httpGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"

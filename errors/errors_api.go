@@ -37,3 +37,25 @@ func (e *Error) ToMessageEnvelope(m *msg.MessageEnvelope) {
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s:%s", e.Code, e.Item)
 }
+
+// Error Codes
+const (
+	ErrCodeInternal         = "E00"
+	ErrCodeInvalid          = "E01"
+	ErrCodeUnavailable      = "E02"
+	ErrCodeTooMany          = "E03"
+	ErrCodeTooFew           = "E04"
+	ErrCodeIncomplete       = "E05"
+	ErrCodeTimeout          = "E06"
+	ErrCodeAccess           = "E07"
+	ErrCodeAlreadyExists    = "E08"
+	ErrCodeBusy             = "E09"
+	ErrCodeOutOfRange       = "E10"
+	ErrCodePartiallyApplied = "E11"
+	ErrCodeExpired          = "E12"
+)
+
+// Error Items
+const (
+	ErrItemApi = "API"
+)

@@ -2,10 +2,10 @@ package natsBridge
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/flusher"
-	log "git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/pools"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/flusher"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/nats-io/nats.go"
 	"github.com/scylladb/go-set/u64set"

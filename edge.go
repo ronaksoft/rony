@@ -2,13 +2,13 @@ package rony
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/bridge"
 	"git.ronaksoftware.com/ronak/rony/context"
 	"git.ronaksoftware.com/ronak/rony/errors"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/msg"
-	"git.ronaksoftware.com/ronak/rony/pools"
+	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
 	"runtime/debug"
 	"sync"
@@ -37,14 +37,19 @@ type EdgeConfig struct {
 
 // EdgeServer
 type EdgeServer struct {
-	handlers           map[int64][]Handler
+	// Identification Parameters
 	bundleID           string
 	instanceID         string
+	raft 				*raft.Raft
+
+	// Handlers
+	preHandlers        []Handler
+	handlers           map[int64][]Handler
+	postHandlers       []Handler
 	getConstructorName GetConstructorNameFunc
-	bridge             bridge.Bridge
 }
 
-func NewEdgeServer(config EdgeConfig, bridge bridge.Bridge) (*EdgeServer, error) {
+func NewEdgeServer(config EdgeConfig) (*EdgeServer, error) {
 	if gatewayProtocol == gateway.Undefined {
 		return nil, errors.ErrGatewayNotInitialized
 	}
@@ -57,7 +62,6 @@ func NewEdgeServer(config EdgeConfig, bridge bridge.Bridge) (*EdgeServer, error)
 		handlers:           make(map[int64][]Handler),
 		bundleID:           config.BundleID,
 		instanceID:         config.InstanceID,
-		bridge:             bridge,
 		getConstructorName: config.GetConstructorName,
 	}
 
@@ -70,11 +74,14 @@ func (edge EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 }
 
 // Execute apply the right handler on the req, the response will be pushed to the clients queue.
-func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.MessageEnvelope) {
+func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.MessageEnvelope) (err error) {
 	switch req.Constructor {
 	case msg.C_MessageContainer:
 		x := &msg.MessageContainer{}
-		_ = x.Unmarshal(req.Message)
+		err = x.Unmarshal(req.Message)
+		if err != nil {
+			return err
+		}
 		xLen := len(x.Envelopes)
 
 		waitGroup := pools.AcquireWaitGroup()
@@ -108,14 +115,18 @@ func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.Mes
 }
 
 // ExecuteWithResult is similar to Execute but it get response filled passed by arguments
-func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, req, res *msg.MessageEnvelope) error {
+func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, req, res *msg.MessageEnvelope) (err error) {
 	switch req.Constructor {
 	case msg.C_MessageContainer:
 		x := &msg.MessageContainer{}
-		_ = x.Unmarshal(req.Message)
+		err = x.Unmarshal(req.Message)
+		if err != nil {
+			return err
+		}
 		xLen := len(x.Envelopes)
-		resContainer := &msg.MessageContainer{}
-		resContainer.Envelopes = make([]*msg.MessageEnvelope, 0, xLen)
+		resContainer := &msg.MessageContainer{
+			Envelopes: make([]*msg.MessageEnvelope, 0, xLen),
+		}
 
 		waitGroup := pools.AcquireWaitGroup()
 		mtxLock := sync.Mutex{}
@@ -152,7 +163,7 @@ func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, re
 	return nil
 }
 
-func (edge EdgeServer) execute(ctx *context.Context, req, res *msg.MessageEnvelope) error {
+func (edge EdgeServer) execute(ctx *context.Context, req, res *msg.MessageEnvelope) {
 	defer edge.recoverPanic(ctx)
 	startTime := time.Now()
 
@@ -166,14 +177,32 @@ func (edge EdgeServer) execute(ctx *context.Context, req, res *msg.MessageEnvelo
 	res.RequestID = req.RequestID
 	handlers, ok := edge.handlers[req.Constructor]
 	if !ok {
-		return errors.ErrConstructorNotHandled
+		// TODO:: fix this
+		// ctx.PushError(res, errors.ErrCodeInvalid, errors.ErrItemApi)
+		return
 	}
 
 	// Run the handler
-	for idx := range handlers {
-		handlers[idx](ctx, req, res)
+	for idx := range edge.preHandlers {
+		edge.preHandlers[idx](ctx, req, res)
 		if ctx.Stop {
 			break
+		}
+	}
+	if !ctx.Stop {
+		for idx := range handlers {
+			handlers[idx](ctx, req, res)
+			if ctx.Stop {
+				break
+			}
+		}
+	}
+	if !ctx.Stop {
+		for idx := range edge.postHandlers {
+			edge.postHandlers[idx](ctx, req, res)
+			if ctx.Stop {
+				break
+			}
 		}
 	}
 
@@ -199,8 +228,7 @@ func (edge EdgeServer) execute(ctx *context.Context, req, res *msg.MessageEnvelo
 		}
 	}
 
-	return nil
-
+	return
 }
 
 func (edge EdgeServer) recoverPanic(ctx *context.Context) {
@@ -233,6 +261,8 @@ func (edge EdgeServer) Run() {
 		gatewayHTTP.Run()
 	case gateway.QUIC:
 		gatewayQuic.Run()
+	case gateway.GRPC:
+		gatewayGrpc.Run()
 	default:
 		panic("unknown gateway mode")
 	}

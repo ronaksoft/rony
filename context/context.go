@@ -1,7 +1,7 @@
 package context
 
 import (
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"hash/crc32"
 	"sync"
 )
@@ -14,6 +14,16 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2018
 */
+
+// Context Values
+const (
+	CtxAuthKey   = "AUTH_KEY"
+	CtxServerSeq = "S_SEQ"
+	CtxClientSeq = "C_SEQ"
+	CtxUser      = "USER"
+	CtxStreamID  = "SID"
+	CtxTemp      = "TEMP"
+)
 
 type Context struct {
 	AuthID      int64

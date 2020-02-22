@@ -2,8 +2,8 @@ package httpGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/logger"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"

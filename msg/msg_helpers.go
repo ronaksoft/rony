@@ -6,6 +6,7 @@ package msg
 import (
 	fmt "fmt"
 	pbytes "github.com/gobwas/pool/pbytes"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 	sync "sync"
@@ -67,6 +68,33 @@ var PoolMessageEnvelope = poolMessageEnvelope{}
 
 func ResultMessageEnvelope(out *MessageEnvelope, res *MessageEnvelope) {
 	out.Constructor = C_MessageEnvelope
+	pbytes.Put(out.Message)
+	out.Message = pbytes.GetLen(res.Size())
+	res.MarshalTo(out.Message)
+}
+
+const C_UpdateEnvelope int64 = 2373884514
+
+type poolUpdateEnvelope struct {
+	pool sync.Pool
+}
+
+func (p *poolUpdateEnvelope) Get() *UpdateEnvelope {
+	x, ok := p.pool.Get().(*UpdateEnvelope)
+	if !ok {
+		return &UpdateEnvelope{}
+	}
+	return x
+}
+
+func (p *poolUpdateEnvelope) Put(x *UpdateEnvelope) {
+	p.pool.Put(x)
+}
+
+var PoolUpdateEnvelope = poolUpdateEnvelope{}
+
+func ResultUpdateEnvelope(out *MessageEnvelope, res *UpdateEnvelope) {
+	out.Constructor = C_UpdateEnvelope
 	pbytes.Put(out.Message)
 	out.Message = pbytes.GetLen(res.Size())
 	res.MarshalTo(out.Message)
@@ -157,6 +185,7 @@ func ResultError(out *MessageEnvelope, res *Error) {
 func init() {
 	ConstructorNames[2179260159] = "ProtoMessage"
 	ConstructorNames[535232465] = "MessageEnvelope"
+	ConstructorNames[2373884514] = "UpdateEnvelope"
 	ConstructorNames[2668405547] = "ProtoEncryptedPayload"
 	ConstructorNames[1972016308] = "MessageContainer"
 	ConstructorNames[2619118453] = "Error"
