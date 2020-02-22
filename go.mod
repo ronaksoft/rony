@@ -23,7 +23,6 @@ require (
 	github.com/scylladb/go-set v1.0.2
 	github.com/scylladb/gocqlx v1.3.3 // indirect
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.6.2 // indirect
 	github.com/valyala/fasthttp v1.8.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a

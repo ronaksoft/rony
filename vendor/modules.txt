@@ -1,12 +1,33 @@
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
+# github.com/DataDog/zstd v1.4.1
+github.com/DataDog/zstd
 # github.com/allegro/bigcache/v2 v2.1.6
 github.com/allegro/bigcache/v2
 github.com/allegro/bigcache/v2/queue
 # github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878
 github.com/armon/go-metrics
+# github.com/bbva/raft-badger v1.0.0
+github.com/bbva/raft-badger
+# github.com/cespare/xxhash v1.1.0
+github.com/cespare/xxhash
 # github.com/cheekybits/genny v1.0.0
 github.com/cheekybits/genny/generic
+# github.com/dgraph-io/badger/v2 v2.0.0
+github.com/dgraph-io/badger/v2
+github.com/dgraph-io/badger/v2/options
+github.com/dgraph-io/badger/v2/pb
+github.com/dgraph-io/badger/v2/skl
+github.com/dgraph-io/badger/v2/table
+github.com/dgraph-io/badger/v2/trie
+github.com/dgraph-io/badger/v2/y
+# github.com/dgraph-io/ristretto v0.0.0-20191025175511-c1f00be0418e
+github.com/dgraph-io/ristretto
+github.com/dgraph-io/ristretto/z
+# github.com/dgryski/go-farm v0.0.0-20191112170834-c2139c5d712b
+github.com/dgryski/go-farm
+# github.com/dustin/go-humanize v1.0.0
+github.com/dustin/go-humanize
 # github.com/getsentry/sentry-go v0.4.0
 github.com/getsentry/sentry-go
 # github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee
@@ -51,6 +72,8 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/golang/snappy v0.0.1
+github.com/golang/snappy
 # github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1
 github.com/gopherjs/gopherjs/js
 # github.com/hashicorp/go-hclog v0.9.1
@@ -100,6 +123,8 @@ github.com/nats-io/nkeys
 github.com/nats-io/nuid
 # github.com/nyaruka/phonenumbers v1.0.54
 github.com/nyaruka/phonenumbers
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
 # github.com/scylladb/go-set v1.0.2
 github.com/scylladb/go-set/u64set
 # github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d
