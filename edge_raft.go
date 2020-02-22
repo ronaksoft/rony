@@ -4,6 +4,7 @@ import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"github.com/hashicorp/raft"
+	"go.uber.org/zap"
 	"io"
 )
 
@@ -44,9 +45,15 @@ func (edge EdgeServer) Join(nodeID, addr string) error {
 func (edge EdgeServer) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := pools.AcquireRaftCommand()
 	err := raftCmd.Unmarshal(raftLog.Data)
-	log.PanicOnError("Error On Raft Apply", err)
+	log.PanicOnError("Error On Raft Apply", err,
+		zap.Int("Len", len(raftLog.Data)),
+		zap.Any("LogType", raftLog.Type),
+		zap.Uint64("Index", raftLog.Index),
+		zap.Uint64("Term", raftLog.Term),
+	)
 
 	edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
+	pools.ReleaseRaftCommand(raftCmd)
 	return nil
 }
 

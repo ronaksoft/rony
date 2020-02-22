@@ -83,11 +83,10 @@ func AcquireRaftCommand() *msg.RaftCommand {
 	x := v.(*msg.RaftCommand)
 	x.AuthID = 0
 	x.UserID = 0
-	x.Envelope = AcquireMessageEnvelope()
+	x.Envelope = nil
 	return x
 }
 
 func ReleaseRaftCommand(x *msg.RaftCommand) {
-	ReleaseMessageEnvelope(x.Envelope)
 	raftCommandPool.Put(x)
 }

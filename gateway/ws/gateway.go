@@ -126,7 +126,6 @@ func (g *Gateway) connectionAcceptor() {
 		}
 		conn, err := g.listener.Accept()
 		if err != nil {
-			log.Warn("Error on Listener Accept", zap.Error(err))
 			continue
 		}
 

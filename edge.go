@@ -14,6 +14,7 @@ import (
 	"github.com/gobwas/pool/pbytes"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
+	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -111,8 +112,14 @@ func (edge *EdgeServer) Execute(authID, userID int64, req *msg.MessageEnvelope) 
 		raftCmd.UserID = userID
 		raftCmd.Envelope = req
 		raftCmdBytes := pbytes.GetLen(raftCmd.Size())
+		_, err = raftCmd.MarshalTo(raftCmdBytes)
+		if err != nil {
+			return
+		}
 		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
 		err = f.Error()
+		pbytes.Put(raftCmdBytes)
+		pools.ReleaseRaftCommand(raftCmd)
 	} else {
 		edge.execute(authID, userID, req)
 	}
@@ -244,12 +251,11 @@ func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 func (edge *EdgeServer) onMessage(c gateway.Conn, streamID int64, data []byte) {
 	authID := tools.RandomInt64(0)
 	userID := tools.RandomInt64(0)
-	err := edge.Execute(authID, userID, &msg.MessageEnvelope{
-		Constructor: 200,
-		RequestID:   tools.RandomUint64(),
-		Message:     data,
-	})
+	envelope := pools.AcquireMessageEnvelope()
+	_ = envelope.Unmarshal(data)
+	err := edge.Execute(authID, userID, envelope)
 	log.WarnOnError("Execute", err)
+	pools.ReleaseMessageEnvelope(envelope)
 }
 
 func (edge *EdgeServer) onConnect(connID uint64) {}
@@ -288,9 +294,11 @@ func (edge *EdgeServer) runGateway() {
 }
 func (edge *EdgeServer) runRaft() error {
 	// Initialize LogStore for Raft
-	badgerOpt := badger.DefaultOptions(filepath.Join(edge.dataPath, "raft"))
+	dirPath := filepath.Join(edge.dataPath, "raft")
+	_ = os.MkdirAll(dirPath, os.ModePerm)
+	badgerOpt := badger.DefaultOptions(dirPath)
 	badgerStore, err := raftbadger.New(raftbadger.Options{
-		Path:                "",
+		Path:                dirPath,
 		BadgerOptions:       &badgerOpt,
 		NoSync:              false,
 		ValueLogGC:          false,
@@ -305,9 +313,11 @@ func (edge *EdgeServer) runRaft() error {
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
+	raftConfig.LogLevel = "WARN"
+	raftConfig.LogOutput = ioutil.Discard
 	raftConfig.LocalID = raft.ServerID(edge.GetServerID())
 	raftBind := fmt.Sprintf(":%d", edge.raftPort)
-	raftAdvertiseAddr, err := net.ResolveIPAddr("tcp", raftBind)
+	raftAdvertiseAddr, err := net.ResolveTCPAddr("tcp", raftBind)
 	if err != nil {
 		return err
 	}
@@ -317,7 +327,7 @@ func (edge *EdgeServer) runRaft() error {
 		return err
 	}
 
-	raftSnapshot, err := raft.NewFileSnapshotStore(raftBind, 3, os.Stdout)
+	raftSnapshot, err := raft.NewFileSnapshotStore(dirPath, 3, os.Stdout)
 	if err != nil {
 		return err
 	}
