@@ -21,6 +21,7 @@ var (
 	ErrEmpty                     = errors.New("empty key")
 	ErrInvalidData               = errors.New("invalid data")
 	ErrConstructorNotHandled     = errors.New("constructor not handled")
+	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrWriteToClosedConn         = errors.New("write to closed conn")
 	ErrWriteToFullBufferedConn   = errors.New("write to full buffer conn")
 	ErrUnexpectedSocketRead      = errors.New("unexpected read from socket")

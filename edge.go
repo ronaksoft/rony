@@ -8,8 +8,13 @@ import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/msg"
+	raftbadger "github.com/bbva/raft-badger"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
+	"net"
+	"os"
+	"path/filepath"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -29,24 +34,33 @@ type GetConstructorNameFunc func(constructor int64) string
 
 // EdgeConfig
 type EdgeConfig struct {
-	TestMode           bool
-	BundleID           string
-	InstanceID         string
+	TestMode   bool
+	BundleID   string
+	InstanceID string
+	RaftConfig RaftConfig
+	// DataPath is a folder which all the internal state data will be written to.
+	DataPath           string
 	GetConstructorName GetConstructorNameFunc
 }
 
 // EdgeServer
 type EdgeServer struct {
-	// Identification Parameters
-	bundleID           string
-	instanceID         string
-	raft 				*raft.Raft
+	// General
+	bundleID   string
+	instanceID string
+	dataPath   string
 
 	// Handlers
 	preHandlers        []Handler
 	handlers           map[int64][]Handler
 	postHandlers       []Handler
 	getConstructorName GetConstructorNameFunc
+
+	// Raft Related
+	raftEnabled   bool
+	raftPort      int
+	raftBootstrap bool
+	raft          *raft.Raft
 }
 
 func NewEdgeServer(config EdgeConfig) (*EdgeServer, error) {
@@ -63,6 +77,10 @@ func NewEdgeServer(config EdgeConfig) (*EdgeServer, error) {
 		bundleID:           config.BundleID,
 		instanceID:         config.InstanceID,
 		getConstructorName: config.GetConstructorName,
+		dataPath:           config.DataPath,
+		raftEnabled:        config.RaftConfig.Enabled,
+		raftPort:           config.RaftConfig.Port,
+		raftBootstrap:      config.RaftConfig.FirstMachine,
 	}
 
 	return edgeServer, nil
@@ -74,7 +92,14 @@ func (edge EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 }
 
 // Execute apply the right handler on the req, the response will be pushed to the clients queue.
-func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.MessageEnvelope) (err error) {
+func (edge EdgeServer) Execute(authID, userID int64, req *msg.MessageEnvelope) (err error) {
+	if edge.raftEnabled {
+		if edge.raft.State() != raft.Leader {
+
+			return errors.ErrNotRaftLeader
+		}
+
+	}
 	switch req.Constructor {
 	case msg.C_MessageContainer:
 		x := &msg.MessageContainer{}
@@ -86,7 +111,7 @@ func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.Mes
 
 		waitGroup := pools.AcquireWaitGroup()
 		for i := 0; i < xLen; i++ {
-			ctx := pools.AcquireContext(authID, userID, connID, true, false)
+			ctx := pools.AcquireContext(authID, userID, true, false)
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *context.Context, idx int) {
@@ -106,7 +131,7 @@ func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.Mes
 		pools.ReleaseWaitGroup(waitGroup)
 	default:
 		res := &msg.MessageEnvelope{}
-		ctx := pools.AcquireContext(authID, userID, connID, false, false)
+		ctx := pools.AcquireContext(authID, userID, false, false)
 		edge.execute(ctx, req, res)
 		pools.ReleaseContext(ctx)
 	}
@@ -115,7 +140,7 @@ func (edge EdgeServer) Execute(authID, userID int64, connID uint64, req *msg.Mes
 }
 
 // ExecuteWithResult is similar to Execute but it get response filled passed by arguments
-func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, req, res *msg.MessageEnvelope) (err error) {
+func (edge EdgeServer) ExecuteWithResult(authID, userID int64, req, res *msg.MessageEnvelope) (err error) {
 	switch req.Constructor {
 	case msg.C_MessageContainer:
 		x := &msg.MessageContainer{}
@@ -131,7 +156,7 @@ func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, re
 		waitGroup := pools.AcquireWaitGroup()
 		mtxLock := sync.Mutex{}
 		for i := 0; i < xLen; i++ {
-			ctx := pools.AcquireContext(authID, userID, connID, true, true)
+			ctx := pools.AcquireContext(authID, userID, true, true)
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *context.Context, idx int) {
@@ -156,7 +181,7 @@ func (edge EdgeServer) ExecuteWithResult(authID, userID int64, connID uint64, re
 		waitGroup.Wait()
 		pools.ReleaseWaitGroup(waitGroup)
 	default:
-		ctx := pools.AcquireContext(authID, userID, connID, false, true)
+		ctx := pools.AcquireContext(authID, userID, false, true)
 		edge.execute(ctx, req, res)
 		pools.ReleaseContext(ctx)
 	}
@@ -247,13 +272,25 @@ func (edge EdgeServer) GetServerID() string {
 }
 
 // Run runs the selected gateway, if gateway is not setup it panics
-func (edge EdgeServer) Run() {
+func (edge EdgeServer) Run() (err error) {
 	log.Info("Edge Server Started",
 		zap.String("BundleID", edge.bundleID),
 		zap.String("InstanceID", edge.instanceID),
 		zap.String("Gateway", string(gatewayProtocol)),
 	)
 
+	if edge.raftEnabled {
+		err = edge.runRaft()
+		if err != nil {
+			return
+		}
+	}
+
+	err = edge.runGateway()
+
+	return
+}
+func (edge EdgeServer) runGateway() error {
 	switch gatewayProtocol {
 	case gateway.Websocket:
 		gatewayWebsocket.Run()
@@ -261,11 +298,65 @@ func (edge EdgeServer) Run() {
 		gatewayHTTP.Run()
 	case gateway.QUIC:
 		gatewayQuic.Run()
-	case gateway.GRPC:
-		gatewayGrpc.Run()
 	default:
 		panic("unknown gateway mode")
 	}
+	return nil
+}
+func (edge EdgeServer) runRaft() error {
+	// Initialize LogStore for Raft
+	badgerOpt := badger.DefaultOptions(filepath.Join(edge.dataPath, "raft"))
+	badgerStore, err := raftbadger.New(raftbadger.Options{
+		Path:                "",
+		BadgerOptions:       &badgerOpt,
+		NoSync:              false,
+		ValueLogGC:          false,
+		GCInterval:          0,
+		MandatoryGCInterval: 0,
+		GCThreshold:         0,
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Initialize Raft
+	raftConfig := raft.DefaultConfig()
+	raftConfig.LocalID = raft.ServerID(edge.GetServerID())
+	raftBind := fmt.Sprintf(":%d", edge.raftPort)
+	raftAdvertiseAddr, err := net.ResolveIPAddr("tcp", raftBind)
+	if err != nil {
+		return err
+	}
+
+	raftTransport, err := raft.NewTCPTransport(raftBind, raftAdvertiseAddr, 3, 10*time.Second, os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	raftSnapshot, err := raft.NewFileSnapshotStore(raftBind, 3, os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	edge.raft, err = raft.NewRaft(raftConfig, edge, badgerStore, badgerStore, raftSnapshot, raftTransport)
+	if err != nil {
+		return err
+	}
+
+	if edge.raftBootstrap {
+		bootConfig := raft.Configuration{
+			Servers: []raft.Server{
+				{
+					ID:      raftConfig.LocalID,
+					Address: raftTransport.LocalAddr(),
+				},
+			},
+		}
+		edge.raft.BootstrapCluster(bootConfig)
+	}
+
+	return nil
 }
 
 func (edge EdgeServer) Shutdown() {

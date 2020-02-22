@@ -1,0 +1,30 @@
+syntax = "proto2";
+package msg;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "msg.proto";
+
+// Enable custom Marshal method.
+option (gogoproto.marshaler_all) = true;
+// Enable custom Unmarshal method.
+option (gogoproto.unmarshaler_all) = true;
+// Enable custom Size method (Required by Marshal and Unmarshal).
+option (gogoproto.sizer_all) = true;
+
+
+enum Command {
+    Save = 0;
+    Delete = 1;
+    Reserved1 = 2;
+    Reserved2 = 3;
+    Reserved3 = 4;
+    Reserved4 = 5;
+    Reserved5 = 6;
+}
+
+// RaftCommand
+message RaftCommand {
+    required int64 AuthID = 1;
+    required int64 UserID = 2;
+    required MessageEnvelope Envelope = 3;
+}

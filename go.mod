@@ -4,6 +4,8 @@ go 1.13
 
 require (
 	github.com/allegro/bigcache/v2 v2.1.6
+	github.com/bbva/raft-badger v1.0.0
+	github.com/dgraph-io/badger/v2 v2.0.0
 	github.com/getsentry/sentry-go v0.4.0
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.2

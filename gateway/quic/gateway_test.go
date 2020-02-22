@@ -44,7 +44,7 @@ func TestGateway(t *testing.T) {
 				CloseHandler: func(c gateway.Conn) {},
 				MessageHandler: func(conn gateway.Conn, streamID int64, data []byte) {
 					c.So(data, ShouldResemble, tools.StrToByte(fmt.Sprintf("%v", streamID)))
-					_ = conn.(*quicGateway.Conn).SendBinary(quic.StreamID(streamID), []byte{1, 2, 3, 4})
+					_ = conn.(*quicGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
 				},
 				ConnectHandler: func(connID uint64) {
 					// _Log.Info("New Connection", zap.Uint64("ConnID", connID))

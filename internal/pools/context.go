@@ -16,7 +16,7 @@ import (
 
 var ctxPool = sync.Pool{}
 
-func AcquireContext(authID int64, userID int64, connID uint64, quickReturn, blocking bool) *context.Context {
+func AcquireContext(authID int64, userID int64, quickReturn, blocking bool) *context.Context {
 	var ctx *context.Context
 	if v := ctxPool.Get(); v == nil {
 		ctx = context.New()
@@ -33,7 +33,6 @@ func AcquireContext(authID int64, userID int64, connID uint64, quickReturn, bloc
 	ctx.QuickReturn = quickReturn
 	ctx.AuthID = authID
 	ctx.UserID = userID
-	ctx.ConnID = connID
 	ctx.Blocking = blocking
 	return ctx
 }

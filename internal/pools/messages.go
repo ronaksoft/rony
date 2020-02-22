@@ -15,29 +15,28 @@ import (
 */
 
 // MessageEnvelope Pool
-// var messageEnvelopePool sync.Pool
+var messageEnvelopePool sync.Pool
 
-// func AcquireMessageEnvelope() *msg.MessageEnvelope {
-// 	v := messageEnvelopePool.Get()
-// 	if v == nil {
-// 		return &msg.MessageEnvelope{}
-// 	}
-// 	x := v.(*msg.MessageEnvelope)
-// 	x.Message = x.Message[:0]
-// 	x.Constructor = 0
-// 	x.RequestID = 0
-// 	return x
-// }
-//
-// func ReleaseMessageEnvelope(x *msg.MessageEnvelope) {
-// 	messageEnvelopePool.Put(x)
-// }
+func AcquireMessageEnvelope() *msg.MessageEnvelope {
+	v := messageEnvelopePool.Get()
+	if v == nil {
+		return &msg.MessageEnvelope{}
+	}
+	x := v.(*msg.MessageEnvelope)
+	x.Message = x.Message[:0]
+	x.Constructor = 0
+	x.RequestID = 0
+	return x
+}
+
+func ReleaseMessageEnvelope(x *msg.MessageEnvelope) {
+	messageEnvelopePool.Put(x)
+}
 
 // ProtoMessage Pool
 var protoMessagePool sync.Pool
 
 func AcquireProtoMessage() *msg.ProtoMessage {
-	// return &msg.ProtoMessage{}
 	v := protoMessagePool.Get()
 	if v == nil {
 		return &msg.ProtoMessage{}
@@ -53,25 +52,6 @@ func ReleaseProtoMessage(x *msg.ProtoMessage) {
 	protoMessagePool.Put(x)
 }
 
-// // EncryptedPayload Pool
-// var encryptedPayloadPool sync.Pool
+var raftCommandPool sync.Pool
 
-// func AcquireEncryptedPayload() *msg.ProtoEncryptedPayload {
-// 	// return &msg.ProtoEncryptedPayload{}
-// 	v := encryptedPayloadPool.Get()
-// 	if v == nil {
-// 		return &msg.ProtoEncryptedPayload{
-// 			Envelope: &msg.MessageEnvelope{},
-// 		}
-// 	}
-// 	x := v.(*msg.ProtoEncryptedPayload)
-// 	x.MessageID = 0
-// 	x.ServerSalt = 0
-// 	x.SessionID = 0
-// 	x.Envelope = &msg.MessageEnvelope{}
-// 	return x
-// }
-
-// func ReleaseEncryptedPayload(x *msg.ProtoEncryptedPayload) {
-// 	encryptedPayloadPool.Put(x)
-// }
+// func AcquireRaftCommand() *msg.

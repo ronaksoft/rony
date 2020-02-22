@@ -20,27 +20,18 @@ const (
 	Websocket Protocol = "websocket"
 	QUIC      Protocol = "quic"
 	HTTP      Protocol = "http"
-	GRPC      Protocol = "grpc"
-)
-
-type Client string
-
-const (
-	User Client = "user"
-	Bot  Client = "bot"
 )
 
 type Conn interface {
+	GetAuthID() int64
+	GetAuthKey() []byte
 	GetConnID() uint64
 	GetClientIP() string
-	SendProto(streamID int64, pm ProtoBufferMessage) error
-	GetAuthID() int64
-	SetAuthID(int64)
-	GetAuthKey() []byte
-	SetAuthKey([]byte)
 	GetUserID() int64
+	SendBinary(streamID int64, data []byte) error
+	SetAuthID(int64)
+	SetAuthKey([]byte)
 	SetUserID(int64)
-	IncServerSeq(int64) int64
 	Flush()
 	Persistent() bool
 }

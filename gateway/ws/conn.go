@@ -4,10 +4,8 @@ package websocketGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/errors"
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"time"
@@ -120,20 +118,11 @@ func (wc *Conn) startEvent(event netpoll.Event) {
 
 }
 
-func (wc *Conn) SendProto(streamID int64, protoMessage gateway.ProtoBufferMessage) error {
-	bytes := pbytes.GetLen(protoMessage.Size())
-	_, err := protoMessage.MarshalTo(bytes)
-	if err != nil {
-		return err
-	}
-	return wc.SendBinary(bytes)
-}
-
 // SendBinary
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
 // You MUST NOT re-use the underlying array of payload, otherwise you might get unexpected results.
-func (wc *Conn) SendBinary(payload []byte) error {
+func (wc *Conn) SendBinary(streamID int64, payload []byte) error {
 	if wc.closed {
 		return errors.ErrWriteToClosedConn
 	}
@@ -195,7 +184,7 @@ func (wc *Conn) flushJob() {
 	atomic.StoreInt32(&wc.flushing, 0)
 
 	for idx := 0; idx < len(bytesSlice); idx++ {
-		err := wc.SendBinary(bytesSlice[idx])
+		err := wc.SendBinary(0, bytesSlice[idx])
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
 				ce.Write(

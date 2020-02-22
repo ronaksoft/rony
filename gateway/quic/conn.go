@@ -2,10 +2,8 @@ package quicGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/errors"
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/lucas-clemente/quic-go"
 	"go.uber.org/zap"
 	"sync"
@@ -93,25 +91,16 @@ type ConnCounters struct {
 	OutgoingBytes uint64
 }
 
-func (qc *Conn) SendProto(streamID int64, message gateway.ProtoBufferMessage) error {
-	bytes := pbytes.GetLen(message.Size())
-	_, err := message.MarshalTo(bytes)
-	if err != nil {
-		return err
-	}
-	return qc.SendBinary(quic.StreamID(streamID), bytes)
-}
-
 // SendBinary
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
 // You MUST NOT re-use the underlying array of payload, otherwise you might get unexpected results.
-func (qc *Conn) SendBinary(streamID quic.StreamID, payload []byte) error {
+func (qc *Conn) SendBinary(streamID int64, payload []byte) error {
 	if qc.closed {
 		return errors.ErrWriteToClosedConn
 	}
 	qc.RLock()
-	stream, ok := qc.streams[streamID]
+	stream, ok := qc.streams[quic.StreamID(streamID)]
 	qc.RUnlock()
 	if !ok {
 		return nil

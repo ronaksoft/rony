@@ -1,9 +1,7 @@
 package httpGateway
 
 import (
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 )
@@ -81,11 +79,8 @@ func (c *Conn) GetClientIP() string {
 	return c.ClientIP
 }
 
-func (c *Conn) SendProto(streamID int64, pm gateway.ProtoBufferMessage) error {
-	protoBytes := pbytes.GetLen(pm.Size())
-	_, _ = pm.MarshalTo(protoBytes)
-	_, err := c.req.Write(protoBytes)
-	pbytes.Put(protoBytes)
+func (c *Conn) SendBinary(streamID int64, data []byte) error {
+	_, err := c.req.Write(data)
 	return err
 }
 

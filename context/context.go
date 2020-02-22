@@ -28,7 +28,6 @@ const (
 type Context struct {
 	AuthID      int64
 	UserID      int64
-	ConnID      uint64
 	QuickReturn bool
 	NextChan    chan struct{}
 	Stop        bool

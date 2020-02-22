@@ -40,7 +40,7 @@ func TestGateway(t *testing.T) {
 				CloseHandler: func(c gateway.Conn) {},
 				MessageHandler: func(conn gateway.Conn, streamID int64, data []byte) {
 					c.So(data, ShouldHaveLength, 4)
-					err := conn.(*websocketGateway.Conn).SendBinary([]byte{1, 2, 3, 4})
+					err := conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
 					c.So(err, ShouldBeNil)
 				},
 				ConnectHandler: func(connID uint64) {},
