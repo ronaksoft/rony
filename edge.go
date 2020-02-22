@@ -121,12 +121,12 @@ func (edge *EdgeServer) Execute(authID, userID int64, req *msg.MessageEnvelope) 
 		pbytes.Put(raftCmdBytes)
 		pools.ReleaseRaftCommand(raftCmd)
 	} else {
-		edge.execute(authID, userID, req)
+		err = edge.execute(authID, userID, req)
 	}
 	return
 }
 
-func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) {
+func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) error {
 	executeFunc := func(ctx *context.Context, req *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
 		startTime := time.Now()
@@ -206,8 +206,7 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 		x := &msg.MessageContainer{}
 		err := x.Unmarshal(req.Message)
 		if err != nil {
-			// TODO:: handle error properly
-			return
+			return err
 		}
 		xLen := len(x.Envelopes)
 		waitGroup := pools.AcquireWaitGroup()
@@ -234,7 +233,7 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 		executeFunc(ctx, req)
 		context.Release(ctx)
 	}
-	return
+	return nil
 }
 
 func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
@@ -248,13 +247,22 @@ func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 	}
 }
 
-func (edge *EdgeServer) onMessage(c gateway.Conn, streamID int64, data []byte) {
+func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte) {
 	authID := tools.RandomInt64(0)
 	userID := tools.RandomInt64(0)
 	envelope := pools.AcquireMessageEnvelope()
 	_ = envelope.Unmarshal(data)
 	err := edge.Execute(authID, userID, envelope)
-	log.WarnOnError("Execute", err)
+	if err != nil {
+		log.Warn("Error On Execute", zap.Error(err))
+		envelope := pools.AcquireMessageEnvelope()
+		apiErr := errors.NewError(errors.ErrCodeInvalid, errors.ErrItemApi)
+		apiErr.ToMessageEnvelope(envelope)
+		envelopeBytes := pbytes.GetLen(envelope.Size())
+		_, _ = envelope.MarshalTo(envelopeBytes)
+		err = conn.SendBinary(streamID, envelopeBytes)
+		log.WarnOnError("Error OnMessage", err)
+	}
 	pools.ReleaseMessageEnvelope(envelope)
 }
 
@@ -354,5 +362,12 @@ func (edge *EdgeServer) runRaft() error {
 
 func (edge *EdgeServer) Shutdown() {
 	edge.gateway.Shutdown()
+	if edge.raftEnabled {
+		f := edge.raft.Shutdown()
+		if f.Error() != nil {
+			log.Warn("Error On Shutdown", zap.Error(f.Error()))
+		}
+	}
+
 	edge.gatewayProtocol = gateway.Undefined
 }

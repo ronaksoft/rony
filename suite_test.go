@@ -6,6 +6,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/context"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
@@ -14,6 +15,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.uber.org/zap"
 	"os"
 	"sync/atomic"
 	"testing"
@@ -73,6 +75,7 @@ func initEdgeServer(bundleID, instanceID string, clientPort int, opts ...rony.Op
 			ListenAddress:        fmt.Sprintf(":%d", clientPort),
 		}),
 		rony.WithMessageDispatcher(func(authID int64, envelope *msg.MessageEnvelope) {
+			log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
 			atomic.AddInt32(&receivedMessages, 1)
 		}),
 		rony.WithUpdateDispatcher(func(authID int64, envelope *msg.UpdateEnvelope) {
@@ -121,7 +124,7 @@ func TestEdgeServerRaft(t *testing.T) {
 		clientPort1 := 8081
 		edge1 := initEdgeServer("Test", "01", clientPort1,
 			rony.WithDataPath("./_hdd/edge01"),
-			rony.WithRaft(9091, true),
+			rony.WithRaft(9091, false),
 		)
 		clientPort2 := 8082
 		edge2 := initEdgeServer("Test", "02", clientPort2,
@@ -153,21 +156,23 @@ func TestEdgeServerRaft(t *testing.T) {
 
 		conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort1))
 		c.So(err, ShouldBeNil)
-		for i := 0; i < 10; i++ {
+		c.So(conn, ShouldNotBeNil)
+		for i := 1; i < 11; i++ {
 			req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}
 			reqBytes, _ := req.Marshal()
 			msgIn := pools.AcquireMessageEnvelope()
-			msgIn.RequestID = tools.RandomUint64()
+			msgIn.RequestID = uint64(i)
 			msgIn.Constructor = 101
 			msgIn.Message = reqBytes
 			msgInBytes, _ := msgIn.Marshal()
 			err = wsutil.WriteClientBinary(conn, msgInBytes)
 			c.So(err, ShouldBeNil)
 		}
+		time.Sleep(time.Second * 3)
 		edge1.Shutdown()
 		edge2.Shutdown()
 		edge3.Shutdown()
-		c.So(receivedMessages, ShouldEqual, 10)
-		c.So(receivedUpdates, ShouldEqual, 200)
+		c.So(receivedMessages, ShouldEqual, 30)
+		c.So(receivedUpdates, ShouldEqual, 300)
 	})
 }

@@ -45,15 +45,21 @@ func (edge EdgeServer) Join(nodeID, addr string) error {
 func (edge EdgeServer) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := pools.AcquireRaftCommand()
 	err := raftCmd.Unmarshal(raftLog.Data)
-	log.PanicOnError("Error On Raft Apply", err,
-		zap.Int("Len", len(raftLog.Data)),
-		zap.Any("LogType", raftLog.Type),
+	if err != nil {
+		log.Fatal("Error On Raft Apply",
+			zap.Int("Len", len(raftLog.Data)),
+			zap.Any("LogType", raftLog.Type),
+			zap.Uint64("Index", raftLog.Index),
+			zap.Uint64("Term", raftLog.Term), )
+	}
+	_ = edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
+	pools.ReleaseRaftCommand(raftCmd)
+
+	log.Info("Apply Log",
 		zap.Uint64("Index", raftLog.Index),
 		zap.Uint64("Term", raftLog.Term),
 	)
 
-	edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
-	pools.ReleaseRaftCommand(raftCmd)
 	return nil
 }
 
