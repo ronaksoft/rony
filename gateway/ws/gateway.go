@@ -28,16 +28,6 @@ import (
 
 // Config
 type Config struct {
-	gateway.CloseHandler
-	// MessageHandler must not keep the caller busy, and preferably it must do the heavy work,
-	// on background or other routines. Because our gateway use a constant number of readPump
-	// routines.
-	gateway.MessageHandler
-	gateway.ConnectHandler
-	gateway.FailedWriteHandler
-	gateway.SuccessWriteHandler
-	gateway.FlushFunc
-
 	NewConnectionWorkers int
 	MaxConcurrency       int
 	MaxIdleTime          time.Duration
@@ -49,8 +39,6 @@ type Gateway struct {
 	gateway.ConnectHandler
 	gateway.MessageHandler
 	gateway.CloseHandler
-	gateway.FailedWriteHandler
-	gateway.SuccessWriteHandler
 	gateway.FlushFunc
 
 	// Internal Controlling Params
@@ -90,38 +78,10 @@ func New(config Config) (*Gateway, error) {
 		g.maxIdleTime = config.MaxIdleTime
 	}
 	g.connGC = newGC(g)
-
-	if config.MessageHandler == nil {
-		g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
-	} else {
-		g.MessageHandler = config.MessageHandler
-	}
-	if config.CloseHandler == nil {
-		g.CloseHandler = func(c gateway.Conn) {}
-	} else {
-		g.CloseHandler = config.CloseHandler
-	}
-	if config.ConnectHandler == nil {
-		g.ConnectHandler = func(connID uint64) {}
-	} else {
-		g.ConnectHandler = config.ConnectHandler
-	}
-	if config.FailedWriteHandler == nil {
-		g.FailedWriteHandler = func(c gateway.Conn, data []byte, err error) {}
-	} else {
-		g.FailedWriteHandler = config.FailedWriteHandler
-	}
-	if config.SuccessWriteHandler == nil {
-		g.SuccessWriteHandler = func(c gateway.Conn) {}
-	} else {
-		g.SuccessWriteHandler = config.SuccessWriteHandler
-	}
-	if config.FlushFunc == nil {
-		g.FlushFunc = func(c gateway.Conn) [][]byte { return nil }
-	} else {
-		g.FlushFunc = config.FlushFunc
-	}
-
+	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
+	g.CloseHandler = func(c gateway.Conn) {}
+	g.ConnectHandler = func(connID uint64) {}
+	g.FlushFunc = func(c gateway.Conn) [][]byte { return nil }
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -340,13 +300,10 @@ func (g *Gateway) writePump() {
 			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 			err := wsutil.WriteServerMessage(wr.wc.conn, ws.OpBinary, wr.payload)
 			if err != nil {
-				wr.wc.gateway.FailedWriteHandler(wr.wc, wr.payload, err)
 				if ce := log.Check(log.DebugLevel, "Error in writePump"); ce != nil {
 					ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
 				}
 				g.removeConnection(wr.wc.ConnID)
-			} else {
-				wr.wc.gateway.SuccessWriteHandler(wr.wc)
 			}
 			// Put the bytes into the pool to be reused again
 			pbytes.Put(wr.payload)

@@ -41,18 +41,6 @@ func TestGateway(t *testing.T) {
 		Convey("Run Server", func(c C) {
 			var err error
 			gw, err = quicGateway.New(quicGateway.Config{
-				CloseHandler: func(c gateway.Conn) {},
-				MessageHandler: func(conn gateway.Conn, streamID int64, data []byte) {
-					c.So(data, ShouldResemble, tools.StrToByte(fmt.Sprintf("%v", streamID)))
-					_ = conn.(*quicGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
-				},
-				ConnectHandler: func(connID uint64) {
-					// _Log.Info("New Connection", zap.Uint64("ConnID", connID))
-				},
-				FlushFunc: func(c gateway.Conn) [][]byte {
-					// return [][]byte{{1}, {2}}
-					return nil
-				},
 				NewConnectionWorkers: 1,
 				MaxConcurrency:       1,
 				ListenAddress:        ":82",
@@ -60,6 +48,18 @@ func TestGateway(t *testing.T) {
 			})
 			if err != nil {
 				c.So(err, ShouldBeNil)
+			}
+			gw.CloseHandler = func(c gateway.Conn) {}
+			gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+				c.So(data, ShouldResemble, tools.StrToByte(fmt.Sprintf("%v", streamID)))
+				_ = conn.(*quicGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
+			}
+			gw.ConnectHandler = func(connID uint64) {
+				// _Log.Info("New Connection", zap.Uint64("ConnID", connID))
+			}
+			gw.FlushFunc = func(c gateway.Conn) [][]byte {
+				// return [][]byte{{1}, {2}}
+				return nil
 			}
 			go gw.Run()
 			time.Sleep(time.Second)

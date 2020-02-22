@@ -1,0 +1,19 @@
+syntax = "proto2";
+package pb;
+
+message ReqSimple1 {
+    required string P1 = 1;
+    required int64 P2 = 2;
+}
+
+message UpdateSimple1 {
+    required string P1 = 1;
+}
+
+message UpdateSimple2 {
+    required int64 P2 = 2;
+}
+
+message ResSimple1 {
+    required bytes P1 = 1;
+}

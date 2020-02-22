@@ -27,8 +27,6 @@ type Config struct {
 	RequestTimeout time.Duration
 	ListenAddress  string
 	MaxBodySize    int
-	gateway.MessageHandler
-	gateway.FlushFunc
 }
 
 // Gateway
@@ -50,11 +48,9 @@ func New(config Config) *Gateway {
 	g.reqTimeout = config.RequestTimeout
 	g.concurrency = config.Concurrency
 	g.maxBodySize = config.MaxBodySize
-
-	if config.MessageHandler == nil {
-		g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {}
-	} else {
-		g.MessageHandler = config.MessageHandler
+	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {}
+	g.FlushFunc = func(c gateway.Conn) [][]byte {
+		return nil
 	}
 
 	return g
@@ -140,3 +136,5 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 
 }
+
+func (g *Gateway) Shutdown() {}

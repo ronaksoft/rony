@@ -37,22 +37,18 @@ func TestGateway(t *testing.T) {
 		Convey("Run the Server", func(c C) {
 			var err error
 			gw, err = websocketGateway.New(websocketGateway.Config{
-				CloseHandler: func(c gateway.Conn) {},
-				MessageHandler: func(conn gateway.Conn, streamID int64, data []byte) {
-					c.So(data, ShouldHaveLength, 4)
-					err := conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
-					c.So(err, ShouldBeNil)
-				},
-				ConnectHandler: func(connID uint64) {},
-				FlushFunc: func(c gateway.Conn) [][]byte {
-					return nil
-				},
 				MaxIdleTime:          time.Second * 3,
 				NewConnectionWorkers: 1,
 				MaxConcurrency:       1,
 				ListenAddress:        ":81",
 			})
 			c.So(err, ShouldBeNil)
+
+			gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+				c.So(data, ShouldHaveLength, 4)
+				err := conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
+				c.So(err, ShouldBeNil)
+			}
 			gw.Run()
 			time.Sleep(time.Second)
 		})

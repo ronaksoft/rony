@@ -33,6 +33,27 @@ func ReleaseMessageEnvelope(x *msg.MessageEnvelope) {
 	messageEnvelopePool.Put(x)
 }
 
+// UpdateEnvelope Pool
+var updateEnvelopePool sync.Pool
+
+func AcquireUpdateEnvelope() *msg.UpdateEnvelope {
+	v := updateEnvelopePool.Get()
+	if v == nil {
+		return &msg.UpdateEnvelope{}
+	}
+	x := v.(*msg.UpdateEnvelope)
+	x.Update = x.Update[:0]
+	x.UpdateID = 0
+	x.UCount = 0
+	x.Timestamp = 0
+	x.Constructor = 0
+	return x
+}
+
+func ReleaseUpdateEnvelope(x *msg.UpdateEnvelope) {
+	updateEnvelopePool.Put(x)
+}
+
 // ProtoMessage Pool
 var protoMessagePool sync.Pool
 
@@ -54,4 +75,19 @@ func ReleaseProtoMessage(x *msg.ProtoMessage) {
 
 var raftCommandPool sync.Pool
 
-// func AcquireRaftCommand() *msg.
+func AcquireRaftCommand() *msg.RaftCommand {
+	v := raftCommandPool.Get()
+	if v == nil {
+		return &msg.RaftCommand{}
+	}
+	x := v.(*msg.RaftCommand)
+	x.AuthID = 0
+	x.UserID = 0
+	x.Envelope = AcquireMessageEnvelope()
+	return x
+}
+
+func ReleaseRaftCommand(x *msg.RaftCommand) {
+	ReleaseMessageEnvelope(x.Envelope)
+	raftCommandPool.Put(x)
+}

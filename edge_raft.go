@@ -1,6 +1,8 @@
 package rony
 
 import (
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"github.com/hashicorp/raft"
 	"io"
 )
@@ -13,12 +15,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2018
 */
-
-type RaftConfig struct {
-	Enabled      bool
-	Port         int
-	FirstMachine bool
-}
 
 func (edge EdgeServer) Join(nodeID, addr string) error {
 	futureConfig := edge.raft.GetConfiguration()
@@ -45,8 +41,13 @@ func (edge EdgeServer) Join(nodeID, addr string) error {
 	return nil
 }
 
-func (edge EdgeServer) Apply(*raft.Log) interface{} {
-	panic("implement me")
+func (edge EdgeServer) Apply(raftLog *raft.Log) interface{} {
+	raftCmd := pools.AcquireRaftCommand()
+	err := raftCmd.Unmarshal(raftLog.Data)
+	log.PanicOnError("Error On Raft Apply", err)
+
+	edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
+	return nil
 }
 
 func (edge EdgeServer) Snapshot() (raft.FSMSnapshot, error) {

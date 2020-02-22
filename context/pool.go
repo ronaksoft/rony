@@ -1,12 +1,9 @@
-package pools
+package context
 
-import (
-	"git.ronaksoftware.com/ronak/rony/context"
-	"sync"
-)
+import "sync"
 
 /*
-   Creation Time: 2019 - Oct - 14
+   Creation Time: 2020 - Feb - 22
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -16,12 +13,12 @@ import (
 
 var ctxPool = sync.Pool{}
 
-func AcquireContext(authID int64, userID int64, quickReturn, blocking bool) *context.Context {
-	var ctx *context.Context
+func Acquire(authID int64, userID int64, quickReturn, blocking bool) *Context {
+	var ctx *Context
 	if v := ctxPool.Get(); v == nil {
-		ctx = context.New()
+		ctx = New()
 	} else {
-		ctx = v.(*context.Context)
+		ctx = v.(*Context)
 		ctx.Clear()
 		// Just to make sure channel is empty, or empty it if not
 		select {
@@ -37,6 +34,6 @@ func AcquireContext(authID int64, userID int64, quickReturn, blocking bool) *con
 	return ctx
 }
 
-func ReleaseContext(ctx *context.Context) {
+func Release(ctx *Context) {
 	ctxPool.Put(ctx)
 }

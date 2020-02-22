@@ -36,11 +36,14 @@ type Conn interface {
 	Persistent() bool
 }
 
+type Gateway interface {
+	Run()
+	Shutdown()
+}
+
 type ConnectHandler func(connID uint64)
-type MessageHandler func(c Conn, streamID int64, date []byte)
+type MessageHandler func(c Conn, streamID int64, data []byte)
 type CloseHandler func(c Conn)
-type FailedWriteHandler func(c Conn, data []byte, err error)
-type SuccessWriteHandler func(c Conn)
 type FlushFunc func(c Conn) [][]byte
 
 type ProtoBufferMessage interface {

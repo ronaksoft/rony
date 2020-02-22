@@ -25,16 +25,6 @@ import (
 
 // Config
 type Config struct {
-	gateway.CloseHandler
-	// MessageHandler must not keep the caller busy, and preferably it must do the heavy work,
-	// on background or other routines. Because our gateway use a constant number of readPump
-	// routines.
-	gateway.MessageHandler
-	gateway.ConnectHandler
-	gateway.FailedWriteHandler
-	gateway.SuccessWriteHandler
-	gateway.FlushFunc
-
 	NewConnectionWorkers int
 	MaxConcurrency       int
 	ListenAddress        string
@@ -46,8 +36,6 @@ type Gateway struct {
 	gateway.ConnectHandler
 	gateway.MessageHandler
 	gateway.CloseHandler
-	gateway.FailedWriteHandler
-	gateway.SuccessWriteHandler
 	gateway.FlushFunc
 
 	// Internal Controlling Params
@@ -68,38 +56,10 @@ func New(config Config) (*Gateway, error) {
 	g.maxConcurrency = config.MaxConcurrency
 	g.conns = make(map[uint64]*Conn, 100000)
 	g.certs = config.Certificates
-
-	if config.MessageHandler == nil {
-		g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
-	} else {
-		g.MessageHandler = config.MessageHandler
-	}
-	if config.CloseHandler == nil {
-		g.CloseHandler = func(c gateway.Conn) {}
-	} else {
-		g.CloseHandler = config.CloseHandler
-	}
-	if config.ConnectHandler == nil {
-		g.ConnectHandler = func(connID uint64) {}
-	} else {
-		g.ConnectHandler = config.ConnectHandler
-	}
-	if config.FailedWriteHandler == nil {
-		g.FailedWriteHandler = func(c gateway.Conn, data []byte, err error) {}
-	} else {
-		g.FailedWriteHandler = config.FailedWriteHandler
-	}
-	if config.SuccessWriteHandler == nil {
-		g.SuccessWriteHandler = func(c gateway.Conn) {}
-	} else {
-		g.SuccessWriteHandler = config.SuccessWriteHandler
-	}
-	if config.FlushFunc == nil {
-		g.FlushFunc = func(c gateway.Conn) [][]byte { return nil }
-	} else {
-		g.FlushFunc = config.FlushFunc
-	}
-
+	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
+	g.CloseHandler = func(c gateway.Conn) {}
+	g.ConnectHandler = func(connID uint64) {}
+	g.FlushFunc = func(c gateway.Conn) [][]byte { return nil }
 	return g, nil
 }
 
@@ -266,3 +226,5 @@ func (g *Gateway) GetConnection(connID uint64) *Conn {
 func (g *Gateway) TotalConnections() int32 {
 	return atomic.LoadInt32(&g.connsTotal)
 }
+
+func (g *Gateway) Shutdown() {}

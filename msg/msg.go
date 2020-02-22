@@ -9,8 +9,8 @@ package msg
    Copyright Ronak Software Group 2018
 */
 
-//go:generate protoc -I=../vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto
-//go:generate protoc -I=../vendor -I=. --gohelpers_out=. msg.proto
+//go:generate protoc -I=../vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto raft.proto
+//go:generate protoc -I=../vendor -I=. --gohelpers_out=. msg.proto raft.proto
 var (
 	ConstructorNames map[int64]string
 )

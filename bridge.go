@@ -4,7 +4,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/bridge"
 	natsBridge "git.ronaksoftware.com/ronak/rony/bridge/nats"
 	"git.ronaksoftware.com/ronak/rony/errors"
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"go.uber.org/zap"
 )
@@ -29,30 +28,30 @@ func bridgeNotifyHandler(connIDs []uint64) {
 			zap.Uint64s("ConnIDs", connIDs),
 		)
 	}
-	switch gatewayProtocol {
-	case gateway.Websocket:
-		for idx := range connIDs {
-			wsConn := gatewayWebsocket.GetConnection(connIDs[idx])
-			if wsConn == nil {
-				if ce := log.Check(log.DebugLevel, "Flush Signal For Nil Websocket"); ce != nil {
-					ce.Write(zap.Uint64("ConnID", connIDs[idx]))
-				}
-				continue
-			}
-			wsConn.Flush()
-		}
-	// case gateway.Grpc:
+	// switch gatewayProtocol {
+	// case gateway.Websocket:
 	// 	for idx := range connIDs {
-	// 		conn := gatewayGRPC.GetConnection(connIDs[idx])
-	// 		if conn == nil {
-	// 			log.Warn("Flush Signal For Nil Grpc stream", zap.Uint64("ConnID", connIDs[idx]))
+	// 		wsConn := gatewayWebsocket.GetConnection(connIDs[idx])
+	// 		if wsConn == nil {
+	// 			if ce := log.Check(log.DebugLevel, "Flush Signal For Nil Websocket"); ce != nil {
+	// 				ce.Write(zap.Uint64("ConnID", connIDs[idx]))
+	// 			}
 	// 			continue
 	// 		}
-	// 		conn.Flush()
+	// 		wsConn.Flush()
 	// 	}
-	default:
-
-	}
+	// // case gateway.Grpc:
+	// // 	for idx := range connIDs {
+	// // 		conn := gatewayGRPC.GetConnection(connIDs[idx])
+	// // 		if conn == nil {
+	// // 			log.Warn("Flush Signal For Nil Grpc stream", zap.Uint64("ConnID", connIDs[idx]))
+	// // 			continue
+	// // 		}
+	// // 		conn.Flush()
+	// // 	}
+	// default:
+	//
+	// }
 }
 
 func InitNatsBridge(config natsBridge.Config) (err error) {

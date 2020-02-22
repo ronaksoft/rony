@@ -47,6 +47,16 @@ type Config struct {
 	Environment string
 }
 
+var DefaultConfig = Config{
+	Level:       InfoLevel,
+	DirPath:     ".",
+	Filename:    "",
+	SentryDSN:   "",
+	SentryLevel: WarnLevel,
+	Release:     "",
+	Environment: "",
+}
+
 func newZapLogger(core zapcore.Core, skip int) *zapLogger {
 	l := new(zapLogger)
 	l.Logger = zap.New(

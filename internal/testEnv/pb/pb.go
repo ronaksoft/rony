@@ -1,11 +1,7 @@
-package rony
-
-import (
-	"time"
-)
+package pb
 
 /*
-   Creation Time: 2020 - Feb - 21
+   Creation Time: 2020 - Feb - 22
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -13,6 +9,7 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-const (
-	raftApplyTimeout = time.Second * 3
-)
+//go:generate protoc  -I=.  --gogofaster_out=plugins=grpc:. msg.proto
+func init() {
+
+}

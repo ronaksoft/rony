@@ -1,9 +1,14 @@
 package context
 
 import (
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/msg"
+	"github.com/gobwas/pool/pbytes"
+	"github.com/gogo/protobuf/proto"
 	"hash/crc32"
 	"sync"
+	"time"
 )
 
 /*
@@ -34,14 +39,18 @@ type Context struct {
 	Blocking    bool
 
 	// internals
-	mtx sync.RWMutex
-	kv  map[uint32]interface{}
+	mtx         sync.RWMutex
+	kv          map[uint32]interface{}
+	MessageChan chan *messageDispatch
+	UpdateChan  chan *updateDispatch
 }
 
 func New() *Context {
 	return &Context{
-		NextChan: make(chan struct{}, 1),
-		kv:       make(map[uint32]interface{}, 3),
+		NextChan:    make(chan struct{}, 1),
+		kv:          make(map[uint32]interface{}, 3),
+		MessageChan: make(chan *messageDispatch, 3),
+		UpdateChan:  make(chan *updateDispatch, 100),
 	}
 }
 
@@ -53,6 +62,8 @@ func (ctx *Context) Return() {
 
 func (ctx *Context) StopExecution() {
 	ctx.Stop = true
+	close(ctx.MessageChan)
+	close(ctx.UpdateChan)
 }
 
 func (ctx *Context) Set(key string, v interface{}) {
@@ -93,7 +104,64 @@ func (ctx *Context) GetBool(key string) bool {
 }
 
 func (ctx *Context) Clear() {
+	ctx.MessageChan = make(chan *messageDispatch, 3)
+	ctx.UpdateChan = make(chan *updateDispatch, 100)
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
+}
+
+type messageDispatch struct {
+	AuthID   int64
+	Envelope *msg.MessageEnvelope
+}
+
+func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
+	envelope := pools.AcquireMessageEnvelope()
+	envelope.RequestID = requestID
+	envelope.Constructor = constructor
+	pbytes.Put(envelope.Message)
+	envelope.Message = pbytes.GetLen(proto.Size())
+	_, _ = proto.MarshalTo(envelope.Message)
+	ctx.MessageChan <- &messageDispatch{
+		AuthID:   authID,
+		Envelope: envelope,
+	}
+}
+
+func (ctx *Context) PushError(requestID uint64, code, item string) {
+	ctx.PushMessage(ctx.AuthID, requestID, msg.C_Error, &msg.Error{
+		Code:  code,
+		Items: item,
+	})
+}
+
+type updateDispatch struct {
+	AuthID   int64
+	Envelope *msg.UpdateEnvelope
+}
+
+func (ctx *Context) PushUpdate(authID int64, updateID int64, constructor int64, proto ProtoBufferMessage) {
+	envelope := pools.AcquireUpdateEnvelope()
+	envelope.Timestamp = time.Now().Unix()
+	envelope.UpdateID = updateID
+	if updateID != 0 {
+		envelope.UCount = 1
+	}
+	envelope.Constructor = constructor
+	pbytes.Put(envelope.Update)
+	envelope.Update = pbytes.GetLen(proto.Size())
+	_, _ = proto.MarshalTo(envelope.Update)
+	ctx.UpdateChan <- &updateDispatch{
+		AuthID:   authID,
+		Envelope: envelope,
+	}
+}
+
+// ProtoBufferMessage
+type ProtoBufferMessage interface {
+	proto.Marshaler
+	proto.Sizer
+	proto.Unmarshaler
+	MarshalTo([]byte) (int, error)
 }
