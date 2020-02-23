@@ -39,6 +39,7 @@ type Conn interface {
 type Gateway interface {
 	Run()
 	Shutdown()
+	Addr() string
 }
 
 type ConnectHandler func(connID uint64)

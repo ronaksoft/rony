@@ -12,7 +12,9 @@ import (
 	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/gobwas/pool/pbytes"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/raft"
+	"github.com/hashicorp/serf/serf"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net"
@@ -51,11 +53,15 @@ type EdgeServer struct {
 	postHandlers       []Handler
 	getConstructorName GetConstructorNameFunc
 
-	// Raft Related
+	// Raft & Gossip
 	raftEnabled   bool
 	raftPort      int
 	raftBootstrap bool
+	raftFSM       raftFSM
 	raft          *raft.Raft
+	gossipPort    int
+	gossip        *serf.Serf
+	badgerStore   *raftbadger.BadgerStore
 }
 
 func NewEdgeServer(bundleID, instanceID string, opts ...Option) *EdgeServer {
@@ -84,6 +90,7 @@ func NewEdgeServer(bundleID, instanceID string, opts ...Option) *EdgeServer {
 		raftEnabled:   false,
 		raftPort:      0,
 		raftBootstrap: false,
+		gossipPort:    7946,
 	}
 
 	for _, opt := range opts {
@@ -254,14 +261,20 @@ func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte
 	_ = envelope.Unmarshal(data)
 	err := edge.Execute(authID, userID, envelope)
 	if err != nil {
-		log.Warn("Error On Execute", zap.Error(err))
+		log.Warn("Error OnMessage (Execute)", zap.Error(err))
 		envelope := pools.AcquireMessageEnvelope()
 		apiErr := errors.NewError(errors.ErrCodeInvalid, errors.ErrItemApi)
 		apiErr.ToMessageEnvelope(envelope)
 		envelopeBytes := pbytes.GetLen(envelope.Size())
-		_, _ = envelope.MarshalTo(envelopeBytes)
+		_, err = envelope.MarshalTo(envelopeBytes)
+		if err != nil {
+			log.Warn("Error OnMessage (Marshal)", zap.Error(err))
+		}
 		err = conn.SendBinary(streamID, envelopeBytes)
-		log.WarnOnError("Error OnMessage", err)
+		if err != nil {
+			log.Warn("Error OnMessage (SendBinary)", zap.Error(err))
+		}
+		pools.ReleaseMessageEnvelope(envelope)
 	}
 	pools.ReleaseMessageEnvelope(envelope)
 }
@@ -291,8 +304,12 @@ func (edge *EdgeServer) Run() (err error) {
 		if err != nil {
 			return
 		}
+		time.Sleep(time.Second * 5)
+		err = edge.runGossip()
+		if err != nil {
+			return
+		}
 	}
-
 	edge.runGateway()
 	return
 }
@@ -300,12 +317,63 @@ func (edge *EdgeServer) runGateway() {
 	edge.gateway.Run()
 	return
 }
-func (edge *EdgeServer) runRaft() error {
+func (edge *EdgeServer) runGossip() error {
+	eventChan := make(chan serf.Event, 1000)
+	serfConfig := serf.DefaultConfig()
+	serfConfig.NodeName = edge.GetServerID()
+	serfConfig.Init()
+
+	serfConfig.CoalescePeriod = time.Second
+	serfConfig.LogOutput = ioutil.Discard
+	serfConfig.EventCh = eventChan
+	serfConfig.MemberlistConfig.Delegate = &gossipDelegate{edge: edge}
+	serfConfig.MemberlistConfig.Events = &gossipEventDelegate{edge: edge}
+	serfConfig.MemberlistConfig.Ping = &gossipPingDelegate{edge: edge}
+	serfConfig.MemberlistConfig.Alive = &gossipAliveDelegate{edge: edge}
+	serfConfig.MemberlistConfig.LogOutput = ioutil.Discard
+	dirPath := filepath.Join(edge.dataPath, "gossip")
+	_ = os.MkdirAll(dirPath, os.ModePerm)
+	serfConfig.KeyringFile = filepath.Join(dirPath, "keyring")
+	serfConfig.SnapshotPath = filepath.Join(dirPath, "snapshot")
+	serfConfig.MemberlistConfig.BindPort = edge.gossipPort
+
+	if s, err := serf.Create(serfConfig); err != nil {
+		return err
+	} else {
+		edge.gossip = s
+	}
+	_ = edge.gossip.SetTags(map[string]string{
+		"BundleID":   edge.bundleID,
+		"InstanceID": edge.instanceID,
+		"RaftNodeID": edge.GetServerID(),
+		"RaftPort":   fmt.Sprintf("%d", edge.raftPort),
+	})
+
+	go func() {
+		for range eventChan {
+			for _, m := range edge.gossip.Members() {
+				if m.Tags["BundleID"] == edge.bundleID && m.Tags["InstanceID"] != edge.instanceID {
+					nodeAddr := fmt.Sprintf("%s:%s", m.Addr.String(), m.Tags["RaftPort"])
+					err := edge.joinRaft(m.Tags["RaftNodeID"], nodeAddr)
+					if err != nil {
+						log.Info("Error On Join Raft",
+							zap.String("Addr", nodeAddr),
+							zap.Error(err),
+						)
+					}
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+func (edge *EdgeServer) runRaft() (err error) {
 	// Initialize LogStore for Raft
 	dirPath := filepath.Join(edge.dataPath, "raft")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
-	badgerOpt := badger.DefaultOptions(dirPath)
-	badgerStore, err := raftbadger.New(raftbadger.Options{
+	badgerOpt := badger.DefaultOptions(dirPath).WithLogger(nil)
+	edge.badgerStore, err = raftbadger.New(raftbadger.Options{
 		Path:                dirPath,
 		BadgerOptions:       &badgerOpt,
 		NoSync:              false,
@@ -315,14 +383,12 @@ func (edge *EdgeServer) runRaft() error {
 		GCThreshold:         0,
 	})
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return
 	}
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
-	raftConfig.LogLevel = "WARN"
-	raftConfig.LogOutput = ioutil.Discard
+	raftConfig.Logger = hclog.NewNullLogger()
 	raftConfig.LocalID = raft.ServerID(edge.GetServerID())
 	raftBind := fmt.Sprintf(":%d", edge.raftPort)
 	raftAdvertiseAddr, err := net.ResolveTCPAddr("tcp", raftBind)
@@ -340,7 +406,7 @@ func (edge *EdgeServer) runRaft() error {
 		return err
 	}
 
-	edge.raft, err = raft.NewRaft(raftConfig, edge, badgerStore, badgerStore, raftSnapshot, raftTransport)
+	edge.raft, err = raft.NewRaft(raftConfig, edge.raftFSM, edge.badgerStore, edge.badgerStore, raftSnapshot, raftTransport)
 	if err != nil {
 		return err
 	}
@@ -354,20 +420,108 @@ func (edge *EdgeServer) runRaft() error {
 				},
 			},
 		}
-		edge.raft.BootstrapCluster(bootConfig)
+		f := edge.raft.BootstrapCluster(bootConfig)
+		if err := f.Error(); err != nil {
+			log.Warn("Error On Raft Bootstrap", zap.Error(err))
+		}
 	}
 
 	return nil
 }
 
+func (edge *EdgeServer) Join(addr ...string) error {
+	if !edge.raftEnabled {
+		return errors.ErrRaftNotSet
+	}
+	_, err := edge.gossip.Join(addr, false)
+	return err
+}
+func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
+	if !edge.raftEnabled {
+		return errors.ErrRaftNotSet
+	}
+	futureConfig := edge.raft.GetConfiguration()
+	if err := futureConfig.Error(); err != nil {
+		return err
+	}
+
+	for _, srv := range futureConfig.Configuration().Servers {
+		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
+			return nil
+		}
+		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
+			future := edge.raft.RemoveServer(srv.ID, 0, 0)
+			if err := future.Error(); err != nil {
+				return err
+			}
+		}
+	}
+
+	future := edge.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
+	if err := future.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (edge *EdgeServer) Shutdown() {
+	// First shutdown gateway to not accept
 	edge.gateway.Shutdown()
+
 	if edge.raftEnabled {
+		err := edge.gossip.Shutdown()
+		if err != nil {
+			log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
+		}
+
+		sf := edge.raft.Snapshot()
+		if err := sf.Error(); err != nil {
+			log.Warn("Error On Shutdown (Raft Snapshot)", zap.Error(err))
+		}
 		f := edge.raft.Shutdown()
-		if f.Error() != nil {
-			log.Warn("Error On Shutdown", zap.Error(f.Error()))
+		if err := f.Error(); err != nil {
+			log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(err))
+		}
+
+		err = edge.badgerStore.Close()
+		if err != nil {
+			log.Warn("Error On Shutdown (Close Badger", zap.Error(err))
 		}
 	}
 
 	edge.gatewayProtocol = gateway.Undefined
+	log.Info("Server Shutdown!", zap.String("ID", edge.GetServerID()))
+}
+
+type EdgeStats struct {
+	Address         string
+	RaftMembers     int
+	RaftState       string
+	SerfMembers     int
+	SerfState       string
+	GatewayProtocol gateway.Protocol
+	GatewayAddr     string
+}
+
+func (edge *EdgeServer) Stats() EdgeStats {
+	if !edge.raftEnabled {
+		return EdgeStats{}
+	}
+
+	s := EdgeStats{
+		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalMember().Addr.String(), edge.gossip.LocalMember().Port),
+		RaftMembers:     0,
+		RaftState:       edge.raft.State().String(),
+		SerfMembers:     len(edge.gossip.Members()),
+		SerfState:       edge.gossip.State().String(),
+		GatewayProtocol: edge.gatewayProtocol,
+		GatewayAddr:     edge.gateway.Addr(),
+	}
+
+	f := edge.raft.GetConfiguration()
+	if f.Error() == nil {
+		s.RaftMembers = len(f.Configuration().Servers)
+	}
+
+	return s
 }

@@ -17,32 +17,11 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-func (edge EdgeServer) Join(nodeID, addr string) error {
-	futureConfig := edge.raft.GetConfiguration()
-	if err := futureConfig.Error(); err != nil {
-		return err
-	}
-
-	for _, srv := range futureConfig.Configuration().Servers {
-		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
-			return nil
-		}
-		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
-			future := edge.raft.RemoveServer(srv.ID, 0, 0)
-			if err := future.Error(); err != nil {
-				return err
-			}
-		}
-	}
-
-	future := edge.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
-	if err := future.Error(); err != nil {
-		return err
-	}
-	return nil
+type raftFSM struct {
+	edge *EdgeServer
 }
 
-func (edge EdgeServer) Apply(raftLog *raft.Log) interface{} {
+func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := pools.AcquireRaftCommand()
 	err := raftCmd.Unmarshal(raftLog.Data)
 	if err != nil {
@@ -50,23 +29,30 @@ func (edge EdgeServer) Apply(raftLog *raft.Log) interface{} {
 			zap.Int("Len", len(raftLog.Data)),
 			zap.Any("LogType", raftLog.Type),
 			zap.Uint64("Index", raftLog.Index),
-			zap.Uint64("Term", raftLog.Term), )
+			zap.Uint64("Term", raftLog.Term))
 	}
-	_ = edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
+	_ = fsm.edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
 	pools.ReleaseRaftCommand(raftCmd)
-
-	log.Info("Apply Log",
-		zap.Uint64("Index", raftLog.Index),
-		zap.Uint64("Term", raftLog.Term),
-	)
-
 	return nil
 }
 
-func (edge EdgeServer) Snapshot() (raft.FSMSnapshot, error) {
-	panic("implement me")
+func (fsm raftFSM) Snapshot() (raft.FSMSnapshot, error) {
+	return &snapshot{}, nil
 }
 
-func (edge EdgeServer) Restore(io.ReadCloser) error {
-	panic("implement me")
+func (fsm raftFSM) Restore(io.ReadCloser) error {
+	return nil
+}
+
+type snapshot struct{}
+
+func (s snapshot) Persist(sink raft.SnapshotSink) error {
+	_, err := sink.Write([]byte{})
+	if err != nil {
+		return err
+	}
+	return sink.Close()
+}
+
+func (s snapshot) Release() {
 }

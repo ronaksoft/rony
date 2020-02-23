@@ -1,6 +1,7 @@
 package rony
 
 import (
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"time"
 )
 
@@ -16,3 +17,7 @@ import (
 const (
 	raftApplyTimeout = time.Second * 3
 )
+
+func init() {
+	log.InitLogger(log.DefaultConfig)
+}

@@ -35,16 +35,16 @@ type Gateway struct {
 	gateway.FlushFunc
 
 	// Internal Controlling Params
-	listenAddress string
-	concurrency   int
-	maxBodySize   int
-	reqTimeout    time.Duration
+	listenOn    string
+	concurrency int
+	maxBodySize int
+	reqTimeout  time.Duration
 }
 
 // New
 func New(config Config) *Gateway {
 	g := new(Gateway)
-	g.listenAddress = config.ListenAddress
+	g.listenOn = config.ListenAddress
 	g.reqTimeout = config.RequestTimeout
 	g.concurrency = config.Concurrency
 	g.maxBodySize = config.MaxBodySize
@@ -64,7 +64,7 @@ func (g *Gateway) Run() {
 		DeferAccept: false,
 		Backlog:     8192,
 	}
-	listener, err := tcpConfig.NewListener("tcp4", g.listenAddress)
+	listener, err := tcpConfig.NewListener("tcp4", g.listenOn)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -138,3 +138,8 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 }
 
 func (g *Gateway) Shutdown() {}
+
+// Addr return the address which gateway is listen on
+func (g *Gateway) Addr() string {
+	return g.listenOn
+}

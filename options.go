@@ -34,6 +34,7 @@ func WithMessageDispatcher(h func(authID int64, envelope *msg.MessageEnvelope)) 
 
 func WithRaft(bindPort int, bootstrap bool) Option {
 	return func(edge *EdgeServer) {
+		edge.raftFSM = raftFSM{edge: edge}
 		edge.raftEnabled = true
 		edge.raftPort = bindPort
 		edge.raftBootstrap = bootstrap
@@ -103,5 +104,11 @@ func WithQuicGateway(config quicGateway.Config) Option {
 		edge.gatewayProtocol = gateway.QUIC
 		edge.gateway = gatewayQuic
 		return
+	}
+}
+
+func WithGossipPort(gossipPort int) Option {
+	return func(edge *EdgeServer) {
+		edge.gossipPort = gossipPort
 	}
 }

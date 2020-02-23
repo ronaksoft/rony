@@ -372,6 +372,11 @@ func (g *Gateway) Shutdown() {
 	log.Info("Write Pumpers all closed")
 }
 
+// Addr return the address which gateway is listen on
+func (g *Gateway) Addr() string {
+	return g.listener.Addr().String()
+}
+
 // GetConnection
 func (g *Gateway) GetConnection(connID uint64) *Conn {
 	g.connsMtx.RLock()

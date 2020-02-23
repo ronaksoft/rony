@@ -211,6 +211,13 @@ func (g *Gateway) Run() {
 
 }
 
+func (g *Gateway) Shutdown() {}
+
+// Addr return the address which gateway is listen on
+func (g *Gateway) Addr() string {
+	return g.listenOn
+}
+
 // GetConnection
 func (g *Gateway) GetConnection(connID uint64) *Conn {
 	g.connsMtx.RLock()
@@ -226,5 +233,3 @@ func (g *Gateway) GetConnection(connID uint64) *Conn {
 func (g *Gateway) TotalConnections() int32 {
 	return atomic.LoadInt32(&g.connsTotal)
 }
-
-func (g *Gateway) Shutdown() {}
