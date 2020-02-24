@@ -21,12 +21,9 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
-	github.com/nats-io/nats-server/v2 v2.1.2 // indirect
-	github.com/nats-io/nats.go v1.9.1
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible
-	github.com/scylladb/go-set v1.0.2
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
@@ -34,5 +31,4 @@ require (
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.13.0
 	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
-	google.golang.org/grpc v1.26.0
 )
