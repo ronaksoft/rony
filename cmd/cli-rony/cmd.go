@@ -209,7 +209,7 @@ var EchoCmd = &cobra.Command{
 			}
 			fmt.Println("Error:", res.Code, res.Items)
 		case msg.C_EchoResponse:
-			res:= msg.EchoResponse{}
+			res := msg.EchoResponse{}
 			err = res.Unmarshal(envelope.Message)
 			if err != nil {
 				fmt.Println(err)

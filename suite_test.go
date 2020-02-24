@@ -40,11 +40,11 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(conn gateway.Conn, authID int64, envelope *msg.UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *msg.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(conn gateway.Conn, authID int64, envelope *msg.MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *msg.MessageEnvelope) {
 	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
 	atomic.AddInt32(&receivedMessages, 1)
 }

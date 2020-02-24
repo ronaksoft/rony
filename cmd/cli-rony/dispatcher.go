@@ -10,11 +10,11 @@ import (
 
 type dispatcher struct{}
 
-func (d dispatcher) DispatchUpdate(conn gateway.Conn, authID int64, envelope *msg.UpdateEnvelope) {
+func (d dispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *msg.UpdateEnvelope) {
 
 }
 
-func (d dispatcher) DispatchMessage(conn gateway.Conn, authID int64, envelope *msg.MessageEnvelope) {
+func (d dispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *msg.MessageEnvelope) {
 	proto := pools.AcquireProtoMessage()
 	proto.AuthID = authID
 	proto.Payload, _ = envelope.Marshal()

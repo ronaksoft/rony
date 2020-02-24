@@ -38,10 +38,10 @@ type GetConstructorNameFunc func(constructor int64) string
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchUpdate(conn gateway.Conn, authID int64, envelope *msg.UpdateEnvelope)
+	DispatchUpdate(conn gateway.Conn, streamID int64, authID int64, envelope *msg.UpdateEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchMessage(conn gateway.Conn, authID int64, envelope *msg.MessageEnvelope)
+	DispatchMessage(conn gateway.Conn, streamID int64, authID int64, envelope *msg.MessageEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
@@ -107,7 +107,7 @@ func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 }
 
 // Execute apply the right handler on the req, the response will be pushed to the clients queue.
-func (edge *EdgeServer) Execute(conn gateway.Conn, authID int64, req *msg.MessageEnvelope) (err error) {
+func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
 			return errors.ErrNotRaftLeader
@@ -128,11 +128,11 @@ func (edge *EdgeServer) Execute(conn gateway.Conn, authID int64, req *msg.Messag
 			return
 		}
 	}
-	err = edge.execute(conn, authID, req)
+	err = edge.execute(conn, streamID, authID, req)
 	return
 }
 
-func (edge *EdgeServer) execute(conn gateway.Conn, authID int64, req *msg.MessageEnvelope) error {
+func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) error {
 	executeFunc := func(ctx *context.Context, req *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
 		startTime := time.Now()
@@ -141,7 +141,7 @@ func (edge *EdgeServer) execute(conn gateway.Conn, authID int64, req *msg.Messag
 		waitGroup.Add(2)
 		go func() {
 			for u := range ctx.UpdateChan {
-				edge.dispatcher.DispatchUpdate(conn, u.AuthID, u.Envelope)
+				edge.dispatcher.DispatchUpdate(conn, streamID, u.AuthID, u.Envelope)
 				log.Debug("Update Dispatched",
 					zap.Uint64("ConnID", conn.GetConnID()),
 					zap.Int64("AuthID", u.AuthID),
@@ -154,7 +154,7 @@ func (edge *EdgeServer) execute(conn gateway.Conn, authID int64, req *msg.Messag
 		}()
 		go func() {
 			for m := range ctx.MessageChan {
-				edge.dispatcher.DispatchMessage(conn, m.AuthID, m.Envelope)
+				edge.dispatcher.DispatchMessage(conn, streamID, m.AuthID, m.Envelope)
 				log.Debug("Message Dispatched",
 					zap.Uint64("ConnID", conn.GetConnID()),
 					zap.Int64("AuthID", m.AuthID),
@@ -272,20 +272,20 @@ func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte
 		return
 	}
 
-	err = edge.Execute(conn, authID, envelope)
+	err = edge.Execute(conn, streamID, authID, envelope)
 	switch err {
 	case errors.ErrNotRaftLeader:
-		edge.sendError(conn, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
+		edge.sendError(conn, streamID, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
 	default:
-		edge.sendError(conn, authID, errors.ErrCodeInternal, errors.ErrItemServer)
+		edge.sendError(conn, streamID, authID, errors.ErrCodeInternal, errors.ErrItemServer)
 	}
 	pools.ReleaseMessageEnvelope(envelope)
 }
 
-func (edge *EdgeServer) sendError(conn gateway.Conn, authID int64, code, item string) {
+func (edge *EdgeServer) sendError(conn gateway.Conn, streamID, authID int64, code, item string) {
 	envelope := pools.AcquireMessageEnvelope()
 	errors.NewError(code, item).ToMessageEnvelope(envelope)
-	edge.dispatcher.DispatchMessage(conn, authID, envelope)
+	edge.dispatcher.DispatchMessage(conn, streamID, authID, envelope)
 	pools.ReleaseMessageEnvelope(envelope)
 }
 
