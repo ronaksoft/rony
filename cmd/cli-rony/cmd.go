@@ -1,12 +1,20 @@
 package main
 
 import (
+	context2 "context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/msg"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 /*
@@ -21,9 +29,9 @@ import (
 var Edges map[string]*rony.EdgeServer
 
 func init() {
-	RootCmd.AddCommand(StartCmd, StopCmd, ListCmd, JoinCmd)
+	RootCmd.AddCommand(StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, DemoCmd)
 
-	RootCmd.PersistentFlags().String(FlagBundleID, "Test", "")
+	RootCmd.PersistentFlags().String(FlagBundleID, "First", "")
 	RootCmd.PersistentFlags().String(FlagInstanceID, "01", "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 801, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
@@ -40,7 +48,7 @@ var StartCmd = &cobra.Command{
 
 		serverID := fmt.Sprintf("%s.%s", bundleID, instanceID)
 		if _, ok := Edges[serverID]; !ok {
-			Edges[serverID] = rony.NewEdgeServer(bundleID, instanceID,
+			Edges[serverID] = rony.NewEdgeServer(bundleID, instanceID, &dispatcher{},
 				rony.WithWebsocketGateway(websocketGateway.Config{
 					NewConnectionWorkers: 1,
 					MaxConcurrency:       1,
@@ -51,6 +59,7 @@ var StartCmd = &cobra.Command{
 				rony.WithRaft(gossipPort*10, raftBootstrap),
 				rony.WithGossipPort(gossipPort),
 			)
+			Edges[serverID].AddHandler(msg.C_EchoRequest, EchoHandler)
 			err := Edges[serverID].Run()
 			if err != nil {
 				fmt.Println(err)
@@ -106,7 +115,7 @@ var JoinCmd = &cobra.Command{
 	Use: "join",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
-			fmt.Println("Needs Two ServerID")
+			fmt.Println("Needs Two ServerID, e.g. join First.01 First.02")
 			return
 		}
 		e1 := Edges[args[0]]
@@ -123,6 +132,117 @@ var JoinCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err)
 		}
+	},
+}
+
+var EchoCmd = &cobra.Command{
+	Use: "echo",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			fmt.Println("Needs ServerID, e.g. echo First.01")
+			return
+		}
+		e1 := Edges[args[0]]
+		if e1 == nil {
+			fmt.Println("Invalid Args")
+			return
+		}
+		gatewayAddr := e1.Stats().GatewayAddr
+		parts := strings.Split(gatewayAddr, ":")
+		if len(parts) != 2 {
+			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+			return
+		}
+		conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%s", parts[1]))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer conn.Close()
+		req := msg.PoolEchoRequest.Get()
+		defer msg.PoolEchoRequest.Put(req)
+		req.Int = tools.RandomInt64(0)
+		req.Bool = true
+		req.Timestamp = time.Now().UnixNano()
+		envelope := pools.AcquireMessageEnvelope()
+		defer pools.ReleaseMessageEnvelope(envelope)
+		envelope.RequestID = tools.RandomUint64()
+		envelope.Constructor = msg.C_EchoRequest
+		envelope.Message, _ = req.Marshal()
+		proto := pools.AcquireProtoMessage()
+		defer pools.ReleaseProtoMessage(proto)
+		proto.AuthID = 1000
+		proto.Payload, _ = envelope.Marshal()
+		bytes, _ := proto.Marshal()
+		err = wsutil.WriteClientBinary(conn, bytes)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("Sent:", proto.AuthID, envelope.RequestID, msg.ConstructorNames[envelope.Constructor])
+
+		conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+		resBytes, err := wsutil.ReadServerBinary(conn)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = proto.Unmarshal(resBytes)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = envelope.Unmarshal(proto.Payload)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println("Received:", proto.AuthID, envelope.RequestID, msg.ConstructorNames[envelope.Constructor])
+		switch envelope.Constructor {
+		case msg.C_Error:
+			res := msg.Error{}
+			err = res.Unmarshal(envelope.Message)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			fmt.Println("Error:", res.Code, res.Items)
+		case msg.C_EchoResponse:
+			res:= msg.EchoResponse{}
+			err = res.Unmarshal(envelope.Message)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			if res.Bool != req.Bool || res.Int != req.Int {
+				fmt.Println("ERROR!!! In Response")
+			}
+			fmt.Println("Delay:", time.Duration(res.Delay))
+		}
+	},
+}
+
+var DemoCmd = &cobra.Command{
+	Use: "demo",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		go func() {
+			StartCmd.SetArgs([]string{"--instanceID", "01", "--port", "801", "--bootstrap"})
+			_ = StartCmd.Execute()
+			StartCmd.SetArgs([]string{"--instanceID", "02", "--port", "802"})
+			_ = StartCmd.Execute()
+			StartCmd.SetArgs([]string{"--instanceID", "03", "--port", "803"})
+			_ = StartCmd.Execute()
+			JoinCmd.SetArgs([]string{"First.01", "First.02"})
+			_ = JoinCmd.Execute()
+			JoinCmd.SetArgs([]string{"First.01", "First.03"})
+			_ = JoinCmd.Execute()
+
+			time.Sleep(time.Second * 2)
+			_ = ListCmd.Execute()
+			fmt.Println("READY!")
+		}()
 	},
 }
 

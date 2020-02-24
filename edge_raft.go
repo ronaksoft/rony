@@ -31,7 +31,6 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 			zap.Uint64("Index", raftLog.Index),
 			zap.Uint64("Term", raftLog.Term))
 	}
-	_ = fsm.edge.execute(raftCmd.AuthID, raftCmd.UserID, raftCmd.Envelope)
 	pools.ReleaseRaftCommand(raftCmd)
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"git.ronaksoftware.com/ronak/rony/msg"
 	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v2"
@@ -36,16 +35,28 @@ import (
 type Handler func(ctx *context.Context, in *msg.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
+type Dispatcher interface {
+	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
+	// async functions, make sure to hard copy (clone) it before sending it.
+	DispatchUpdate(conn gateway.Conn, authID int64, envelope *msg.UpdateEnvelope)
+	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
+	// async functions, make sure to hard copy (clone) it before sending it.
+	DispatchMessage(conn gateway.Conn, authID int64, envelope *msg.MessageEnvelope)
+	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
+	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
+	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
+	DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *msg.MessageEnvelope) (authID int64, err error)
+}
+
 // EdgeServer
 type EdgeServer struct {
 	// General
-	bundleID          string
-	instanceID        string
-	dataPath          string
-	gatewayProtocol   gateway.Protocol
-	gateway           gateway.Gateway
-	updateDispatcher  func(authID int64, envelope *msg.UpdateEnvelope)
-	messageDispatcher func(authID int64, envelope *msg.MessageEnvelope)
+	bundleID        string
+	instanceID      string
+	dataPath        string
+	gatewayProtocol gateway.Protocol
+	gateway         gateway.Gateway
+	dispatcher      Dispatcher
 
 	// Handlers
 	preHandlers        []Handler
@@ -64,27 +75,14 @@ type EdgeServer struct {
 	badgerStore   *raftbadger.BadgerStore
 }
 
-func NewEdgeServer(bundleID, instanceID string, opts ...Option) *EdgeServer {
+func NewEdgeServer(bundleID, instanceID string, dispatcher Dispatcher, opts ...Option) *EdgeServer {
 	edgeServer := &EdgeServer{
 		handlers:   make(map[int64][]Handler),
 		bundleID:   bundleID,
 		instanceID: instanceID,
+		dispatcher: dispatcher,
 		getConstructorName: func(constructor int64) string {
 			return fmt.Sprintf("%d", constructor)
-		},
-		updateDispatcher: func(authID int64, envelope *msg.UpdateEnvelope) {
-			log.Debug("Update Dispatched",
-				zap.Int64("AuthID", authID),
-				zap.Int64("UpdateID", envelope.UpdateID),
-				zap.Int64("C", envelope.Constructor),
-			)
-		},
-		messageDispatcher: func(authID int64, envelope *msg.MessageEnvelope) {
-			log.Debug("Message Dispatched",
-				zap.Int64("AuthID", authID),
-				zap.Uint64("UpdateID", envelope.RequestID),
-				zap.Int64("C", envelope.Constructor),
-			)
 		},
 		dataPath:      ".",
 		raftEnabled:   false,
@@ -109,14 +107,13 @@ func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 }
 
 // Execute apply the right handler on the req, the response will be pushed to the clients queue.
-func (edge *EdgeServer) Execute(authID, userID int64, req *msg.MessageEnvelope) (err error) {
+func (edge *EdgeServer) Execute(conn gateway.Conn, authID int64, req *msg.MessageEnvelope) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
 			return errors.ErrNotRaftLeader
 		}
 		raftCmd := pools.AcquireRaftCommand()
 		raftCmd.AuthID = authID
-		raftCmd.UserID = userID
 		raftCmd.Envelope = req
 		raftCmdBytes := pbytes.GetLen(raftCmd.Size())
 		_, err = raftCmd.MarshalTo(raftCmdBytes)
@@ -124,16 +121,18 @@ func (edge *EdgeServer) Execute(authID, userID int64, req *msg.MessageEnvelope) 
 			return
 		}
 		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
-		err = f.Error()
 		pbytes.Put(raftCmdBytes)
 		pools.ReleaseRaftCommand(raftCmd)
-	} else {
-		err = edge.execute(authID, userID, req)
+		err = f.Error()
+		if err != nil {
+			return
+		}
 	}
+	err = edge.execute(conn, authID, req)
 	return
 }
 
-func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) error {
+func (edge *EdgeServer) execute(conn gateway.Conn, authID int64, req *msg.MessageEnvelope) error {
 	executeFunc := func(ctx *context.Context, req *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
 		startTime := time.Now()
@@ -142,14 +141,26 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 		waitGroup.Add(2)
 		go func() {
 			for u := range ctx.UpdateChan {
-				edge.updateDispatcher(u.AuthID, u.Envelope)
+				edge.dispatcher.DispatchUpdate(conn, u.AuthID, u.Envelope)
+				log.Debug("Update Dispatched",
+					zap.Uint64("ConnID", conn.GetConnID()),
+					zap.Int64("AuthID", u.AuthID),
+					zap.Int64("UpdateID", u.Envelope.UpdateID),
+					zap.String("C", edge.getConstructorName(u.Envelope.Constructor)),
+				)
 				pools.ReleaseUpdateEnvelope(u.Envelope)
 			}
 			waitGroup.Done()
 		}()
 		go func() {
 			for m := range ctx.MessageChan {
-				edge.messageDispatcher(m.AuthID, m.Envelope)
+				edge.dispatcher.DispatchMessage(conn, m.AuthID, m.Envelope)
+				log.Debug("Message Dispatched",
+					zap.Uint64("ConnID", conn.GetConnID()),
+					zap.Int64("AuthID", m.AuthID),
+					zap.Uint64("RequestID", m.Envelope.RequestID),
+					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
+				)
 				pools.ReleaseMessageEnvelope(m.Envelope)
 			}
 			waitGroup.Done()
@@ -196,8 +207,8 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 			ctx.StopExecution()
 		}
 		waitGroup.Wait()
+		pools.ReleaseWaitGroup(waitGroup)
 		duration := time.Now().Sub(startTime)
-
 		if ce := log.Check(log.InfoLevel, "Execute (Finished)"); ce != nil {
 			ce.Write(
 				zap.Uint64("RequestID", req.RequestID),
@@ -205,7 +216,6 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 				zap.Duration("T", duration),
 			)
 		}
-
 		return
 	}
 	switch req.Constructor {
@@ -218,7 +228,7 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 		xLen := len(x.Envelopes)
 		waitGroup := pools.AcquireWaitGroup()
 		for i := 0; i < xLen; i++ {
-			ctx := context.Acquire(authID, userID, true, false)
+			ctx := context.Acquire(conn.GetConnID(), authID, true, false)
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *context.Context, idx int) {
@@ -236,7 +246,7 @@ func (edge *EdgeServer) execute(authID, userID int64, req *msg.MessageEnvelope) 
 		waitGroup.Wait()
 		pools.ReleaseWaitGroup(waitGroup)
 	default:
-		ctx := context.Acquire(authID, userID, false, false)
+		ctx := context.Acquire(conn.GetConnID(), authID, false, false)
 		executeFunc(ctx, req)
 		context.Release(ctx)
 	}
@@ -247,7 +257,7 @@ func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
 			zap.String("ServerID", edge.GetServerID()),
-			zap.Int64("UserID", ctx.UserID),
+			zap.Uint64("ConnID", ctx.ConnID),
 			zap.Int64("AuthID", ctx.AuthID),
 			zap.ByteString("Stack", debug.Stack()),
 		)
@@ -255,27 +265,27 @@ func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 }
 
 func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte) {
-	authID := tools.RandomInt64(0)
-	userID := tools.RandomInt64(0)
 	envelope := pools.AcquireMessageEnvelope()
-	_ = envelope.Unmarshal(data)
-	err := edge.Execute(authID, userID, envelope)
+	authID, err := edge.dispatcher.DispatchRequest(conn, streamID, data, envelope)
 	if err != nil {
-		log.Warn("Error OnMessage (Execute)", zap.Error(err))
-		envelope := pools.AcquireMessageEnvelope()
-		apiErr := errors.NewError(errors.ErrCodeInvalid, errors.ErrItemApi)
-		apiErr.ToMessageEnvelope(envelope)
-		envelopeBytes := pbytes.GetLen(envelope.Size())
-		_, err = envelope.MarshalTo(envelopeBytes)
-		if err != nil {
-			log.Warn("Error OnMessage (Marshal)", zap.Error(err))
-		}
-		err = conn.SendBinary(streamID, envelopeBytes)
-		if err != nil {
-			log.Warn("Error OnMessage (SendBinary)", zap.Error(err))
-		}
 		pools.ReleaseMessageEnvelope(envelope)
+		return
 	}
+
+	err = edge.Execute(conn, authID, envelope)
+	switch err {
+	case errors.ErrNotRaftLeader:
+		edge.sendError(conn, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
+	default:
+		edge.sendError(conn, authID, errors.ErrCodeInternal, errors.ErrItemServer)
+	}
+	pools.ReleaseMessageEnvelope(envelope)
+}
+
+func (edge *EdgeServer) sendError(conn gateway.Conn, authID int64, code, item string) {
+	envelope := pools.AcquireMessageEnvelope()
+	errors.NewError(code, item).ToMessageEnvelope(envelope)
+	edge.dispatcher.DispatchMessage(conn, authID, envelope)
 	pools.ReleaseMessageEnvelope(envelope)
 }
 

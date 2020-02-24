@@ -6,7 +6,6 @@ import (
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
-	"git.ronaksoftware.com/ronak/rony/msg"
 )
 
 /*
@@ -19,18 +18,6 @@ import (
 */
 
 type Option func(edge *EdgeServer)
-
-func WithUpdateDispatcher(h func(authID int64, envelope *msg.UpdateEnvelope)) Option {
-	return func(edge *EdgeServer) {
-		edge.updateDispatcher = h
-	}
-}
-
-func WithMessageDispatcher(h func(authID int64, envelope *msg.MessageEnvelope)) Option {
-	return func(edge *EdgeServer) {
-		edge.messageDispatcher = h
-	}
-}
 
 func WithRaft(bindPort int, bootstrap bool) Option {
 	return func(edge *EdgeServer) {

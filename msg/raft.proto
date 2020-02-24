@@ -24,7 +24,7 @@ enum Command {
 
 // RaftCommand
 message RaftCommand {
-    required int64 AuthID = 1;
-    required int64 UserID = 2;
+    required uint64 ConnID = 1;
+    required int64 AuthID = 2;
     required MessageEnvelope Envelope = 3;
 }

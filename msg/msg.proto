@@ -1,27 +1,7 @@
 syntax = "proto2";
 package msg;
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-// Enable custom Marshal method.
-option (gogoproto.marshaler_all) = true;
-// Enable custom Unmarshal method.
-option (gogoproto.unmarshaler_all) = true;
-// Enable custom Size method (Required by Marshal and Unmarshal).
-option (gogoproto.sizer_all) = true;
-
-service Edge {
-    rpc ServeRequest (stream ProtoMessage) returns (stream ProtoMessage) {}
-}
-
-
-// ProtoMessage
-// If AuthID == 0 then Payload is a MessageEnvelop otherwise Payload is a ProtoEncryptedPayload
-message ProtoMessage {
-    optional int64 AuthID = 1;
-    optional bytes MessageKey = 2; // 32 bytes
-    required bytes Payload = 3;
-}
 
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
@@ -38,14 +18,6 @@ message UpdateEnvelope {
     required int32 UCount = 3;
     required int64 UpdateID = 4;
     required int64 Timestamp = 5;
-}
-
-// ProtoMessageEncryptedPayload
-message ProtoEncryptedPayload {
-    required int64 ServerSalt = 1;
-    required uint64 MessageID = 2;
-    required int64 SessionID = 3;
-    required MessageEnvelope Envelope = 4;
 }
 
 

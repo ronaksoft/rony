@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/context"
+	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
@@ -35,6 +36,33 @@ var (
 	receivedMessages int32
 	receivedUpdates  int32
 )
+
+type testDispatcher struct {
+}
+
+func (t testDispatcher) DispatchUpdate(conn gateway.Conn, authID int64, envelope *msg.UpdateEnvelope) {
+	atomic.AddInt32(&receivedUpdates, 1)
+}
+
+func (t testDispatcher) DispatchMessage(conn gateway.Conn, authID int64, envelope *msg.MessageEnvelope) {
+	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
+	atomic.AddInt32(&receivedMessages, 1)
+}
+
+func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *msg.MessageEnvelope) (authID int64, err error) {
+	proto := pools.AcquireProtoMessage()
+	err = proto.Unmarshal(data)
+	if err != nil {
+		return
+	}
+	err = envelope.Unmarshal(proto.Payload)
+	if err != nil {
+		return
+	}
+	authID = proto.AuthID
+	pools.ReleaseProtoMessage(proto)
+	return
+}
 
 func initHandlers(edge *rony.EdgeServer) {
 	edge.AddHandler(100, func(ctx *context.Context, in *msg.MessageEnvelope) {
@@ -75,15 +103,8 @@ func initEdgeServer(bundleID, instanceID string, clientPort int, opts ...rony.Op
 			MaxIdleTime:          0,
 			ListenAddress:        fmt.Sprintf(":%d", clientPort),
 		}),
-		rony.WithMessageDispatcher(func(authID int64, envelope *msg.MessageEnvelope) {
-			log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
-			atomic.AddInt32(&receivedMessages, 1)
-		}),
-		rony.WithUpdateDispatcher(func(authID int64, envelope *msg.UpdateEnvelope) {
-			atomic.AddInt32(&receivedUpdates, 1)
-		}),
 	)
-	edge := rony.NewEdgeServer(bundleID, instanceID, opts...)
+	edge := rony.NewEdgeServer(bundleID, instanceID, &testDispatcher{}, opts...)
 	initHandlers(edge)
 
 	return edge
@@ -105,15 +126,17 @@ func TestEdgeServerSimple(t *testing.T) {
 		time.Sleep(time.Second)
 		conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		c.So(err, ShouldBeNil)
-		for i := 0; i < 10; i++ {
+		for i := int64(1); i <= 10; i++ {
 			req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}
-			reqBytes, _ := req.Marshal()
-			msgIn := pools.AcquireMessageEnvelope()
-			msgIn.RequestID = tools.RandomUint64()
-			msgIn.Constructor = 101
-			msgIn.Message = reqBytes
-			msgInBytes, _ := msgIn.Marshal()
-			err = wsutil.WriteClientBinary(conn, msgInBytes)
+			envelope := pools.AcquireMessageEnvelope()
+			envelope.RequestID = tools.RandomUint64()
+			envelope.Constructor = 101
+			envelope.Message, _ = req.Marshal()
+			proto := pools.AcquireProtoMessage()
+			proto.AuthID = i
+			proto.Payload, _ = envelope.Marshal()
+			bytes, _ := proto.Marshal()
+			err = wsutil.WriteClientBinary(conn, bytes)
 			c.So(err, ShouldBeNil)
 		}
 		edge.Shutdown()

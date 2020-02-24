@@ -17,6 +17,9 @@ func main() {
 }
 
 func executor(s string) {
+	if strings.TrimSpace(s) == "" {
+		return
+	}
 	RootCmd.SetArgs(strings.Fields(s))
 	_ = RootCmd.Execute()
 }

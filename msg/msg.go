@@ -9,15 +9,11 @@ package msg
    Copyright Ronak Software Group 2018
 */
 
-//go:generate protoc -I=../vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto raft.proto
-//go:generate protoc -I=../vendor -I=. --gohelpers_out=. msg.proto raft.proto
+//go:generate protoc -I=../vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto raft.proto dev.proto
+//go:generate protoc -I=../vendor -I=. --gohelpers_out=. msg.proto raft.proto dev.proto
 var (
-	ConstructorNames map[int64]string
+	ConstructorNames = map[int64]string{}
 )
-
-func init() {
-	ConstructorNames = make(map[int64]string)
-}
 
 func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
 	errMessage := PoolError.Get()

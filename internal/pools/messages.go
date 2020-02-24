@@ -22,14 +22,13 @@ func AcquireMessageEnvelope() *msg.MessageEnvelope {
 	if v == nil {
 		return &msg.MessageEnvelope{}
 	}
-	x := v.(*msg.MessageEnvelope)
-	x.Message = x.Message[:0]
-	x.Constructor = 0
-	x.RequestID = 0
-	return x
+	return v.(*msg.MessageEnvelope)
 }
 
 func ReleaseMessageEnvelope(x *msg.MessageEnvelope) {
+	x.Message = x.Message[:0]
+	x.Constructor = 0
+	x.RequestID = 0
 	messageEnvelopePool.Put(x)
 }
 
@@ -41,16 +40,15 @@ func AcquireUpdateEnvelope() *msg.UpdateEnvelope {
 	if v == nil {
 		return &msg.UpdateEnvelope{}
 	}
-	x := v.(*msg.UpdateEnvelope)
+	return v.(*msg.UpdateEnvelope)
+}
+
+func ReleaseUpdateEnvelope(x *msg.UpdateEnvelope) {
 	x.Update = x.Update[:0]
 	x.UpdateID = 0
 	x.UCount = 0
 	x.Timestamp = 0
 	x.Constructor = 0
-	return x
-}
-
-func ReleaseUpdateEnvelope(x *msg.UpdateEnvelope) {
 	updateEnvelopePool.Put(x)
 }
 
@@ -62,14 +60,13 @@ func AcquireProtoMessage() *msg.ProtoMessage {
 	if v == nil {
 		return &msg.ProtoMessage{}
 	}
-	x := v.(*msg.ProtoMessage)
-	x.AuthID = 0
-	x.Payload = x.Payload[:0]
-	x.MessageKey = x.MessageKey[:0]
-	return x
+	return v.(*msg.ProtoMessage)
 }
 
 func ReleaseProtoMessage(x *msg.ProtoMessage) {
+	x.AuthID = 0
+	x.Payload = x.Payload[:0]
+	x.MessageKey = x.MessageKey[:0]
 	protoMessagePool.Put(x)
 }
 
@@ -80,13 +77,12 @@ func AcquireRaftCommand() *msg.RaftCommand {
 	if v == nil {
 		return &msg.RaftCommand{}
 	}
-	x := v.(*msg.RaftCommand)
-	x.AuthID = 0
-	x.UserID = 0
-	x.Envelope = nil
-	return x
+	return v.(*msg.RaftCommand)
 }
 
 func ReleaseRaftCommand(x *msg.RaftCommand) {
+	x.ConnID = 0
+	x.AuthID = 0
+	x.Envelope = nil
 	raftCommandPool.Put(x)
 }

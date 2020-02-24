@@ -6,7 +6,6 @@ package msg
 import (
 	fmt "fmt"
 	pbytes "github.com/gobwas/pool/pbytes"
-	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 	sync "sync"
@@ -16,35 +15,6 @@ import (
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-const C_ProtoMessage int64 = 2179260159
-
-type poolProtoMessage struct {
-	pool sync.Pool
-}
-
-func (p *poolProtoMessage) Get() *ProtoMessage {
-	x, ok := p.pool.Get().(*ProtoMessage)
-	if !ok {
-		return &ProtoMessage{}
-	}
-	x.AuthID = 0
-	x.MessageKey = nil
-	return x
-}
-
-func (p *poolProtoMessage) Put(x *ProtoMessage) {
-	p.pool.Put(x)
-}
-
-var PoolProtoMessage = poolProtoMessage{}
-
-func ResultProtoMessage(out *MessageEnvelope, res *ProtoMessage) {
-	out.Constructor = C_ProtoMessage
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 const C_MessageEnvelope int64 = 535232465
 
@@ -95,33 +65,6 @@ var PoolUpdateEnvelope = poolUpdateEnvelope{}
 
 func ResultUpdateEnvelope(out *MessageEnvelope, res *UpdateEnvelope) {
 	out.Constructor = C_UpdateEnvelope
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
-const C_ProtoEncryptedPayload int64 = 2668405547
-
-type poolProtoEncryptedPayload struct {
-	pool sync.Pool
-}
-
-func (p *poolProtoEncryptedPayload) Get() *ProtoEncryptedPayload {
-	x, ok := p.pool.Get().(*ProtoEncryptedPayload)
-	if !ok {
-		return &ProtoEncryptedPayload{}
-	}
-	return x
-}
-
-func (p *poolProtoEncryptedPayload) Put(x *ProtoEncryptedPayload) {
-	p.pool.Put(x)
-}
-
-var PoolProtoEncryptedPayload = poolProtoEncryptedPayload{}
-
-func ResultProtoEncryptedPayload(out *MessageEnvelope, res *ProtoEncryptedPayload) {
-	out.Constructor = C_ProtoEncryptedPayload
 	pbytes.Put(out.Message)
 	out.Message = pbytes.GetLen(res.Size())
 	res.MarshalTo(out.Message)
@@ -183,10 +126,8 @@ func ResultError(out *MessageEnvelope, res *Error) {
 }
 
 func init() {
-	ConstructorNames[2179260159] = "ProtoMessage"
 	ConstructorNames[535232465] = "MessageEnvelope"
 	ConstructorNames[2373884514] = "UpdateEnvelope"
-	ConstructorNames[2668405547] = "ProtoEncryptedPayload"
 	ConstructorNames[1972016308] = "MessageContainer"
 	ConstructorNames[2619118453] = "Error"
 }

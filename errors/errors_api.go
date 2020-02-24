@@ -53,9 +53,13 @@ const (
 	ErrCodeOutOfRange       = "E10"
 	ErrCodePartiallyApplied = "E11"
 	ErrCodeExpired          = "E12"
+	ErrCodeNotImplemented   = "E13"
 )
 
 // Error Items
 const (
-	ErrItemApi = "API"
+	ErrItemServer     = "SERVER"
+	ErrItemRaftLeader = "RAFT_LEADER"
+	ErrItemHandler    = "HANDLER"
+	ErrItemRequest    = "REQUEST"
 )
