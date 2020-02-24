@@ -20,7 +20,7 @@ func (d dispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, e
 	proto.Payload, _ = envelope.Marshal()
 	protoBytes := pbytes.GetLen(proto.Size())
 	_, _ = proto.MarshalTo(protoBytes)
-	err := conn.SendBinary(0, protoBytes)
+	err := conn.SendBinary(streamID, protoBytes)
 	if err != nil {
 		fmt.Println("Error On SendBinary", err)
 	}

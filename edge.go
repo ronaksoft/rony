@@ -121,9 +121,9 @@ func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *
 			return
 		}
 		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
+		err = f.Error()
 		pbytes.Put(raftCmdBytes)
 		pools.ReleaseRaftCommand(raftCmd)
-		err = f.Error()
 		if err != nil {
 			return
 		}
@@ -133,7 +133,7 @@ func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *
 }
 
 func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) error {
-	executeFunc := func(ctx *context.Context, req *msg.MessageEnvelope) {
+	executeFunc := func(ctx *context.Context, in *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
 		startTime := time.Now()
 
@@ -142,12 +142,15 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		go func() {
 			for u := range ctx.UpdateChan {
 				edge.dispatcher.DispatchUpdate(conn, streamID, u.AuthID, u.Envelope)
-				log.Debug("Update Dispatched",
-					zap.Uint64("ConnID", conn.GetConnID()),
-					zap.Int64("AuthID", u.AuthID),
-					zap.Int64("UpdateID", u.Envelope.UpdateID),
-					zap.String("C", edge.getConstructorName(u.Envelope.Constructor)),
-				)
+				if ce := log.Check(log.DebugLevel, "Update Dispatched"); ce != nil {
+					ce.Write(
+						zap.Uint64("ConnID", conn.GetConnID()),
+						zap.Int64("AuthID", u.AuthID),
+						zap.Int64("UpdateID", u.Envelope.UpdateID),
+						zap.String("C", edge.getConstructorName(u.Envelope.Constructor)),
+					)
+				}
+
 				pools.ReleaseUpdateEnvelope(u.Envelope)
 			}
 			waitGroup.Done()
@@ -155,12 +158,14 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		go func() {
 			for m := range ctx.MessageChan {
 				edge.dispatcher.DispatchMessage(conn, streamID, m.AuthID, m.Envelope)
-				log.Debug("Message Dispatched",
-					zap.Uint64("ConnID", conn.GetConnID()),
-					zap.Int64("AuthID", m.AuthID),
-					zap.Uint64("RequestID", m.Envelope.RequestID),
-					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
-				)
+				if ce := log.Check(log.DebugLevel, "Message Dispatched"); ce != nil {
+					ce.Write(
+						zap.Uint64("ConnID", conn.GetConnID()),
+						zap.Int64("AuthID", m.AuthID),
+						zap.Uint64("RequestID", m.Envelope.RequestID),
+						zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
+					)
+				}
 				pools.ReleaseMessageEnvelope(m.Envelope)
 			}
 			waitGroup.Done()
@@ -168,28 +173,27 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 
 		if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
 			ce.Write(
-				zap.String("Constructor", edge.getConstructorName(req.Constructor)),
-				zap.Uint64("RequestID", req.RequestID),
+				zap.String("Constructor", edge.getConstructorName(in.Constructor)),
+				zap.Uint64("RequestID", in.RequestID),
 				zap.Int64("AuthID", ctx.AuthID),
 			)
 		}
-		handlers, ok := edge.handlers[req.Constructor]
+		handlers, ok := edge.handlers[in.Constructor]
 		if !ok {
-			// TODO:: fix this
-			// ctx.PushError(res, errors.ErrCodeInvalid, errors.ErrItemApi)
+			ctx.PushError(in.RequestID, errors.ErrCodeInvalid, errors.ErrItemHandler)
 			return
 		}
 
 		// Run the handler
 		for idx := range edge.preHandlers {
-			edge.preHandlers[idx](ctx, req)
+			edge.preHandlers[idx](ctx, in)
 			if ctx.Stop {
 				break
 			}
 		}
 		if !ctx.Stop {
 			for idx := range handlers {
-				handlers[idx](ctx, req)
+				handlers[idx](ctx, in)
 				if ctx.Stop {
 					break
 				}
@@ -197,7 +201,7 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		}
 		if !ctx.Stop {
 			for idx := range edge.postHandlers {
-				edge.postHandlers[idx](ctx, req)
+				edge.postHandlers[idx](ctx, in)
 				if ctx.Stop {
 					break
 				}
@@ -208,14 +212,16 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		}
 		waitGroup.Wait()
 		pools.ReleaseWaitGroup(waitGroup)
+
 		duration := time.Now().Sub(startTime)
-		if ce := log.Check(log.InfoLevel, "Execute (Finished)"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 			ce.Write(
-				zap.Uint64("RequestID", req.RequestID),
+				zap.Uint64("RequestID", in.RequestID),
 				zap.Int64("AuthID", ctx.AuthID),
 				zap.Duration("T", duration),
 			)
 		}
+
 		return
 	}
 	switch req.Constructor {
@@ -268,16 +274,19 @@ func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte
 	envelope := pools.AcquireMessageEnvelope()
 	authID, err := edge.dispatcher.DispatchRequest(conn, streamID, data, envelope)
 	if err != nil {
-		pools.ReleaseMessageEnvelope(envelope)
+		// pools.ReleaseMessageEnvelope(envelope)
 		return
 	}
 
 	err = edge.Execute(conn, streamID, authID, envelope)
 	switch err {
+	case nil:
 	case errors.ErrNotRaftLeader:
 		edge.sendError(conn, streamID, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
 	default:
+		log.Warn("Error On Execute", zap.Error(err))
 		edge.sendError(conn, streamID, authID, errors.ErrCodeInternal, errors.ErrItemServer)
+
 	}
 	pools.ReleaseMessageEnvelope(envelope)
 }
@@ -314,7 +323,6 @@ func (edge *EdgeServer) Run() (err error) {
 		if err != nil {
 			return
 		}
-		time.Sleep(time.Second * 5)
 		err = edge.runGossip()
 		if err != nil {
 			return
