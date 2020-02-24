@@ -67,8 +67,8 @@ func New(config Config) (*Gateway, error) {
 	g.newConnWorkers = config.NewConnectionWorkers
 	g.maxConcurrency = config.MaxConcurrency
 	g.conns = make(map[uint64]*Conn, 100000)
-	g.connsInQ = make(chan *Conn, 100)
-	g.connsOutQ = make(chan writeRequest, 100)
+	g.connsInQ = make(chan *Conn, config.MaxConcurrency)
+	g.connsOutQ = make(chan writeRequest, config.MaxConcurrency)
 	g.waitGroupWriters = &sync.WaitGroup{}
 	g.waitGroupReaders = &sync.WaitGroup{}
 	g.waitGroupAcceptors = &sync.WaitGroup{}
@@ -126,6 +126,7 @@ func (g *Gateway) connectionAcceptor() {
 		}
 		conn, err := g.listener.Accept()
 		if err != nil {
+			log.Warn("Error On Accept", zap.Error(err))
 			continue
 		}
 

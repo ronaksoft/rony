@@ -56,7 +56,7 @@ func startFunc(bundleID, instanceID string, port int, bootstrap bool) {
 		Edges[serverID] = rony.NewEdgeServer(bundleID, instanceID, &dispatcher{},
 			rony.WithWebsocketGateway(websocketGateway.Config{
 				NewConnectionWorkers: 10,
-				MaxConcurrency:       1000,
+				MaxConcurrency:       4000,
 				MaxIdleTime:          0,
 				ListenAddress:        "0.0.0.0:0",
 			}),
@@ -265,20 +265,27 @@ var BenchCmd = &cobra.Command{
 				benchRoutine(i*1000, int(count), parts[1])
 				waitGroup.Done()
 			}(i)
+			time.Sleep(time.Millisecond)
 		}
 		waitGroup.Wait()
 		pools.ReleaseWaitGroup(waitGroup)
 		d := time.Now().Sub(startTime)
 		t := count * count
+		if count > 50 {
+			t = count * 50
+		}
 		fmt.Println("Total Time:", d, ", ", t)
 		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
 	},
 }
 
 func benchRoutine(authID int64, count int, port string) {
+	if count > 50 {
+		count = 50
+	}
 	conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%s", port))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(authID, "Connect", err)
 		return
 	}
 	defer conn.Close()
@@ -301,14 +308,14 @@ func benchRoutine(authID int64, count int, port string) {
 		bytes, _ := proto.Marshal()
 		err = wsutil.WriteClientBinary(conn, bytes)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(authID, "Write:", err)
 			return
 		}
 
 		_ = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 		resBytes, err := wsutil.ReadServerBinary(conn)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(authID, "Read", err)
 			return
 		}
 		err = proto.Unmarshal(resBytes)
