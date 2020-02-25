@@ -120,7 +120,9 @@ func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int6
 	envelope := pools.AcquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
-	envelope.Message, _ = proto.Marshal()
+	pbytes.Put(envelope.Message)
+	envelope.Message = pbytes.GetLen(proto.Size())
+	_, _ = proto.MarshalTo(envelope.Message)
 	ctx.MessageChan <- &messageDispatch{
 		AuthID:   authID,
 		Envelope: envelope,

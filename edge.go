@@ -35,6 +35,7 @@ import (
 type Handler func(ctx *context.Context, in *msg.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
+// Dispatcher
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
@@ -72,6 +73,7 @@ type EdgeServer struct {
 	raft          *raft.Raft
 	gossipPort    int
 	gossip        *serf.Serf
+	cluster       Cluster
 	badgerStore   *raftbadger.BadgerStore
 }
 
@@ -131,7 +133,6 @@ func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *
 	err = edge.execute(conn, streamID, authID, req)
 	return
 }
-
 func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) error {
 	executeFunc := func(ctx *context.Context, in *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
@@ -258,7 +259,6 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 	}
 	return nil
 }
-
 func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
@@ -277,36 +277,35 @@ func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte
 		// pools.ReleaseMessageEnvelope(envelope)
 		return
 	}
-
+	startTime := time.Now()
 	err = edge.Execute(conn, streamID, authID, envelope)
+	if ce := log.Check(log.DebugLevel, "Execute Time"); ce != nil {
+		ce.Write(zap.Duration("D", time.Now().Sub(startTime)))
+	}
 	switch err {
 	case nil:
 	case errors.ErrNotRaftLeader:
-		edge.sendError(conn, streamID, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
+		edge.onError(conn, streamID, authID, errors.ErrCodeUnavailable, errors.ErrItemRaftLeader)
 	default:
 		log.Warn("Error On Execute", zap.Error(err))
-		edge.sendError(conn, streamID, authID, errors.ErrCodeInternal, errors.ErrItemServer)
+		edge.onError(conn, streamID, authID, errors.ErrCodeInternal, errors.ErrItemServer)
 
 	}
 	pools.ReleaseMessageEnvelope(envelope)
 }
-
-func (edge *EdgeServer) sendError(conn gateway.Conn, streamID, authID int64, code, item string) {
+func (edge *EdgeServer) onError(conn gateway.Conn, streamID, authID int64, code, item string) {
 	envelope := pools.AcquireMessageEnvelope()
 	errors.NewError(code, item).ToMessageEnvelope(envelope)
 	edge.dispatcher.DispatchMessage(conn, streamID, authID, envelope)
 	pools.ReleaseMessageEnvelope(envelope)
 }
-
-func (edge *EdgeServer) onConnect(connID uint64) {}
-
+func (edge *EdgeServer) onConnect(connID uint64)   {}
 func (edge *EdgeServer) onClose(conn gateway.Conn) {}
-
 func (edge *EdgeServer) onFlush(conn gateway.Conn) [][]byte {
 	return nil
 }
 
-// Run runs the selected gateway, if gateway is not setup it panics
+// Run runs the selected gateway, if gateway is not setup it returns error
 func (edge *EdgeServer) Run() (err error) {
 	if edge.gatewayProtocol == gateway.Undefined {
 		return errors.ErrGatewayNotInitialized
@@ -337,20 +336,15 @@ func (edge *EdgeServer) runGateway() {
 }
 func (edge *EdgeServer) runGossip() error {
 	eventChan := make(chan serf.Event, 1000)
-	serfConfig := serf.DefaultConfig()
-	serfConfig.NodeName = edge.GetServerID()
-	serfConfig.Init()
-
-	serfConfig.CoalescePeriod = time.Second
-	serfConfig.LogOutput = ioutil.Discard
-	serfConfig.EventCh = eventChan
-	serfConfig.MemberlistConfig.Delegate = &gossipDelegate{edge: edge}
-	serfConfig.MemberlistConfig.Events = &gossipEventDelegate{edge: edge}
-	serfConfig.MemberlistConfig.Ping = &gossipPingDelegate{edge: edge}
-	serfConfig.MemberlistConfig.Alive = &gossipAliveDelegate{edge: edge}
-	serfConfig.MemberlistConfig.LogOutput = ioutil.Discard
 	dirPath := filepath.Join(edge.dataPath, "gossip")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
+
+	serfConfig := serf.DefaultConfig()
+	serfConfig.Init()
+	serfConfig.NodeName = edge.GetServerID()
+	serfConfig.EventCh = eventChan
+	serfConfig.LogOutput = ioutil.Discard
+	serfConfig.MemberlistConfig.LogOutput = ioutil.Discard
 	serfConfig.KeyringFile = filepath.Join(dirPath, "keyring")
 	serfConfig.SnapshotPath = filepath.Join(dirPath, "snapshot")
 	serfConfig.MemberlistConfig.BindPort = edge.gossipPort
@@ -360,12 +354,7 @@ func (edge *EdgeServer) runGossip() error {
 	} else {
 		edge.gossip = s
 	}
-	_ = edge.gossip.SetTags(map[string]string{
-		"BundleID":   edge.bundleID,
-		"InstanceID": edge.instanceID,
-		"RaftNodeID": edge.GetServerID(),
-		"RaftPort":   fmt.Sprintf("%d", edge.raftPort),
-	})
+	edge.updateCluster()
 
 	go func() {
 		for range eventChan {
@@ -447,7 +436,7 @@ func (edge *EdgeServer) runRaft() (err error) {
 	return nil
 }
 
-func (edge *EdgeServer) Join(addr ...string) error {
+func (edge *EdgeServer) JoinCluster(addr ...string) error {
 	if !edge.raftEnabled {
 		return errors.ErrRaftNotSet
 	}
@@ -511,6 +500,7 @@ func (edge *EdgeServer) Shutdown() {
 	log.Info("Server Shutdown!", zap.String("ID", edge.GetServerID()))
 }
 
+// EdgeStats exports some internal metrics data
 type EdgeStats struct {
 	Address         string
 	RaftMembers     int
@@ -521,6 +511,7 @@ type EdgeStats struct {
 	GatewayAddr     string
 }
 
+// Stats exports some internal metrics data packed in 'EdgeStats' struct
 func (edge *EdgeServer) Stats() EdgeStats {
 	if !edge.raftEnabled {
 		return EdgeStats{}

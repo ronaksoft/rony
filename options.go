@@ -6,6 +6,7 @@ import (
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	"git.ronaksoftware.com/ronak/rony/msg"
 )
 
 /*
@@ -30,7 +31,14 @@ func WithRaft(bindPort int, bootstrap bool) Option {
 
 func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
 	return func(edge *EdgeServer) {
-		edge.getConstructorName = h
+		edge.getConstructorName = func(constructor int64) string {
+			// Lookup internal messages first
+			n := msg.ConstructorNames[constructor]
+			if len(n) > 0 {
+				return n
+			}
+			return h(constructor)
+		}
 	}
 }
 

@@ -3,10 +3,8 @@ package rony
 import (
 	"fmt"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/hashicorp/memberlist"
+	"github.com/hashicorp/serf/serf"
 	"go.uber.org/zap"
-	"time"
 )
 
 /*
@@ -18,68 +16,37 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-type gossipDelegate struct {
-	edge *EdgeServer
+const (
+	tagBundleID   = "BID"
+	tagInstanceID = "IID"
+	tagRaftPort   = "RP"
+	tagRaftNodeID = "RID"
+	tagRaftState  = "RS"
+)
+
+func (edge *EdgeServer) updateCluster() {
+	err := edge.gossip.SetTags(map[string]string{
+		tagBundleID:   edge.bundleID,
+		tagInstanceID: edge.instanceID,
+		tagRaftNodeID: edge.GetServerID(),
+		tagRaftPort:   fmt.Sprintf("%d", edge.raftPort),
+	})
+	if err != nil {
+		log.Warn("Error On Update Cluster", zap.Error(err))
+	}
 }
 
-func (g gossipDelegate) NodeMeta(limit int) []byte {
-	log.Info("NodeMeta")
-	// panic("implement me")
-	return nil
+func (edge *EdgeServer) eventHandler(e serf.Event) {
+
 }
 
-func (g gossipDelegate) NotifyMsg(b []byte) {
-	fmt.Println(tools.ByteToStr(b))
+
+type Cluster struct {}
+
+func (c *Cluster) Add(serverID string) {
+
 }
 
-func (g gossipDelegate) GetBroadcasts(overhead, limit int) [][]byte {
-	log.Info("Broadcast", zap.Int("Overhead", overhead), zap.Int("Limit", limit))
-	return nil
-}
+func (c *Cluster) Remove(serverID string) {
 
-func (g gossipDelegate) LocalState(join bool) []byte {
-	log.Info("LocalState", zap.Bool("Join", join))
-	return nil
-}
-
-func (g gossipDelegate) MergeRemoteState(buf []byte, join bool) {
-	// panic("implement me")
-}
-
-type gossipEventDelegate struct {
-	edge *EdgeServer
-}
-
-func (g gossipEventDelegate) NotifyJoin(node *memberlist.Node) {
-	log.Info("Gossip Join", zap.String("Name", node.Name), zap.Uint16("Port", node.Port))
-}
-
-func (g gossipEventDelegate) NotifyLeave(node *memberlist.Node) {
-	log.Info("Gossip Leave", zap.String("Name", node.Name), zap.Uint16("Port", node.Port))
-}
-
-func (g gossipEventDelegate) NotifyUpdate(node *memberlist.Node) {
-	log.Info("Gossip Update", zap.String("Name", node.Name), zap.Uint16("Port", node.Port))
-}
-
-type gossipPingDelegate struct {
-	edge *EdgeServer
-}
-
-func (g gossipPingDelegate) AckPayload() []byte {
-	log.Info("AckPayload")
-	return tools.StrToByte("Ack Payload")
-}
-
-func (g gossipPingDelegate) NotifyPingComplete(other *memberlist.Node, rtt time.Duration, payload []byte) {
-	log.Info("Ping Complete")
-}
-
-type gossipAliveDelegate struct {
-	edge *EdgeServer
-}
-
-func (g gossipAliveDelegate) NotifyAlive(node *memberlist.Node) error {
-	// log.Info("Gossip Alive", zap.String("Name", node.Name), zap.Uint16("Port", node.Port))
-	return nil
 }

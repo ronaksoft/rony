@@ -175,9 +175,9 @@ func TestEdgeServerRaft(t *testing.T) {
 		c.So(err, ShouldBeNil)
 
 		// Join Nodes
-		err = edge1.Join("127.0.0.1:9082")
+		err = edge1.JoinCluster("127.0.0.1:9082")
 		c.So(err, ShouldBeNil)
-		err = edge1.Join("127.0.0.1:9083")
+		err = edge1.JoinCluster("127.0.0.1:9083")
 		c.So(err, ShouldBeNil)
 
 		// conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort1))

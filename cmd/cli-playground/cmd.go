@@ -56,7 +56,7 @@ func startFunc(bundleID, instanceID string, port int, bootstrap bool) {
 		Edges[serverID] = rony.NewEdgeServer(bundleID, instanceID, &dispatcher{},
 			rony.WithWebsocketGateway(websocketGateway.Config{
 				NewConnectionWorkers: 10,
-				MaxConcurrency:       4000,
+				MaxConcurrency:       1000,
 				MaxIdleTime:          0,
 				ListenAddress:        "0.0.0.0:0",
 			}),
@@ -88,6 +88,10 @@ func startFunc(bundleID, instanceID string, port int, bootstrap bool) {
 var StopCmd = &cobra.Command{
 	Use: "stop",
 	Run: func(cmd *cobra.Command, args []string) {
+		for id, s := range Edges {
+			s.Shutdown()
+			fmt.Println(id, "Shutdown!")
+		}
 	},
 }
 
@@ -140,7 +144,7 @@ func joinFunc(serverID1, serverID2 string) {
 	e1Stats := e1.Stats()
 	e2Stats := e2.Stats()
 	fmt.Println("Joining ", e1Stats.Address, "--->", e2Stats.Address)
-	err := e1.Join(e2Stats.Address)
+	err := e1.JoinCluster(e2Stats.Address)
 
 	if err != nil {
 		fmt.Println(err)
