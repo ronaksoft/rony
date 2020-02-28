@@ -411,6 +411,7 @@ func (edge *EdgeServer) runRaft() (err error) {
 		if err := f.Error(); err != nil {
 			log.Warn("Error On Raft Bootstrap", zap.Error(err))
 		}
+		time.Sleep(time.Second * 3)
 	}
 
 	return nil
@@ -421,6 +422,7 @@ func (edge *EdgeServer) JoinCluster(addr ...string) error {
 		return errors.ErrRaftNotSet
 	}
 	_, err := edge.gossip.Join(addr)
+
 	return err
 }
 func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
@@ -431,7 +433,6 @@ func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
 	if err := futureConfig.Error(); err != nil {
 		return err
 	}
-
 	for _, srv := range futureConfig.Configuration().Servers {
 		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
 			return nil

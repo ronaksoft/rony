@@ -47,40 +47,6 @@ func (edge *EdgeServer) updateCluster() error {
 	return edge.gossip.UpdateNode(0)
 }
 
-// func (edge *EdgeServer) eventHandler(e serf.Event) {
-// 	switch x := e.(type) {
-// 	case serf.MemberEvent:
-// 		switch x.Type {
-// 		case serf.EventMemberJoin, serf.EventMemberUpdate:
-// 			for idx := range x.Members {
-// 				edge.cluster.AddMember(convertMember(&x.Members[idx]))
-// 			}
-// 		case serf.EventMemberLeave, serf.EventMemberFailed, serf.EventMemberReap:
-// 			for idx := range x.Members {
-// 				edge.cluster.RemoveMember(convertMember(&x.Members[idx]))
-// 			}
-// 		}
-// 	case serf.UserEvent:
-// 		if ce := log.Check(log.InfoLevel, "Cluster Message Received"); ce != nil {
-// 			ce.Write(
-// 				zap.String("ID", edge.GetServerID()),
-// 				zap.String("Name", x.Name),
-// 				zap.Int("Len", len(x.Payload)),
-// 			)
-// 		}
-// 		envelope := pools.AcquireMessageEnvelope()
-// 		err := envelope.Unmarshal(x.Payload)
-// 		if err != nil {
-// 			fmt.Println(err)
-// 			return
-// 		}
-// 		edge.dispatcher.DispatchClusterMessage(envelope)
-// 	case *serf.Query:
-//
-// 	}
-//
-// }
-
 // ClusterMember
 type ClusterMember struct {
 	ServerID   string
@@ -88,6 +54,7 @@ type ClusterMember struct {
 	InstanceID string
 	Addr       net.IP
 	Port       uint16
+	RaftPort   int
 	node       *memberlist.Node
 }
 
@@ -106,6 +73,7 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 		ServerID:   fmt.Sprintf("%s.%s", edgeNode.BundleID, edgeNode.InstanceID),
 		BundleID:   edgeNode.BundleID,
 		InstanceID: edgeNode.InstanceID,
+		RaftPort:   int(edgeNode.RaftPort),
 		Addr:       sm.Addr,
 		Port:       sm.Port,
 		node:       sm,
@@ -180,7 +148,9 @@ type delegateEvents struct {
 }
 
 func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
-	d.edge.cluster.AddMember(convertMember(n))
+	cm := convertMember(n)
+	d.edge.cluster.AddMember(cm)
+	_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
 }
 
 func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
@@ -188,7 +158,9 @@ func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
 }
 
 func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
-	d.edge.cluster.AddMember(convertMember(n))
+	cm := convertMember(n)
+	d.edge.cluster.AddMember(cm)
+	_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
 }
 
 type delegateNode struct {

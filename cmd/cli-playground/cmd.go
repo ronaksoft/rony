@@ -411,13 +411,16 @@ var DemoRaft = &cobra.Command{
 		startFunc("First", "01", 801, true)
 		startFunc("First", "02", 802, false)
 		startFunc("First", "03", 803, false)
-		joinFunc("First.01", "First02")
-		joinFunc("First.02", "First.03")
+		listFunc()
+		joinFunc("First.02", "First.01")
+		joinFunc("First.03", "First.02")
 		time.Sleep(time.Second)
 		listFunc()
-
-		clusterMessage("First.01", "First.02")
-		clusterMessage("First.03", "First.01")
+		// clusterMessage("First.01", "First.02")
+		// clusterMessage("First.03", "First.01")
+		// for _, e := range Edges {
+		// 	e.Shutdown()
+		// }
 	},
 }
 
@@ -430,10 +433,13 @@ var DemoClusterMessage = &cobra.Command{
 		startFunc("Third", "01", 803, true)
 		joinFunc("First.01", "Second.01")
 		joinFunc("First.01", "Third.01")
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 3)
 		listFunc()
 		clusterMessage("First.01", "Second.01")
 		clusterMessage("Third.01", "First.01")
+		for _, e := range Edges {
+			e.Shutdown()
+		}
 	},
 }
 
