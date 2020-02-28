@@ -5,7 +5,7 @@ github.com/DataDog/zstd
 # github.com/allegro/bigcache/v2 v2.1.6
 github.com/allegro/bigcache/v2
 github.com/allegro/bigcache/v2/queue
-# github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878
+# github.com/armon/go-metrics v0.3.2
 github.com/armon/go-metrics
 # github.com/bbva/raft-badger v1.0.0
 github.com/bbva/raft-badger
@@ -80,7 +80,7 @@ github.com/gopherjs/gopherjs/js
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-hclog v0.9.1
 github.com/hashicorp/go-hclog
-# github.com/hashicorp/go-immutable-radix v1.0.0
+# github.com/hashicorp/go-immutable-radix v1.1.0
 github.com/hashicorp/go-immutable-radix
 # github.com/hashicorp/go-msgpack v0.5.5
 github.com/hashicorp/go-msgpack/codec
@@ -88,10 +88,8 @@ github.com/hashicorp/go-msgpack/codec
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/go-sockaddr v1.0.0
 github.com/hashicorp/go-sockaddr
-# github.com/hashicorp/golang-lru v0.5.0
+# github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hashicorp/memberlist v0.1.7
-github.com/hashicorp/memberlist
 # github.com/hashicorp/raft v1.1.2
 github.com/hashicorp/raft
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -129,7 +127,7 @@ github.com/mattn/go-isatty
 github.com/mattn/go-runewidth
 # github.com/mattn/go-tty v0.0.3
 github.com/mattn/go-tty
-# github.com/miekg/dns v1.1.26
+# github.com/miekg/dns v1.0.14
 github.com/miekg/dns
 # github.com/nyaruka/phonenumbers v1.0.54
 github.com/nyaruka/phonenumbers
@@ -174,7 +172,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392
+# golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
@@ -188,7 +186,7 @@ golang.org/x/crypto/poly1305
 # golang.org/x/lint v0.0.0-20190930215403-16217165b5de
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/net v0.0.0-20190923162816-aa69164e4478
+# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 golang.org/x/net/bpf
 golang.org/x/net/internal/iana
 golang.org/x/net/internal/socket

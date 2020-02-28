@@ -416,11 +416,6 @@ var DemoRaft = &cobra.Command{
 		joinFunc("First.03", "First.02")
 		time.Sleep(time.Second)
 		listFunc()
-		// clusterMessage("First.01", "First.02")
-		// clusterMessage("First.03", "First.01")
-		// for _, e := range Edges {
-		// 	e.Shutdown()
-		// }
 	},
 }
 
