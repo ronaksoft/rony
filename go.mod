@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/allegro/bigcache/v2 v2.1.6
+	github.com/armon/go-metrics v0.3.2 // indirect
 	github.com/bbva/raft-badger v1.0.0
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger/v2 v2.0.0
@@ -13,7 +14,8 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/btree v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v0.9.1
-	github.com/hashicorp/memberlist v0.1.7
+	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/raft v1.1.2
 	github.com/hashicorp/serf v0.8.5 // indirect
 	github.com/lucas-clemente/quic-go v0.14.4

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/errors"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
 	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/pool/pbytes"
-	"github.com/hashicorp/memberlist"
 	"go.uber.org/zap"
 	"net"
 )
@@ -19,14 +19,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2018
 */
-
-const (
-	tagBundleID   = "BID"
-	tagInstanceID = "IID"
-	tagRaftPort   = "RP"
-	tagRaftNodeID = "RID"
-	tagRaftState  = "RS"
-)
 
 func (edge *EdgeServer) ClusterSend(serverID string, envelope *msg.MessageEnvelope) error {
 	m := edge.cluster.GetByID(serverID)

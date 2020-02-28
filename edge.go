@@ -6,13 +6,13 @@ import (
 	"git.ronaksoftware.com/ronak/rony/errors"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/msg"
 	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -57,6 +57,7 @@ type EdgeServer struct {
 	// General
 	bundleID        string
 	instanceID      string
+	serverID        string
 	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
@@ -85,6 +86,7 @@ func NewEdgeServer(bundleID, instanceID string, dispatcher Dispatcher, opts ...O
 		handlers:   make(map[int64][]Handler),
 		bundleID:   bundleID,
 		instanceID: instanceID,
+		serverID:   fmt.Sprintf("%s.%s", bundleID, instanceID),
 		dispatcher: dispatcher,
 		getConstructorName: func(constructor int64) string {
 			return fmt.Sprintf("%d", constructor)
@@ -104,7 +106,7 @@ func NewEdgeServer(bundleID, instanceID string, dispatcher Dispatcher, opts ...O
 }
 
 func (edge *EdgeServer) GetServerID() string {
-	return fmt.Sprintf("%s.%s", edge.bundleID, edge.instanceID)
+	return edge.serverID
 }
 
 func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
