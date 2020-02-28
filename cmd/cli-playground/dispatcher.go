@@ -1,17 +1,27 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/pool/pbytes"
+	"go.uber.org/zap"
 )
 
 type dispatcher struct{}
 
 func (d dispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *msg.UpdateEnvelope) {
 
+}
+
+func (d dispatcher) DispatchClusterMessage(envelope *msg.MessageEnvelope) {
+	log.Info("Cluster Message",
+		zap.String("Name", msg.ConstructorNames[envelope.Constructor]),
+		zap.String("Payload", hex.Dump(envelope.Message)),
+	)
 }
 
 func (d dispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *msg.MessageEnvelope) {

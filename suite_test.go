@@ -64,6 +64,8 @@ func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data 
 	return
 }
 
+func (t testDispatcher) DispatchClusterMessage(envelope *msg.MessageEnvelope) {}
+
 func initHandlers(edge *rony.EdgeServer) {
 	edge.AddHandler(100, func(ctx *context.Context, in *msg.MessageEnvelope) {
 		req := &pb.ReqSimple1{}

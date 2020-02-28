@@ -12,8 +12,8 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
-	"github.com/hashicorp/serf/serf"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net"
@@ -32,6 +32,7 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+//go:generate protoc -I=./vendor -I=.  --gogofaster_out=. node.proto
 type Handler func(ctx *context.Context, in *msg.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
@@ -47,6 +48,8 @@ type Dispatcher interface {
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *msg.MessageEnvelope) (authID int64, err error)
+
+	DispatchClusterMessage(envelope *msg.MessageEnvelope)
 }
 
 // EdgeServer
@@ -72,7 +75,7 @@ type EdgeServer struct {
 	raftFSM       raftFSM
 	raft          *raft.Raft
 	gossipPort    int
-	gossip        *serf.Serf
+	gossip        *memberlist.Memberlist
 	cluster       Cluster
 	badgerStore   *raftbadger.BadgerStore
 }
@@ -335,45 +338,22 @@ func (edge *EdgeServer) runGateway() {
 	return
 }
 func (edge *EdgeServer) runGossip() error {
-	eventChan := make(chan serf.Event, 1000)
 	dirPath := filepath.Join(edge.dataPath, "gossip")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
 
-	serfConfig := serf.DefaultConfig()
-	serfConfig.Init()
-	serfConfig.NodeName = edge.GetServerID()
-	serfConfig.EventCh = eventChan
-	serfConfig.LogOutput = ioutil.Discard
-	serfConfig.MemberlistConfig.LogOutput = ioutil.Discard
-	serfConfig.KeyringFile = filepath.Join(dirPath, "keyring")
-	serfConfig.SnapshotPath = filepath.Join(dirPath, "snapshot")
-	serfConfig.MemberlistConfig.BindPort = edge.gossipPort
-
-	if s, err := serf.Create(serfConfig); err != nil {
+	conf := memberlist.DefaultLANConfig()
+	conf.Name = edge.GetServerID()
+	conf.Events = &delegateEvents{edge: edge}
+	conf.Delegate = &delegateNode{edge: edge}
+	conf.LogOutput = ioutil.Discard
+	conf.BindPort = edge.gossipPort
+	if s, err := memberlist.Create(conf); err != nil {
 		return err
 	} else {
 		edge.gossip = s
 	}
-	edge.updateCluster()
 
-	go func() {
-		for range eventChan {
-			for _, m := range edge.gossip.Members() {
-				if m.Tags["BundleID"] == edge.bundleID && m.Tags["InstanceID"] != edge.instanceID {
-					nodeAddr := fmt.Sprintf("%s:%s", m.Addr.String(), m.Tags["RaftPort"])
-					err := edge.joinRaft(m.Tags["RaftNodeID"], nodeAddr)
-					if err != nil {
-						log.Info("Error On Join Raft",
-							zap.String("Addr", nodeAddr),
-							zap.Error(err),
-						)
-					}
-				}
-			}
-		}
-	}()
-
-	return nil
+	return edge.updateCluster()
 }
 func (edge *EdgeServer) runRaft() (err error) {
 	// Initialize LogStore for Raft
@@ -440,7 +420,7 @@ func (edge *EdgeServer) JoinCluster(addr ...string) error {
 	if !edge.raftEnabled {
 		return errors.ErrRaftNotSet
 	}
-	_, err := edge.gossip.Join(addr, false)
+	_, err := edge.gossip.Join(addr)
 	return err
 }
 func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
@@ -505,8 +485,8 @@ type EdgeStats struct {
 	Address         string
 	RaftMembers     int
 	RaftState       string
-	SerfMembers     int
-	SerfState       string
+	Members         int
+	MembershipScore int
 	GatewayProtocol gateway.Protocol
 	GatewayAddr     string
 }
@@ -518,11 +498,11 @@ func (edge *EdgeServer) Stats() EdgeStats {
 	}
 
 	s := EdgeStats{
-		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalMember().Addr.String(), edge.gossip.LocalMember().Port),
+		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalNode().Addr.String(), edge.gossip.LocalNode().Port),
 		RaftMembers:     0,
 		RaftState:       edge.raft.State().String(),
-		SerfMembers:     len(edge.gossip.Members()),
-		SerfState:       edge.gossip.State().String(),
+		Members:         len(edge.gossip.Members()),
+		MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
 		GatewayAddr:     edge.gateway.Addr(),
 	}

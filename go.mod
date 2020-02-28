@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/go-hclog v0.9.1
 	github.com/hashicorp/memberlist v0.1.7
 	github.com/hashicorp/raft v1.1.2
-	github.com/hashicorp/serf v0.8.5
+	github.com/hashicorp/serf v0.8.5 // indirect
 	github.com/lucas-clemente/quic-go v0.14.4
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/mattn/go-isatty v0.0.12 // indirect

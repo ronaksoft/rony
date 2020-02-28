@@ -30,7 +30,9 @@ import (
 var Edges map[string]*rony.EdgeServer
 
 func init() {
-	RootCmd.AddCommand(StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, DemoCmd)
+	Edges = make(map[string]*rony.EdgeServer)
+	RootCmd.AddCommand(StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, DemoCmd, ClusterMessageCmd)
+	DemoCmd.AddCommand(DemoRaft, DemoClusterBroadcast, DemoClusterMessage)
 
 	RootCmd.PersistentFlags().String(FlagBundleID, "First", "")
 	RootCmd.PersistentFlags().String(FlagInstanceID, "01", "")
@@ -105,16 +107,16 @@ var ListCmd = &cobra.Command{
 func listFunc() {
 	var rows []string
 	rows = append(rows,
-		"ServerID | Raft Members | Raft State | Serf Members | Serf State | Gateway ",
+		"ServerID | Raft Members | Raft State |  Members | Membership State | Gateway ",
 		"------- | ------ | ------ | -------- | ------- | ------",
 	)
 
 	for id, s := range Edges {
 		edgeStats := s.Stats()
 		rows = append(rows,
-			fmt.Sprintf("%s | %d | %s | %d | %s | %s(%s)", id,
+			fmt.Sprintf("%s | %d | %s | %d | %d | %s(%s)", id,
 				edgeStats.RaftMembers, edgeStats.RaftState,
-				edgeStats.SerfMembers, edgeStats.SerfState,
+				edgeStats.Members, edgeStats.MembershipScore,
 				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
 			),
 		)
@@ -360,21 +362,84 @@ func benchRoutine(authID int64, count int, port string) {
 
 }
 
-var DemoCmd = &cobra.Command{
-	Use: "demo",
+var ClusterMessageCmd = &cobra.Command{
+	Use: "clusterMessage",
 	Run: func(cmd *cobra.Command, args []string) {
-		_ = os.RemoveAll("./_hdd")
-		startFunc("First", "01", 801, true)
-		time.Sleep(time.Second * 2)
-		startFunc("First", "02", 802, false)
-		startFunc("First", "03", 803, false)
-		joinFunc("First.01", "First.02")
-		joinFunc("First.01", "First.03")
-		time.Sleep(time.Second * 3)
-		listFunc()
+		if len(args) < 2 {
+			fmt.Println("Needs ServerID, e.g. echo First.01 Second.01")
+			return
+		}
+		clusterMessage(args[0], args[1])
 	},
 }
 
-func init() {
-	Edges = make(map[string]*rony.EdgeServer)
+func clusterMessage(n1, n2 string) {
+	e1 := Edges[n1]
+	e2 := Edges[n2]
+	if e1 == nil || e2 == nil {
+		fmt.Println("Invalid Args")
+		return
+	}
+	req := &msg.EchoRequest{
+		Int:       tools.RandomInt64(0),
+		Bool:      false,
+		Timestamp: time.Now().UnixNano(),
+	}
+	reqBytes, _ := req.Marshal()
+	m := &msg.MessageEnvelope{
+		Constructor: msg.C_EchoRequest,
+		RequestID:   tools.RandomUint64(),
+		Message:     reqBytes,
+	}
+	err := e1.ClusterSend(e2.GetServerID(), m)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+var DemoCmd = &cobra.Command{
+	Use: "demo",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+var DemoRaft = &cobra.Command{
+	Use: "raft",
+	Run: func(cmd *cobra.Command, args []string) {
+		_ = os.RemoveAll("./_hdd")
+		startFunc("First", "01", 801, true)
+		startFunc("First", "02", 802, false)
+		startFunc("First", "03", 803, false)
+		joinFunc("First.01", "First02")
+		joinFunc("First.02", "First.03")
+		time.Sleep(time.Second)
+		listFunc()
+
+		clusterMessage("First.01", "First.02")
+		clusterMessage("First.03", "First.01")
+	},
+}
+
+var DemoClusterMessage = &cobra.Command{
+	Use: "clusterMessage",
+	Run: func(cmd *cobra.Command, args []string) {
+		_ = os.RemoveAll("./_hdd")
+		startFunc("First", "01", 801, true)
+		startFunc("Second", "01", 802, true)
+		startFunc("Third", "01", 803, true)
+		joinFunc("First.01", "Second.01")
+		joinFunc("First.01", "Third.01")
+		time.Sleep(time.Second)
+		listFunc()
+		clusterMessage("First.01", "Second.01")
+		clusterMessage("Third.01", "First.01")
+	},
+}
+
+var DemoClusterBroadcast = &cobra.Command{
+	Use: "clusterBroadcast",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
 }

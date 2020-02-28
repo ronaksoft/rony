@@ -1,0 +1,9 @@
+syntax = "proto2";
+package rony;
+
+// edgeNode
+message edgeNode {
+    required string BundleID = 1;
+    required string InstanceID = 2;
+    optional uint32 RaftPort = 4;
+}
