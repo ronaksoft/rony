@@ -113,8 +113,7 @@ func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
 }
 
-// Execute apply the right handler on the req, the response will be pushed to the clients queue.
-func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) (err error) {
+func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
 			return errors.ErrNotRaftLeader
@@ -135,10 +134,6 @@ func (edge *EdgeServer) Execute(conn gateway.Conn, streamID, authID int64, req *
 			return
 		}
 	}
-	err = edge.execute(conn, streamID, authID, req)
-	return
-}
-func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *msg.MessageEnvelope) error {
 	executeFunc := func(ctx *context.Context, in *msg.MessageEnvelope) {
 		defer edge.recoverPanic(ctx)
 		startTime := time.Now()
@@ -233,9 +228,9 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 	switch req.Constructor {
 	case msg.C_MessageContainer:
 		x := &msg.MessageContainer{}
-		err := x.Unmarshal(req.Message)
+		err = x.Unmarshal(req.Message)
 		if err != nil {
-			return err
+			return
 		}
 		xLen := len(x.Envelopes)
 		waitGroup := pools.AcquireWaitGroup()
@@ -283,7 +278,7 @@ func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte
 		return
 	}
 	startTime := time.Now()
-	err = edge.Execute(conn, streamID, authID, envelope)
+	err = edge.execute(conn, streamID, authID, envelope)
 	if ce := log.Check(log.DebugLevel, "Execute Time"); ce != nil {
 		ce.Write(zap.Duration("D", time.Now().Sub(startTime)))
 	}
