@@ -32,23 +32,29 @@ const (
 )
 
 type receivedPacketHandler struct {
+	sentPackets sentPacketTracker
+
 	initialPackets   *receivedPacketTracker
 	handshakePackets *receivedPacketTracker
-	oneRTTPackets    *receivedPacketTracker
+	appDataPackets   *receivedPacketTracker
+
+	lowest1RTTPacket protocol.PacketNumber
 }
 
 var _ ReceivedPacketHandler = &receivedPacketHandler{}
 
-// NewReceivedPacketHandler creates a new receivedPacketHandler
-func NewReceivedPacketHandler(
+func newReceivedPacketHandler(
+	sentPackets sentPacketTracker,
 	rttStats *congestion.RTTStats,
 	logger utils.Logger,
 	version protocol.VersionNumber,
 ) ReceivedPacketHandler {
 	return &receivedPacketHandler{
+		sentPackets:      sentPackets,
 		initialPackets:   newReceivedPacketTracker(rttStats, logger, version),
 		handshakePackets: newReceivedPacketTracker(rttStats, logger, version),
-		oneRTTPackets:    newReceivedPacketTracker(rttStats, logger, version),
+		appDataPackets:   newReceivedPacketTracker(rttStats, logger, version),
+		lowest1RTTPacket: protocol.InvalidPacketNumber,
 	}
 }
 
@@ -57,22 +63,27 @@ func (h *receivedPacketHandler) ReceivedPacket(
 	encLevel protocol.EncryptionLevel,
 	rcvTime time.Time,
 	shouldInstigateAck bool,
-) {
+) error {
 	switch encLevel {
 	case protocol.EncryptionInitial:
 		h.initialPackets.ReceivedPacket(pn, rcvTime, shouldInstigateAck)
 	case protocol.EncryptionHandshake:
 		h.handshakePackets.ReceivedPacket(pn, rcvTime, shouldInstigateAck)
+	case protocol.Encryption0RTT:
+		if h.lowest1RTTPacket != protocol.InvalidPacketNumber && pn > h.lowest1RTTPacket {
+			return fmt.Errorf("received packet number %d on a 0-RTT packet after receiving %d on a 1-RTT packet", pn, h.lowest1RTTPacket)
+		}
+		h.appDataPackets.ReceivedPacket(pn, rcvTime, shouldInstigateAck)
 	case protocol.Encryption1RTT:
-		h.oneRTTPackets.ReceivedPacket(pn, rcvTime, shouldInstigateAck)
+		if h.lowest1RTTPacket == protocol.InvalidPacketNumber || pn < h.lowest1RTTPacket {
+			h.lowest1RTTPacket = pn
+		}
+		h.appDataPackets.IgnoreBelow(h.sentPackets.GetLowestPacketNotConfirmedAcked())
+		h.appDataPackets.ReceivedPacket(pn, rcvTime, shouldInstigateAck)
 	default:
 		panic(fmt.Sprintf("received packet with unknown encryption level: %s", encLevel))
 	}
-}
-
-// only to be used with 1-RTT packets
-func (h *receivedPacketHandler) IgnoreBelow(pn protocol.PacketNumber) {
-	h.oneRTTPackets.IgnoreBelow(pn)
+	return nil
 }
 
 func (h *receivedPacketHandler) DropPackets(encLevel protocol.EncryptionLevel) {
@@ -81,6 +92,9 @@ func (h *receivedPacketHandler) DropPackets(encLevel protocol.EncryptionLevel) {
 		h.initialPackets = nil
 	case protocol.EncryptionHandshake:
 		h.handshakePackets = nil
+	case protocol.Encryption0RTT:
+		// Nothing to do here.
+		// If we are rejecting 0-RTT, no 0-RTT packets will have been decrypted.
 	default:
 		panic(fmt.Sprintf("Cannot drop keys for encryption level %s", encLevel))
 	}
@@ -94,7 +108,7 @@ func (h *receivedPacketHandler) GetAlarmTimeout() time.Time {
 	if h.handshakePackets != nil {
 		handshakeAlarm = h.handshakePackets.GetAlarmTimeout()
 	}
-	oneRTTAlarm := h.oneRTTPackets.GetAlarmTimeout()
+	oneRTTAlarm := h.appDataPackets.GetAlarmTimeout()
 	return utils.MinNonZeroTime(utils.MinNonZeroTime(initialAlarm, handshakeAlarm), oneRTTAlarm)
 }
 
@@ -110,7 +124,8 @@ func (h *receivedPacketHandler) GetAckFrame(encLevel protocol.EncryptionLevel) *
 			ack = h.handshakePackets.GetAckFrame()
 		}
 	case protocol.Encryption1RTT:
-		return h.oneRTTPackets.GetAckFrame()
+		// 0-RTT packets can't contain ACK frames
+		return h.appDataPackets.GetAckFrame()
 	default:
 		return nil
 	}

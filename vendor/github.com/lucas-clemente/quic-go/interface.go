@@ -2,11 +2,11 @@ package quic
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
 	"net"
 	"time"
 
+	"github.com/lucas-clemente/quic-go/internal/handshake"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/quictrace"
 )
@@ -50,6 +50,16 @@ type ErrorCode = protocol.ApplicationErrorCode
 
 // Stream is the interface implemented by QUIC streams
 type Stream interface {
+	ReceiveStream
+	SendStream
+	// SetDeadline sets the read and write deadlines associated
+	// with the connection. It is equivalent to calling both
+	// SetReadDeadline and SetWriteDeadline.
+	SetDeadline(t time.Time) error
+}
+
+// A ReceiveStream is a unidirectional Receive Stream.
+type ReceiveStream interface {
 	// StreamID returns the stream ID.
 	StreamID() StreamID
 	// Read reads data from the stream.
@@ -60,6 +70,22 @@ type Stream interface {
 	// If the session was closed due to a timeout, the error satisfies
 	// the net.Error interface, and Timeout() will be true.
 	io.Reader
+	// CancelRead aborts receiving on this stream.
+	// It will ask the peer to stop transmitting stream data.
+	// Read will unblock immediately, and future Read calls will fail.
+	// When called multiple times or after reading the io.EOF it is a no-op.
+	CancelRead(ErrorCode)
+	// SetReadDeadline sets the deadline for future Read calls and
+	// any currently-blocked Read call.
+	// A zero value for t means Read will not time out.
+
+	SetReadDeadline(t time.Time) error
+}
+
+// A SendStream is a unidirectional Send Stream.
+type SendStream interface {
+	// StreamID returns the stream ID.
+	StreamID() StreamID
 	// Write writes data to the stream.
 	// Write can be made to time out and return a net.Error with Timeout() == true
 	// after a fixed time limit; see SetDeadline and SetWriteDeadline.
@@ -78,57 +104,16 @@ type Stream interface {
 	// Write will unblock immediately, and future calls to Write will fail.
 	// When called multiple times or after closing the stream it is a no-op.
 	CancelWrite(ErrorCode)
-	// CancelRead aborts receiving on this stream.
-	// It will ask the peer to stop transmitting stream data.
-	// Read will unblock immediately, and future Read calls will fail.
-	// When called multiple times or after reading the io.EOF it is a no-op.
-	CancelRead(ErrorCode)
 	// The context is canceled as soon as the write-side of the stream is closed.
 	// This happens when Close() or CancelWrite() is called, or when the peer
 	// cancels the read-side of their stream.
 	// Warning: This API should not be considered stable and might change soon.
 	Context() context.Context
-	// SetReadDeadline sets the deadline for future Read calls and
-	// any currently-blocked Read call.
-	// A zero value for t means Read will not time out.
-	SetReadDeadline(t time.Time) error
 	// SetWriteDeadline sets the deadline for future Write calls
 	// and any currently-blocked Write call.
 	// Even if write times out, it may return n > 0, indicating that
 	// some of the data was successfully written.
 	// A zero value for t means Write will not time out.
-	SetWriteDeadline(t time.Time) error
-	// SetDeadline sets the read and write deadlines associated
-	// with the connection. It is equivalent to calling both
-	// SetReadDeadline and SetWriteDeadline.
-	SetDeadline(t time.Time) error
-}
-
-// A ReceiveStream is a unidirectional Receive Stream.
-type ReceiveStream interface {
-	// see Stream.StreamID
-	StreamID() StreamID
-	// see Stream.Read
-	io.Reader
-	// see Stream.CancelRead
-	CancelRead(ErrorCode)
-	// see Stream.SetReadDealine
-	SetReadDeadline(t time.Time) error
-}
-
-// A SendStream is a unidirectional Send Stream.
-type SendStream interface {
-	// see Stream.StreamID
-	StreamID() StreamID
-	// see Stream.Write
-	io.Writer
-	// see Stream.Close
-	io.Closer
-	// see Stream.CancelWrite
-	CancelWrite(ErrorCode)
-	// see Stream.Context
-	Context() context.Context
-	// see Stream.SetWriteDeadline
 	SetWriteDeadline(t time.Time) error
 }
 
@@ -138,6 +123,8 @@ type StreamError interface {
 	Canceled() bool
 	ErrorCode() ErrorCode
 }
+
+type ConnectionState = handshake.ConnectionState
 
 // A Session is a QUIC connection between two peers.
 type Session interface {
@@ -175,8 +162,6 @@ type Session interface {
 	LocalAddr() net.Addr
 	// RemoteAddr returns the address of the peer.
 	RemoteAddr() net.Addr
-	// Close the connection.
-	io.Closer
 	// Close the connection with an error.
 	// The error string will be sent to the peer.
 	CloseWithError(ErrorCode, string) error
@@ -184,8 +169,9 @@ type Session interface {
 	// Warning: This API should not be considered stable and might change soon.
 	Context() context.Context
 	// ConnectionState returns basic details about the QUIC connection.
+	// It blocks until the handshake completes.
 	// Warning: This API should not be considered stable and might change soon.
-	ConnectionState() tls.ConnectionState
+	ConnectionState() ConnectionState
 }
 
 // An EarlySession is a session that is handshaking.
@@ -218,11 +204,12 @@ type Config struct {
 	// If the timeout is exceeded, the connection is closed.
 	// If this value is zero, the timeout is set to 10 seconds.
 	HandshakeTimeout time.Duration
-	// IdleTimeout is the maximum duration that may pass without any incoming network activity.
+	// MaxIdleTimeout is the maximum duration that may pass without any incoming network activity.
+	// The actual value for the idle timeout is the minimum of this value and the peer's.
 	// This value only applies after the handshake has completed.
 	// If the timeout is exceeded, the connection is closed.
 	// If this value is zero, the timeout is set to 30 seconds.
-	IdleTimeout time.Duration
+	MaxIdleTimeout time.Duration
 	// AcceptToken determines if a Token is accepted.
 	// It is called with token = nil if the client didn't send a token.
 	// If not set, a default verification function is used:
@@ -258,6 +245,10 @@ type Config struct {
 	// QUIC Event Tracer.
 	// Warning: Experimental. This API should not be considered stable and will change soon.
 	QuicTracer quictrace.Tracer
+	// GetLogWriter is used to pass in a writer for the qlog.
+	// If it is nil, no qlog will be collected and exported.
+	// If it returns nil, no qlog will be collected and exported for the respective connection.
+	GetLogWriter func(connectionID []byte) io.WriteCloser
 }
 
 // A Listener for incoming QUIC connections

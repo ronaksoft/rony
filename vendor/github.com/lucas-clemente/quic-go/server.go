@@ -6,11 +6,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lucas-clemente/quic-go/qlog"
 
 	"github.com/lucas-clemente/quic-go/internal/handshake"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
@@ -22,7 +23,7 @@ import (
 // packetHandler handles packets
 type packetHandler interface {
 	handlePacket(*receivedPacket)
-	io.Closer
+	shutdown()
 	destroy(error)
 	getPerspective() protocol.Perspective
 }
@@ -33,12 +34,10 @@ type unknownPacketHandler interface {
 }
 
 type packetHandlerManager interface {
-	io.Closer
+	Destroy() error
+	sessionRunner
 	SetServer(unknownPacketHandler)
 	CloseServer()
-	sessionRunner
-	AddIfNotTaken(protocol.ConnectionID, packetHandler) bool
-	GetStatelessResetToken(protocol.ConnectionID) [16]byte
 }
 
 type quicSession interface {
@@ -49,8 +48,8 @@ type quicSession interface {
 	getPerspective() protocol.Perspective
 	run() error
 	destroy(error)
+	shutdown()
 	closeForRecreating() protocol.PacketNumber
-	closeRemote(error)
 }
 
 // A Listener of QUIC
@@ -69,10 +68,13 @@ type baseServer struct {
 
 	tokenGenerator *handshake.TokenGenerator
 
+	zeroRTTQueue   *zeroRTTQueue
 	sessionHandler packetHandlerManager
 
+	receivedPackets chan *receivedPacket
+
 	// set as a member, so they can be set in the tests
-	newSession func(connection, sessionRunner, protocol.ConnectionID /* original connection ID */, protocol.ConnectionID /* client dest connection ID */, protocol.ConnectionID /* destination connection ID */, protocol.ConnectionID /* source connection ID */, [16]byte, *Config, *tls.Config, *handshake.TokenGenerator, utils.Logger, protocol.VersionNumber) quicSession
+	newSession func(connection, sessionRunner, protocol.ConnectionID /* original connection ID */, protocol.ConnectionID /* client dest connection ID */, protocol.ConnectionID /* destination connection ID */, protocol.ConnectionID /* source connection ID */, [16]byte, *Config, *tls.Config, *handshake.TokenGenerator, bool /* enable 0-RTT */, qlog.Tracer, utils.Logger, protocol.VersionNumber) quicSession
 
 	serverError error
 	errorChan   chan struct{}
@@ -133,6 +135,7 @@ func listenAddr(addr string, tlsConf *tls.Config, config *Config, acceptEarly bo
 // The PacketConn can be used for simultaneous calls to Dial.
 // QUIC connection IDs are used for demultiplexing the different connections.
 // The tls.Config must not be nil and must contain a certificate configuration.
+// The tls.Config.CipherSuites allows setting of TLS 1.3 cipher suites.
 // Furthermore, it must define an application control (using NextProtos).
 // The quic.Config may be nil, in that case the default values will be used.
 func Listen(conn net.PacketConn, tlsConf *tls.Config, config *Config) (Listener, error) {
@@ -145,7 +148,6 @@ func ListenEarly(conn net.PacketConn, tlsConf *tls.Config, config *Config) (Earl
 	if err != nil {
 		return nil, err
 	}
-	s.acceptEarlySessions = true
 	return &earlyServer{s}, nil
 }
 
@@ -174,15 +176,36 @@ func listen(conn net.PacketConn, tlsConf *tls.Config, config *Config, acceptEarl
 		config:              config,
 		tokenGenerator:      tokenGenerator,
 		sessionHandler:      sessionHandler,
+		zeroRTTQueue:        newZeroRTTQueue(),
 		sessionQueue:        make(chan quicSession),
 		errorChan:           make(chan struct{}),
+		receivedPackets:     make(chan *receivedPacket, protocol.MaxServerUnprocessedPackets),
 		newSession:          newSession,
 		logger:              utils.DefaultLogger.WithPrefix("server"),
 		acceptEarlySessions: acceptEarly,
 	}
+	go s.run()
 	sessionHandler.SetServer(s)
 	s.logger.Debugf("Listening for %s connections on %s", conn.LocalAddr().Network(), conn.LocalAddr().String())
 	return s, nil
+}
+
+func (s *baseServer) run() {
+	for {
+		select {
+		case <-s.errorChan:
+			return
+		default:
+		}
+		select {
+		case <-s.errorChan:
+			return
+		case p := <-s.receivedPackets:
+			if shouldReleaseBuffer := s.handlePacketImpl(p); !shouldReleaseBuffer {
+				p.buffer.Release()
+			}
+		}
+	}
 }
 
 var defaultAcceptToken = func(clientAddr net.Addr, token *Token) bool {
@@ -203,72 +226,6 @@ var defaultAcceptToken = func(clientAddr net.Addr, token *Token) bool {
 		sourceAddr = clientAddr.String()
 	}
 	return sourceAddr == token.RemoteAddr
-}
-
-// populateServerConfig populates fields in the quic.Config with their default values, if none are set
-// it may be called with nil
-func populateServerConfig(config *Config) *Config {
-	if config == nil {
-		config = &Config{}
-	}
-	versions := config.Versions
-	if len(versions) == 0 {
-		versions = protocol.SupportedVersions
-	}
-
-	verifyToken := defaultAcceptToken
-	if config.AcceptToken != nil {
-		verifyToken = config.AcceptToken
-	}
-
-	handshakeTimeout := protocol.DefaultHandshakeTimeout
-	if config.HandshakeTimeout != 0 {
-		handshakeTimeout = config.HandshakeTimeout
-	}
-	idleTimeout := protocol.DefaultIdleTimeout
-	if config.IdleTimeout != 0 {
-		idleTimeout = config.IdleTimeout
-	}
-
-	maxReceiveStreamFlowControlWindow := config.MaxReceiveStreamFlowControlWindow
-	if maxReceiveStreamFlowControlWindow == 0 {
-		maxReceiveStreamFlowControlWindow = protocol.DefaultMaxReceiveStreamFlowControlWindow
-	}
-	maxReceiveConnectionFlowControlWindow := config.MaxReceiveConnectionFlowControlWindow
-	if maxReceiveConnectionFlowControlWindow == 0 {
-		maxReceiveConnectionFlowControlWindow = protocol.DefaultMaxReceiveConnectionFlowControlWindow
-	}
-	maxIncomingStreams := config.MaxIncomingStreams
-	if maxIncomingStreams == 0 {
-		maxIncomingStreams = protocol.DefaultMaxIncomingStreams
-	} else if maxIncomingStreams < 0 {
-		maxIncomingStreams = 0
-	}
-	maxIncomingUniStreams := config.MaxIncomingUniStreams
-	if maxIncomingUniStreams == 0 {
-		maxIncomingUniStreams = protocol.DefaultMaxIncomingUniStreams
-	} else if maxIncomingUniStreams < 0 {
-		maxIncomingUniStreams = 0
-	}
-	connIDLen := config.ConnectionIDLength
-	if connIDLen == 0 {
-		connIDLen = protocol.DefaultConnectionIDLength
-	}
-
-	return &Config{
-		Versions:                              versions,
-		HandshakeTimeout:                      handshakeTimeout,
-		IdleTimeout:                           idleTimeout,
-		AcceptToken:                           verifyToken,
-		KeepAlive:                             config.KeepAlive,
-		MaxReceiveStreamFlowControlWindow:     maxReceiveStreamFlowControlWindow,
-		MaxReceiveConnectionFlowControlWindow: maxReceiveConnectionFlowControlWindow,
-		MaxIncomingStreams:                    maxIncomingStreams,
-		MaxIncomingUniStreams:                 maxIncomingUniStreams,
-		ConnectionIDLength:                    connIDLen,
-		StatelessResetKey:                     config.StatelessResetKey,
-		QuicTracer:                            config.QuicTracer,
-	}
 }
 
 // Accept returns sessions that already completed the handshake.
@@ -304,7 +261,7 @@ func (s *baseServer) Close() error {
 	// If the server was started with ListenAddr, we created the packet conn.
 	// We need to close it in order to make the go routine reading from that conn return.
 	if s.createdPacketConn {
-		err = s.sessionHandler.Close()
+		err = s.sessionHandler.Destroy()
 	}
 	s.closed = true
 	close(s.errorChan)
@@ -328,18 +285,14 @@ func (s *baseServer) Addr() net.Addr {
 }
 
 func (s *baseServer) handlePacket(p *receivedPacket) {
-	go func() {
-		if shouldReleaseBuffer := s.handlePacketImpl(p); !shouldReleaseBuffer {
-			p.buffer.Release()
-		}
-	}()
+	select {
+	case s.receivedPackets <- p:
+	default:
+		s.logger.Debugf("Dropping packet from %s (%d bytes). Server receive queue full.", p.remoteAddr, len(p.data))
+	}
 }
 
-func (s *baseServer) handlePacketImpl(p *receivedPacket) bool /* was the packet passed on to a session */ {
-	if len(p.data) < protocol.MinInitialPacketSize {
-		s.logger.Debugf("Dropping a packet that is too small to be a valid Initial (%d bytes)", len(p.data))
-		return false
-	}
+func (s *baseServer) handlePacketImpl(p *receivedPacket) bool /* was the packet handled */ {
 	// If we're creating a new session, the packet will be passed to the session.
 	// The header will then be parsed again.
 	hdr, _, _, err := wire.ParsePacket(p.data, s.config.ConnectionIDLength)
@@ -351,16 +304,26 @@ func (s *baseServer) handlePacketImpl(p *receivedPacket) bool /* was the packet 
 	if !hdr.IsLongHeader {
 		return false
 	}
-	// send a Version Negotiation Packet if the client is speaking a different protocol version
-	if !protocol.IsSupportedVersion(s.config.Versions, hdr.Version) {
-		s.sendVersionNegotiationPacket(p, hdr)
+	if hdr.Type == protocol.PacketTypeInitial && len(p.data) < protocol.MinInitialPacketSize {
+		s.logger.Debugf("Dropping a packet that is too small to be a valid Initial (%d bytes)", len(p.data))
 		return false
 	}
-	if hdr.IsLongHeader && hdr.Type != protocol.PacketTypeInitial {
-		// Drop long header packets.
-		// There's litte point in sending a Stateless Reset, since the client
-		// might not have received the token yet.
+	// send a Version Negotiation Packet if the client is speaking a different protocol version
+	if !protocol.IsSupportedVersion(s.config.Versions, hdr.Version) {
+		go s.sendVersionNegotiationPacket(p, hdr)
 		return false
+	}
+	if hdr.IsLongHeader {
+		if hdr.Type == protocol.PacketType0RTT {
+			s.zeroRTTQueue.Enqueue(hdr.DestConnectionID, p)
+			return true
+		} else if hdr.Type != protocol.PacketTypeInitial {
+			// Drop long header packets.
+			// There's litte point in sending a Stateless Reset, since the client
+			// might not have received the token yet.
+			s.logger.Debugf("Dropping long header packet of type %s (%d bytes)", hdr.Type, len(p.data))
+			return false
+		}
 	}
 
 	s.logger.Debugf("<- Received Initial packet.")
@@ -399,15 +362,28 @@ func (s *baseServer) handleInitialImpl(p *receivedPacket, hdr *wire.Header) (qui
 		}
 	}
 	if !s.config.AcceptToken(p.remoteAddr, token) {
-		// Log the Initial packet now.
-		// If no Retry is sent, the packet will be logged by the session.
-		(&wire.ExtendedHeader{Header: *hdr}).Log(s.logger)
-		return nil, s.sendRetry(p.remoteAddr, hdr)
+		go func() {
+			if token != nil && token.IsRetryToken {
+				if err := s.maybeSendInvalidToken(p, hdr); err != nil {
+					s.logger.Debugf("Error sending INVALID_TOKEN error: %s", err)
+				}
+				return
+			}
+			if err := s.sendRetry(p.remoteAddr, hdr); err != nil {
+				s.logger.Debugf("Error sending Retry: %s", err)
+			}
+		}()
+		return nil, nil
 	}
 
 	if queueLen := atomic.LoadInt32(&s.sessionQueueLen); queueLen >= protocol.MaxAcceptQueueSize {
 		s.logger.Debugf("Rejecting new connection. Server currently busy. Accept queue length: %d (max %d)", queueLen, protocol.MaxAcceptQueueSize)
-		return nil, s.sendServerBusy(p.remoteAddr, hdr)
+		go func() {
+			if err := s.sendServerBusy(p.remoteAddr, hdr); err != nil {
+				s.logger.Debugf("Error rejecting connection: %s", err)
+			}
+		}()
+		return nil, nil
 	}
 
 	connID, err := protocol.GenerateConnectionID(s.config.ConnectionIDLength)
@@ -423,7 +399,15 @@ func (s *baseServer) handleInitialImpl(p *receivedPacket, hdr *wire.Header) (qui
 		connID,
 		hdr.Version,
 	)
-	if sess != nil {
+	if sess == nil {
+		return nil, nil
+	}
+	sess.handlePacket(p)
+	for {
+		p := s.zeroRTTQueue.Dequeue(hdr.DestConnectionID)
+		if p == nil {
+			break
+		}
 		sess.handlePacket(p)
 	}
 	return sess, nil
@@ -437,6 +421,15 @@ func (s *baseServer) createNewSession(
 	srcConnID protocol.ConnectionID,
 	version protocol.VersionNumber,
 ) quicSession {
+	var qlogger qlog.Tracer
+	if s.config.GetLogWriter != nil {
+		if w := s.config.GetLogWriter(origDestConnID); w != nil {
+			qlogger = qlog.NewTracer(w, protocol.PerspectiveServer, origDestConnID)
+		}
+	}
+	if qlogger != nil {
+		qlogger.StartedConnection(time.Now(), s.conn.LocalAddr(), remoteAddr, version, srcConnID, destConnID)
+	}
 	sess := s.newSession(
 		&conn{pconn: s.conn, currentAddr: remoteAddr},
 		s.sessionHandler,
@@ -448,13 +441,14 @@ func (s *baseServer) createNewSession(
 		s.config,
 		s.tlsConf,
 		s.tokenGenerator,
+		s.acceptEarlySessions,
+		qlogger,
 		s.logger,
 		version,
 	)
-	added := s.sessionHandler.AddIfNotTaken(clientDestConnID, sess)
-	// We're already keeping track of this connection ID.
-	// This might happen if we receive two copies of the Initial at the same time.
-	if !added {
+	if added := s.sessionHandler.Add(clientDestConnID, sess); !added {
+		// We're already keeping track of this connection ID.
+		// This might happen if we receive two copies of the Initial at the same time.
 		return nil
 	}
 	s.sessionHandler.Add(srcConnID, sess)
@@ -492,6 +486,9 @@ func (s *baseServer) handleNewSession(sess quicSession) {
 }
 
 func (s *baseServer) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
+	// Log the Initial packet now.
+	// If no Retry is sent, the packet will be logged by the session.
+	(&wire.ExtendedHeader{Header: *hdr}).Log(s.logger)
 	token, err := s.tokenGenerator.NewRetryToken(remoteAddr, hdr.DestConnectionID)
 	if err != nil {
 		return err
@@ -506,7 +503,6 @@ func (s *baseServer) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
 	replyHdr.Version = hdr.Version
 	replyHdr.SrcConnectionID = connID
 	replyHdr.DestConnectionID = hdr.SrcConnectionID
-	replyHdr.OrigDestConnectionID = hdr.DestConnectionID
 	replyHdr.Token = token
 	s.logger.Debugf("Changing connection ID to %s.", connID)
 	s.logger.Debugf("-> Sending Retry")
@@ -515,19 +511,46 @@ func (s *baseServer) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
 	if err := replyHdr.Write(buf, hdr.Version); err != nil {
 		return err
 	}
-	if _, err := s.conn.WriteTo(buf.Bytes(), remoteAddr); err != nil {
-		s.logger.Debugf("Error sending Retry: %s", err)
+	// append the Retry integrity tag
+	tag := handshake.GetRetryIntegrityTag(buf.Bytes(), hdr.DestConnectionID)
+	buf.Write(tag[:])
+	_, err = s.conn.WriteTo(buf.Bytes(), remoteAddr)
+	return err
+}
+
+func (s *baseServer) maybeSendInvalidToken(p *receivedPacket, hdr *wire.Header) error {
+	// Only send INVALID_TOKEN if we can unprotect the packet.
+	// This makes sure that we won't send it for packets that were corrupted.
+	sealer, opener := handshake.NewInitialAEAD(hdr.DestConnectionID, protocol.PerspectiveServer)
+	data := p.data[:hdr.ParsedLen()+hdr.Length]
+	extHdr, err := unpackHeader(opener, hdr, data, hdr.Version)
+	if err != nil {
+		// don't return the error here. Just drop the packet.
+		return nil
 	}
-	return nil
+	hdrLen := extHdr.ParsedLen()
+	if _, err := opener.Open(data[hdrLen:hdrLen], data[hdrLen:], extHdr.PacketNumber, data[:hdrLen]); err != nil {
+		// don't return the error here. Just drop the packet.
+		return nil
+	}
+	if s.logger.Debug() {
+		s.logger.Debugf("Client sent an invalid retry token. Sending INVALID_TOKEN to %s.", p.remoteAddr)
+	}
+	return s.sendError(p.remoteAddr, hdr, sealer, qerr.InvalidToken)
 }
 
 func (s *baseServer) sendServerBusy(remoteAddr net.Addr, hdr *wire.Header) error {
 	sealer, _ := handshake.NewInitialAEAD(hdr.DestConnectionID, protocol.PerspectiveServer)
+	return s.sendError(remoteAddr, hdr, sealer, qerr.ServerBusy)
+}
+
+// sendError sends the error as a response to the packet received with header hdr
+func (s *baseServer) sendError(remoteAddr net.Addr, hdr *wire.Header, sealer handshake.LongHeaderSealer, errorCode qerr.ErrorCode) error {
 	packetBuffer := getPacketBuffer()
 	defer packetBuffer.Release()
-	buf := bytes.NewBuffer(packetBuffer.Slice[:0])
+	buf := bytes.NewBuffer(packetBuffer.Data)
 
-	ccf := &wire.ConnectionCloseFrame{ErrorCode: qerr.ServerBusy}
+	ccf := &wire.ConnectionCloseFrame{ErrorCode: errorCode}
 
 	replyHdr := &wire.ExtendedHeader{}
 	replyHdr.IsLongHeader = true
@@ -559,10 +582,8 @@ func (s *baseServer) sendServerBusy(remoteAddr net.Addr, hdr *wire.Header) error
 
 	replyHdr.Log(s.logger)
 	wire.LogFrame(s.logger, ccf, true)
-	if _, err := s.conn.WriteTo(raw, remoteAddr); err != nil {
-		s.logger.Debugf("Error rejecting connection: %s", err)
-	}
-	return nil
+	_, err := s.conn.WriteTo(raw, remoteAddr)
+	return err
 }
 
 func (s *baseServer) sendVersionNegotiationPacket(p *receivedPacket, hdr *wire.Header) {

@@ -117,7 +117,7 @@ func (g *Gateway) removeConnection(connID uint64) {
 	g.connsMtx.Unlock()
 
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
-	_ = qConn.conn.Close()
+	_ = qConn.conn.CloseWithError(0, "")
 
 	qConn.Lock()
 	if !qConn.closed {

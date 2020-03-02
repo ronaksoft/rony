@@ -96,7 +96,7 @@ func TestGateway(t *testing.T) {
 						}()
 					}
 					waitGroup.Wait()
-					_ = client.Close()
+					_ = client.CloseWithError(0, "")
 					wg.Done()
 				}()
 			}

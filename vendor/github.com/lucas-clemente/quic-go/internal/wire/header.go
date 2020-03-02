@@ -56,9 +56,8 @@ type Header struct {
 
 	Length protocol.ByteCount
 
-	Token                []byte
-	SupportedVersions    []protocol.VersionNumber // sent in a Version Negotiation Packet
-	OrigDestConnectionID protocol.ConnectionID    // sent in the Retry packet
+	Token             []byte
+	SupportedVersions []protocol.VersionNumber // sent in a Version Negotiation Packet
 
 	parsedLen protocol.ByteCount // how many bytes were read while parsing this header
 }
@@ -176,19 +175,16 @@ func (h *Header) parseLongHeader(b *bytes.Reader) error {
 	}
 
 	if h.Type == protocol.PacketTypeRetry {
-		origDestConnIDLen, err := b.ReadByte()
-		if err != nil {
-			return err
+		tokenLen := b.Len() - 16
+		if tokenLen <= 0 {
+			return io.EOF
 		}
-		h.OrigDestConnectionID, err = protocol.ReadConnectionID(b, int(origDestConnIDLen))
-		if err != nil {
-			return err
-		}
-		h.Token = make([]byte, b.Len())
+		h.Token = make([]byte, tokenLen)
 		if _, err := io.ReadFull(b, h.Token); err != nil {
 			return err
 		}
-		return nil
+		_, err := b.Seek(16, io.SeekCurrent)
+		return err
 	}
 
 	if h.Type == protocol.PacketTypeInitial {
@@ -241,7 +237,15 @@ func (h *Header) ParsedLen() protocol.ByteCount {
 // ParseExtended parses the version dependent part of the header.
 // The Reader has to be set such that it points to the first byte of the header.
 func (h *Header) ParseExtended(b *bytes.Reader, ver protocol.VersionNumber) (*ExtendedHeader, error) {
-	return h.toExtendedHeader().parse(b, ver)
+	extHdr := h.toExtendedHeader()
+	reservedBitsValid, err := extHdr.parse(b, ver)
+	if err != nil {
+		return nil, err
+	}
+	if !reservedBitsValid {
+		return extHdr, ErrInvalidReservedBits
+	}
+	return extHdr, nil
 }
 
 func (h *Header) toExtendedHeader() *ExtendedHeader {
