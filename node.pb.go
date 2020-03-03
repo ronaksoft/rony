@@ -25,9 +25,12 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // edgeNode
 type EdgeNode struct {
-	BundleID   string `protobuf:"bytes,1,req,name=BundleID" json:"BundleID"`
-	InstanceID string `protobuf:"bytes,2,req,name=InstanceID" json:"InstanceID"`
-	RaftPort   uint32 `protobuf:"varint,4,opt,name=RaftPort" json:"RaftPort"`
+	ServerID    string `protobuf:"bytes,1,req,name=ServerID" json:"ServerID"`
+	ReplicaSet  string `protobuf:"bytes,2,opt,name=ReplicaSet" json:"ReplicaSet"`
+	RaftPort    uint32 `protobuf:"varint,3,opt,name=RaftPort" json:"RaftPort"`
+	ShardMin    uint32 `protobuf:"varint,4,opt,name=ShardMin" json:"ShardMin"`
+	ShardMax    uint32 `protobuf:"varint,5,opt,name=ShardMax" json:"ShardMax"`
+	GatewayAddr string `protobuf:"bytes,6,req,name=GatewayAddr" json:"GatewayAddr"`
 }
 
 func (m *EdgeNode) Reset()         { *m = EdgeNode{} }
@@ -63,16 +66,16 @@ func (m *EdgeNode) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_EdgeNode proto.InternalMessageInfo
 
-func (m *EdgeNode) GetBundleID() string {
+func (m *EdgeNode) GetServerID() string {
 	if m != nil {
-		return m.BundleID
+		return m.ServerID
 	}
 	return ""
 }
 
-func (m *EdgeNode) GetInstanceID() string {
+func (m *EdgeNode) GetReplicaSet() string {
 	if m != nil {
-		return m.InstanceID
+		return m.ReplicaSet
 	}
 	return ""
 }
@@ -84,6 +87,27 @@ func (m *EdgeNode) GetRaftPort() uint32 {
 	return 0
 }
 
+func (m *EdgeNode) GetShardMin() uint32 {
+	if m != nil {
+		return m.ShardMin
+	}
+	return 0
+}
+
+func (m *EdgeNode) GetShardMax() uint32 {
+	if m != nil {
+		return m.ShardMax
+	}
+	return 0
+}
+
+func (m *EdgeNode) GetGatewayAddr() string {
+	if m != nil {
+		return m.GatewayAddr
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*EdgeNode)(nil), "rony.edgeNode")
 }
@@ -91,17 +115,20 @@ func init() {
 func init() { proto.RegisterFile("node.proto", fileDescriptor_0c843d59d2d938e7) }
 
 var fileDescriptor_0c843d59d2d938e7 = []byte{
-	// 147 bytes of a gzipped FileDescriptorProto
+	// 199 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xcb, 0x4f, 0x49,
-	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0xca, 0xcf, 0xab, 0x54, 0x2a, 0xe1, 0xe2,
-	0x48, 0x4d, 0x49, 0x4f, 0xf5, 0xcb, 0x4f, 0x49, 0x15, 0x52, 0xe0, 0xe2, 0x70, 0x2a, 0xcd, 0x4b,
-	0xc9, 0x49, 0xf5, 0x74, 0x91, 0x60, 0x54, 0x60, 0xd2, 0xe0, 0x74, 0x62, 0x39, 0x71, 0x4f, 0x9e,
-	0x21, 0x08, 0x2e, 0x2a, 0xa4, 0xc2, 0xc5, 0xe5, 0x99, 0x57, 0x5c, 0x92, 0x98, 0x97, 0x0c, 0x52,
-	0xc3, 0x84, 0xa4, 0x06, 0x49, 0x1c, 0x64, 0x4e, 0x50, 0x62, 0x5a, 0x49, 0x40, 0x7e, 0x51, 0x89,
-	0x04, 0x8b, 0x02, 0xa3, 0x06, 0x2f, 0xcc, 0x1c, 0x98, 0xa8, 0x93, 0xc4, 0x89, 0x47, 0x72, 0x8c,
-	0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72,
-	0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x00, 0x02, 0x00, 0x00, 0xff, 0xff, 0x3f, 0xce, 0xef, 0x0f, 0xa2,
-	0x00, 0x00, 0x00,
+	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0xca, 0xcf, 0xab, 0x54, 0x7a, 0xc0, 0xc8,
+	0xc5, 0x91, 0x9a, 0x92, 0x9e, 0xea, 0x97, 0x9f, 0x92, 0x2a, 0xa4, 0xc0, 0xc5, 0x11, 0x9c, 0x5a,
+	0x54, 0x96, 0x5a, 0xe4, 0xe9, 0x22, 0xc1, 0xa8, 0xc0, 0xa4, 0xc1, 0xe9, 0xc4, 0x72, 0xe2, 0x9e,
+	0x3c, 0x43, 0x10, 0x5c, 0x54, 0x48, 0x85, 0x8b, 0x2b, 0x28, 0xb5, 0x20, 0x27, 0x33, 0x39, 0x31,
+	0x38, 0xb5, 0x44, 0x82, 0x49, 0x81, 0x11, 0xae, 0x06, 0x49, 0x1c, 0x64, 0x4e, 0x50, 0x62, 0x5a,
+	0x49, 0x40, 0x7e, 0x51, 0x89, 0x04, 0xb3, 0x02, 0xa3, 0x06, 0x2f, 0xcc, 0x1c, 0x98, 0x28, 0xd8,
+	0xa6, 0x8c, 0xc4, 0xa2, 0x14, 0xdf, 0xcc, 0x3c, 0x09, 0x16, 0x64, 0x15, 0x30, 0x51, 0x84, 0x8a,
+	0xc4, 0x0a, 0x09, 0x56, 0x4c, 0x15, 0x89, 0x15, 0x42, 0x6a, 0x5c, 0xdc, 0xee, 0x89, 0x25, 0xa9,
+	0xe5, 0x89, 0x95, 0x8e, 0x29, 0x29, 0x45, 0x12, 0x6c, 0x48, 0x0e, 0x46, 0x96, 0x70, 0x92, 0x38,
+	0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63,
+	0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x06, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6c,
+	0xac, 0x3e, 0xa0, 0x0f, 0x01, 0x00, 0x00,
 }
 
 func (m *EdgeNode) Marshal() (dAtA []byte, err error) {
@@ -124,17 +151,28 @@ func (m *EdgeNode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	i = encodeVarintNode(dAtA, i, uint64(m.RaftPort))
+	i -= len(m.GatewayAddr)
+	copy(dAtA[i:], m.GatewayAddr)
+	i = encodeVarintNode(dAtA, i, uint64(len(m.GatewayAddr)))
+	i--
+	dAtA[i] = 0x32
+	i = encodeVarintNode(dAtA, i, uint64(m.ShardMax))
+	i--
+	dAtA[i] = 0x28
+	i = encodeVarintNode(dAtA, i, uint64(m.ShardMin))
 	i--
 	dAtA[i] = 0x20
-	i -= len(m.InstanceID)
-	copy(dAtA[i:], m.InstanceID)
-	i = encodeVarintNode(dAtA, i, uint64(len(m.InstanceID)))
+	i = encodeVarintNode(dAtA, i, uint64(m.RaftPort))
+	i--
+	dAtA[i] = 0x18
+	i -= len(m.ReplicaSet)
+	copy(dAtA[i:], m.ReplicaSet)
+	i = encodeVarintNode(dAtA, i, uint64(len(m.ReplicaSet)))
 	i--
 	dAtA[i] = 0x12
-	i -= len(m.BundleID)
-	copy(dAtA[i:], m.BundleID)
-	i = encodeVarintNode(dAtA, i, uint64(len(m.BundleID)))
+	i -= len(m.ServerID)
+	copy(dAtA[i:], m.ServerID)
+	i = encodeVarintNode(dAtA, i, uint64(len(m.ServerID)))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -157,11 +195,15 @@ func (m *EdgeNode) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.BundleID)
+	l = len(m.ServerID)
 	n += 1 + l + sovNode(uint64(l))
-	l = len(m.InstanceID)
+	l = len(m.ReplicaSet)
 	n += 1 + l + sovNode(uint64(l))
 	n += 1 + sovNode(uint64(m.RaftPort))
+	n += 1 + sovNode(uint64(m.ShardMin))
+	n += 1 + sovNode(uint64(m.ShardMax))
+	l = len(m.GatewayAddr)
+	n += 1 + l + sovNode(uint64(l))
 	return n
 }
 
@@ -203,7 +245,7 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BundleID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ServerID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -231,12 +273,12 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BundleID = string(dAtA[iNdEx:postIndex])
+			m.ServerID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InstanceID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaSet", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -264,10 +306,9 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InstanceID = string(dAtA[iNdEx:postIndex])
+			m.ReplicaSet = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		case 4:
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RaftPort", wireType)
 			}
@@ -286,6 +327,77 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardMin", wireType)
+			}
+			m.ShardMin = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ShardMin |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardMax", wireType)
+			}
+			m.ShardMax = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ShardMax |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GatewayAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthNode
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthNode
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GatewayAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipNode(dAtA[iNdEx:])
@@ -305,10 +417,10 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("BundleID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("ServerID")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("InstanceID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("GatewayAddr")
 	}
 
 	if iNdEx > l {

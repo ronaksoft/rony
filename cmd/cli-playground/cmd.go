@@ -12,7 +12,6 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,11 +30,13 @@ var Edges map[string]*rony.EdgeServer
 
 func init() {
 	Edges = make(map[string]*rony.EdgeServer)
-	RootCmd.AddCommand(StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, DemoCmd, ClusterMessageCmd)
-	DemoCmd.AddCommand(DemoRaft, DemoClusterBroadcast, DemoClusterMessage)
+	RootCmd.AddCommand(
+		StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, ClusterMessageCmd,
+		MembersCmd,
+	)
 
-	RootCmd.PersistentFlags().String(FlagBundleID, "First", "")
-	RootCmd.PersistentFlags().String(FlagInstanceID, "01", "")
+	RootCmd.PersistentFlags().String(FlagServerID, "Node", "")
+	RootCmd.PersistentFlags().String(FlagReplicaSet, "", "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 801, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 
@@ -44,18 +45,18 @@ func init() {
 var StartCmd = &cobra.Command{
 	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
-		bundleID, _ := cmd.Flags().GetString(FlagBundleID)
-		instanceID, _ := cmd.Flags().GetString(FlagInstanceID)
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		replicaSet, _ := cmd.Flags().GetString(FlagReplicaSet)
 		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
-		startFunc(bundleID, instanceID, gossipPort, raftBootstrap)
+		startFunc(serverID, replicaSet, gossipPort, raftBootstrap)
 	},
 }
 
-func startFunc(bundleID, instanceID string, port int, bootstrap bool) {
-	serverID := fmt.Sprintf("%s.%s", bundleID, instanceID)
+func startFunc(serverID, replicaSet string, port int, bootstrap bool) {
 	if _, ok := Edges[serverID]; !ok {
-		Edges[serverID] = rony.NewEdgeServer(bundleID, instanceID, &dispatcher{},
+		opts := make([]rony.Option, 0)
+		opts = append(opts,
 			rony.WithWebsocketGateway(websocketGateway.Config{
 				NewConnectionWorkers: 10,
 				MaxConcurrency:       1000,
@@ -63,9 +64,13 @@ func startFunc(bundleID, instanceID string, port int, bootstrap bool) {
 				ListenAddress:        "0.0.0.0:0",
 			}),
 			rony.WithDataPath(filepath.Join("./_hdd", serverID)),
-			rony.WithRaft(port*10, bootstrap),
 			rony.WithGossipPort(port),
 		)
+		if replicaSet != "" {
+			opts = append(opts, rony.WithReplicaSet(replicaSet, port*10, bootstrap))
+		}
+
+		Edges[serverID] = rony.NewEdgeServer(serverID, &dispatcher{}, opts...)
 		Edges[serverID].AddHandler(msg.C_EchoRequest, EchoHandler)
 		err := Edges[serverID].Run()
 		if err != nil {
@@ -397,50 +402,30 @@ func clusterMessage(n1, n2 string) {
 	}
 }
 
-var DemoCmd = &cobra.Command{
-	Use: "demo",
+var MembersCmd = &cobra.Command{
+	Use: "members",
 	Run: func(cmd *cobra.Command, args []string) {
-
-	},
-}
-
-var DemoRaft = &cobra.Command{
-	Use: "raft",
-	Run: func(cmd *cobra.Command, args []string) {
-		_ = os.RemoveAll("./_hdd")
-		startFunc("First", "01", 801, true)
-		startFunc("First", "02", 802, false)
-		startFunc("First", "03", 803, false)
-		listFunc()
-		joinFunc("First.02", "First.01")
-		joinFunc("First.03", "First.02")
-		time.Sleep(time.Second)
-		listFunc()
-	},
-}
-
-var DemoClusterMessage = &cobra.Command{
-	Use: "clusterMessage",
-	Run: func(cmd *cobra.Command, args []string) {
-		_ = os.RemoveAll("./_hdd")
-		startFunc("First", "01", 801, true)
-		startFunc("Second", "01", 802, true)
-		startFunc("Third", "01", 803, true)
-		joinFunc("First.01", "Second.01")
-		joinFunc("First.01", "Third.01")
-		time.Sleep(time.Second * 3)
-		listFunc()
-		clusterMessage("First.01", "Second.01")
-		clusterMessage("Third.01", "First.01")
-		for _, e := range Edges {
-			e.Shutdown()
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		s, ok := Edges[serverID]
+		if !ok {
+			return
 		}
-	},
-}
 
-var DemoClusterBroadcast = &cobra.Command{
-	Use: "clusterBroadcast",
-	Run: func(cmd *cobra.Command, args []string) {
+		var rows []string
+		rows = append(rows,
+			"ServerID | ReplicaSet | Raft Port | Gossip Addr | Gateway Addr",
+			"--------- | ------------ | ------------ | ---------------- | ----------- ",
+		)
+
+		for _, cm := range s.ClusterMembers() {
+			rows = append(rows,
+				fmt.Sprintf("%s | %s | %d | %s(%d) | %s",
+					cm.ServerID, cm.ReplicaSet, cm.RaftPort, cm.Addr.String(), cm.Port, cm.GatewayAddr,
+				),
+			)
+		}
+
+		fmt.Println(columnize.SimpleFormat(rows))
 
 	},
 }

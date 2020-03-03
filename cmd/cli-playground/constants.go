@@ -11,8 +11,8 @@ package main
 
 // Flag Names
 const (
-	FlagBundleID   = "bundleID"
-	FlagInstanceID = "instanceID"
+	FlagServerID   = "serverID"
+	FlagReplicaSet = "replicaSet"
 	FlagBootstrap  = "bootstrap"
 	FlagGossipPort = "port"
 )

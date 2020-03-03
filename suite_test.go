@@ -97,7 +97,7 @@ func initHandlers(edge *rony.EdgeServer) {
 	})
 }
 
-func initEdgeServer(bundleID, instanceID string, clientPort int, opts ...rony.Option) *rony.EdgeServer {
+func initEdgeServer(serverID string, clientPort int, opts ...rony.Option) *rony.EdgeServer {
 	opts = append(opts,
 		rony.WithWebsocketGateway(websocketGateway.Config{
 			NewConnectionWorkers: 1,
@@ -106,7 +106,7 @@ func initEdgeServer(bundleID, instanceID string, clientPort int, opts ...rony.Op
 			ListenAddress:        fmt.Sprintf(":%d", clientPort),
 		}),
 	)
-	edge := rony.NewEdgeServer(bundleID, instanceID, &testDispatcher{}, opts...)
+	edge := rony.NewEdgeServer(serverID, &testDispatcher{}, opts...)
 	initHandlers(edge)
 
 	return edge
@@ -120,7 +120,7 @@ func init() {
 func TestEdgeServerSimple(t *testing.T) {
 	Convey("Simple Edge", t, func(c C) {
 		clientPort := 8080
-		edge := initEdgeServer("Test", "01", clientPort,
+		edge := initEdgeServer("Adam", clientPort,
 			rony.WithDataPath("./_hdd"),
 		)
 		err := edge.Run()
@@ -148,21 +148,21 @@ func TestEdgeServerSimple(t *testing.T) {
 func TestEdgeServerRaft(t *testing.T) {
 	Convey("Replicated Edge", t, func(c C) {
 		clientPort1 := 8081
-		edge1 := initEdgeServer("Test", "01", clientPort1,
+		edge1 := initEdgeServer("Raft.01", clientPort1,
 			rony.WithDataPath("./_hdd/edge01"),
-			rony.WithRaft(9091, true),
+			rony.WithReplicaSet("RS01", 9091, true),
 			rony.WithGossipPort(9081),
 		)
 		clientPort2 := 8082
-		edge2 := initEdgeServer("Test", "02", clientPort2,
+		edge2 := initEdgeServer("Raft.02", clientPort2,
 			rony.WithDataPath("./_hdd/edge02"),
-			rony.WithRaft(9092, false),
+			rony.WithReplicaSet("RS01", 9092, false),
 			rony.WithGossipPort(9082),
 		)
 		clientPort3 := 8083
-		edge3 := initEdgeServer("Test", "03", clientPort3,
+		edge3 := initEdgeServer("Raft.03", clientPort3,
 			rony.WithDataPath("./_hdd/edge03"),
-			rony.WithRaft(9093, false),
+			rony.WithReplicaSet("RS03", 9093, false),
 			rony.WithGossipPort(9083),
 		)
 

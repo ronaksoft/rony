@@ -20,12 +20,19 @@ import (
 
 type Option func(edge *EdgeServer)
 
-func WithRaft(bindPort int, bootstrap bool) Option {
+func WithReplicaSet(replicaSet string, bindPort int, bootstrap bool) Option {
 	return func(edge *EdgeServer) {
 		edge.raftFSM = raftFSM{edge: edge}
+		edge.replicaSet = replicaSet
 		edge.raftEnabled = true
 		edge.raftPort = bindPort
 		edge.raftBootstrap = bootstrap
+	}
+}
+
+func WithGossipPort(gossipPort int) Option {
+	return func(edge *EdgeServer) {
+		edge.gossipPort = gossipPort
 	}
 }
 
@@ -99,11 +106,5 @@ func WithQuicGateway(config quicGateway.Config) Option {
 		edge.gatewayProtocol = gateway.QUIC
 		edge.gateway = gatewayQuic
 		return
-	}
-}
-
-func WithGossipPort(gossipPort int) Option {
-	return func(edge *EdgeServer) {
-		edge.gossipPort = gossipPort
 	}
 }

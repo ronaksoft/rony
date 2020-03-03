@@ -3,7 +3,10 @@ package rony;
 
 // edgeNode
 message edgeNode {
-    required string BundleID = 1;
-    required string InstanceID = 2;
-    optional uint32 RaftPort = 4;
+    required string ServerID = 1;
+    optional string ReplicaSet = 2;
+    optional uint32 RaftPort = 3;
+    optional uint32 ShardMin = 4;
+    optional uint32 ShardMax = 5;
+    required string GatewayAddr = 6;
 }
