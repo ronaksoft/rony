@@ -21,14 +21,17 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+// ClusterMembers returns a list of all the discovered nodes in the cluster
 func (edge *EdgeServer) ClusterMembers() []*ClusterMember {
 	return edge.cluster.Members()
 }
 
+// ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
+// is not in the list. The message will be send with BEST EFFORT and using UDP
 func (edge *EdgeServer) ClusterSend(serverID string, envelope *msg.MessageEnvelope) error {
 	m := edge.cluster.GetByID(serverID)
 	if m == nil {
-		return errors.ErrEmpty
+		return errors.ErrNotFound
 	}
 	b := pbytes.GetLen(envelope.Size())
 	_, err := envelope.MarshalTo(b)
@@ -88,6 +91,7 @@ type Cluster struct {
 	sync.RWMutex
 	byServerID   map[string]*ClusterMember
 	byReplicaSet map[uint32][]*ClusterMember
+	byShardSet   map[uint32][]*ClusterMember
 }
 
 func (c *Cluster) GetByID(id string) *ClusterMember {
@@ -117,11 +121,6 @@ func (c *Cluster) AddMember(m *ClusterMember) {
 	}
 
 	c.byServerID[m.ServerID] = m
-	if c.byReplicaSet[m.ReplicaSet] == nil {
-		c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
-		return
-	}
-
 	for idx := range c.byReplicaSet[m.ReplicaSet] {
 		if c.byReplicaSet[m.ReplicaSet][idx].ServerID == m.ServerID {
 			c.byReplicaSet[m.ReplicaSet][idx] = m
@@ -129,6 +128,14 @@ func (c *Cluster) AddMember(m *ClusterMember) {
 		}
 	}
 	c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
+
+	for idx := range c.byShardSet[m.ShardSet] {
+		if c.byShardSet[m.ShardSet][idx].ServerID == m.ServerID {
+			c.byShardSet[m.ShardSet][idx] = m
+			return
+		}
+	}
+	c.byShardSet[m.ShardSet] = append(c.byShardSet[m.ShardSet], m)
 }
 
 func (c *Cluster) RemoveMember(m *ClusterMember) {

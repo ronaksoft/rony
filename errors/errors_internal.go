@@ -19,6 +19,7 @@ var (
 	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")
 	ErrBridgeAlreadyInitialized  = errors.New("bridge already initialized")
 	ErrEmpty                     = errors.New("empty key")
+	ErrNotFound                  = errors.New("not found")
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftNotSet                = errors.New("raft not set")
 	ErrWriteToClosedConn         = errors.New("write to closed conn")
