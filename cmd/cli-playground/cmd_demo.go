@@ -31,6 +31,7 @@ var DemoRaftCmd = &cobra.Command{
 	Use: "raft",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = os.RemoveAll("./_hdd")
+
 		startFunc("Raft.01", 1, 801, true)
 		startFunc("Raft.02", 1, 802, false)
 		startFunc("Raft.03", 1, 803, false)
@@ -46,6 +47,7 @@ var DemoClusterMessageCmd = &cobra.Command{
 	Use: "clusterMessage",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = os.RemoveAll("./_hdd")
+
 		startFunc("Cluster.01", 0, 801, true)
 		startFunc("Cluster.02", 0, 802, true)
 		startFunc("Cluster.03", 0, 803, true)

@@ -66,6 +66,7 @@ func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 			rony.WithDataPath(filepath.Join("./_hdd", serverID)),
 			rony.WithGossipPort(port),
 		)
+
 		if replicaSet != 0 {
 			opts = append(opts, rony.WithReplicaSet(replicaSet, port*10, bootstrap))
 		}
