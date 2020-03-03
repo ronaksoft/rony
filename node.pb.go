@@ -25,9 +25,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // edgeNode
 type EdgeNode struct {
-	BundleID   string `protobuf:"bytes,1,req,name=BundleID" json:"BundleID"`
-	InstanceID string `protobuf:"bytes,2,req,name=InstanceID" json:"InstanceID"`
-	RaftPort   uint32 `protobuf:"varint,4,opt,name=RaftPort" json:"RaftPort"`
+	ServerID    string `protobuf:"bytes,1,req,name=ServerID" json:"ServerID"`
+	ReplicaSet  uint32 `protobuf:"varint,2,opt,name=ReplicaSet" json:"ReplicaSet"`
+	ShardSet    uint32 `protobuf:"varint,3,opt,name=ShardSet" json:"ShardSet"`
+	RaftPort    uint32 `protobuf:"varint,4,opt,name=RaftPort" json:"RaftPort"`
+	ShardMin    uint32 `protobuf:"varint,5,opt,name=ShardMin" json:"ShardMin"`
+	ShardMax    uint32 `protobuf:"varint,6,opt,name=ShardMax" json:"ShardMax"`
+	GatewayAddr string `protobuf:"bytes,7,req,name=GatewayAddr" json:"GatewayAddr"`
 }
 
 func (m *EdgeNode) Reset()         { *m = EdgeNode{} }
@@ -63,18 +67,25 @@ func (m *EdgeNode) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_EdgeNode proto.InternalMessageInfo
 
-func (m *EdgeNode) GetBundleID() string {
+func (m *EdgeNode) GetServerID() string {
 	if m != nil {
-		return m.BundleID
+		return m.ServerID
 	}
 	return ""
 }
 
-func (m *EdgeNode) GetInstanceID() string {
+func (m *EdgeNode) GetReplicaSet() uint32 {
 	if m != nil {
-		return m.InstanceID
+		return m.ReplicaSet
 	}
-	return ""
+	return 0
+}
+
+func (m *EdgeNode) GetShardSet() uint32 {
+	if m != nil {
+		return m.ShardSet
+	}
+	return 0
 }
 
 func (m *EdgeNode) GetRaftPort() uint32 {
@@ -84,6 +95,27 @@ func (m *EdgeNode) GetRaftPort() uint32 {
 	return 0
 }
 
+func (m *EdgeNode) GetShardMin() uint32 {
+	if m != nil {
+		return m.ShardMin
+	}
+	return 0
+}
+
+func (m *EdgeNode) GetShardMax() uint32 {
+	if m != nil {
+		return m.ShardMax
+	}
+	return 0
+}
+
+func (m *EdgeNode) GetGatewayAddr() string {
+	if m != nil {
+		return m.GatewayAddr
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*EdgeNode)(nil), "rony.edgeNode")
 }
@@ -91,17 +123,20 @@ func init() {
 func init() { proto.RegisterFile("node.proto", fileDescriptor_0c843d59d2d938e7) }
 
 var fileDescriptor_0c843d59d2d938e7 = []byte{
-	// 147 bytes of a gzipped FileDescriptorProto
+	// 207 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xcb, 0x4f, 0x49,
-	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0xca, 0xcf, 0xab, 0x54, 0x2a, 0xe1, 0xe2,
-	0x48, 0x4d, 0x49, 0x4f, 0xf5, 0xcb, 0x4f, 0x49, 0x15, 0x52, 0xe0, 0xe2, 0x70, 0x2a, 0xcd, 0x4b,
-	0xc9, 0x49, 0xf5, 0x74, 0x91, 0x60, 0x54, 0x60, 0xd2, 0xe0, 0x74, 0x62, 0x39, 0x71, 0x4f, 0x9e,
-	0x21, 0x08, 0x2e, 0x2a, 0xa4, 0xc2, 0xc5, 0xe5, 0x99, 0x57, 0x5c, 0x92, 0x98, 0x97, 0x0c, 0x52,
-	0xc3, 0x84, 0xa4, 0x06, 0x49, 0x1c, 0x64, 0x4e, 0x50, 0x62, 0x5a, 0x49, 0x40, 0x7e, 0x51, 0x89,
-	0x04, 0x8b, 0x02, 0xa3, 0x06, 0x2f, 0xcc, 0x1c, 0x98, 0xa8, 0x93, 0xc4, 0x89, 0x47, 0x72, 0x8c,
-	0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72,
-	0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x00, 0x02, 0x00, 0x00, 0xff, 0xff, 0x3f, 0xce, 0xef, 0x0f, 0xa2,
-	0x00, 0x00, 0x00,
+	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0xca, 0xcf, 0xab, 0x54, 0x6a, 0x62, 0xe2,
+	0xe2, 0x48, 0x4d, 0x49, 0x4f, 0xf5, 0xcb, 0x4f, 0x49, 0x15, 0x52, 0xe0, 0xe2, 0x08, 0x4e, 0x2d,
+	0x2a, 0x4b, 0x2d, 0xf2, 0x74, 0x91, 0x60, 0x54, 0x60, 0xd2, 0xe0, 0x74, 0x62, 0x39, 0x71, 0x4f,
+	0x9e, 0x21, 0x08, 0x2e, 0x2a, 0xa4, 0xc2, 0xc5, 0x15, 0x94, 0x5a, 0x90, 0x93, 0x99, 0x9c, 0x18,
+	0x9c, 0x5a, 0x22, 0xc1, 0xa4, 0xc0, 0xa8, 0xc1, 0x0b, 0x55, 0x83, 0x24, 0x0e, 0x36, 0x27, 0x23,
+	0xb1, 0x28, 0x05, 0xa4, 0x86, 0x19, 0x49, 0x0d, 0x5c, 0x14, 0xa4, 0x22, 0x28, 0x31, 0xad, 0x24,
+	0x20, 0xbf, 0xa8, 0x44, 0x82, 0x05, 0x59, 0x05, 0x4c, 0x14, 0x6e, 0x86, 0x6f, 0x66, 0x9e, 0x04,
+	0x2b, 0x86, 0x19, 0xbe, 0x99, 0x79, 0x08, 0x15, 0x89, 0x15, 0x12, 0x6c, 0x98, 0x2a, 0x12, 0x2b,
+	0x84, 0xd4, 0xb8, 0xb8, 0xdd, 0x13, 0x4b, 0x52, 0xcb, 0x13, 0x2b, 0x1d, 0x53, 0x52, 0x8a, 0x24,
+	0xd8, 0x91, 0xbc, 0x84, 0x2c, 0xe1, 0x24, 0x71, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c,
+	0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72,
+	0x0c, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x69, 0x22, 0xb1, 0xa0, 0x31, 0x01, 0x00, 0x00,
 }
 
 func (m *EdgeNode) Marshal() (dAtA []byte, err error) {
@@ -124,17 +159,29 @@ func (m *EdgeNode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.GatewayAddr)
+	copy(dAtA[i:], m.GatewayAddr)
+	i = encodeVarintNode(dAtA, i, uint64(len(m.GatewayAddr)))
+	i--
+	dAtA[i] = 0x3a
+	i = encodeVarintNode(dAtA, i, uint64(m.ShardMax))
+	i--
+	dAtA[i] = 0x30
+	i = encodeVarintNode(dAtA, i, uint64(m.ShardMin))
+	i--
+	dAtA[i] = 0x28
 	i = encodeVarintNode(dAtA, i, uint64(m.RaftPort))
 	i--
 	dAtA[i] = 0x20
-	i -= len(m.InstanceID)
-	copy(dAtA[i:], m.InstanceID)
-	i = encodeVarintNode(dAtA, i, uint64(len(m.InstanceID)))
+	i = encodeVarintNode(dAtA, i, uint64(m.ShardSet))
 	i--
-	dAtA[i] = 0x12
-	i -= len(m.BundleID)
-	copy(dAtA[i:], m.BundleID)
-	i = encodeVarintNode(dAtA, i, uint64(len(m.BundleID)))
+	dAtA[i] = 0x18
+	i = encodeVarintNode(dAtA, i, uint64(m.ReplicaSet))
+	i--
+	dAtA[i] = 0x10
+	i -= len(m.ServerID)
+	copy(dAtA[i:], m.ServerID)
+	i = encodeVarintNode(dAtA, i, uint64(len(m.ServerID)))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -157,11 +204,15 @@ func (m *EdgeNode) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.BundleID)
+	l = len(m.ServerID)
 	n += 1 + l + sovNode(uint64(l))
-	l = len(m.InstanceID)
-	n += 1 + l + sovNode(uint64(l))
+	n += 1 + sovNode(uint64(m.ReplicaSet))
+	n += 1 + sovNode(uint64(m.ShardSet))
 	n += 1 + sovNode(uint64(m.RaftPort))
+	n += 1 + sovNode(uint64(m.ShardMin))
+	n += 1 + sovNode(uint64(m.ShardMax))
+	l = len(m.GatewayAddr)
+	n += 1 + l + sovNode(uint64(l))
 	return n
 }
 
@@ -203,7 +254,7 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BundleID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ServerID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -231,14 +282,14 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BundleID = string(dAtA[iNdEx:postIndex])
+			m.ServerID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InstanceID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaSet", wireType)
 			}
-			var stringLen uint64
+			m.ReplicaSet = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNode
@@ -248,25 +299,30 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.ReplicaSet |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthNode
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardSet", wireType)
 			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNode
+			m.ShardSet = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ShardSet |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
 			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.InstanceID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RaftPort", wireType)
@@ -286,6 +342,77 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardMin", wireType)
+			}
+			m.ShardMin = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ShardMin |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShardMax", wireType)
+			}
+			m.ShardMax = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ShardMax |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GatewayAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNode
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthNode
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthNode
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GatewayAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipNode(dAtA[iNdEx:])
@@ -305,10 +432,10 @@ func (m *EdgeNode) Unmarshal(dAtA []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("BundleID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("ServerID")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("InstanceID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("GatewayAddr")
 	}
 
 	if iNdEx > l {

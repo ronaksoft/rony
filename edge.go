@@ -55,9 +55,11 @@ type Dispatcher interface {
 // EdgeServer
 type EdgeServer struct {
 	// General
-	bundleID        string
-	instanceID      string
 	serverID        string
+	replicaSet      uint32
+	shardSet        uint32
+	shardMin        uint32
+	shardMax        uint32
 	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
@@ -81,12 +83,10 @@ type EdgeServer struct {
 	badgerStore   *raftbadger.BadgerStore
 }
 
-func NewEdgeServer(bundleID, instanceID string, dispatcher Dispatcher, opts ...Option) *EdgeServer {
+func NewEdgeServer(serverID string, dispatcher Dispatcher, opts ...Option) *EdgeServer {
 	edgeServer := &EdgeServer{
 		handlers:   make(map[int64][]Handler),
-		bundleID:   bundleID,
-		instanceID: instanceID,
-		serverID:   fmt.Sprintf("%s.%s", bundleID, instanceID),
+		serverID:   serverID,
 		dispatcher: dispatcher,
 		getConstructorName: func(constructor int64) string {
 			return fmt.Sprintf("%d", constructor)
@@ -269,7 +269,6 @@ func (edge *EdgeServer) recoverPanic(ctx *context.Context) {
 		)
 	}
 }
-
 func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte) {
 	envelope := pools.AcquireMessageEnvelope()
 	authID, err := edge.dispatcher.DispatchRequest(conn, streamID, data, envelope)
@@ -312,10 +311,13 @@ func (edge *EdgeServer) Run() (err error) {
 	}
 
 	log.Info("Edge Server Started",
-		zap.String("BundleID", edge.bundleID),
-		zap.String("InstanceID", edge.instanceID),
+		zap.String("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
 	)
+
+	// We must run the gateway before gossip since some information about the gateway will be spread to other nodes
+	// by gossip protocol.
+	edge.runGateway()
 
 	if edge.raftEnabled {
 		err = edge.runRaft()
@@ -327,7 +329,7 @@ func (edge *EdgeServer) Run() (err error) {
 			return
 		}
 	}
-	edge.runGateway()
+
 	return
 }
 func (edge *EdgeServer) runGateway() {
@@ -415,11 +417,7 @@ func (edge *EdgeServer) runRaft() (err error) {
 }
 
 func (edge *EdgeServer) JoinCluster(addr ...string) error {
-	if !edge.raftEnabled {
-		return errors.ErrRaftNotSet
-	}
 	_, err := edge.gossip.Join(addr)
-
 	return err
 }
 func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
