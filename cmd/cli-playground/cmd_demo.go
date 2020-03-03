@@ -35,9 +35,16 @@ var DemoRaftCmd = &cobra.Command{
 		startFunc("Raft.01", 1, 801, true)
 		startFunc("Raft.02", 1, 802, false)
 		startFunc("Raft.03", 1, 803, false)
+		startFunc("Raft.11", 2, 811, true)
+		startFunc("Raft.12", 2, 812, false)
+		startFunc("Raft.13", 2, 813, false)
 		listFunc()
 		joinFunc("Raft.02", "Raft.01")
 		joinFunc("Raft.03", "Raft.02")
+		joinFunc("Raft.11", "Raft.01")
+		joinFunc("Raft.12", "Raft.03")
+		joinFunc("Raft.13", "Raft.02")
+
 		time.Sleep(time.Second)
 		listFunc()
 	},

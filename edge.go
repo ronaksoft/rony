@@ -319,17 +319,23 @@ func (edge *EdgeServer) Run() (err error) {
 	// by gossip protocol.
 	edge.runGateway()
 
+	notifyChan := make(chan bool, 1)
 	if edge.raftEnabled {
-		err = edge.runRaft()
-		if err != nil {
-			return
-		}
-		err = edge.runGossip()
+		err = edge.runRaft(notifyChan)
 		if err != nil {
 			return
 		}
 	}
+	err = edge.runGossip()
+	if err != nil {
+		return
+	}
 
+	go func() {
+		for range notifyChan {
+			_ = edge.updateCluster()
+		}
+	}()
 	return
 }
 func (edge *EdgeServer) runGateway() {
@@ -354,7 +360,7 @@ func (edge *EdgeServer) runGossip() error {
 
 	return edge.updateCluster()
 }
-func (edge *EdgeServer) runRaft() (err error) {
+func (edge *EdgeServer) runRaft(notifyChan chan bool) (err error) {
 	// Initialize LogStore for Raft
 	dirPath := filepath.Join(edge.dataPath, "raft")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
@@ -374,6 +380,8 @@ func (edge *EdgeServer) runRaft() (err error) {
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
+	raftConfig.LogLevel = "WARN"
+	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
 	raftConfig.LocalID = raft.ServerID(edge.GetServerID())
 	raftBind := fmt.Sprintf(":%d", edge.raftPort)

@@ -55,6 +55,7 @@ type ClusterMember struct {
 	Addr        net.IP
 	Port        uint16
 	RaftPort    int
+	RaftState   RaftState
 	node        *memberlist.Node
 }
 
@@ -76,6 +77,7 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 		ShardMax:    edgeNode.ShardMax,
 		GatewayAddr: edgeNode.GatewayAddr,
 		RaftPort:    int(edgeNode.RaftPort),
+		RaftState:   edgeNode.RaftState,
 		Addr:        sm.Addr,
 		Port:        sm.Port,
 		node:        sm,
@@ -195,11 +197,17 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 	n := EdgeNode{
 		ServerID:    d.edge.serverID,
 		ReplicaSet:  d.edge.replicaSet,
+		ShardSet:    d.edge.shardSet,
 		ShardMax:    d.edge.shardMax,
 		ShardMin:    d.edge.shardMin,
 		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
+		RaftState:   RaftState_None,
 	}
+	if d.edge.raftEnabled {
+		n.RaftState = RaftState(d.edge.raft.State() + 1)
+	}
+
 	b, _ := n.Marshal()
 	if len(b) > limit {
 		log.Warn("Too Large Meta")

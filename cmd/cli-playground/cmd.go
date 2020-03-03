@@ -414,14 +414,14 @@ var MembersCmd = &cobra.Command{
 
 		var rows []string
 		rows = append(rows,
-			"ServerID | ReplicaSet | Raft Port | Gossip Addr | Gateway Addr",
-			"--------- | ------------ | ------------ | ---------------- | ----------- ",
+			"ServerID | RaftState | ReplicaSet | Raft Port | Gossip Addr | Gateway Addr",
+			"--------- | ------------ | ------------ | ---------------- | ----------- | ---------",
 		)
 
 		for _, cm := range s.ClusterMembers() {
 			rows = append(rows,
-				fmt.Sprintf("%s | %d | %d | %s(%d) | %s",
-					cm.ServerID, cm.ReplicaSet, cm.RaftPort, cm.Addr.String(), cm.Port, cm.GatewayAddr,
+				fmt.Sprintf("%s | %s | %d | %d | %s(%d) | %s",
+					cm.ServerID, cm.RaftState.String(), cm.ReplicaSet, cm.RaftPort, cm.Addr.String(), cm.Port, cm.GatewayAddr,
 				),
 			)
 		}
