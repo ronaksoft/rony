@@ -1,5 +1,10 @@
 package rony
 
+import (
+	"errors"
+	"fmt"
+)
+
 /*
    Creation Time: 2019 - Nov - 16
    Created by:  (ehsan)
@@ -34,3 +39,16 @@ const (
 	ErrItemHandler    = "HANDLER"
 	ErrItemRequest    = "REQUEST"
 )
+
+
+var (
+	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
+	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")
+	ErrNotFound                  = errors.New("not found")
+	ErrNotRaftLeader             = errors.New("not raft leader")
+	ErrRaftNotSet                = errors.New("raft not set")
+)
+
+func Wrap(txt string, err error) error {
+	return errors.New(fmt.Sprintf("%s: %v", txt, err))
+}
