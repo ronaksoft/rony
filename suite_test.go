@@ -4,15 +4,13 @@ import (
 	context2 "context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/context"
+	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	. "github.com/smartystreets/goconvey/convey"
@@ -40,17 +38,17 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *msg.UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *msg.MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *rony.MessageEnvelope) {
 	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *msg.MessageEnvelope) (authID int64, err error) {
-	proto := pools.AcquireProtoMessage()
+func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *rony.MessageEnvelope) (authID int64, err error) {
+	proto := &msg.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
 		return
@@ -60,14 +58,13 @@ func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data 
 		return
 	}
 	authID = proto.AuthID
-	pools.ReleaseProtoMessage(proto)
 	return
 }
 
-func (t testDispatcher) DispatchClusterMessage(envelope *msg.MessageEnvelope) {}
+func (t testDispatcher) DispatchClusterMessage(envelope *rony.MessageEnvelope) {}
 
 func initHandlers(edge *rony.EdgeServer) {
-	edge.AddHandler(100, func(ctx *context.Context, in *msg.MessageEnvelope) {
+	edge.AddHandler(100, func(ctx *rony.Context, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -78,7 +75,7 @@ func initHandlers(edge *rony.EdgeServer) {
 		res.P1 = tools.StrToByte(req.P1)
 		ctx.PushMessage(ctx.AuthID, in.RequestID, 201, res)
 	})
-	edge.AddHandler(101, func(ctx *context.Context, in *msg.MessageEnvelope) {
+	edge.AddHandler(101, func(ctx *rony.Context, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -130,11 +127,11 @@ func TestEdgeServerSimple(t *testing.T) {
 		c.So(err, ShouldBeNil)
 		for i := int64(1); i <= 10; i++ {
 			req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}
-			envelope := pools.AcquireMessageEnvelope()
+			envelope := &rony.MessageEnvelope{}
 			envelope.RequestID = tools.RandomUint64()
 			envelope.Constructor = 101
 			envelope.Message, _ = req.Marshal()
-			proto := pools.AcquireProtoMessage()
+			proto := &msg.ProtoMessage{}
 			proto.AuthID = i
 			proto.Payload, _ = envelope.Marshal()
 			bytes, _ := proto.Marshal()

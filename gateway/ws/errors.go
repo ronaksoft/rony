@@ -12,7 +12,7 @@ import "errors"
 */
 
 var (
-	ErrWriteToClosedConn = errors.New("write to closed conn")
+	ErrWriteToClosedConn       = errors.New("write to closed conn")
 	ErrWriteToFullBufferedConn = errors.New("write to full buffer conn")
-	ErrUnexpectedSocketRead = errors.New("unexpected socket read")
+	ErrUnexpectedSocketRead    = errors.New("unexpected socket read")
 )

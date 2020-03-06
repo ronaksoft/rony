@@ -11,5 +11,5 @@ import "errors"
    Copyright Ronak Software Group 2018
 */
 var (
-	ErrWriteToClosedConn         = errors.New("write to closed conn")
+	ErrWriteToClosedConn = errors.New("write to closed conn")
 )

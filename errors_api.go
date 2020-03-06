@@ -9,7 +9,6 @@ package rony
    Copyright Ronak Software Group 2018
 */
 
-
 // Error Codes
 const (
 	ErrCodeInternal         = "E00"
