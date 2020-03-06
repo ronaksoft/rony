@@ -15,7 +15,9 @@ import (
 */
 
 const (
-	raftApplyTimeout = time.Second * 3
+	raftApplyTimeout    = time.Second * 3
+	gossipUpdateTimeout = time.Second * 5
+	gossipLeaveTimeout  = time.Second * 5
 )
 
 func init() {

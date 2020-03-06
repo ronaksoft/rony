@@ -2,14 +2,13 @@ package rony
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/errors"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
-	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/pool/pbytes"
 	"go.uber.org/zap"
 	"net"
 	"sync"
+	"time"
 )
 
 /*
@@ -28,10 +27,10 @@ func (edge *EdgeServer) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *EdgeServer) ClusterSend(serverID string, envelope *msg.MessageEnvelope) error {
+func (edge *EdgeServer) ClusterSend(serverID string, envelope *MessageEnvelope) error {
 	m := edge.cluster.GetByID(serverID)
 	if m == nil {
-		return errors.ErrNotFound
+		return ErrNotFound
 	}
 	b := pbytes.GetLen(envelope.Size())
 	_, err := envelope.MarshalTo(b)
@@ -43,8 +42,8 @@ func (edge *EdgeServer) ClusterSend(serverID string, envelope *msg.MessageEnvelo
 	return err
 }
 
-func (edge *EdgeServer) updateCluster() error {
-	return edge.gossip.UpdateNode(0)
+func (edge *EdgeServer) updateCluster(timeout time.Duration) error {
+	return edge.gossip.UpdateNode(timeout)
 }
 
 // ClusterMember
@@ -114,6 +113,7 @@ func (c *Cluster) AddMember(m *ClusterMember) {
 
 	if c.byReplicaSet == nil {
 		c.byReplicaSet = make(map[uint32][]*ClusterMember)
+		c.byShardSet = make(map[uint32][]*ClusterMember)
 		c.byServerID = make(map[string]*ClusterMember)
 		c.byServerID[m.ServerID] = m
 		c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
@@ -228,6 +228,10 @@ func (d delegateNode) NotifyMsg(data []byte) {
 		zap.String("ServerID", d.edge.GetServerID()),
 		zap.Int("Data", len(data)),
 	)
+	envelop := acquireMessageEnvelope()
+	_ = envelop.Unmarshal(data)
+	d.edge.dispatcher.DispatchClusterMessage(envelop)
+	releaseMessageEnvelope(envelop)
 }
 
 func (d delegateNode) GetBroadcasts(overhead, limit int) [][]byte {

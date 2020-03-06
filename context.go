@@ -1,9 +1,7 @@
-package context
+package rony
 
 import (
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/gogo/protobuf/proto"
 	"hash/crc32"
@@ -113,11 +111,11 @@ func (ctx *Context) Clear() {
 
 type messageDispatch struct {
 	AuthID   int64
-	Envelope *msg.MessageEnvelope
+	Envelope *MessageEnvelope
 }
 
 func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
-	envelope := pools.AcquireMessageEnvelope()
+	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
 	pbytes.Put(envelope.Message)
@@ -130,7 +128,7 @@ func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int6
 }
 
 func (ctx *Context) PushError(requestID uint64, code, item string) {
-	ctx.PushMessage(ctx.AuthID, requestID, msg.C_Error, &msg.Error{
+	ctx.PushMessage(ctx.AuthID, requestID, C_Error, &Error{
 		Code:  code,
 		Items: item,
 	})
@@ -138,11 +136,11 @@ func (ctx *Context) PushError(requestID uint64, code, item string) {
 
 type updateDispatch struct {
 	AuthID   int64
-	Envelope *msg.UpdateEnvelope
+	Envelope *UpdateEnvelope
 }
 
 func (ctx *Context) PushUpdate(authID int64, updateID int64, constructor int64, proto ProtoBufferMessage) {
-	envelope := pools.AcquireUpdateEnvelope()
+	envelope := acquireUpdateEnvelope()
 	envelope.Timestamp = time.Now().Unix()
 	envelope.UpdateID = updateID
 	if updateID != 0 {

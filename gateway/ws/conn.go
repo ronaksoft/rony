@@ -3,7 +3,6 @@
 package websocketGateway
 
 import (
-	"git.ronaksoftware.com/ronak/rony/errors"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"github.com/gobwas/ws"
@@ -124,7 +123,7 @@ func (wc *Conn) startEvent(event netpoll.Event) {
 // You MUST NOT re-use the underlying array of payload, otherwise you might get unexpected results.
 func (wc *Conn) SendBinary(streamID int64, payload []byte) error {
 	if wc.closed {
-		return errors.ErrWriteToClosedConn
+		return ErrWriteToClosedConn
 	}
 
 	select {
@@ -134,7 +133,7 @@ func (wc *Conn) SendBinary(streamID int64, payload []byte) error {
 		opCode:  ws.OpBinary,
 	}:
 	default:
-		return errors.ErrWriteToFullBufferedConn
+		return ErrWriteToFullBufferedConn
 
 	}
 	return nil
@@ -220,7 +219,7 @@ func (wc *Conn) Check() error {
 		case n == 0 && err == nil:
 			sysErr = io.EOF
 		case n > 0:
-			sysErr = errors.ErrUnexpectedSocketRead
+			sysErr = ErrUnexpectedSocketRead
 		case err == syscall.EAGAIN || err == syscall.EWOULDBLOCK:
 			sysErr = nil
 		default:

@@ -1,7 +1,6 @@
 package quicGateway
 
 import (
-	"git.ronaksoftware.com/ronak/rony/errors"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"github.com/lucas-clemente/quic-go"
@@ -97,7 +96,7 @@ type ConnCounters struct {
 // You MUST NOT re-use the underlying array of payload, otherwise you might get unexpected results.
 func (qc *Conn) SendBinary(streamID int64, payload []byte) error {
 	if qc.closed {
-		return errors.ErrWriteToClosedConn
+		return ErrWriteToClosedConn
 	}
 	qc.RLock()
 	stream, ok := qc.streams[quic.StreamID(streamID)]

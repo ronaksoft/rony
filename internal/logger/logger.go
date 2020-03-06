@@ -95,8 +95,8 @@ func InitLogger(config Config) Logger {
 		)
 	}
 
-	sentryCore, err := NewSentryCore(config.SentryDSN, config.Release, config.Environment, config.SentryLevel, nil)
-	if err == nil {
+	sentryCore := NewSentryCore(config.SentryDSN, config.Release, config.Environment, config.SentryLevel, nil)
+	if sentryCore != nil  {
 		cores = append(cores, sentryCore)
 	}
 

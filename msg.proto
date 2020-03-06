@@ -1,6 +1,5 @@
 syntax = "proto2";
-package msg;
-
+package rony;
 
 
 // MessageEnvelope
@@ -32,4 +31,31 @@ message MessageContainer {
 message Error {
     required string Code = 1;
     required string Items = 2;
+}
+
+// RaftCommand
+message RaftCommand {
+    required uint64 ConnID = 1;
+    required int64 AuthID = 2;
+    required MessageEnvelope Envelope = 3;
+}
+
+enum RaftState {
+    None = 0;
+    Follower = 1;
+    Candidate = 2;
+    Leader = 3;
+    Shutdown = 4;
+}
+
+// EdgeNode
+message EdgeNode {
+    required string ServerID = 1;
+    optional uint32 ReplicaSet = 2;
+    optional uint32 ShardSet = 3;
+    optional uint32 RaftPort = 4;
+    optional uint32 ShardMin = 5;
+    optional uint32 ShardMax = 6;
+    required string GatewayAddr = 7;
+    optional RaftState RaftState = 8;
 }

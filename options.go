@@ -1,12 +1,10 @@
 package rony
 
 import (
-	"git.ronaksoftware.com/ronak/rony/errors"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
-	"git.ronaksoftware.com/ronak/rony/msg"
 )
 
 /*
@@ -46,7 +44,7 @@ func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
 	return func(edge *EdgeServer) {
 		edge.getConstructorName = func(constructor int64) string {
 			// Lookup internal messages first
-			n := msg.ConstructorNames[constructor]
+			n := ConstructorNames[constructor]
 			if len(n) > 0 {
 				return n
 			}
@@ -64,7 +62,7 @@ func WithDataPath(path string) Option {
 func WithWebsocketGateway(config websocketGateway.Config) Option {
 	return func(edge *EdgeServer) {
 		if edge.gatewayProtocol != gateway.Undefined {
-			panic(errors.ErrGatewayAlreadyInitialized)
+			panic(ErrGatewayAlreadyInitialized)
 		}
 		gatewayWebsocket, err := websocketGateway.New(config)
 		if err != nil {
@@ -83,7 +81,7 @@ func WithWebsocketGateway(config websocketGateway.Config) Option {
 func WithHttpGateway(config httpGateway.Config) Option {
 	return func(edge *EdgeServer) {
 		if edge.gatewayProtocol != gateway.Undefined {
-			panic(errors.ErrGatewayAlreadyInitialized)
+			panic(ErrGatewayAlreadyInitialized)
 		}
 		gatewayHttp := httpGateway.New(config)
 		gatewayHttp.MessageHandler = edge.onMessage
@@ -98,7 +96,7 @@ func WithHttpGateway(config httpGateway.Config) Option {
 func WithQuicGateway(config quicGateway.Config) Option {
 	return func(edge *EdgeServer) {
 		if edge.gatewayProtocol != gateway.Undefined {
-			panic(errors.ErrGatewayAlreadyInitialized)
+			panic(ErrGatewayAlreadyInitialized)
 		}
 		gatewayQuic, err := quicGateway.New(config)
 		if err != nil {

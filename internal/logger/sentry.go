@@ -1,7 +1,6 @@
 package log
 
 import (
-	"git.ronaksoftware.com/ronak/rony/errors"
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap/zapcore"
 	"time"
@@ -22,9 +21,9 @@ type sentryCore struct {
 	tags map[string]string
 }
 
-func NewSentryCore(sentryDSN, release, environment string, level zapcore.Level, tags map[string]string) (zapcore.Core, error) {
+func NewSentryCore(sentryDSN, release, environment string, level zapcore.Level, tags map[string]string) zapcore.Core {
 	if len(sentryDSN) == 0 {
-		return nil, errors.ErrEmpty
+		return nil
 	}
 	client, err := sentry.NewClient(sentry.ClientOptions{
 		Dsn:         sentryDSN,
@@ -32,7 +31,7 @@ func NewSentryCore(sentryDSN, release, environment string, level zapcore.Level, 
 		Environment: environment,
 	})
 	if err != nil {
-		return zapcore.NewNopCore(), err
+		return zapcore.NewNopCore()
 	}
 
 	sentryScope := sentry.NewScope()
@@ -41,7 +40,7 @@ func NewSentryCore(sentryDSN, release, environment string, level zapcore.Level, 
 		hub:          sentryHub,
 		tags:         tags,
 		LevelEnabler: level,
-	}, nil
+	}
 }
 
 func (c *sentryCore) With(fs []zapcore.Field) zapcore.Core {

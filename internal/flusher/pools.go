@@ -1,11 +1,9 @@
-package pools
+package flusher
 
-import (
-	"sync"
-)
+import "sync"
 
 /*
-   Creation Time: 2019 - Oct - 03
+   Creation Time: 2020 - Mar - 06
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -15,7 +13,7 @@ import (
 
 var waitGroupPool sync.Pool
 
-func AcquireWaitGroup() *sync.WaitGroup {
+func acquireWaitGroup() *sync.WaitGroup {
 	wgv := waitGroupPool.Get()
 	if wgv == nil {
 		return &sync.WaitGroup{}
@@ -24,6 +22,6 @@ func AcquireWaitGroup() *sync.WaitGroup {
 	return wgv.(*sync.WaitGroup)
 }
 
-func ReleaseWaitGroup(wg *sync.WaitGroup) {
+func releaseWaitGroup(wg *sync.WaitGroup) {
 	waitGroupPool.Put(wg)
 }

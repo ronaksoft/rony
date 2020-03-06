@@ -1,4 +1,4 @@
-package errors
+package rony
 
 import (
 	"errors"
@@ -17,14 +17,9 @@ import (
 var (
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
 	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")
-	ErrBridgeAlreadyInitialized  = errors.New("bridge already initialized")
-	ErrEmpty                     = errors.New("empty key")
 	ErrNotFound                  = errors.New("not found")
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftNotSet                = errors.New("raft not set")
-	ErrWriteToClosedConn         = errors.New("write to closed conn")
-	ErrWriteToFullBufferedConn   = errors.New("write to full buffer conn")
-	ErrUnexpectedSocketRead      = errors.New("unexpected read from socket")
 )
 
 func Wrap(txt string, err error) error {

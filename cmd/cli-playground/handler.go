@@ -1,9 +1,8 @@
 package main
 
 import (
-	"git.ronaksoftware.com/ronak/rony/context"
-	"git.ronaksoftware.com/ronak/rony/errors"
-	"git.ronaksoftware.com/ronak/rony/msg"
+	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	"time"
 )
 
@@ -16,7 +15,7 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
+func EchoHandler(ctx *rony.Context, in *rony.MessageEnvelope) {
 	// Write your handler code and remove the following line
 	req := msg.PoolEchoRequest.Get()
 	defer msg.PoolEchoRequest.Put(req)
@@ -24,7 +23,7 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 	defer msg.PoolEchoResponse.Put(res)
 	err := req.Unmarshal(in.Message)
 	if err != nil {
-		ctx.PushError(in.RequestID, errors.ErrCodeInvalid, errors.ErrItemRequest)
+		ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
 	}
 

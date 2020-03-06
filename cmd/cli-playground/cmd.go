@@ -4,16 +4,16 @@ import (
 	context2 "context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"git.ronaksoftware.com/ronak/rony/msg"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -188,13 +188,14 @@ var EchoCmd = &cobra.Command{
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
-		envelope := pools.AcquireMessageEnvelope()
-		defer pools.ReleaseMessageEnvelope(envelope)
-		envelope.RequestID = tools.RandomUint64()
-		envelope.Constructor = msg.C_EchoRequest
+
+		envelope := &rony.MessageEnvelope{
+			Constructor: msg.C_EchoRequest,
+			RequestID:   tools.RandomUint64(),
+			Message:     nil,
+		}
 		envelope.Message, _ = req.Marshal()
-		proto := pools.AcquireProtoMessage()
-		defer pools.ReleaseProtoMessage(proto)
+		proto := &msg.ProtoMessage{}
 		proto.AuthID = 1000
 		proto.Payload, _ = envelope.Marshal()
 		bytes, _ := proto.Marshal()
@@ -224,8 +225,8 @@ var EchoCmd = &cobra.Command{
 
 		fmt.Println("Received:", proto.AuthID, envelope.RequestID, msg.ConstructorNames[envelope.Constructor])
 		switch envelope.Constructor {
-		case msg.C_Error:
-			res := msg.Error{}
+		case rony.C_Error:
+			res := rony.Error{}
 			err = res.Unmarshal(envelope.Message)
 			if err != nil {
 				fmt.Println(err)
@@ -270,7 +271,7 @@ var BenchCmd = &cobra.Command{
 			return
 		}
 		startTime := time.Now()
-		waitGroup := pools.AcquireWaitGroup()
+		waitGroup := &sync.WaitGroup{}
 		for i := int64(1); i <= int64(count); i++ {
 			waitGroup.Add(1)
 			go func(i int64) {
@@ -280,7 +281,6 @@ var BenchCmd = &cobra.Command{
 			time.Sleep(time.Millisecond)
 		}
 		waitGroup.Wait()
-		pools.ReleaseWaitGroup(waitGroup)
 		d := time.Now().Sub(startTime)
 		t := count * count
 		if count > 50 {
@@ -308,7 +308,7 @@ func benchRoutine(authID int64, count int, port string) {
 			Timestamp: time.Now().UnixNano(),
 		}
 		reqBytes, _ := req.Marshal()
-		envelope := &msg.MessageEnvelope{
+		envelope := &rony.MessageEnvelope{
 			Constructor: msg.C_EchoRequest,
 			RequestID:   tools.RandomUint64(),
 			Message:     reqBytes,
@@ -341,8 +341,8 @@ func benchRoutine(authID int64, count int, port string) {
 			return
 		}
 		switch envelope.Constructor {
-		case msg.C_Error:
-			res := msg.Error{}
+		case rony.C_Error:
+			res := rony.Error{}
 			err = res.Unmarshal(envelope.Message)
 			if err != nil {
 				fmt.Println(err)
@@ -392,7 +392,7 @@ func clusterMessage(n1, n2 string) {
 		Timestamp: time.Now().UnixNano(),
 	}
 	reqBytes, _ := req.Marshal()
-	m := &msg.MessageEnvelope{
+	m := &rony.MessageEnvelope{
 		Constructor: msg.C_EchoRequest,
 		RequestID:   tools.RandomUint64(),
 		Message:     reqBytes,

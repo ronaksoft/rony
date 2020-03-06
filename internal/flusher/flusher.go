@@ -76,7 +76,7 @@ func (f *Flusher) EnterWithChan(key, value interface{}) chan interface{} {
 
 // EnterWithResult
 func (f *Flusher) EnterWithResult(key, value interface{}) (res interface{}) {
-	waitGroup := pools.AcquireWaitGroup()
+	waitGroup := acquireWaitGroup()
 	waitGroup.Add(1)
 	f.entries <- Entry{
 		Key:            key,
@@ -88,7 +88,7 @@ func (f *Flusher) EnterWithResult(key, value interface{}) (res interface{}) {
 		},
 	}
 	waitGroup.Wait()
-	pools.ReleaseWaitGroup(waitGroup)
+	releaseWaitGroup(waitGroup)
 	return res
 }
 
@@ -353,7 +353,7 @@ func (f *LifoFlusher) EnterWithChan(key, value interface{}) chan interface{} {
 
 // EnterWithResult
 func (f *LifoFlusher) EnterWithResult(key, value interface{}) (res interface{}) {
-	waitGroup := pools.AcquireWaitGroup()
+	waitGroup := acquireWaitGroup()
 	waitGroup.Add(1)
 	f.enter(Entry{
 		Key:            key,
@@ -365,7 +365,7 @@ func (f *LifoFlusher) EnterWithResult(key, value interface{}) (res interface{}) 
 		},
 	})
 	waitGroup.Wait()
-	pools.ReleaseWaitGroup(waitGroup)
+	releaseWaitGroup(waitGroup)
 	return res
 }
 
