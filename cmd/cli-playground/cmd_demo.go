@@ -58,16 +58,12 @@ var DemoClusterMessageCmd = &cobra.Command{
 		startFunc("Cluster.01", 0, 801, true)
 		startFunc("Cluster.02", 0, 802, true)
 		startFunc("Cluster.03", 0, 803, true)
-		time.Sleep(time.Second * 3)
 		joinFunc("Cluster.01", "Cluster.02")
 		joinFunc("Cluster.01", "Cluster.03")
 		time.Sleep(time.Second)
 		listFunc()
-		clusterMessage("First.01", "Second.01")
-		clusterMessage("Third.01", "First.01")
-		for _, e := range Edges {
-			e.Shutdown()
-		}
+		clusterMessage("Cluster.01", "Cluster.02")
+		clusterMessage("Cluster.02", "Cluster.03")
 	},
 }
 

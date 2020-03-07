@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	runtime.GOMAXPROCS(4)
 	RootCmd.AddCommand(ExitCmd)
 	p := prompt.New(executor, completer)
 	p.Run()

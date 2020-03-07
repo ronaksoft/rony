@@ -9,6 +9,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/pkg/profile"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 	"path/filepath"
@@ -58,7 +59,7 @@ func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 		opts := make([]rony.Option, 0)
 		opts = append(opts,
 			rony.WithWebsocketGateway(websocketGateway.Config{
-				NewConnectionWorkers: 10,
+				NewConnectionWorkers: 1,
 				MaxConcurrency:       1000,
 				MaxIdleTime:          0,
 				ListenAddress:        "0.0.0.0:0",
@@ -270,6 +271,8 @@ var BenchCmd = &cobra.Command{
 			fmt.Println("Invalid Gateway Addr", gatewayAddr)
 			return
 		}
+
+		profiler := profile.Start(profile.CPUProfile, profile.ProfilePath("."))
 		startTime := time.Now()
 		waitGroup := &sync.WaitGroup{}
 		for i := int64(1); i <= int64(count); i++ {
@@ -288,6 +291,7 @@ var BenchCmd = &cobra.Command{
 		}
 		fmt.Println("Total Time:", d, ", ", t)
 		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
+		profiler.Stop()
 	},
 }
 

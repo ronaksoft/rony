@@ -24,7 +24,7 @@ func main() {
     		ListenAddress:        "0.0.0.0:0",
     	}),
     	rony.WithDataPath(filepath.Join("./_hdd", serverID)),
-    	rony.WithRaft(port*10, bootstrap),
+    	rony.WithReplicaSet(100, port*10, bootstrap),
     	rony.WithGossipPort(port),
     )
  

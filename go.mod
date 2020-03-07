@@ -30,6 +30,7 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/onsi/ginkgo v1.12.0 // indirect
+	github.com/pkg/profile v1.4.0
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529

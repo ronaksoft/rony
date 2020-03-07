@@ -1,3 +1,4 @@
 _*
 .idea*
 *.log
+*.pprof
