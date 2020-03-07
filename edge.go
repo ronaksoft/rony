@@ -352,7 +352,7 @@ func (edge *EdgeServer) runGossip() error {
 	dirPath := filepath.Join(edge.dataPath, "gossip")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
 
-	conf := memberlist.DefaultLANConfig()
+	conf := memberlist.DefaultWANConfig()
 	conf.Name = edge.GetServerID()
 	conf.Events = &delegateEvents{edge: edge}
 	conf.Delegate = &delegateNode{edge: edge}

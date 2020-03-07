@@ -27,22 +27,20 @@ type EdgeStats struct {
 
 // Stats exports some internal metrics data packed in 'EdgeStats' struct
 func (edge *EdgeServer) Stats() *EdgeStats {
-	if !edge.raftEnabled {
-		return nil
-	}
-
 	s := EdgeStats{
 		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalNode().Addr.String(), edge.gossip.LocalNode().Port),
-		RaftState:       edge.raft.State().String(),
 		Members:         len(edge.gossip.Members()),
 		MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
 		GatewayAddr:     edge.gateway.Addr(),
 	}
 
-	f := edge.raft.GetConfiguration()
-	if f.Error() == nil {
-		s.RaftMembers = len(f.Configuration().Servers)
+	if edge.raftEnabled {
+		s.RaftState = edge.raft.State().String()
+		f := edge.raft.GetConfiguration()
+		if f.Error() == nil {
+			s.RaftMembers = len(f.Configuration().Servers)
+		}
 	}
 
 	return &s

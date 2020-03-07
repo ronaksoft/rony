@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	"time"
@@ -16,6 +17,7 @@ import (
 */
 
 func EchoHandler(ctx *rony.Context, in *rony.MessageEnvelope) {
+	fmt.Println("Echo Received", ctx.ConnID, ctx.AuthID)
 	// Write your handler code and remove the following line
 	req := msg.PoolEchoRequest.Get()
 	defer msg.PoolEchoRequest.Put(req)
