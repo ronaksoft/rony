@@ -5,7 +5,6 @@ package rony
 
 import (
 	fmt "fmt"
-	pbytes "github.com/gobwas/pool/pbytes"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 	sync "sync"
@@ -36,13 +35,6 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 
 var PoolMessageEnvelope = poolMessageEnvelope{}
 
-func ResultMessageEnvelope(out *MessageEnvelope, res *MessageEnvelope) {
-	out.Constructor = C_MessageEnvelope
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
 const C_UpdateEnvelope int64 = 2373884514
 
 type poolUpdateEnvelope struct {
@@ -62,13 +54,6 @@ func (p *poolUpdateEnvelope) Put(x *UpdateEnvelope) {
 }
 
 var PoolUpdateEnvelope = poolUpdateEnvelope{}
-
-func ResultUpdateEnvelope(out *MessageEnvelope, res *UpdateEnvelope) {
-	out.Constructor = C_UpdateEnvelope
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 const C_MessageContainer int64 = 1972016308
 
@@ -91,13 +76,6 @@ func (p *poolMessageContainer) Put(x *MessageContainer) {
 
 var PoolMessageContainer = poolMessageContainer{}
 
-func ResultMessageContainer(out *MessageEnvelope, res *MessageContainer) {
-	out.Constructor = C_MessageContainer
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
 const C_Error int64 = 2619118453
 
 type poolError struct {
@@ -118,12 +96,25 @@ func (p *poolError) Put(x *Error) {
 
 var PoolError = poolError{}
 
-func ResultError(out *MessageEnvelope, res *Error) {
-	out.Constructor = C_Error
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
+const C_ClusterMessage int64 = 1078766375
+
+type poolClusterMessage struct {
+	pool sync.Pool
 }
+
+func (p *poolClusterMessage) Get() *ClusterMessage {
+	x, ok := p.pool.Get().(*ClusterMessage)
+	if !ok {
+		return &ClusterMessage{}
+	}
+	return x
+}
+
+func (p *poolClusterMessage) Put(x *ClusterMessage) {
+	p.pool.Put(x)
+}
+
+var PoolClusterMessage = poolClusterMessage{}
 
 const C_RaftCommand int64 = 2919813429
 
@@ -144,13 +135,6 @@ func (p *poolRaftCommand) Put(x *RaftCommand) {
 }
 
 var PoolRaftCommand = poolRaftCommand{}
-
-func ResultRaftCommand(out *MessageEnvelope, res *RaftCommand) {
-	out.Constructor = C_RaftCommand
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 const C_EdgeNode int64 = 999040174
 
@@ -178,18 +162,12 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 
 var PoolEdgeNode = poolEdgeNode{}
 
-func ResultEdgeNode(out *MessageEnvelope, res *EdgeNode) {
-	out.Constructor = C_EdgeNode
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
 func init() {
 	ConstructorNames[535232465] = "MessageEnvelope"
 	ConstructorNames[2373884514] = "UpdateEnvelope"
 	ConstructorNames[1972016308] = "MessageContainer"
 	ConstructorNames[2619118453] = "Error"
+	ConstructorNames[1078766375] = "ClusterMessage"
 	ConstructorNames[2919813429] = "RaftCommand"
 	ConstructorNames[999040174] = "EdgeNode"
 }

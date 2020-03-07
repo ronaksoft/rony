@@ -10,7 +10,7 @@ package msg
 */
 
 //go:generate protoc -I=.  --gogofaster_out=. dev.proto
-//go:generate protoc -I=. --gohelpers_out=. dev.proto
+//go:generate protoc -I=. --gorony_out=. dev.proto
 func init() {
 
 }

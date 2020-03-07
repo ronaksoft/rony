@@ -1,6 +1,7 @@
 package rony
 
 import (
+	"git.ronaksoftware.com/ronak/rony/gateway"
 	"sync"
 )
 
@@ -51,6 +52,25 @@ func releaseUpdateEnvelope(x *UpdateEnvelope) {
 	updateEnvelopePool.Put(x)
 }
 
+var clusterMessagePool sync.Pool
+
+func acquireClusterMessage() *ClusterMessage {
+	v := clusterMessagePool.Get()
+	if v == nil {
+		return &ClusterMessage{}
+	}
+	return v.(*ClusterMessage)
+}
+
+func releaseClusterMessage(x *ClusterMessage) {
+	x.AuthID = 0
+	x.Sender = ""
+	x.Envelope.Constructor = 0
+	x.Envelope.Message = x.Envelope.Message[:0]
+	x.Envelope.RequestID = 0
+	clusterMessagePool.Put(x)
+}
+
 var raftCommandPool sync.Pool
 
 func acquireRaftCommand() *RaftCommand {
@@ -88,7 +108,7 @@ func releaseWaitGroup(wg *sync.WaitGroup) {
 
 var ctxPool = sync.Pool{}
 
-func acquireContext(connID uint64, authID int64, quickReturn, blocking bool) *Context {
+func acquireContext(conn gateway.Conn, authID int64, quickReturn bool) *Context {
 	var ctx *Context
 	if v := ctxPool.Get(); v == nil {
 		ctx = New()
@@ -103,9 +123,12 @@ func acquireContext(connID uint64, authID int64, quickReturn, blocking bool) *Co
 	}
 	ctx.Stop = false
 	ctx.QuickReturn = quickReturn
-	ctx.ConnID = connID
+	if conn != nil {
+		ctx.ConnID = conn.GetConnID()
+	} else {
+		ctx.ConnID = 0
+	}
 	ctx.AuthID = authID
-	ctx.Blocking = blocking
 	return ctx
 }
 

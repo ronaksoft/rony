@@ -27,13 +27,19 @@ func (edge *EdgeServer) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *EdgeServer) ClusterSend(serverID string, envelope *MessageEnvelope) error {
+func (edge *EdgeServer) ClusterSend(serverID string, authID int64, envelope *MessageEnvelope) error {
 	m := edge.cluster.GetByID(serverID)
 	if m == nil {
 		return ErrNotFound
 	}
-	b := pbytes.GetLen(envelope.Size())
-	_, err := envelope.MarshalTo(b)
+
+	clusterMessage := &ClusterMessage{
+		AuthID:   authID,
+		Sender:   edge.serverID,
+		Envelope: envelope,
+	}
+	b := pbytes.GetLen(clusterMessage.Size())
+	_, err := clusterMessage.MarshalTo(b)
 	if err != nil {
 		return err
 	}
@@ -224,14 +230,23 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 }
 
 func (d delegateNode) NotifyMsg(data []byte) {
-	log.Info("Message Received",
-		zap.String("ServerID", d.edge.GetServerID()),
-		zap.Int("Data", len(data)),
-	)
-	envelop := acquireMessageEnvelope()
-	_ = envelop.Unmarshal(data)
-	d.edge.dispatcher.DispatchClusterMessage(envelop)
-	releaseMessageEnvelope(envelop)
+	if ce := log.Check(log.DebugLevel, "Cluster Message Received"); ce != nil {
+		ce.Write(
+			zap.String("ServerID", d.edge.GetServerID()),
+			zap.Int("Data", len(data)),
+		)
+	}
+
+	clusterMessage := acquireClusterMessage()
+	_ = clusterMessage.Unmarshal(data)
+
+	d.edge.rateLimitChan <- struct{}{}
+	go func(clusterMessage *ClusterMessage) {
+		// TODO:: handle error, for instance we might send back an error to the sender
+		_ = d.edge.execute(nil, 0, clusterMessage.AuthID, clusterMessage.Envelope)
+		releaseClusterMessage(clusterMessage)
+		<-d.edge.rateLimitChan
+	}(clusterMessage)
 }
 
 func (d delegateNode) GetBroadcasts(overhead, limit int) [][]byte {

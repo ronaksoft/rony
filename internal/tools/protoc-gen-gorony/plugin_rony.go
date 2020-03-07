@@ -36,7 +36,6 @@ func (g *GenPools) Init(gen *generator.Generator) {
 
 func (g *GenPools) Generate(file *generator.FileDescriptor) {
 	g.g.AddImport("sync")
-	g.g.AddImport("github.com/gobwas/pool/pbytes")
 	initFunc := strings.Builder{}
 	initFunc.WriteString("func init() {\n")
 	for _, mt := range file.MessageType {
@@ -78,14 +77,6 @@ func (g *GenPools) Generate(file *generator.FileDescriptor) {
 		g.g.P("")
 		g.g.P(fmt.Sprintf("var Pool%s = pool%s{}", *mt.Name, *mt.Name))
 		g.g.P("")
-		g.g.P(fmt.Sprintf("func Result%s(out *MessageEnvelope, res *%s) {", *mt.Name, *mt.Name))
-		g.g.In()
-		g.g.P(fmt.Sprintf("out.Constructor = C_%s", *mt.Name))
-		g.g.P("pbytes.Put(out.Message)")
-		g.g.P("out.Message = pbytes.GetLen(res.Size())")
-		g.g.P("res.MarshalTo(out.Message)")
-		g.g.Out()
-		g.g.P("}")
 	}
 	initFunc.WriteString("}")
 	g.g.P("")

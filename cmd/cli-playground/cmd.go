@@ -397,7 +397,7 @@ func clusterMessage(n1, n2 string) {
 		RequestID:   tools.RandomUint64(),
 		Message:     reqBytes,
 	}
-	err := e1.ClusterSend(e2.GetServerID(), m)
+	err := e1.ClusterSend(e2.GetServerID(), tools.RandomInt64(0), m)
 	if err != nil {
 		fmt.Println(err)
 	}

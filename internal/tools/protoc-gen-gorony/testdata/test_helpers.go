@@ -21,7 +21,7 @@ type poolMessage1 struct {
 	pool sync.Pool
 }
 
-func (p poolMessage1) Get() *Message1 {
+func (p *poolMessage1) Get() *Message1 {
 	x, ok := p.pool.Get().(*Message1)
 	if !ok {
 		return &Message1{}
@@ -29,18 +29,11 @@ func (p poolMessage1) Get() *Message1 {
 	return x
 }
 
-func (p poolMessage1) Put(x *Message1) {
+func (p *poolMessage1) Put(x *Message1) {
 	p.pool.Put(x)
 }
 
 var PoolMessage1 = poolMessage1{}
-
-func ResultMessage1(out *MessageEnvelope, res *Message1) {
-	out.Constructor = C_Message1
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 const C_Message2 int64 = 598674886
 
@@ -48,7 +41,7 @@ type poolMessage2 struct {
 	pool sync.Pool
 }
 
-func (p poolMessage2) Get() *Message2 {
+func (p *poolMessage2) Get() *Message2 {
 	x, ok := p.pool.Get().(*Message2)
 	if !ok {
 		return &Message2{}
@@ -57,18 +50,11 @@ func (p poolMessage2) Get() *Message2 {
 	return x
 }
 
-func (p poolMessage2) Put(x *Message2) {
+func (p *poolMessage2) Put(x *Message2) {
 	p.pool.Put(x)
 }
 
 var PoolMessage2 = poolMessage2{}
-
-func ResultMessage2(out *MessageEnvelope, res *Message2) {
-	out.Constructor = C_Message2
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 func init() {
 	ConstructorNames[3131464828] = "Message1"

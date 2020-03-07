@@ -34,7 +34,6 @@ type Context struct {
 	QuickReturn bool
 	NextChan    chan struct{}
 	Stop        bool
-	Blocking    bool
 
 	// internals
 	mtx         sync.RWMutex

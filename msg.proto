@@ -1,7 +1,6 @@
 syntax = "proto2";
 package rony;
 
-
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
 message MessageEnvelope {
@@ -19,7 +18,6 @@ message UpdateEnvelope {
     required int64 Timestamp = 5;
 }
 
-
 // MessageContainer
 // This type of message will be used to send multi messages inside a single container message
 message MessageContainer {
@@ -31,6 +29,13 @@ message MessageContainer {
 message Error {
     required string Code = 1;
     required string Items = 2;
+}
+
+// ClusterMessage
+message ClusterMessage {
+    required string Sender = 1;
+    required int64 AuthID = 2;
+    required MessageEnvelope Envelope = 3;
 }
 
 // RaftCommand

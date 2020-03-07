@@ -10,7 +10,7 @@ package rony
 */
 
 //go:generate protoc -I=.  --gogofaster_out=. msg.proto
-//go:generate protoc -I=. --gohelpers_out=. msg.proto
+//go:generate protoc -I=. --gorony_out=. msg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )
@@ -19,7 +19,8 @@ func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
 	errMessage := PoolError.Get()
 	errMessage.Code = errCode
 	errMessage.Items = errItem
-	ResultError(out, errMessage)
+	out.Message, _ = errMessage.Marshal()
+	out.Constructor = C_Error
 	PoolError.Put(errMessage)
 	return
 }

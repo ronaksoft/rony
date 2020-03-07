@@ -36,7 +36,8 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
-	github.com/valyala/fasthttp v1.8.0
+	github.com/valyala/fasthttp v1.9.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.13.0
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 )

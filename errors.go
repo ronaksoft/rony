@@ -40,7 +40,6 @@ const (
 	ErrItemRequest    = "REQUEST"
 )
 
-
 var (
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
 	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")

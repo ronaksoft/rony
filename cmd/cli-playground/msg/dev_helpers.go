@@ -5,7 +5,6 @@ package msg
 
 import (
 	fmt "fmt"
-	pbytes "github.com/gobwas/pool/pbytes"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 	sync "sync"
@@ -38,13 +37,6 @@ func (p *poolProtoMessage) Put(x *ProtoMessage) {
 
 var PoolProtoMessage = poolProtoMessage{}
 
-func ResultProtoMessage(out *MessageEnvelope, res *ProtoMessage) {
-	out.Constructor = C_ProtoMessage
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
 const C_EchoRequest int64 = 1904100324
 
 type poolEchoRequest struct {
@@ -65,13 +57,6 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 
 var PoolEchoRequest = poolEchoRequest{}
 
-func ResultEchoRequest(out *MessageEnvelope, res *EchoRequest) {
-	out.Constructor = C_EchoRequest
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
-
 const C_EchoResponse int64 = 4192619139
 
 type poolEchoResponse struct {
@@ -91,13 +76,6 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 }
 
 var PoolEchoResponse = poolEchoResponse{}
-
-func ResultEchoResponse(out *MessageEnvelope, res *EchoResponse) {
-	out.Constructor = C_EchoResponse
-	pbytes.Put(out.Message)
-	out.Message = pbytes.GetLen(res.Size())
-	res.MarshalTo(out.Message)
-}
 
 func init() {
 	ConstructorNames[2179260159] = "ProtoMessage"
