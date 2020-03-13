@@ -64,7 +64,7 @@ func acquireClusterMessage() *ClusterMessage {
 
 func releaseClusterMessage(x *ClusterMessage) {
 	x.AuthID = 0
-	x.Sender = ""
+	x.Sender = x.Sender[:0]
 	x.Envelope.Constructor = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
 	x.Envelope.RequestID = 0

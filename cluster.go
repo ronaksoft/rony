@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/pool/pbytes"
 	"go.uber.org/zap"
 	"net"
@@ -35,7 +36,7 @@ func (edge *EdgeServer) ClusterSend(serverID string, authID int64, envelope *Mes
 
 	clusterMessage := &ClusterMessage{
 		AuthID:   authID,
-		Sender:   edge.serverID,
+		Sender:   tools.StrToByte(edge.serverID),
 		Envelope: envelope,
 	}
 	b := pbytes.GetLen(clusterMessage.Size())

@@ -40,6 +40,7 @@ type Context struct {
 	kv          map[uint32]interface{}
 	MessageChan chan *messageDispatch
 	UpdateChan  chan *updateDispatch
+	ClusterChan chan *messageDispatch
 }
 
 func New() *Context {
@@ -48,6 +49,7 @@ func New() *Context {
 		kv:          make(map[uint32]interface{}, 3),
 		MessageChan: make(chan *messageDispatch, 3),
 		UpdateChan:  make(chan *updateDispatch, 100),
+		ClusterChan: make(chan *messageDispatch, 100),
 	}
 }
 
@@ -61,6 +63,7 @@ func (ctx *Context) StopExecution() {
 	ctx.Stop = true
 	close(ctx.MessageChan)
 	close(ctx.UpdateChan)
+	close(ctx.ClusterChan)
 }
 
 func (ctx *Context) Set(key string, v interface{}) {
@@ -103,6 +106,7 @@ func (ctx *Context) GetBool(key string) bool {
 func (ctx *Context) Clear() {
 	ctx.MessageChan = make(chan *messageDispatch, 3)
 	ctx.UpdateChan = make(chan *updateDispatch, 100)
+	ctx.ClusterChan = make(chan *messageDispatch, 100)
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
@@ -110,6 +114,7 @@ func (ctx *Context) Clear() {
 
 type messageDispatch struct {
 	AuthID   int64
+	ServerID string
 	Envelope *MessageEnvelope
 }
 
@@ -131,6 +136,20 @@ func (ctx *Context) PushError(requestID uint64, code, item string) {
 		Code:  code,
 		Items: item,
 	})
+}
+
+func (ctx *Context) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
+	envelope := acquireMessageEnvelope()
+	envelope.RequestID = requestID
+	envelope.Constructor = constructor
+	pbytes.Put(envelope.Message)
+	envelope.Message = pbytes.GetLen(proto.Size())
+	_, _ = proto.MarshalTo(envelope.Message)
+	ctx.ClusterChan <- &messageDispatch{
+		AuthID:   authID,
+		ServerID: serverID,
+		Envelope: envelope,
+	}
 }
 
 type updateDispatch struct {

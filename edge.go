@@ -175,7 +175,7 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 	startTime := time.Now()
 
 	waitGroup := acquireWaitGroup()
-	waitGroup.Add(2)
+	waitGroup.Add(3)
 	go func() {
 		for u := range ctx.UpdateChan {
 			edge.dispatcher.DispatchUpdate(conn, streamID, u.AuthID, u.Envelope)
@@ -200,6 +200,22 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 					zap.Int64("AuthID", m.AuthID),
 					zap.Uint64("RequestID", m.Envelope.RequestID),
 					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
+				)
+			}
+			releaseMessageEnvelope(m.Envelope)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for m := range ctx.ClusterChan {
+			err := edge.ClusterSend(m.ServerID, m.AuthID, m.Envelope)
+			if ce := log.Check(log.DebugLevel, "ClusterMessage Dispatched"); ce != nil {
+				ce.Write(
+					zap.Bool("GatewayRequest", conn != nil),
+					zap.Int64("AuthID", m.AuthID),
+					zap.Uint64("RequestID", m.Envelope.RequestID),
+					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
+					zap.Error(err),
 				)
 			}
 			releaseMessageEnvelope(m.Envelope)
