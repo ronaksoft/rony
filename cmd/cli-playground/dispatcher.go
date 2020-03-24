@@ -5,7 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	"github.com/gobwas/pool/pbytes"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 )
 
 type dispatcher struct{}
@@ -18,7 +18,7 @@ func (d dispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, e
 	proto := &msg.ProtoMessage{}
 	proto.AuthID = authID
 	proto.Payload, _ = envelope.Marshal()
-	protoBytes := pbytes.GetLen(proto.Size())
+	protoBytes := pools.Bytes.GetLen(proto.Size())
 	_, _ = proto.MarshalTo(protoBytes)
 	if conn != nil {
 		err := conn.SendBinary(streamID, protoBytes)

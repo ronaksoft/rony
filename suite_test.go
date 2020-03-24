@@ -1,7 +1,7 @@
 package rony_test
 
 import (
-	context2 "context"
+	"context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
@@ -123,7 +123,7 @@ func TestEdgeServerSimple(t *testing.T) {
 		err := edge.Run()
 		c.So(err, ShouldBeNil)
 		time.Sleep(time.Second)
-		conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
+		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		c.So(err, ShouldBeNil)
 		for i := int64(1); i <= 10; i++ {
 			req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}

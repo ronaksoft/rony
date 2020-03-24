@@ -4,7 +4,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"net"
@@ -104,19 +103,17 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		return
 	}
 
-	var clientIP []byte
+	var clientIP string
 	var clientType string
 	var detected bool
 	req.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.ByteToStr(key) {
 		case "Cf-Connecting-Ip":
-			clientIP = pbytes.GetLen(len(value))
-			copy(clientIP, value)
+			clientIP = string(value)
 			detected = true
 		case "X-Forwarded-For", "X-Real-Ip", "Forwarded":
 			if !detected {
-				clientIP = pbytes.GetLen(len(value))
-				copy(clientIP, value)
+				clientIP = string(value)
 				detected = true
 			}
 		case "X-Client-Type":
@@ -124,13 +121,13 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		}
 	})
 	if !detected {
-		clientIP = req.RemoteIP().To4()
+		clientIP = string(req.RemoteIP().To4())
 	}
 	conn := &Conn{
 		gateway:    g,
 		req:        req,
 		ConnID:     req.ConnID(),
-		ClientIP:   tools.ByteToStr(clientIP),
+		ClientIP:   clientIP,
 		ClientType: clientType,
 	}
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())

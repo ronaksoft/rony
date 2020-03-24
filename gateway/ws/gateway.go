@@ -3,8 +3,8 @@ package websocketGateway
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/mailru/easygo/netpoll"
@@ -99,20 +99,18 @@ func New(config Config) (*Gateway, error) {
 
 func (g *Gateway) connectionAcceptor() {
 	defer g.waitGroupAcceptors.Done()
-	var clientIP []byte
+	var clientIP string
 	var clientType string
 	var detected bool
 	wsUpgrader := ws.DefaultUpgrader
 	wsUpgrader.OnHeader = func(key, value []byte) (err error) {
 		switch strings.ToLower(tools.ByteToStr(key)) {
 		case "cf-connecting-ip":
-			clientIP = pbytes.GetLen(len(value))
-			copy(clientIP, value)
+			clientIP = string(value)
 			detected = true
 		case "x-forwarded-for", "x-real-ip", "forwarded":
 			if !detected {
-				clientIP = pbytes.GetLen(len(value))
-				copy(clientIP, value)
+				clientIP = string(value)
 				detected = true
 			}
 		case "x-client-type":
@@ -133,7 +131,7 @@ func (g *Gateway) connectionAcceptor() {
 		if _, err := wsUpgrader.Upgrade(conn); err != nil {
 			if ce := log.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
 				ce.Write(
-					zap.String("IP", tools.ByteToStr(clientIP)),
+					zap.String("IP", clientIP),
 					zap.String("ClientType", clientType),
 					zap.Error(err),
 				)
@@ -146,8 +144,7 @@ func (g *Gateway) connectionAcceptor() {
 		// one for reading and one for writing
 		var wsConn *Conn
 		if detected {
-			wsConn = g.addConnection(conn, tools.ByteToStr(clientIP), clientType)
-			pbytes.Put(clientIP)
+			wsConn = g.addConnection(conn, clientIP, clientType)
 		} else {
 			wsConn = g.addConnection(conn, strings.Split(conn.RemoteAddr().String(), ":")[0], clientType)
 		}
@@ -306,7 +303,7 @@ func (g *Gateway) writePump() {
 				g.removeConnection(wr.wc.ConnID)
 			}
 			// Put the bytes into the pool to be reused again
-			pbytes.Put(wr.payload)
+			pools.Bytes.Put(wr.payload)
 		case ws.OpPing:
 			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 			err := wsutil.WriteServerMessage(wr.wc.conn, ws.OpPong, nil)

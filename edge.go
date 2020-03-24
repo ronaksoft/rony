@@ -5,10 +5,10 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
@@ -123,14 +123,14 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		raftCmd := acquireRaftCommand()
 		raftCmd.AuthID = authID
 		raftCmd.Envelope = req
-		raftCmdBytes := pbytes.GetLen(raftCmd.Size())
+		raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
 		_, err = raftCmd.MarshalTo(raftCmdBytes)
 		if err != nil {
 			return
 		}
 		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
 		err = f.Error()
-		pbytes.Put(raftCmdBytes)
+		pools.Bytes.Put(raftCmdBytes)
 		releaseRaftCommand(raftCmd)
 		if err != nil {
 			return
@@ -179,14 +179,6 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 	go func() {
 		for u := range ctx.UpdateChan {
 			edge.dispatcher.DispatchUpdate(conn, streamID, u.AuthID, u.Envelope)
-			if ce := log.Check(log.DebugLevel, "Update Dispatched"); ce != nil {
-				ce.Write(
-					zap.Bool("GatewayRequest", conn != nil),
-					zap.Int64("AuthID", u.AuthID),
-					zap.Int64("UpdateID", u.Envelope.UpdateID),
-					zap.String("C", edge.getConstructorName(u.Envelope.Constructor)),
-				)
-			}
 			releaseUpdateEnvelope(u.Envelope)
 		}
 		waitGroup.Done()
@@ -194,14 +186,6 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 	go func() {
 		for m := range ctx.MessageChan {
 			edge.dispatcher.DispatchMessage(conn, streamID, m.AuthID, m.Envelope)
-			if ce := log.Check(log.DebugLevel, "Message Dispatched"); ce != nil {
-				ce.Write(
-					zap.Bool("GatewayRequest", conn != nil),
-					zap.Int64("AuthID", m.AuthID),
-					zap.Uint64("RequestID", m.Envelope.RequestID),
-					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
-				)
-			}
 			releaseMessageEnvelope(m.Envelope)
 		}
 		waitGroup.Done()
@@ -209,8 +193,8 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 	go func() {
 		for m := range ctx.ClusterChan {
 			err := edge.ClusterSend(m.ServerID, m.AuthID, m.Envelope)
-			if ce := log.Check(log.DebugLevel, "ClusterMessage Dispatched"); ce != nil {
-				ce.Write(
+			if err != nil {
+				log.Error("ClusterMessage Error",
 					zap.Bool("GatewayRequest", conn != nil),
 					zap.Int64("AuthID", m.AuthID),
 					zap.Uint64("RequestID", m.Envelope.RequestID),
@@ -286,7 +270,8 @@ func (edge *EdgeServer) recoverPanic(ctx *Context) {
 		)
 	}
 }
-func (edge *EdgeServer) onMessage(conn gateway.Conn, streamID int64, data []byte) {
+
+func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	envelope := acquireMessageEnvelope()
 	authID, err := edge.dispatcher.DispatchRequest(conn, streamID, data, envelope)
 	if err != nil {

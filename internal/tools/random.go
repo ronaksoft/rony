@@ -3,7 +3,7 @@ package tools
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"github.com/gobwas/pool/pbytes"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	mathRand "math/rand"
 	"sync"
 	"time"
@@ -81,9 +81,10 @@ func RandomInt64(n int64) (x int64) {
 }
 
 func SecureRandomInt63(n int64) (x int64) {
-	b := pbytes.GetLen(8)
+	b := pools.TinyBytes.GetLen(8)
 	_, _ = rand.Read(b)
 	xx := binary.BigEndian.Uint64(b)
+	pools.TinyBytes.Put(b)
 	if n > 0 {
 		x = int64(xx) % n
 	} else {

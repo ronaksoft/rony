@@ -4,8 +4,8 @@ import (
 	"fmt"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/gobwas/pool/pbytes"
 	"go.uber.org/zap"
 	"net"
 	"sync"
@@ -39,13 +39,13 @@ func (edge *EdgeServer) ClusterSend(serverID string, authID int64, envelope *Mes
 		Sender:   tools.StrToByte(edge.serverID),
 		Envelope: envelope,
 	}
-	b := pbytes.GetLen(clusterMessage.Size())
+	b := pools.Bytes.GetLen(clusterMessage.Size())
 	_, err := clusterMessage.MarshalTo(b)
 	if err != nil {
 		return err
 	}
 	err = edge.gossip.SendBestEffort(m.node, b)
-	pbytes.Put(b)
+	pools.Bytes.Put(b)
 	return err
 }
 

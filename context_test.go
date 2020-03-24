@@ -37,8 +37,8 @@ func BenchmarkCrc(b *testing.B) {
 func benchCrc32(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
+		m := make(map[uint32]interface{})
 		for pb.Next() {
-			m := make(map[uint32]interface{})
 			m[crc32.ChecksumIEEE(tools.StrToByte(tools.RandomID(24)))] = 10
 		}
 	})

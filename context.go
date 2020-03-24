@@ -1,8 +1,8 @@
 package rony
 
 import (
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/gogo/protobuf/proto"
 	"hash/crc32"
 	"sync"
@@ -104,9 +104,9 @@ func (ctx *Context) GetBool(key string) bool {
 }
 
 func (ctx *Context) Clear() {
-	ctx.MessageChan = make(chan *messageDispatch, 3)
-	ctx.UpdateChan = make(chan *updateDispatch, 100)
-	ctx.ClusterChan = make(chan *messageDispatch, 100)
+	ctx.MessageChan = make(chan *messageDispatch, 5)
+	ctx.UpdateChan = make(chan *updateDispatch, 20)
+	ctx.ClusterChan = make(chan *messageDispatch, 5)
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
@@ -122,8 +122,8 @@ func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int6
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
-	pbytes.Put(envelope.Message)
-	envelope.Message = pbytes.GetLen(proto.Size())
+	pools.Bytes.Put(envelope.Message)
+	envelope.Message = pools.Bytes.GetLen(proto.Size())
 	_, _ = proto.MarshalTo(envelope.Message)
 	ctx.MessageChan <- &messageDispatch{
 		AuthID:   authID,
@@ -142,8 +142,8 @@ func (ctx *Context) PushClusterMessage(serverID string, authID int64, requestID 
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
-	pbytes.Put(envelope.Message)
-	envelope.Message = pbytes.GetLen(proto.Size())
+	pools.Bytes.Put(envelope.Message)
+	envelope.Message = pools.Bytes.GetLen(proto.Size())
 	_, _ = proto.MarshalTo(envelope.Message)
 	ctx.ClusterChan <- &messageDispatch{
 		AuthID:   authID,
@@ -165,8 +165,8 @@ func (ctx *Context) PushUpdate(authID int64, updateID int64, constructor int64, 
 		envelope.UCount = 1
 	}
 	envelope.Constructor = constructor
-	pbytes.Put(envelope.Update)
-	envelope.Update = pbytes.GetLen(proto.Size())
+	pools.Bytes.Put(envelope.Update)
+	envelope.Update = pools.Bytes.GetLen(proto.Size())
 	_, _ = proto.MarshalTo(envelope.Update)
 	ctx.UpdateChan <- &updateDispatch{
 		AuthID:   authID,
