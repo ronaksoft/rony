@@ -2,6 +2,7 @@ package rony
 
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"sync"
 )
 
@@ -134,4 +135,69 @@ func acquireContext(conn gateway.Conn, authID int64, quickReturn bool) *Context 
 
 func releaseContext(ctx *Context) {
 	ctxPool.Put(ctx)
+}
+
+var carrierPool = sync.Pool{}
+
+func acquireMessageCarrier(authID int64, e *MessageEnvelope) *carrier {
+	cv, _ := carrierPool.Get().(*carrier)
+	if cv == nil {
+		return &carrier{
+			kind:            carrierMessage,
+			AuthID:          authID,
+			ServerID:        nil,
+			MessageEnvelope: e,
+			UpdateEnvelope:  nil,
+		}
+	}
+	cv.kind = carrierMessage
+	cv.AuthID = authID
+	cv.MessageEnvelope = e
+	return cv
+}
+
+func acquireClusterMessageCarrier(authID int64, serverID string, e *MessageEnvelope) *carrier {
+	cv, _ := carrierPool.Get().(*carrier)
+	if cv == nil {
+		return &carrier{
+			kind:            carrierCluster,
+			AuthID:          authID,
+			ServerID:        []byte(serverID),
+			MessageEnvelope: e,
+			UpdateEnvelope:  nil,
+		}
+	}
+	if len(serverID) > cap(cv.ServerID) {
+		pools.Bytes.Put(cv.ServerID)
+		pools.Bytes.GetCap(len(serverID))
+	}
+	cv.kind = carrierCluster
+	cv.ServerID = append(cv.ServerID, serverID...)
+	cv.AuthID = authID
+	cv.MessageEnvelope = e
+	return cv
+}
+
+func acquireUpdateCarrier(authID int64, e *UpdateEnvelope) *carrier {
+	cv, _ := carrierPool.Get().(*carrier)
+	if cv == nil {
+		return &carrier{
+			kind:            carrierUpdate,
+			AuthID:          authID,
+			ServerID:        nil,
+			MessageEnvelope: nil,
+			UpdateEnvelope:  e,
+		}
+	}
+	cv.kind = carrierUpdate
+	cv.AuthID = authID
+	cv.UpdateEnvelope = e
+	return cv
+}
+
+func releaseCarrier(c *carrier) {
+	c.MessageEnvelope = nil
+	c.UpdateEnvelope = nil
+	c.ServerID = c.ServerID[:0]
+	carrierPool.Put(c)
 }

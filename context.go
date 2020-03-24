@@ -18,16 +18,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-// Context Values
-const (
-	CtxAuthKey   = "AUTH_KEY"
-	CtxServerSeq = "S_SEQ"
-	CtxClientSeq = "C_SEQ"
-	CtxUser      = "USER"
-	CtxStreamID  = "SID"
-	CtxTemp      = "TEMP"
-)
-
 type Context struct {
 	ConnID      uint64
 	AuthID      int64
@@ -38,18 +28,14 @@ type Context struct {
 	// internals
 	mtx         sync.RWMutex
 	kv          map[uint32]interface{}
-	MessageChan chan *messageDispatch
-	UpdateChan  chan *updateDispatch
-	ClusterChan chan *messageDispatch
+	CarrierChan chan *carrier
 }
 
 func New() *Context {
 	return &Context{
 		NextChan:    make(chan struct{}, 1),
 		kv:          make(map[uint32]interface{}, 3),
-		MessageChan: make(chan *messageDispatch, 3),
-		UpdateChan:  make(chan *updateDispatch, 100),
-		ClusterChan: make(chan *messageDispatch, 100),
+		CarrierChan: make(chan *carrier, 10),
 	}
 }
 
@@ -61,9 +47,7 @@ func (ctx *Context) Return() {
 
 func (ctx *Context) StopExecution() {
 	ctx.Stop = true
-	close(ctx.MessageChan)
-	close(ctx.UpdateChan)
-	close(ctx.ClusterChan)
+	close(ctx.CarrierChan)
 }
 
 func (ctx *Context) Set(key string, v interface{}) {
@@ -104,31 +88,26 @@ func (ctx *Context) GetBool(key string) bool {
 }
 
 func (ctx *Context) Clear() {
-	ctx.MessageChan = make(chan *messageDispatch, 5)
-	ctx.UpdateChan = make(chan *updateDispatch, 20)
-	ctx.ClusterChan = make(chan *messageDispatch, 5)
+	ctx.CarrierChan = make(chan *carrier, 10)
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
-}
-
-type messageDispatch struct {
-	AuthID   int64
-	ServerID string
-	Envelope *MessageEnvelope
 }
 
 func (ctx *Context) PushMessage(authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
-	pools.Bytes.Put(envelope.Message)
-	envelope.Message = pools.Bytes.GetLen(proto.Size())
-	_, _ = proto.MarshalTo(envelope.Message)
-	ctx.MessageChan <- &messageDispatch{
-		AuthID:   authID,
-		Envelope: envelope,
+	protoSize := proto.Size()
+	if protoSize > cap(envelope.Message) {
+		pools.Bytes.Put(envelope.Message)
+		envelope.Message = pools.Bytes.GetLen(proto.Size())
+	} else {
+		envelope.Message = envelope.Message[:protoSize]
 	}
+	_, _ = proto.MarshalTo(envelope.Message)
+
+	ctx.CarrierChan <- acquireMessageCarrier(authID, envelope)
 }
 
 func (ctx *Context) PushError(requestID uint64, code, item string) {
@@ -142,19 +121,15 @@ func (ctx *Context) PushClusterMessage(serverID string, authID int64, requestID 
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
-	pools.Bytes.Put(envelope.Message)
-	envelope.Message = pools.Bytes.GetLen(proto.Size())
-	_, _ = proto.MarshalTo(envelope.Message)
-	ctx.ClusterChan <- &messageDispatch{
-		AuthID:   authID,
-		ServerID: serverID,
-		Envelope: envelope,
+	protoSize := proto.Size()
+	if protoSize > cap(envelope.Message) {
+		pools.Bytes.Put(envelope.Message)
+		envelope.Message = pools.Bytes.GetLen(proto.Size())
+	} else {
+		envelope.Message = envelope.Message[:protoSize]
 	}
-}
-
-type updateDispatch struct {
-	AuthID   int64
-	Envelope *UpdateEnvelope
+	_, _ = proto.MarshalTo(envelope.Message)
+	ctx.CarrierChan <- acquireClusterMessageCarrier(authID, serverID, envelope)
 }
 
 func (ctx *Context) PushUpdate(authID int64, updateID int64, constructor int64, proto ProtoBufferMessage) {
@@ -165,13 +140,30 @@ func (ctx *Context) PushUpdate(authID int64, updateID int64, constructor int64, 
 		envelope.UCount = 1
 	}
 	envelope.Constructor = constructor
-	pools.Bytes.Put(envelope.Update)
-	envelope.Update = pools.Bytes.GetLen(proto.Size())
-	_, _ = proto.MarshalTo(envelope.Update)
-	ctx.UpdateChan <- &updateDispatch{
-		AuthID:   authID,
-		Envelope: envelope,
+	protoSize := proto.Size()
+	if protoSize > cap(envelope.Update) {
+		pools.Bytes.Put(envelope.Update)
+		envelope.Update = pools.Bytes.GetLen(proto.Size())
+	} else {
+		envelope.Update = envelope.Update[:protoSize]
 	}
+	_, _ = proto.MarshalTo(envelope.Update)
+	ctx.CarrierChan <- acquireUpdateCarrier(authID, envelope)
+}
+
+const (
+	_ byte = iota
+	carrierMessage
+	carrierCluster
+	carrierUpdate
+)
+
+type carrier struct {
+	kind            byte
+	AuthID          int64
+	ServerID        []byte
+	MessageEnvelope *MessageEnvelope
+	UpdateEnvelope  *UpdateEnvelope
 }
 
 // ProtoBufferMessage

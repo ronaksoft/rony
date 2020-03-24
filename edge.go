@@ -175,34 +175,30 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 	startTime := time.Now()
 
 	waitGroup := acquireWaitGroup()
-	waitGroup.Add(3)
+	waitGroup.Add(1)
 	go func() {
-		for u := range ctx.UpdateChan {
-			edge.dispatcher.DispatchUpdate(conn, streamID, u.AuthID, u.Envelope)
-			releaseUpdateEnvelope(u.Envelope)
-		}
-		waitGroup.Done()
-	}()
-	go func() {
-		for m := range ctx.MessageChan {
-			edge.dispatcher.DispatchMessage(conn, streamID, m.AuthID, m.Envelope)
-			releaseMessageEnvelope(m.Envelope)
-		}
-		waitGroup.Done()
-	}()
-	go func() {
-		for m := range ctx.ClusterChan {
-			err := edge.ClusterSend(m.ServerID, m.AuthID, m.Envelope)
-			if err != nil {
-				log.Error("ClusterMessage Error",
-					zap.Bool("GatewayRequest", conn != nil),
-					zap.Int64("AuthID", m.AuthID),
-					zap.Uint64("RequestID", m.Envelope.RequestID),
-					zap.String("C", edge.getConstructorName(m.Envelope.Constructor)),
-					zap.Error(err),
-				)
+		for c := range ctx.CarrierChan {
+			switch c.kind {
+			case carrierUpdate:
+				edge.dispatcher.DispatchUpdate(conn, streamID, c.AuthID, c.UpdateEnvelope)
+				releaseUpdateEnvelope(c.UpdateEnvelope)
+			case carrierMessage:
+				edge.dispatcher.DispatchMessage(conn, streamID, c.AuthID, c.MessageEnvelope)
+				releaseMessageEnvelope(c.MessageEnvelope)
+			case carrierCluster:
+				err := edge.ClusterSend(tools.ByteToStr(c.ServerID), c.AuthID, c.MessageEnvelope)
+				if err != nil {
+					log.Error("ClusterMessage Error",
+						zap.Bool("GatewayRequest", conn != nil),
+						zap.Int64("AuthID", c.AuthID),
+						zap.Uint64("RequestID", c.MessageEnvelope.RequestID),
+						zap.String("C", edge.getConstructorName(c.MessageEnvelope.Constructor)),
+						zap.Error(err),
+					)
+				}
+				releaseMessageEnvelope(c.MessageEnvelope)
 			}
-			releaseMessageEnvelope(m.Envelope)
+			releaseCarrier(c)
 		}
 		waitGroup.Done()
 	}()
