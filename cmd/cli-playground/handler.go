@@ -17,32 +17,28 @@ import (
 
 func GenAskHandler(serverID string) rony.Handler {
 	return func(ctx *rony.Context, in *rony.MessageEnvelope) {
-		// fmt.Println("Echo Received", ctx.ConnID, ctx.AuthID)
-		// Write your handler code and remove the following line
-		req := msg.PoolEchoRequest.Get()
-		defer msg.PoolEchoRequest.Put(req)
-		res := msg.PoolEchoResponse.Get()
-		defer msg.PoolEchoResponse.Put(res)
+		req := msg.PoolAskRequest.Get()
+		defer msg.PoolAskRequest.Put(req)
+		res := msg.PoolAskResponse.Get()
+		defer msg.PoolAskResponse.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
 			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
 			return
 		}
 
-		res.Bool = req.Bool
-		res.Int = req.Int
-		res.ServerID = serverID
-		res.Timestamp = time.Now().UnixNano()
-		res.Delay = res.Timestamp - req.Timestamp
-
-		ctx.PushMessage(ctx.AuthID, in.RequestID, msg.C_EchoResponse, res)
+		if req.ServerID != serverID {
+			ctx.PushClusterMessage(req.ServerID, ctx.AuthID, in.RequestID, in.Constructor, req)
+		} else {
+			res.Coordinator = ctx.GetString(rony.CtxServerID, serverID)
+			res.Responder = serverID
+			ctx.PushMessage(ctx.AuthID, in.RequestID, msg.C_AskResponse, res)
+		}
 	}
 }
 
 func GenEchoHandler(serverID string) rony.Handler {
 	return func(ctx *rony.Context, in *rony.MessageEnvelope) {
-		// fmt.Println("Echo Received", ctx.ConnID, ctx.AuthID)
-		// Write your handler code and remove the following line
 		req := msg.PoolEchoRequest.Get()
 		defer msg.PoolEchoRequest.Put(req)
 		res := msg.PoolEchoResponse.Get()

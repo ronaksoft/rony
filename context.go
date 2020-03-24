@@ -75,6 +75,18 @@ func (ctx *Context) GetBytes(key string, defaultValue []byte) []byte {
 	return defaultValue
 }
 
+func (ctx *Context) GetString(key string, defaultValue string) string {
+	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
+	switch x := v.(type) {
+	case []byte:
+		return tools.ByteToStr(x)
+	case string:
+		return x
+	default:
+		return defaultValue
+	}
+}
+
 func (ctx *Context) GetInt64(key string, defaultValue int64) int64 {
 	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(int64)
 	if ok {

@@ -74,6 +74,7 @@ func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 
 		Edges[serverID] = rony.NewEdgeServer(serverID, &dispatcher{}, opts...)
 		Edges[serverID].AddHandler(msg.C_EchoRequest, GenEchoHandler(serverID))
+		Edges[serverID].AddHandler(msg.C_AskRequest, GenAskHandler(serverID))
 		err := Edges[serverID].Run()
 		if err != nil {
 			fmt.Println(err)
@@ -376,35 +377,119 @@ var ClusterMessageCmd = &cobra.Command{
 	Use: "clusterMessage",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
-			fmt.Println("Needs ServerID, e.g. echo First.01 Second.01")
+			fmt.Println("Needs ServerID, e.g. echo First Second <Count>")
 			return
 		}
-		clusterMessage(args[0], args[1])
+		e1 := Edges[args[0]]
+		e2 := Edges[args[1]]
+		if e1 == nil || e2 == nil {
+			fmt.Println("Invalid Args")
+			return
+		}
+		var count int32 = 100
+		if len(args) == 3 {
+			count = tools.StrToInt32(args[2])
+		}
+		gatewayAddr := e1.Stats().GatewayAddr
+		parts := strings.Split(gatewayAddr, ":")
+		if len(parts) != 2 {
+			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+			return
+		}
+
+
+		startTime := time.Now()
+		waitGroup := &sync.WaitGroup{}
+		for i := int64(1); i <= int64(count); i++ {
+			waitGroup.Add(1)
+			go func(i int64) {
+				benchClusterMessage(i*1000, int(count), parts[1])
+				waitGroup.Done()
+			}(i)
+			time.Sleep(time.Millisecond)
+		}
+		waitGroup.Wait()
+		d := time.Now().Sub(startTime)
+		t := count * count
+		if count > 50 {
+			t = count * 50
+		}
+		fmt.Println("Total Time:", d, ", ", t)
+		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
 	},
 }
 
-func clusterMessage(n1, n2 string) {
-	e1 := Edges[n1]
-	e2 := Edges[n2]
-	if e1 == nil || e2 == nil {
-		fmt.Println("Invalid Args")
+func benchClusterMessage(authID int64, count int, port string, serverID string) {
+	if count > 50 {
+		count = 50
+	}
+	conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%s", port))
+	if err != nil {
+		fmt.Println(authID, "Connect", err)
 		return
 	}
-	req := &msg.EchoRequest{
-		Int:       tools.RandomInt64(0),
-		Bool:      false,
-		Timestamp: time.Now().UnixNano(),
+	defer conn.Close()
+	for i := 0; i < count; i++ {
+		req := &msg.AskRequest{
+			ServerID: serverID,
+		}
+		reqBytes, _ := req.Marshal()
+		envelope := &rony.MessageEnvelope{
+			Constructor: msg.C_AskRequest,
+			RequestID:   tools.RandomUint64(),
+			Message:     reqBytes,
+		}
+		proto := &msg.ProtoMessage{
+			AuthID: authID,
+		}
+		proto.Payload, _ = envelope.Marshal()
+		bytes, _ := proto.Marshal()
+		err = wsutil.WriteClientBinary(conn, bytes)
+		if err != nil {
+			fmt.Println(authID, "Write:", err)
+			return
+		}
+
+		_ = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+		resBytes, err := wsutil.ReadServerBinary(conn)
+		if err != nil {
+			fmt.Println(authID, "Read", err)
+			return
+		}
+		err = proto.Unmarshal(resBytes)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = envelope.Unmarshal(proto.Payload)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		switch envelope.Constructor {
+		case rony.C_Error:
+			res := rony.Error{}
+			err = res.Unmarshal(envelope.Message)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			fmt.Println("ERROR!!! In Response", authID)
+		case msg.C_AskResponse:
+			res := msg.AskResponse{}
+			err = res.Unmarshal(envelope.Message)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			// fmt.Println("Delay:", time.Duration(res.Delay))
+		default:
+			fmt.Println("UNKNOWN!!!!")
+		}
+
 	}
-	reqBytes, _ := req.Marshal()
-	m := &rony.MessageEnvelope{
-		Constructor: msg.C_EchoRequest,
-		RequestID:   tools.RandomUint64(),
-		Message:     reqBytes,
-	}
-	err := e1.ClusterSend(e2.GetServerID(), tools.RandomInt64(0), m)
-	if err != nil {
-		fmt.Println(err)
-	}
+
 }
 
 var MembersCmd = &cobra.Command{
