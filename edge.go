@@ -55,7 +55,7 @@ type Dispatcher interface {
 // EdgeServer
 type EdgeServer struct {
 	// General
-	serverID        string
+	serverID        []byte
 	replicaSet      uint32
 	shardSet        uint32
 	shardMin        uint32
@@ -87,7 +87,7 @@ type EdgeServer struct {
 func NewEdgeServer(serverID string, dispatcher Dispatcher, opts ...Option) *EdgeServer {
 	edgeServer := &EdgeServer{
 		handlers:   make(map[int64][]Handler),
-		serverID:   serverID,
+		serverID:   []byte(serverID),
 		dispatcher: dispatcher,
 		getConstructorName: func(constructor int64) string {
 			return fmt.Sprintf("%d", constructor)
@@ -108,14 +108,14 @@ func NewEdgeServer(serverID string, dispatcher Dispatcher, opts ...Option) *Edge
 }
 
 func (edge *EdgeServer) GetServerID() string {
-	return edge.serverID
+	return string(edge.serverID)
 }
 
 func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
 }
 
-func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *MessageEnvelope) (err error) {
+func (edge *EdgeServer) execute(conn gateway.Conn, serverID []byte, streamID, authID int64, req *MessageEnvelope) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
 			return ErrNotRaftLeader
@@ -147,6 +147,9 @@ func (edge *EdgeServer) execute(conn gateway.Conn, streamID, authID int64, req *
 		waitGroup := acquireWaitGroup()
 		for i := 0; i < xLen; i++ {
 			ctx := acquireContext(conn, authID, true)
+			if serverID != nil {
+				ctx.Set(CtxServerID, serverID)
+			}
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *Context, idx int) {
@@ -259,7 +262,7 @@ func (edge *EdgeServer) executeFunc(conn gateway.Conn, streamID int64, ctx *Cont
 func (edge *EdgeServer) recoverPanic(ctx *Context) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
-			zap.String("ServerID", edge.GetServerID()),
+			zap.ByteString("ServerID", edge.serverID),
 			zap.Uint64("ConnID", ctx.ConnID),
 			zap.Int64("AuthID", ctx.AuthID),
 			zap.ByteString("Stack", debug.Stack()),
@@ -275,7 +278,7 @@ func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data
 		return
 	}
 	startTime := time.Now()
-	err = edge.execute(conn, streamID, authID, envelope)
+	err = edge.execute(conn, edge.serverID, streamID, authID, envelope)
 	if ce := log.Check(log.DebugLevel, "Execute Time"); ce != nil {
 		ce.Write(zap.Duration("D", time.Now().Sub(startTime)))
 	}
@@ -309,7 +312,7 @@ func (edge *EdgeServer) Run() (err error) {
 	}
 
 	log.Info("Edge Server Started",
-		zap.String("ServerID", edge.serverID),
+		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
 	)
 
@@ -350,7 +353,7 @@ func (edge *EdgeServer) runGossip() error {
 	_ = os.MkdirAll(dirPath, os.ModePerm)
 
 	conf := memberlist.DefaultWANConfig()
-	conf.Name = edge.GetServerID()
+	conf.Name = string(edge.serverID)
 	conf.Events = &delegateEvents{edge: edge}
 	conf.Delegate = &delegateNode{edge: edge}
 	conf.LogOutput = ioutil.Discard
@@ -386,7 +389,7 @@ func (edge *EdgeServer) runRaft(notifyChan chan bool) (err error) {
 	raftConfig.LogLevel = "WARN"
 	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
-	raftConfig.LocalID = raft.ServerID(edge.GetServerID())
+	raftConfig.LocalID = raft.ServerID(edge.serverID)
 	raftBind := fmt.Sprintf(":%d", edge.raftPort)
 	raftAdvertiseAddr, err := net.ResolveTCPAddr("tcp", raftBind)
 	if err != nil {
@@ -490,5 +493,5 @@ func (edge *EdgeServer) Shutdown() {
 	}
 
 	edge.gatewayProtocol = gateway.Undefined
-	log.Info("Server Shutdown!", zap.String("ID", edge.GetServerID()))
+	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
 }

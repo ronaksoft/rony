@@ -77,8 +77,50 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 
 var PoolEchoResponse = poolEchoResponse{}
 
+const C_AskRequest int64 = 3206229608
+
+type poolAskRequest struct {
+	pool sync.Pool
+}
+
+func (p *poolAskRequest) Get() *AskRequest {
+	x, ok := p.pool.Get().(*AskRequest)
+	if !ok {
+		return &AskRequest{}
+	}
+	return x
+}
+
+func (p *poolAskRequest) Put(x *AskRequest) {
+	p.pool.Put(x)
+}
+
+var PoolAskRequest = poolAskRequest{}
+
+const C_AskResponse int64 = 489087205
+
+type poolAskResponse struct {
+	pool sync.Pool
+}
+
+func (p *poolAskResponse) Get() *AskResponse {
+	x, ok := p.pool.Get().(*AskResponse)
+	if !ok {
+		return &AskResponse{}
+	}
+	return x
+}
+
+func (p *poolAskResponse) Put(x *AskResponse) {
+	p.pool.Put(x)
+}
+
+var PoolAskResponse = poolAskResponse{}
+
 func init() {
 	ConstructorNames[2179260159] = "ProtoMessage"
 	ConstructorNames[1904100324] = "EchoRequest"
 	ConstructorNames[4192619139] = "EchoResponse"
+	ConstructorNames[3206229608] = "AskRequest"
+	ConstructorNames[489087205] = "AskResponse"
 }

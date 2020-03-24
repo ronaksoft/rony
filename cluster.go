@@ -36,7 +36,7 @@ func (edge *EdgeServer) ClusterSend(serverID string, authID int64, envelope *Mes
 
 	clusterMessage := &ClusterMessage{
 		AuthID:   authID,
-		Sender:   tools.StrToByte(edge.serverID),
+		Sender:   edge.serverID,
 		Envelope: envelope,
 	}
 	b := pools.Bytes.GetLen(clusterMessage.Size())
@@ -80,7 +80,7 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 	}
 
 	return &ClusterMember{
-		ServerID:    edgeNode.ServerID,
+		ServerID:    tools.ByteToStr(edgeNode.ServerID),
 		ReplicaSet:  edgeNode.ReplicaSet,
 		ShardMin:    edgeNode.ShardMin,
 		ShardMax:    edgeNode.ShardMax,
@@ -93,6 +93,7 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 	}
 }
 
+// Cluster
 type Cluster struct {
 	sync.RWMutex
 	byServerID   map[string]*ClusterMember
@@ -233,7 +234,7 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 func (d delegateNode) NotifyMsg(data []byte) {
 	if ce := log.Check(log.DebugLevel, "Cluster Message Received"); ce != nil {
 		ce.Write(
-			zap.String("ServerID", d.edge.GetServerID()),
+			zap.ByteString("ServerID", d.edge.serverID),
 			zap.Int("Data", len(data)),
 		)
 	}
@@ -244,7 +245,7 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	d.edge.rateLimitChan <- struct{}{}
 	go func(clusterMessage *ClusterMessage) {
 		// TODO:: handle error, for instance we might send back an error to the sender
-		_ = d.edge.execute(nil, 0, clusterMessage.AuthID, clusterMessage.Envelope)
+		_ = d.edge.execute(nil, clusterMessage.Sender, 0, clusterMessage.AuthID, clusterMessage.Envelope)
 		releaseClusterMessage(clusterMessage)
 		<-d.edge.rateLimitChan
 	}(clusterMessage)

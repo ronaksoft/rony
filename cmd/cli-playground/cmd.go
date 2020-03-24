@@ -73,7 +73,7 @@ func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 		}
 
 		Edges[serverID] = rony.NewEdgeServer(serverID, &dispatcher{}, opts...)
-		Edges[serverID].AddHandler(msg.C_EchoRequest, EchoHandler)
+		Edges[serverID].AddHandler(msg.C_EchoRequest, GenEchoHandler(serverID))
 		err := Edges[serverID].Run()
 		if err != nil {
 			fmt.Println(err)

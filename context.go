@@ -18,6 +18,10 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+const (
+	CtxServerID = "SID"
+)
+
 type Context struct {
 	ConnID      uint64
 	AuthID      int64

@@ -21,4 +21,14 @@ message EchoResponse {
     required bool Bool = 2;
     required int64 Timestamp = 4;
     required int64 Delay = 5;
+    required string ServerID = 6;
+}
+
+message AskRequest {
+    required string ServerID = 1;
+}
+
+message AskResponse {
+    required string Coordinator = 1;
+    required string Responder = 2;
 }
