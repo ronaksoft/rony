@@ -107,34 +107,59 @@ func releaseWaitGroup(wg *sync.WaitGroup) {
 	waitGroupPool.Put(wg)
 }
 
-var ctxPool = sync.Pool{}
+var requestCtxPool = sync.Pool{}
 
-func acquireContext(conn gateway.Conn, authID int64, quickReturn bool) *Context {
-	var ctx *Context
-	if v := ctxPool.Get(); v == nil {
-		ctx = New()
+func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
+	var ctx *RequestCtx
+	if v := requestCtxPool.Get(); v == nil {
+		ctx = newRequestCtx()
 	} else {
-		ctx = v.(*Context)
-		ctx.Clear()
+		ctx = v.(*RequestCtx)
+		ctx.reset()
 		// Just to make sure channel is empty, or empty it if not
 		select {
-		case <-ctx.NextChan:
+		case <-ctx.nextChan:
 		default:
 		}
 	}
-	ctx.Stop = false
-	ctx.QuickReturn = quickReturn
-	if conn != nil {
-		ctx.ConnID = conn.GetConnID()
-	} else {
-		ctx.ConnID = 0
-	}
-	ctx.AuthID = authID
+	ctx.stop = false
+	ctx.quickReturn = quickReturn
+	ctx.dispatchCtx = dispatchCtx
 	return ctx
 }
 
-func releaseContext(ctx *Context) {
-	ctxPool.Put(ctx)
+func releaseRequestCtx(ctx *RequestCtx) {
+	requestCtxPool.Put(ctx)
+}
+
+var dispatchCtxPool = sync.Pool{}
+
+func acquireDispatchCtx(conn gateway.Conn, streamID int64, authID int64, serverID []byte) *DispatchCtx {
+	var ctx *DispatchCtx
+	if v := dispatchCtxPool.Get(); v == nil {
+		ctx = newDispatchCtx()
+	} else {
+		ctx = v.(*DispatchCtx)
+		ctx.reset()
+	}
+	ctx.conn = conn
+	if ctx.conn == nil {
+		ctx.kind = gatewayMessage
+	} else {
+		ctx.kind = clusterMessage
+	}
+	ctx.streamID = streamID
+	ctx.authID = authID
+	if len(serverID) > cap(ctx.serverID) {
+		pools.Bytes.Put(ctx.serverID)
+		ctx.serverID = pools.Bytes.GetCap(len(serverID))
+	}
+	ctx.serverID = append(ctx.serverID, serverID...)
+	return ctx
+}
+
+func releaseDispatchCtx(ctx *DispatchCtx) {
+	dispatchCtxPool.Put(ctx)
 }
 
 var carrierPool = sync.Pool{}

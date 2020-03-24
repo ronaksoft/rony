@@ -169,7 +169,7 @@ func (qc *Conn) flushJob() {
 				ce.Write(
 					zap.Uint64("ConnID", qc.ConnID),
 					zap.Int64("StreamID", int64(s.StreamID())),
-					zap.Int64("AuthID", qc.AuthID),
+					zap.Int64("authID", qc.AuthID),
 					zap.Error(err),
 				)
 			}

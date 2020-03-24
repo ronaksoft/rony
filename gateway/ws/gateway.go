@@ -241,7 +241,7 @@ func (g *Gateway) readPump() {
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
 				ce.Write(
-					zap.Int64("AuthID", wc.AuthID),
+					zap.Int64("authID", wc.AuthID),
 					zap.Error(err),
 				)
 			}

@@ -104,7 +104,7 @@ func (wc *Conn) startEvent(event netpoll.Event) {
 			if ce := log.Check(log.DebugLevel, "Websocket StartRead"); ce != nil {
 				ce.Write(
 					zap.Uint64("ConnID", wc.ConnID),
-					zap.Int64("AuthID", wc.AuthID),
+					zap.Int64("authID", wc.AuthID),
 					zap.String("ClientType", wc.ClientType),
 					zap.String("IP", wc.ClientIP),
 				)
@@ -188,7 +188,7 @@ func (wc *Conn) flushJob() {
 			if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
 				ce.Write(
 					zap.Uint64("ConnID", wc.ConnID),
-					zap.Int64("AuthID", wc.AuthID),
+					zap.Int64("authID", wc.AuthID),
 					zap.Error(err),
 				)
 			}

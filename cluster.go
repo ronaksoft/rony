@@ -239,16 +239,19 @@ func (d delegateNode) NotifyMsg(data []byte) {
 		)
 	}
 
-	clusterMessage := acquireClusterMessage()
-	_ = clusterMessage.Unmarshal(data)
+	cm := acquireClusterMessage()
+	_ = cm.Unmarshal(data)
+	dispatchCtx := acquireDispatchCtx(nil, 0, cm.AuthID, cm.Sender)
+	dispatchCtx.FillEnvelope(cm.Envelope.RequestID, cm.Envelope.Constructor, cm.Envelope.Message)
+	releaseClusterMessage(cm)
 
 	d.edge.rateLimitChan <- struct{}{}
 	go func(clusterMessage *ClusterMessage) {
 		// TODO:: handle error, for instance we might send back an error to the sender
-		_ = d.edge.execute(nil, clusterMessage.Sender, 0, clusterMessage.AuthID, clusterMessage.Envelope)
-		releaseClusterMessage(clusterMessage)
+		_ = d.edge.execute(dispatchCtx)
+		releaseDispatchCtx(dispatchCtx)
 		<-d.edge.rateLimitChan
-	}(clusterMessage)
+	}(cm)
 }
 
 func (d delegateNode) GetBroadcasts(overhead, limit int) [][]byte {

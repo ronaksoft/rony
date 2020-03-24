@@ -39,7 +39,7 @@ func (c *Conn) Flush() {
 		if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", c.ConnID),
-				zap.Int64("AuthID", c.AuthID),
+				zap.Int64("authID", c.AuthID),
 				zap.Error(err),
 			)
 		}

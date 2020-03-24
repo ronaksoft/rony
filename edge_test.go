@@ -3,7 +3,6 @@ package rony
 import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
@@ -74,32 +73,31 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(ctx *DispatchCtx, authID int64, envelope *MessageEnvelope) {
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *MessageEnvelope) (authID int64, err error) {
+func (t testDispatcher) DispatchRequest(ctx *DispatchCtx, data []byte) (err error) {
 	proto := &msg.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
 		return
 	}
-	err = envelope.Unmarshal(proto.Payload)
+	err = ctx.UnmarshalEnvelope(proto.Payload)
 	if err != nil {
 		return
 	}
-	authID = proto.AuthID
+	ctx.SetAuthID(proto.AuthID)
 	return
 }
 
-func (t testDispatcher) DispatchClusterMessage(envelope *MessageEnvelope) {}
 
 func initHandlers(edge *EdgeServer) {
-	edge.AddHandler(100, func(ctx *Context, in *MessageEnvelope) {
+	edge.AddHandler(100, func(ctx *RequestCtx, in *MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -108,9 +106,9 @@ func initHandlers(edge *EdgeServer) {
 			return
 		}
 		res.P1 = tools.StrToByte(req.P1)
-		ctx.PushMessage(ctx.AuthID, in.RequestID, 201, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
-	edge.AddHandler(101, func(ctx *Context, in *MessageEnvelope) {
+	edge.AddHandler(101, func(ctx *RequestCtx, in *MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -120,9 +118,9 @@ func initHandlers(edge *EdgeServer) {
 		}
 		res.P1 = tools.StrToByte(req.P1)
 
-		ctx.PushMessage(ctx.AuthID, in.RequestID, 201, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID, i, 301, &pb.UpdateSimple1{
+			ctx.PushUpdate(ctx.AuthID(), i, 301, &pb.UpdateSimple1{
 				P1: "EQ",
 			})
 		}

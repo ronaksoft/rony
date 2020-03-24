@@ -32,7 +32,7 @@ var Edges map[string]*rony.EdgeServer
 func init() {
 	Edges = make(map[string]*rony.EdgeServer)
 	RootCmd.AddCommand(
-		StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, ClusterMessageCmd,
+		StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, // ClusterMessageCmd,
 		MembersCmd,
 	)
 
@@ -373,124 +373,124 @@ func benchRoutine(authID int64, count int, port string) {
 
 }
 
-var ClusterMessageCmd = &cobra.Command{
-	Use: "clusterMessage",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 2 {
-			fmt.Println("Needs ServerID, e.g. echo First Second <Count>")
-			return
-		}
-		e1 := Edges[args[0]]
-		e2 := Edges[args[1]]
-		if e1 == nil || e2 == nil {
-			fmt.Println("Invalid Args")
-			return
-		}
-		var count int32 = 100
-		if len(args) == 3 {
-			count = tools.StrToInt32(args[2])
-		}
-		gatewayAddr := e1.Stats().GatewayAddr
-		parts := strings.Split(gatewayAddr, ":")
-		if len(parts) != 2 {
-			fmt.Println("Invalid Gateway Addr", gatewayAddr)
-			return
-		}
-
-
-		startTime := time.Now()
-		waitGroup := &sync.WaitGroup{}
-		for i := int64(1); i <= int64(count); i++ {
-			waitGroup.Add(1)
-			go func(i int64) {
-				benchClusterMessage(i*1000, int(count), parts[1])
-				waitGroup.Done()
-			}(i)
-			time.Sleep(time.Millisecond)
-		}
-		waitGroup.Wait()
-		d := time.Now().Sub(startTime)
-		t := count * count
-		if count > 50 {
-			t = count * 50
-		}
-		fmt.Println("Total Time:", d, ", ", t)
-		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
-	},
-}
-
-func benchClusterMessage(authID int64, count int, port string, serverID string) {
-	if count > 50 {
-		count = 50
-	}
-	conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%s", port))
-	if err != nil {
-		fmt.Println(authID, "Connect", err)
-		return
-	}
-	defer conn.Close()
-	for i := 0; i < count; i++ {
-		req := &msg.AskRequest{
-			ServerID: serverID,
-		}
-		reqBytes, _ := req.Marshal()
-		envelope := &rony.MessageEnvelope{
-			Constructor: msg.C_AskRequest,
-			RequestID:   tools.RandomUint64(),
-			Message:     reqBytes,
-		}
-		proto := &msg.ProtoMessage{
-			AuthID: authID,
-		}
-		proto.Payload, _ = envelope.Marshal()
-		bytes, _ := proto.Marshal()
-		err = wsutil.WriteClientBinary(conn, bytes)
-		if err != nil {
-			fmt.Println(authID, "Write:", err)
-			return
-		}
-
-		_ = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-		resBytes, err := wsutil.ReadServerBinary(conn)
-		if err != nil {
-			fmt.Println(authID, "Read", err)
-			return
-		}
-		err = proto.Unmarshal(resBytes)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		err = envelope.Unmarshal(proto.Payload)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		switch envelope.Constructor {
-		case rony.C_Error:
-			res := rony.Error{}
-			err = res.Unmarshal(envelope.Message)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Println("ERROR!!! In Response", authID)
-		case msg.C_AskResponse:
-			res := msg.AskResponse{}
-			err = res.Unmarshal(envelope.Message)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			// fmt.Println("Delay:", time.Duration(res.Delay))
-		default:
-			fmt.Println("UNKNOWN!!!!")
-		}
-
-	}
-
-}
+// var ClusterMessageCmd = &cobra.Command{
+// 	Use: "clusterMessage",
+// 	Run: func(cmd *cobra.Command, args []string) {
+// 		if len(args) < 2 {
+// 			fmt.Println("Needs ServerID, e.g. echo First Second <Count>")
+// 			return
+// 		}
+// 		e1 := Edges[args[0]]
+// 		e2 := Edges[args[1]]
+// 		if e1 == nil || e2 == nil {
+// 			fmt.Println("Invalid Args")
+// 			return
+// 		}
+// 		var count int32 = 100
+// 		if len(args) == 3 {
+// 			count = tools.StrToInt32(args[2])
+// 		}
+// 		gatewayAddr := e1.Stats().GatewayAddr
+// 		parts := strings.Split(gatewayAddr, ":")
+// 		if len(parts) != 2 {
+// 			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+// 			return
+// 		}
+//
+//
+// 		startTime := time.Now()
+// 		waitGroup := &sync.WaitGroup{}
+// 		for i := int64(1); i <= int64(count); i++ {
+// 			waitGroup.Add(1)
+// 			go func(i int64) {
+// 				benchClusterMessage(i*1000, int(count), parts[1])
+// 				waitGroup.Done()
+// 			}(i)
+// 			time.Sleep(time.Millisecond)
+// 		}
+// 		waitGroup.Wait()
+// 		d := time.Now().Sub(startTime)
+// 		t := count * count
+// 		if count > 50 {
+// 			t = count * 50
+// 		}
+// 		fmt.Println("Total Time:", d, ", ", t)
+// 		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
+// 	},
+// }
+//
+// func benchClusterMessage(authID int64, count int, port string, serverID string) {
+// 	if count > 50 {
+// 		count = 50
+// 	}
+// 	conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%s", port))
+// 	if err != nil {
+// 		fmt.Println(authID, "Connect", err)
+// 		return
+// 	}
+// 	defer conn.Close()
+// 	for i := 0; i < count; i++ {
+// 		req := &msg.AskRequest{
+// 			ServerID: serverID,
+// 		}
+// 		reqBytes, _ := req.Marshal()
+// 		envelope := &rony.MessageEnvelope{
+// 			Constructor: msg.C_AskRequest,
+// 			RequestID:   tools.RandomUint64(),
+// 			Message:     reqBytes,
+// 		}
+// 		proto := &msg.ProtoMessage{
+// 			AuthID: authID,
+// 		}
+// 		proto.Payload, _ = envelope.Marshal()
+// 		bytes, _ := proto.Marshal()
+// 		err = wsutil.WriteClientBinary(conn, bytes)
+// 		if err != nil {
+// 			fmt.Println(authID, "Write:", err)
+// 			return
+// 		}
+//
+// 		_ = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+// 		resBytes, err := wsutil.ReadServerBinary(conn)
+// 		if err != nil {
+// 			fmt.Println(authID, "Read", err)
+// 			return
+// 		}
+// 		err = proto.Unmarshal(resBytes)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			return
+// 		}
+// 		err = envelope.Unmarshal(proto.Payload)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			return
+// 		}
+// 		switch envelope.Constructor {
+// 		case rony.C_Error:
+// 			res := rony.Error{}
+// 			err = res.Unmarshal(envelope.Message)
+// 			if err != nil {
+// 				fmt.Println(err)
+// 				return
+// 			}
+// 			fmt.Println("ERROR!!! In Response", authID)
+// 		case msg.C_AskResponse:
+// 			res := msg.AskResponse{}
+// 			err = res.Unmarshal(envelope.Message)
+// 			if err != nil {
+// 				fmt.Println(err)
+// 				return
+// 			}
+//
+// 			// fmt.Println("Delay:", time.Duration(res.Delay))
+// 		default:
+// 			fmt.Println("UNKNOWN!!!!")
+// 		}
+//
+// 	}
+//
+// }
 
 var MembersCmd = &cobra.Command{
 	Use: "members",

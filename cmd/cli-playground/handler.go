@@ -16,7 +16,7 @@ import (
 */
 
 func GenAskHandler(serverID string) rony.Handler {
-	return func(ctx *rony.Context, in *rony.MessageEnvelope) {
+	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
 		req := msg.PoolAskRequest.Get()
 		defer msg.PoolAskRequest.Put(req)
 		res := msg.PoolAskResponse.Get()
@@ -28,17 +28,16 @@ func GenAskHandler(serverID string) rony.Handler {
 		}
 
 		if req.ServerID != serverID {
-			ctx.PushClusterMessage(req.ServerID, ctx.AuthID, in.RequestID, in.Constructor, req)
+			ctx.PushClusterMessage(req.ServerID, ctx.AuthID(), in.RequestID, in.Constructor, req)
 		} else {
-			res.Coordinator = ctx.GetString(rony.CtxServerID, serverID)
 			res.Responder = serverID
-			ctx.PushMessage(ctx.AuthID, in.RequestID, msg.C_AskResponse, res)
+			ctx.PushMessage(ctx.AuthID(), in.RequestID, msg.C_AskResponse, res)
 		}
 	}
 }
 
 func GenEchoHandler(serverID string) rony.Handler {
-	return func(ctx *rony.Context, in *rony.MessageEnvelope) {
+	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
 		req := msg.PoolEchoRequest.Get()
 		defer msg.PoolEchoRequest.Put(req)
 		res := msg.PoolEchoResponse.Get()
@@ -55,7 +54,7 @@ func GenEchoHandler(serverID string) rony.Handler {
 		res.Timestamp = time.Now().UnixNano()
 		res.Delay = res.Timestamp - req.Timestamp
 
-		ctx.PushMessage(ctx.AuthID, in.RequestID, msg.C_EchoResponse, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, msg.C_EchoResponse, res)
 	}
 
 }

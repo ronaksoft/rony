@@ -322,7 +322,7 @@ func (m *Error) GetItems() string {
 // ClusterMessage
 type ClusterMessage struct {
 	Sender   []byte           `protobuf:"bytes,1,req,name=Sender" json:"Sender"`
-	AuthID   int64            `protobuf:"varint,2,req,name=AuthID" json:"AuthID"`
+	AuthID   int64            `protobuf:"varint,2,req,name=authID" json:"authID"`
 	Envelope *MessageEnvelope `protobuf:"bytes,3,req,name=Envelope" json:"Envelope,omitempty"`
 }
 
@@ -383,7 +383,7 @@ func (m *ClusterMessage) GetEnvelope() *MessageEnvelope {
 // RaftCommand
 type RaftCommand struct {
 	ConnID   uint64           `protobuf:"varint,1,req,name=ConnID" json:"ConnID"`
-	AuthID   int64            `protobuf:"varint,2,req,name=AuthID" json:"AuthID"`
+	AuthID   int64            `protobuf:"varint,2,req,name=authID" json:"authID"`
 	Envelope *MessageEnvelope `protobuf:"bytes,3,req,name=Envelope" json:"Envelope,omitempty"`
 }
 
@@ -1639,7 +1639,7 @@ func (m *ClusterMessage) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AuthID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field authID", wireType)
 			}
 			m.AuthID = 0
 			for shift := uint(0); ; shift += 7 {
@@ -1716,7 +1716,7 @@ func (m *ClusterMessage) Unmarshal(dAtA []byte) error {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Sender")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("AuthID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("authID")
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Envelope")
@@ -1779,7 +1779,7 @@ func (m *RaftCommand) Unmarshal(dAtA []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AuthID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field authID", wireType)
 			}
 			m.AuthID = 0
 			for shift := uint(0); ; shift += 7 {
@@ -1856,7 +1856,7 @@ func (m *RaftCommand) Unmarshal(dAtA []byte) error {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("ConnID")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("AuthID")
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("authID")
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
 		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("Envelope")

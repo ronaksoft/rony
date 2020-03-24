@@ -24,9 +24,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // ProtoMessage
-// If AuthID == 0 then Payload is a MessageEnvelop otherwise Payload is a ProtoEncryptedPayload
+// If authID == 0 then Payload is a MessageEnvelop otherwise Payload is a ProtoEncryptedPayload
 type ProtoMessage struct {
-	AuthID     int64  `protobuf:"varint,1,opt,name=AuthID" json:"AuthID"`
+	AuthID     int64  `protobuf:"varint,1,opt,name=authID" json:"authID"`
 	MessageKey []byte `protobuf:"bytes,2,opt,name=MessageKey" json:"MessageKey"`
 	Payload    []byte `protobuf:"bytes,3,req,name=Payload" json:"Payload"`
 }
@@ -652,7 +652,7 @@ func (m *ProtoMessage) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AuthID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field authID", wireType)
 			}
 			m.AuthID = 0
 			for shift := uint(0); ; shift += 7 {

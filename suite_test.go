@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
-	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
@@ -38,33 +37,35 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(conn gateway.Conn, streamID, authID int64, envelope *rony.UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(ctx *rony.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(conn gateway.Conn, streamID, authID int64, envelope *rony.MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(ctx *rony.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(conn gateway.Conn, streamID int64, data []byte, envelope *rony.MessageEnvelope) (authID int64, err error) {
+func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte,) (err error) {
 	proto := &msg.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
 		return
 	}
+	envelope := &rony.MessageEnvelope{}
 	err = envelope.Unmarshal(proto.Payload)
 	if err != nil {
 		return
 	}
-	authID = proto.AuthID
+	ctx.FillEnvelope(envelope.RequestID, envelope.Constructor, envelope.Message)
+	ctx.SetAuthID(proto.AuthID)
 	return
 }
 
 func (t testDispatcher) DispatchClusterMessage(envelope *rony.MessageEnvelope) {}
 
 func initHandlers(edge *rony.EdgeServer) {
-	edge.AddHandler(100, func(ctx *rony.Context, in *rony.MessageEnvelope) {
+	edge.AddHandler(100, func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -73,9 +74,9 @@ func initHandlers(edge *rony.EdgeServer) {
 			return
 		}
 		res.P1 = tools.StrToByte(req.P1)
-		ctx.PushMessage(ctx.AuthID, in.RequestID, 201, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
-	edge.AddHandler(101, func(ctx *rony.Context, in *rony.MessageEnvelope) {
+	edge.AddHandler(101, func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -85,9 +86,9 @@ func initHandlers(edge *rony.EdgeServer) {
 		}
 		res.P1 = tools.StrToByte(req.P1)
 
-		ctx.PushMessage(ctx.AuthID, in.RequestID, 201, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID, i, 301, &pb.UpdateSimple1{
+			ctx.PushUpdate(ctx.AuthID(), i, 301, &pb.UpdateSimple1{
 				P1: fmt.Sprintf("%d", i),
 			})
 		}
