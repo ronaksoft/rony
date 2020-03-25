@@ -194,7 +194,6 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 		)
 	}
 	g.ConnectHandler(connID)
-
 	g.connGC.monitorConnection(connID)
 	return &wsConn
 }

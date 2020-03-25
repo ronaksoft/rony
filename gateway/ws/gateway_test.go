@@ -11,6 +11,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -39,7 +40,7 @@ func TestGateway(t *testing.T) {
 			gw, err = websocketGateway.New(websocketGateway.Config{
 				MaxIdleTime:          time.Second * 3,
 				NewConnectionWorkers: 1,
-				MaxConcurrency:       1,
+				MaxConcurrency:       1000,
 				ListenAddress:        ":81",
 			})
 			c.So(err, ShouldBeNil)
@@ -54,46 +55,86 @@ func TestGateway(t *testing.T) {
 		})
 
 		Convey("Run the Clients", func(c C) {
+			var td, tc int64
 			wg := sync.WaitGroup{}
-			for j := 0; j < 1; j++ {
+			for j := 0; j < 10; j++ {
 				wg.Add(1)
 				go func(j int) {
 					var conn net.Conn
 					var err error
-					for i := 0; i < 5; i++ {
+					for try := 0; try < 5; try++ {
 						conn, _, _, err = ws.Dial(context.Background(), "ws://localhost:81")
-						c.So(err, ShouldBeNil)
-					}
-					for i := 0; i < 5; i++ {
-						time.Sleep(time.Second * 3)
-						err := wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
-						c.So(err, ShouldBeNil)
-					}
-					keepGoing := true
-					var m []wsutil.Message
-					for keepGoing {
-						_ = conn.SetDeadline(time.Now().Add(time.Second))
-						m, err = wsutil.ReadServerMessage(conn, m)
-						if err != nil {
-							keepGoing = false
+						if err == nil {
+							break
 						}
 					}
-					c.So(m, ShouldHaveLength, 5)
+					c.So(err, ShouldBeNil)
+					m := make([]wsutil.Message, 0, 10)
+					for i := 0; i < 5; i++ {
+						err := wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+						if err != nil {
+							c.Println(err)
+						}
+						// c.So(err, ShouldBeNil)
+						st := time.Now()
+						_ = conn.SetDeadline(time.Now().Add(time.Second))
+						m, err = wsutil.ReadServerMessage(conn, m)
+						atomic.AddInt64(&tc, 1)
+						atomic.AddInt64(&td, int64(time.Now().Sub(st)))
+					}
+
 					_ = conn.Close()
 					wg.Done()
 				}(j)
 			}
 			wg.Wait()
+			c.Println("Total:" , tc)
+			c.Println("Average", time.Duration(td/tc))
 		})
 
-		Convey("Run Idle Client", func(c C) {
-			conn, _, _, err := ws.Dial(context.Background(), "ws://localhost:81")
-			c.So(err, ShouldBeNil)
-			_, _ = wsutil.ReadServerMessage(conn, nil)
-			_ = conn.Close()
-		})
+		// Convey("Run Idle Client", func(c C) {
+		// 	conn, _, _, err := ws.Dial(context.Background(), "ws://localhost:81")
+		// 	c.So(err, ShouldBeNil)
+		// 	_, _ = wsutil.ReadServerMessage(conn, nil)
+		// 	_ = conn.Close()
+		// })
 		Convey("Wait To Finish", func(c C) {
 			time.Sleep(time.Second * 3)
 		})
+	})
+}
+
+func BenchmarkGateway(b *testing.B) {
+	var err error
+	gw, err = websocketGateway.New(websocketGateway.Config{
+		MaxIdleTime:          time.Second * 3,
+		NewConnectionWorkers: 1,
+		MaxConcurrency:       1000,
+		ListenAddress:        ":81",
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
+	}
+	gw.Run()
+	time.Sleep(time.Second)
+	conn, _, _, err := ws.Dial(context.Background(), "ws://localhost:81")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	var m []wsutil.Message
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+			_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+			m, _ = wsutil.ReadServerMessage(conn, m)
+			m = m[:0]
+		}
 	})
 }
