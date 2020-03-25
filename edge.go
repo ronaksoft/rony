@@ -149,7 +149,7 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 				edge.dispatcher.DispatchMessage(dispatchCtx, c.AuthID, c.MessageEnvelope)
 				releaseMessageEnvelope(c.MessageEnvelope)
 			case carrierCluster:
-				err := edge.ClusterSend(tools.ByteToStr(c.ServerID), c.AuthID, c.MessageEnvelope)
+				err := edge.ClusterSend(c.ServerID, c.AuthID, c.MessageEnvelope)
 				if err != nil {
 					log.Error("ClusterMessage Error",
 						zap.Bool("GatewayRequest", dispatchCtx.conn != nil),
@@ -201,11 +201,9 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 	return nil
 }
 func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *MessageEnvelope) {
-	defer edge.recoverPanic(dispatchCtx, requestCtx)
+	defer edge.recoverPanic(dispatchCtx)
+
 	startTime := time.Now()
-
-
-
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
 		ce.Write(
 			zap.String("Constructor", edge.getConstructorName(in.Constructor)),
@@ -246,18 +244,18 @@ func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *Reques
 		requestCtx.StopExecution()
 	}
 
-	duration := time.Now().Sub(startTime)
+
 	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 		ce.Write(
 			zap.Uint64("RequestID", in.RequestID),
 			zap.Int64("AuthID", dispatchCtx.authID),
-			zap.Duration("T", duration),
+			zap.Duration("T", time.Now().Sub(startTime)),
 		)
 	}
 
 	return
 }
-func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx, requestCtx *RequestCtx) {
+func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
 			zap.ByteString("ServerID", edge.serverID),
@@ -269,14 +267,14 @@ func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx, requestCtx *Reque
 }
 
 func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
-
 	dispatchCtx := acquireDispatchCtx(conn, streamID, 0, edge.serverID)
 
 	err := edge.dispatcher.DispatchRequest(dispatchCtx, data)
 	if err != nil {
-		// releaseMessageEnvelope(envelope)
+		releaseDispatchCtx(dispatchCtx)
 		return
 	}
+
 	startTime := time.Now()
 	err = edge.execute(dispatchCtx)
 	if ce := log.Check(log.DebugLevel, "Execute Time"); ce != nil {
@@ -289,9 +287,8 @@ func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data
 	default:
 		log.Warn("Error On Execute", zap.Error(err))
 		edge.onError(dispatchCtx, ErrCodeInternal, ErrItemServer)
-
 	}
-
+	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *EdgeServer) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()

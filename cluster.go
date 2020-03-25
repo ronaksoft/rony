@@ -28,8 +28,8 @@ func (edge *EdgeServer) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *EdgeServer) ClusterSend(serverID string, authID int64, envelope *MessageEnvelope) error {
-	m := edge.cluster.GetByID(serverID)
+func (edge *EdgeServer) ClusterSend(serverID []byte, authID int64, envelope *MessageEnvelope) error {
+	m := edge.cluster.GetByID(tools.ByteToStr(serverID))
 	if m == nil {
 		return ErrNotFound
 	}
