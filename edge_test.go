@@ -156,6 +156,7 @@ func BenchmarkEdgeServer(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
+	b.SetParallelism(1000)
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
 			edgeServer.onGatewayMessage(mockGatewayConn{}, 0, bytes)

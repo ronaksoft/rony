@@ -94,7 +94,7 @@ type ConnCounters struct {
 }
 
 func (wc *Conn) startEvent(event netpoll.Event) {
-	if wc.gateway.stop {
+	if atomic.LoadInt32(&wc.gateway.stop) == 1 {
 		return
 	}
 	if event&netpoll.EventRead != 0 {

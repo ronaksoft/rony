@@ -88,7 +88,7 @@ func TestGateway(t *testing.T) {
 				}(j)
 			}
 			wg.Wait()
-			c.Println("Total:" , tc)
+			c.Println("Total:", tc)
 			c.Println("Average", time.Duration(td/tc))
 		})
 
@@ -121,20 +121,35 @@ func BenchmarkGateway(b *testing.B) {
 	}
 	gw.Run()
 	time.Sleep(time.Second)
-	conn, _, _, err := ws.Dial(context.Background(), "ws://localhost:81")
-	if err != nil {
-		b.Fatal(err)
-	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	var m []wsutil.Message
+
+	b.SetParallelism(10)
 	b.RunParallel(func(pb *testing.PB) {
+		var (
+			m    []wsutil.Message
+			err  error
+			conn net.Conn
+		)
+		for try := 0; try < 5; try++ {
+			conn, _, _, err = ws.Dial(context.Background(), "ws://localhost:81")
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			b.Fatal(err)
+		}
+
 		for pb.Next() {
-			wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
-			_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-			m, _ = wsutil.ReadServerMessage(conn, m)
-			m = m[:0]
+			for i := 0; i < 10; i++ {
+				wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+				_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+				m, _ = wsutil.ReadServerMessage(conn, m)
+				m = m[:0]
+			}
+
 		}
 	})
 }

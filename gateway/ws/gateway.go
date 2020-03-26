@@ -55,7 +55,7 @@ type Gateway struct {
 	connsOutQ          chan writeRequest
 	connGC             *connGC
 	poller             netpoll.Poller
-	stop               bool
+	stop               int32
 	waitGroupAcceptors *sync.WaitGroup
 	waitGroupReaders   *sync.WaitGroup
 	waitGroupWriters   *sync.WaitGroup
@@ -119,7 +119,7 @@ func (g *Gateway) connectionAcceptor() {
 		return nil
 	}
 	for {
-		if g.stop {
+		if atomic.LoadInt32(&g.stop) == 1 {
 			break
 		}
 		conn, err := g.listener.Accept()
@@ -348,7 +348,7 @@ func (g *Gateway) Run() {
 func (g *Gateway) Shutdown() {
 	// 1. Stop Accepting New Connections, i.e. Stop ConnectionAcceptor routines
 	log.Info("Connection Acceptors are closing...")
-	g.stop = true
+	atomic.StoreInt32(&g.stop, 1)
 	_ = g.listener.Close()
 	g.waitGroupAcceptors.Wait()
 	log.Info("Connection Acceptors all closed")
