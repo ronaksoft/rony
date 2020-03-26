@@ -62,8 +62,6 @@ var DemoClusterMessageCmd = &cobra.Command{
 		joinFunc("Cluster.01", "Cluster.03")
 		time.Sleep(time.Second)
 		listFunc()
-		clusterMessage("Cluster.01", "Cluster.02")
-		clusterMessage("Cluster.02", "Cluster.03")
 	},
 }
 

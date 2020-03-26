@@ -41,7 +41,7 @@ github.com/gobwas/pool
 github.com/gobwas/pool/internal/pmath
 github.com/gobwas/pool/pbufio
 github.com/gobwas/pool/pbytes
-# github.com/gobwas/ws v1.0.2
+# github.com/gobwas/ws v1.0.3
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
 # github.com/gogo/protobuf v1.3.1
@@ -133,6 +133,8 @@ github.com/miekg/dns
 github.com/nyaruka/phonenumbers
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
+# github.com/pkg/profile v1.4.0
+github.com/pkg/profile
 # github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942
 github.com/pkg/term/termios
 # github.com/ryanuber/columnize v2.1.0+incompatible

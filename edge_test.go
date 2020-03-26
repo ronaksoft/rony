@@ -95,7 +95,6 @@ func (t testDispatcher) DispatchRequest(ctx *DispatchCtx, data []byte) (err erro
 	return
 }
 
-
 func initHandlers(edge *EdgeServer) {
 	edge.AddHandler(100, func(ctx *RequestCtx, in *MessageEnvelope) {
 		req := &pb.ReqSimple1{}

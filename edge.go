@@ -49,7 +49,7 @@ type Dispatcher interface {
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	// Note that conn IS NOT nil in any circumstances.
-	DispatchRequest(ctx *DispatchCtx,  data []byte) (err error)
+	DispatchRequest(ctx *DispatchCtx, data []byte) (err error)
 }
 
 // EdgeServer
@@ -243,7 +243,6 @@ func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *Reques
 	if !requestCtx.stop {
 		requestCtx.StopExecution()
 	}
-
 
 	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 		ce.Write(

@@ -59,6 +59,8 @@ type Gateway struct {
 	waitGroupAcceptors *sync.WaitGroup
 	waitGroupReaders   *sync.WaitGroup
 	waitGroupWriters   *sync.WaitGroup
+	cntReads           uint64
+	cntWrites          uint64
 }
 
 func New(config Config) (*Gateway, error) {
@@ -152,6 +154,7 @@ func (g *Gateway) connectionAcceptor() {
 		wsConn.desc, err = netpoll.Handle(conn,
 			netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
 		)
+
 		if err != nil {
 			log.Warn("Error On NetPoll Description", zap.Error(err))
 			g.removeConnection(wsConn.ConnID)
@@ -207,9 +210,7 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	}
 	delete(g.conns, wcID)
 	g.connsMtx.Unlock()
-
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
-	// _ = wsutil.WriteServerMessage(wsConn.conn, ws.OpClose, ws.NewCloseFrameBody(ws.StatusNormalClosure, "IDLE"))
 	if wsConn.desc != nil {
 		_ = g.poller.Stop(wsConn.desc)
 		_ = wsConn.desc.Close()
@@ -248,6 +249,7 @@ func (g *Gateway) readPump() {
 			wc.gateway.removeConnection(wc.ConnID)
 			continue
 		}
+		atomic.AddUint64(&g.cntReads, 1)
 		_ = wc.gateway.poller.Resume(wc.desc)
 
 		// handle messages
@@ -296,10 +298,12 @@ func (g *Gateway) writePump() {
 			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 			err := wsutil.WriteServerMessage(wr.wc.conn, ws.OpBinary, wr.payload)
 			if err != nil {
-				if ce := log.Check(log.DebugLevel, "Error in writePump"); ce != nil {
+				if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
 					ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
 				}
 				g.removeConnection(wr.wc.ConnID)
+			} else {
+				atomic.AddUint64(&g.cntWrites, 1)
 			}
 			// Put the bytes into the pool to be reused again
 			pools.Bytes.Put(wr.payload)
@@ -367,6 +371,11 @@ func (g *Gateway) Shutdown() {
 	close(g.connsOutQ)
 	g.waitGroupWriters.Wait()
 	log.Info("Write Pumpers all closed")
+
+	log.Info("Stats",
+		zap.Uint64("Reads", g.cntReads),
+		zap.Uint64("Writes", g.cntWrites),
+	)
 }
 
 // Addr return the address which gateway is listen on

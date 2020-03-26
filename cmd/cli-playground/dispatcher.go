@@ -28,7 +28,7 @@ func (d dispatcher) DispatchMessage(ctx *rony.DispatchCtx, authID int64, envelop
 
 }
 
-func (d dispatcher) DispatchRequest(ctx *rony.DispatchCtx,  data []byte) (err error) {
+func (d dispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte) (err error) {
 	proto := &msg.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {

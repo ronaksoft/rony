@@ -46,7 +46,7 @@ func (t testDispatcher) DispatchMessage(ctx *rony.DispatchCtx, authID int64, env
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte,) (err error) {
+func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte) (err error) {
 	proto := &msg.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
