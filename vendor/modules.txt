@@ -52,8 +52,6 @@ github.com/gobwas/pool/pbytes
 ## explicit
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
-# github.com/gocql/gocql v0.0.0-20200324094621-6d895e38b0a5
-## explicit
 # github.com/gogo/protobuf v1.3.1
 ## explicit
 github.com/gogo/protobuf/gogoproto
@@ -176,8 +174,6 @@ github.com/pkg/term/termios
 # github.com/ryanuber/columnize v2.1.0+incompatible
 ## explicit
 github.com/ryanuber/columnize
-# github.com/scylladb/gocqlx v1.4.0
-## explicit
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 ## explicit
 github.com/sean-/seed
