@@ -2,7 +2,7 @@ package scylla
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/gogen"
+	"git.ronaksoftware.com/ronak/rony/gen"
 	"github.com/iancoleman/strcase"
 )
 
@@ -23,7 +23,7 @@ func snakeCaseAll(s []string) []string {
 	return o
 }
 
-func validateModel(m *gogen.Model) {
+func validateModel(m *gen.Model) {
 	primaryKeys := append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...)
 	for _, fk := range m.FilterKeys {
 		filterKeys := append(fk.PartitionKeys, fk.ClusteringKeys...)
@@ -31,6 +31,13 @@ func validateModel(m *gogen.Model) {
 			panic("filter keys must have all the primary keys")
 		}
 		for _, k := range filterKeys {
+			p, err := m.GetProperty(k)
+			if err != nil {
+				panic("invalid filter key")
+			}
+			if p.CheckOption(gen.Slice) {
+				panic("primary and/or filter keys must not be sliced type")
+			}
 			if !inArray(primaryKeys, k) {
 				panic(fmt.Sprintf("key %s(%s) does not exists in the PrimaryKey for model (%s)", fk.Name, k, m))
 			}

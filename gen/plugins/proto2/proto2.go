@@ -2,7 +2,7 @@ package proto2
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/gogen"
+	"git.ronaksoftware.com/ronak/rony/gen"
 	"github.com/iancoleman/strcase"
 	"strings"
 )
@@ -17,18 +17,18 @@ import (
 */
 
 type ProtoBuffer struct {
-	g *gogen.Generator
+	g *gen.Generator
 }
 
 func (g *ProtoBuffer) Name() string {
 	return "ProtoBuffer2 Generator"
 }
 
-func (g *ProtoBuffer) Init(gen *gogen.Generator) {
+func (g *ProtoBuffer) Init(gen *gen.Generator) {
 	g.g = gen
 }
 
-func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
+func (g *ProtoBuffer) Generate(desc *gen.Descriptor) {
 	for _, m := range desc.Models {
 		for _, c := range m.Comments {
 			g.g.P("//", c)
@@ -37,10 +37,10 @@ func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
 		g.g.In()
 		for idx, p := range m.Properties {
 			ro := "required"
-			if p.CheckOption(gogen.Optional) {
+			if p.CheckOption(gen.Optional) {
 				ro = "optional"
 			}
-			if p.CheckOption(gogen.Slice) {
+			if p.CheckOption(gen.Slice) {
 				ro = "repeated"
 			}
 
@@ -87,7 +87,7 @@ func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
 	}
 }
 
-func (g *ProtoBuffer) GeneratePrepend(desc *gogen.Descriptor) {
+func (g *ProtoBuffer) GeneratePrepend(desc *gen.Descriptor) {
 	g.g.P("syntax = \"proto2\";")
 	g.g.P("package ", strcase.ToLowerCamel(desc.Name), ";")
 	g.g.Nl()

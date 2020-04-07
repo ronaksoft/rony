@@ -1,4 +1,4 @@
-package gogen
+package gen
 
 /*
    Creation Time: 2020 - Apr - 04

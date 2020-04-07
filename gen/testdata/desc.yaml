@@ -20,11 +20,11 @@ models:
     unique_key:
       name: ID
       partition_keys: ["P1"]
-      clustering_keys: ["P2", "P3"]
+      clustering_keys: ["P3"]
     filter_keys:
       - name: P3
         partition_keys: ["P3"]
-        clustering_keys: ["P1", "P2"]
+        clustering_keys: ["P1"]
   - name: Model2
     comments:
       - This is a Model 2

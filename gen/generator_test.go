@@ -1,9 +1,9 @@
-package gogen_test
+package gen_test
 
 import (
-	"git.ronaksoftware.com/ronak/rony/gogen"
-	"git.ronaksoftware.com/ronak/rony/gogen/plugins/proto2"
-	"git.ronaksoftware.com/ronak/rony/gogen/plugins/scylla"
+	"git.ronaksoftware.com/ronak/rony/gen"
+	"git.ronaksoftware.com/ronak/rony/gen/plugins/proto2"
+	"git.ronaksoftware.com/ronak/rony/gen/plugins/scylla"
 	. "github.com/smartystreets/goconvey/convey"
 	"os"
 	"os/exec"
@@ -21,11 +21,11 @@ import (
 
 func TestGenModel(t *testing.T) {
 	Convey("Generate Model", t, func(c C) {
-		err := gogen.LoadDescriptors("./testdata")
+		err := gen.LoadDescriptors("./testdata")
 		c.So(err, ShouldBeNil)
 
 		// 1. Generate ProtoBuffer Files
-		err = gogen.Generate(&proto2.ProtoBuffer{}, "./testdata", "samplePackage", "", ".proto")
+		err = gen.Generate(&proto2.ProtoBuffer{}, "./testdata", "samplePackage", "", ".proto")
 		c.So(err, ShouldBeNil)
 
 		// 2. Generate Proto Files in Golang
@@ -37,7 +37,7 @@ func TestGenModel(t *testing.T) {
 		c.So(err, ShouldBeNil)
 
 		// 3. Generate Scylla Init
-		err = gogen.Generate(&scylla.RepoPlugin{}, "./testdata", "samplePackage", "", "_init.go")
+		err = gen.Generate(&scylla.RepoPlugin{}, "./testdata", "samplePackage", "", "_init.go")
 		c.So(err, ShouldBeNil)
 	})
 }

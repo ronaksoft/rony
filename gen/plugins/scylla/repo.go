@@ -2,7 +2,7 @@ package scylla
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/gogen"
+	"git.ronaksoftware.com/ronak/rony/gen"
 	"github.com/iancoleman/strcase"
 	"strings"
 )
@@ -17,18 +17,18 @@ import (
 */
 
 type RepoPlugin struct {
-	g *gogen.Generator
+	g *gen.Generator
 }
 
 func (s *RepoPlugin) Name() string {
 	return "Scylla"
 }
 
-func (s *RepoPlugin) Init(g *gogen.Generator) {
+func (s *RepoPlugin) Init(g *gen.Generator) {
 	s.g = g
 }
 
-func (s *RepoPlugin) Generate(desc *gogen.Descriptor) {
+func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 	s.g.P("var (")
 	s.g.In()
 	s.g.P("dbs	*gocql.Session")
@@ -37,7 +37,7 @@ func (s *RepoPlugin) Generate(desc *gogen.Descriptor) {
 		validateModel(&m)
 		tbVarName := fmt.Sprintf("tb%s", strcase.ToCamel(m.Name))
 		tbValName := fmt.Sprintf("\"%s\"", strcase.ToSnake(m.Name))
-		qpVarName := fmt.Sprintf("qpGet%sBy%s", strcase.ToCamel(m.Name), strcase.ToCamel(m.PrimaryKey.Name))
+		qpVarName := fmt.Sprintf("qpGet%s", strcase.ToCamel(m.Name))
 		s.g.P(tbVarName, "=", tbValName)
 		s.g.P(qpVarName, "=", "sync.Pool {")
 		s.g.In()
@@ -125,7 +125,7 @@ func (s *RepoPlugin) Generate(desc *gogen.Descriptor) {
 	s.generateList(desc)
 
 }
-func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
+func (s *RepoPlugin) generateCreateTables(desc *gen.Descriptor) {
 	// Define CreateTables Function
 	s.g.P("func CreateTables(s *gocql.Session, db string) error {")
 	s.g.In()
@@ -149,7 +149,7 @@ func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
 	s.g.P("}")
 
 	for _, m := range desc.Models {
-		tbValName := fmt.Sprintf("%s_by_%s", strcase.ToSnake(m.Name), strcase.ToSnake(m.PrimaryKey.Name))
+		tbValName := fmt.Sprintf("%s", strcase.ToSnake(m.Name))
 		primaryKey := fmt.Sprintf("(%s)", strings.Join(snakeCaseAll(m.PrimaryKey.PartitionKeys), ","))
 		if len(m.PrimaryKey.ClusteringKeys) > 0 {
 			primaryKey = fmt.Sprintf("(%s, %s)", primaryKey, strings.Join(snakeCaseAll(m.PrimaryKey.ClusteringKeys), ","))
@@ -221,21 +221,18 @@ func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
 	s.g.P("}") // End of CreateTables
 	s.g.Nl()
 }
-func (s *RepoPlugin) generateSaveModel(desc *gogen.Descriptor) {
+func (s *RepoPlugin) generateSaveModel(desc *gen.Descriptor) {
 	for _, m := range desc.Models {
-		args := strings.Builder{}
-		for idx, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
-			p, _ := m.GetProperty(pn)
-			if idx != 0 {
-				args.WriteRune(',')
-				args.WriteRune(' ')
-			}
-			args.WriteString(strcase.ToLowerCamel(p.Name))
-		}
 		s.g.Pns("func Save", strcase.ToCamel(m.Name), "(x *", m.Name, ") error {")
 		s.g.In()
 		s.g.P("b := pbytes.GetLen(x.Size())")
 		s.g.P("defer pbytes.Put(b)")
+		s.g.P("n, err := x.MarshalTo(b)")
+		s.g.P("if err != nil {")
+		s.g.In()
+		s.g.P("return err")
+		s.g.Out()
+		s.g.P("}")
 		s.g.Nl()
 		qpVarName := fmt.Sprintf("qpSave%s", strcase.ToCamel(m.Name))
 		s.g.P(fmt.Sprintf("q := %s.Get().(*gocqlx.Queryx)", qpVarName))
@@ -243,21 +240,20 @@ func (s *RepoPlugin) generateSaveModel(desc *gogen.Descriptor) {
 		s.g.Nl()
 		binds := strings.Builder{}
 		for _, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
-			binds.WriteRune('"')
-			binds.WriteString(strcase.ToLowerCamel(pn))
-			binds.WriteRune('"')
+			binds.WriteString("x.")
+			binds.WriteString(strcase.ToCamel(pn))
 			binds.WriteString(", ")
 		}
-		binds.WriteString("\"data\"")
+		binds.WriteString("b[:n]")
 		s.g.P(fmt.Sprintf("q.Bind(%s)", binds.String()))
-		s.g.P("err := q.Exec()")
+		s.g.P("err = q.Exec()")
 		s.g.P("return err")
 		s.g.Out()
 		s.g.P("}")
 		s.g.Nl()
 	}
 }
-func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
+func (s *RepoPlugin) generateGet(desc *gen.Descriptor) {
 	for _, m := range desc.Models {
 		args := strings.Builder{}
 		for idx, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
@@ -267,7 +263,7 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 			}
 			args.WriteString(strcase.ToLowerCamel(p.Name))
 			args.WriteRune(' ')
-			if p.CheckOption(gogen.Slice) {
+			if p.CheckOption(gen.Slice) {
 				args.WriteString("[]")
 			}
 			args.WriteString(p.Type)
@@ -280,7 +276,7 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 		s.g.Out()
 		s.g.P(")")
 		s.g.Nl()
-		qpVarName := fmt.Sprintf("qpGet%sBy%s", strcase.ToCamel(m.Name), strcase.ToCamel(m.PrimaryKey.Name))
+		qpVarName := fmt.Sprintf("qpGet%s", strcase.ToCamel(m.Name))
 		s.g.P(fmt.Sprintf("q := %s.Get().(*gocqlx.Queryx)", qpVarName))
 		s.g.P(fmt.Sprintf("defer %s.Put(q)", qpVarName))
 		s.g.Nl()
@@ -292,7 +288,7 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 			binds.WriteString(strcase.ToLowerCamel(pn))
 		}
 		s.g.P(fmt.Sprintf("q.Bind(%s)", binds.String()))
-		s.g.P("err := q.Scan(b)")
+		s.g.P("err := q.Scan(&b)")
 		s.g.P("if err != nil {")
 		s.g.In()
 		s.g.P("return nil, err")
@@ -322,7 +318,7 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 				}
 				args.WriteString(strcase.ToLowerCamel(p.Name))
 				args.WriteRune(' ')
-				if p.CheckOption(gogen.Slice) {
+				if p.CheckOption(gen.Slice) {
 					args.WriteString("[]")
 				}
 				args.WriteString(p.Type)
@@ -347,7 +343,7 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 				binds.WriteString(strcase.ToLowerCamel(pn))
 			}
 			s.g.P(fmt.Sprintf("q.Bind(%s)", binds.String()))
-			s.g.P("err := q.Scan(b)")
+			s.g.P("err := q.Scan(&b)")
 			s.g.P("if err != nil {")
 			s.g.In()
 			s.g.P("return nil, err")
@@ -370,11 +366,12 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 		}
 	}
 }
-func (s *RepoPlugin) generateList(desc *gogen.Descriptor) {
+func (s *RepoPlugin) generateList(desc *gen.Descriptor) {
 
 }
+func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {}
 
-func (s *RepoPlugin) GeneratePrepend(desc *gogen.Descriptor) {
+func (s *RepoPlugin) GeneratePrepend(desc *gen.Descriptor) {
 	s.g.P("package", strcase.ToLowerCamel(desc.Name))
 	s.g.Nl()
 	s.g.P("import (")
