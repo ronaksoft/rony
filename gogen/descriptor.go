@@ -102,7 +102,7 @@ func (p Property) ToScyllaType() string {
 		panic("invalid primitive type")
 	}
 	if p.CheckOption(Slice) {
-		return fmt.Sprintf("list<%s>", t)
+		return fmt.Sprintf("frozen<list<%s>>", t)
 	} else {
 		return t
 	}

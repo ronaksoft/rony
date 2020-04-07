@@ -92,6 +92,14 @@ func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
 	s.g.P(")")
 	s.g.Nl() // End of Vars
 
+	s.g.P("createKeySpaceQuery := fmt.Sprintf(\"CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\", db)")
+	s.g.P("err = s.Query(createKeySpaceQuery).Exec()")
+	s.g.P("if err != nil {")
+	s.g.In()
+	s.g.P("return err ")
+	s.g.Out()
+	s.g.P("}")
+
 	for _, m := range desc.Models {
 		tbValName := fmt.Sprintf("%s_by_%s", strcase.ToSnake(m.Name), strcase.ToSnake(m.PrimaryKey.Name))
 		primaryKey := fmt.Sprintf("(%s)", strings.Join(snakeCaseAll(m.PrimaryKey.PartitionKeys), ","))
@@ -100,7 +108,7 @@ func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
 		}
 		s.g.P("stmtB.Reset()")
 		s.g.P("stmtB.WriteString(\"CREATE TABLE IF NOT EXISTS \")")
-		s.g.Pns("stmtB.WriteString(fmt.Sprintf(\"%s.", tbValName, "\\n\", db))")
+		s.g.Pns("stmtB.WriteString(fmt.Sprintf(\"%s.", tbValName, " (\\n\", db))")
 		for _, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
 			p, err := m.GetProperty(pn)
 			if err != nil {
@@ -114,8 +122,10 @@ func (s *RepoPlugin) generateCreateTables(desc *gogen.Descriptor) {
 		}
 		s.g.P("stmtB.WriteString(\"data blob,\\n\")")
 		s.g.Pns("stmtB.WriteString(\"PRIMARY KEY ", primaryKey, "\")")
+		s.g.P("stmtB.WriteString(\");\")")
 		s.g.P("q = s.Query(stmtB.String()).RetryPolicy(nil)")
 		s.g.P("err = q.Exec()")
+		s.g.P("q.Release()")
 		s.g.P("if err != nil {")
 		s.g.In()
 		s.g.P("return err")
@@ -188,36 +198,4 @@ func (s *RepoPlugin) GeneratePrepend(desc *gogen.Descriptor) {
 	s.g.Out()
 	s.g.P("*/")
 
-}
-
-/*
-	Helper Functions
-*/
-
-func snakeCaseAll(s []string) []string {
-	o := make([]string, len(s))
-	for idx := range s {
-		o[idx] = strcase.ToSnake(s[idx])
-	}
-	return o
-}
-
-func validateModel(m *gogen.Model) {
-	keys := append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...)
-	for _, fk := range m.FilterKeys {
-		for _, k := range append(fk.PartitionKeys, fk.ClusteringKeys...) {
-			if !inArray(keys, k) {
-				panic(fmt.Sprintf("key %s(%s) does not exists in the PrimaryKey for model (%s)", fk.Name, k, m))
-			}
-		}
-	}
-}
-
-func inArray(arr []string, v string) bool {
-	for i := range arr {
-		if arr[i] == v {
-			return true
-		}
-	}
-	return false
 }

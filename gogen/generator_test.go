@@ -23,13 +23,13 @@ func TestGenModel(t *testing.T) {
 		c.So(err, ShouldBeNil)
 
 		// 1. Generate ProtoBuffer Files
-		err = gogen.Generate(&proto2.ProtoBuffer{}, "./_output", "samplePackage", "", ".proto")
+		err = gogen.Generate(&proto2.ProtoBuffer{}, "./testdata", "samplePackage", "", ".proto")
 		c.So(err, ShouldBeNil)
 
 		// 2. Generate Proto Files in Golang
 
 		// 3. Generate Scylla Init
-		err = gogen.Generate(&scylla.RepoPlugin{}, "./_output", "samplePackage", "", "_init.go")
+		err = gogen.Generate(&scylla.RepoPlugin{}, "./testdata", "samplePackage", "", "_init.go")
 		c.So(err, ShouldBeNil)
 	})
 }

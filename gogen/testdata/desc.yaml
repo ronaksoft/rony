@@ -1,4 +1,4 @@
-name: Desc1
+name: SampleDesc
 models:
   - name: Model1
     comments:
@@ -24,7 +24,7 @@ models:
     filter_keys:
       - name: P3
         partition_keys: ["P3"]
-        clustering_keys: []
+        clustering_keys: ["P1", "P2"]
   - name: Model2
     comments:
       - This is a Model 2
