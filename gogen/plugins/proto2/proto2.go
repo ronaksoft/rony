@@ -33,7 +33,7 @@ func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
 		for _, c := range m.Comments {
 			g.g.P("//", c)
 		}
-		g.g.P("message", m.Name, "{")
+		g.g.P("message", strcase.ToCamel(m.Name), "{")
 		g.g.In()
 		for idx, p := range m.Properties {
 			ro := "required"
@@ -45,35 +45,34 @@ func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
 			}
 
 			tags := strings.Builder{}
-			for idx, t := range p.Tags {
-				if idx > 0 {
-					tags.WriteString(", ")
+			if len(p.Tags) > 0 {
+				tags.WriteString("(gogoproto.moretags) = ")
+				tags.WriteRune('"')
+				for idx, t := range p.Tags {
+					if idx > 0 {
+						tags.WriteString(" ")
+					}
+					parts := strings.Split(t, ":")
+					switch len(parts) {
+					case 1:
+						tags.WriteString(parts[0])
+						tags.WriteRune(':')
+						tags.WriteString("\\\"")
+						tags.WriteString(strcase.ToSnake(p.Name))
+						tags.WriteString("\\\"")
+					case 2:
+						tags.WriteString(parts[0])
+						tags.WriteRune(':')
+						tags.WriteString("\\\"")
+						tags.WriteString(parts[1])
+						tags.WriteString("\\\"")
+					default:
+						panic(fmt.Sprintf("invalid tag: %v", t))
+					}
 				}
-				parts := strings.Split(t, ":")
-				switch len(parts) {
-				case 1:
-					tags.WriteString("(gogoproto.moretags) = ")
-					tags.WriteRune('"')
-					tags.WriteString(parts[0])
-					tags.WriteRune(':')
-					tags.WriteString("\\\"")
-					tags.WriteString(strcase.ToSnake(p.Name))
-					tags.WriteString("\\\"")
-					tags.WriteRune('"')
-				case 2:
-					tags.WriteString("(gogoproto.moretags) = ")
-					tags.WriteRune('"')
-					tags.WriteString(parts[0])
-					tags.WriteRune(':')
-					tags.WriteString("\\\"")
-					tags.WriteString(parts[1])
-					tags.WriteString("\\\"")
-					tags.WriteRune('"')
-				default:
-					panic(fmt.Sprintf("invalid tag: %v", t))
-				}
-
+				tags.WriteRune('"')
 			}
+
 			if tags.Len() > 0 {
 				g.g.P(ro, p.Type, p.Name, "=", idx+1, fmt.Sprintf("[%s]", tags.String()), ";", "//", p.Comment)
 			} else {
@@ -90,9 +89,9 @@ func (g *ProtoBuffer) Generate(desc *gogen.Descriptor) {
 
 func (g *ProtoBuffer) GeneratePrepend(desc *gogen.Descriptor) {
 	g.g.P("syntax = \"proto2\";")
-	g.g.P("package ", desc.Name, ";")
+	g.g.P("package ", strcase.ToLowerCamel(desc.Name), ";")
 	g.g.Nl()
-	g.g.P("import \"github.com/gogo/protobuf/gogoproto/gogo.proto\";")
+	g.g.P("import \"internal/protos/gogo.proto\";")
 	g.g.Nl(3)
 	return
 }

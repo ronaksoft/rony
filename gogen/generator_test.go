@@ -5,6 +5,8 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gogen/plugins/proto2"
 	"git.ronaksoftware.com/ronak/rony/gogen/plugins/scylla"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -27,6 +29,12 @@ func TestGenModel(t *testing.T) {
 		c.So(err, ShouldBeNil)
 
 		// 2. Generate Proto Files in Golang
+		cmd := exec.Command("/usr/local/bin/protoc", "-I", "./testdata", "-I", "../", "--gogofaster_out=./testdata", "sampledesc.proto")
+		cmd.Env = os.Environ()
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stdout
+		err = cmd.Run()
+		c.So(err, ShouldBeNil)
 
 		// 3. Generate Scylla Init
 		err = gogen.Generate(&scylla.RepoPlugin{}, "./testdata", "samplePackage", "", "_init.go")

@@ -1,7 +1,7 @@
 syntax = "proto2"; 
-package  SampleDesc ; 
+package  sampleDesc ; 
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto"; 
+import "internal/protos/gogo.proto"; 
 
 
 
@@ -9,7 +9,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 // The second line of the comment 
 message Model1 { 
 	required string P1 = 1 ; // This parameter is a string value 
-	repeated int32 P2 = 2 [(gogoproto.moretags) = "json:\"p1\"", (gogoproto.moretags) = "bson:\"p_2\""] ; // This parameter is []int32 value 
+	repeated int32 P2 = 2 [(gogoproto.moretags) = "json:\"p1\" bson:\"p_2\""] ; // This parameter is []int32 value 
 	required string P3 = 3 ; //  
 } 
 
