@@ -22,6 +22,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/raft v1.1.2
+	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/lucas-clemente/quic-go v0.15.1
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -41,4 +42,5 @@ require (
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
+	gopkg.in/yaml.v2 v2.2.5
 )

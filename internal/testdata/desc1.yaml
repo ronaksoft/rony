@@ -1,0 +1,31 @@
+name: Desc1
+models:
+  - name: Model1
+    comments:
+      - This is a comment for model1
+      - The second line of the comment
+    properties:
+      - name: P1
+        type: string
+        comment: This parameter is a string value
+      - name: P2
+        type: int32
+        comment: This parameter is []int32 value
+        options: [slice]
+        tags:
+          - json:p1
+          - bson
+  - name: Model2
+    comments:
+      - This is a Model 2
+    properties:
+      - name: PQ1
+        type: int64
+        comment: Really! this is int64 :D
+        options: [unique]
+apis:
+  - input:
+      constructor: 10001
+    outputs:
+      - constructor: 2001
+      - constructor: 2002
