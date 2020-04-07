@@ -313,7 +313,6 @@ func (s *RepoPlugin) generateGet(desc *gogen.Descriptor) {
 		s.g.P("}")
 		s.g.Nl()
 
-
 		for _, fk := range m.FilterKeys {
 			args := strings.Builder{}
 			for idx, pn := range append(fk.PartitionKeys, fk.ClusteringKeys...) {

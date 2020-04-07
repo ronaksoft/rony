@@ -3,24 +3,19 @@ github.com/BurntSushi/toml
 # github.com/DataDog/zstd v1.4.1
 github.com/DataDog/zstd
 # github.com/allegro/bigcache/v2 v2.1.6
-## explicit
 github.com/allegro/bigcache/v2
 github.com/allegro/bigcache/v2/queue
 # github.com/armon/go-metrics v0.3.2
-## explicit
 github.com/armon/go-metrics
 # github.com/bbva/raft-badger v1.0.0
-## explicit
 github.com/bbva/raft-badger
 # github.com/c-bata/go-prompt v0.2.3
-## explicit
 github.com/c-bata/go-prompt
 # github.com/cespare/xxhash v1.1.0
 github.com/cespare/xxhash
 # github.com/cheekybits/genny v1.0.0
 github.com/cheekybits/genny/generic
 # github.com/dgraph-io/badger/v2 v2.0.0
-## explicit
 github.com/dgraph-io/badger/v2
 github.com/dgraph-io/badger/v2/options
 github.com/dgraph-io/badger/v2/pb
@@ -38,22 +33,18 @@ github.com/dustin/go-humanize
 # github.com/francoispqt/gojay v1.2.13
 github.com/francoispqt/gojay
 # github.com/getsentry/sentry-go v0.4.0
-## explicit
 github.com/getsentry/sentry-go
 # github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee
 github.com/gobwas/httphead
 # github.com/gobwas/pool v0.2.0
-## explicit
 github.com/gobwas/pool
 github.com/gobwas/pool/internal/pmath
 github.com/gobwas/pool/pbufio
 github.com/gobwas/pool/pbytes
 # github.com/gobwas/ws v1.0.3
-## explicit
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
 # github.com/gogo/protobuf v1.3.1
-## explicit
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/plugin/compare
 github.com/gogo/protobuf/plugin/defaultcheck
@@ -80,42 +71,30 @@ github.com/gogo/protobuf/protoc-gen-gogo/plugin
 github.com/gogo/protobuf/vanity
 github.com/gogo/protobuf/vanity/command
 # github.com/golang/protobuf v1.3.4
-## explicit
 github.com/golang/protobuf/proto
 # github.com/golang/snappy v0.0.1
 github.com/golang/snappy
 # github.com/google/btree v1.0.0
-## explicit
 github.com/google/btree
 # github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1
 github.com/gopherjs/gopherjs/js
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-hclog v0.9.1
-## explicit
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.1.0
-## explicit
 github.com/hashicorp/go-immutable-radix
 # github.com/hashicorp/go-msgpack v0.5.5
-## explicit
 github.com/hashicorp/go-msgpack/codec
 # github.com/hashicorp/go-multierror v1.0.0
-## explicit
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/go-sockaddr v1.0.0
-## explicit
 github.com/hashicorp/go-sockaddr
-# github.com/hashicorp/go-uuid v1.0.1
-## explicit
 # github.com/hashicorp/golang-lru v0.5.4
-## explicit
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/raft v1.1.2
-## explicit
 github.com/hashicorp/raft
 # github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
-## explicit
 github.com/iancoleman/strcase
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
@@ -126,7 +105,6 @@ github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
 # github.com/lucas-clemente/quic-go v0.15.1
-## explicit
 github.com/lucas-clemente/quic-go
 github.com/lucas-clemente/quic-go/internal/ackhandler
 github.com/lucas-clemente/quic-go/internal/congestion
@@ -140,67 +118,50 @@ github.com/lucas-clemente/quic-go/qlog
 github.com/lucas-clemente/quic-go/quictrace
 github.com/lucas-clemente/quic-go/quictrace/pb
 # github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
-## explicit
 github.com/mailru/easygo/netpoll
 # github.com/marten-seemann/qtls v0.8.0
 github.com/marten-seemann/qtls
 # github.com/mattn/go-colorable v0.1.4
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
-## explicit
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.8
-## explicit
 github.com/mattn/go-runewidth
 # github.com/mattn/go-tty v0.0.3
-## explicit
 github.com/mattn/go-tty
 # github.com/miekg/dns v1.0.14
-## explicit
 github.com/miekg/dns
 # github.com/nyaruka/phonenumbers v1.0.54
-## explicit
 github.com/nyaruka/phonenumbers
-# github.com/onsi/ginkgo v1.12.0
-## explicit
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pkg/profile v1.4.0
-## explicit
 github.com/pkg/profile
 # github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942
-## explicit
 github.com/pkg/term/termios
 # github.com/ryanuber/columnize v2.1.0+incompatible
-## explicit
 github.com/ryanuber/columnize
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
-## explicit
 github.com/sean-/seed
 # github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d
 github.com/smartystreets/assertions
 github.com/smartystreets/assertions/internal/go-render/render
 github.com/smartystreets/assertions/internal/oglematchers
 # github.com/smartystreets/goconvey v1.6.4
-## explicit
 github.com/smartystreets/goconvey/convey
 github.com/smartystreets/goconvey/convey/gotest
 github.com/smartystreets/goconvey/convey/reporting
 # github.com/spf13/cobra v0.0.5
-## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
-## explicit
 github.com/spf13/pflag
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.9.0
-## explicit
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
 # github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
-## explicit
 github.com/valyala/tcplisten
 # go.uber.org/atomic v1.5.0
 go.uber.org/atomic
@@ -209,7 +170,6 @@ go.uber.org/multierr
 # go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee
 go.uber.org/tools/update-license
 # go.uber.org/zap v1.13.0
-## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/bufferpool
@@ -231,7 +191,6 @@ golang.org/x/crypto/poly1305
 golang.org/x/lint
 golang.org/x/lint/golint
 # golang.org/x/net v0.0.0-20200301022130-244492dfa37a
-## explicit
 golang.org/x/net/bpf
 golang.org/x/net/internal/iana
 golang.org/x/net/internal/socket
@@ -260,7 +219,6 @@ golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/semver
 golang.org/x/tools/internal/span
 # gopkg.in/yaml.v2 v2.2.5
-## explicit
 gopkg.in/yaml.v2
 # honnef.co/go/tools v0.0.1-2019.2.3
 honnef.co/go/tools/arg
