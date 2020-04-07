@@ -15,6 +15,16 @@ models:
         tags:
           - json:p1
           - bson
+      - name: P3
+        type: string
+    unique_key:
+      name: ID
+      partition_keys: ["P1"]
+      clustering_keys: ["P2", "P3"]
+    filter_keys:
+      - name: P3
+        partition_keys: ["P3"]
+        clustering_keys: []
   - name: Model2
     comments:
       - This is a Model 2
@@ -22,7 +32,10 @@ models:
       - name: PQ1
         type: int64
         comment: Really! this is int64 :D
-        options: [unique]
+    unique_key:
+      name: PQ1
+      partition_keys: ["PQ1"]
+      clustering_keys: []
 apis:
   - input:
       constructor: 10001

@@ -31,7 +31,15 @@ type Generator struct {
 	postfix     string
 }
 
+func (g *Generator) Pns(str ...interface{}) {
+	g.p(0, str...)
+}
+
 func (g *Generator) P(str ...interface{}) {
+	g.p(' ', str...)
+}
+
+func (g *Generator) p(sep rune, str ...interface{}) {
 	g.buf.WriteString(g.indent)
 	for _, s := range str {
 		switch x := s.(type) {
@@ -54,7 +62,9 @@ func (g *Generator) P(str ...interface{}) {
 		default:
 			fmt.Println(x, reflect.TypeOf(x))
 		}
-		g.buf.WriteRune(' ')
+		if sep > 0 {
+			g.buf.WriteRune(sep)
+		}
 	}
 	g.buf.WriteRune('\n')
 }

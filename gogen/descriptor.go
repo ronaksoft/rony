@@ -1,6 +1,7 @@
 package gogen
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
@@ -45,12 +46,23 @@ type Model struct {
 	Manager    string      `yaml:"manager" json:"manager"`
 	Comments   []string    `yaml:"comments" json:"comment"`
 	Properties []Property  `yaml:"properties" json:"properties"`
+	PrimaryKey FilterKey   `yaml:"unique_key" json:"unique_key"`
 	FilterKeys []FilterKey `yaml:"filter_keys" json:"filter_keys"`
+}
+
+func (m *Model) GetProperty(name string) (Property, error) {
+	for _, p := range m.Properties {
+		if p.Name == name {
+			return p, nil
+		}
+	}
+	return Property{}, fmt.Errorf("could not find %s in model %s", name, m.Name)
 }
 
 // FilterKey the model will be queried by this key. The key is built of Properties. UniqueCombination is optional and
 // defines that which part of this key create a unique
 type FilterKey struct {
+	Name           string   `yaml:"name" json:"name"`
 	PartitionKeys  []string `yaml:"partition_keys" json:"partition_keys"`
 	ClusteringKeys []string `yaml:"clustering_keys" json:"clustering_keys"`
 }
@@ -61,7 +73,7 @@ type Property struct {
 	Type    string           `yaml:"type" json:"type"`
 	Comment string           `yaml:"comment" json:"comment"`
 	Tags    []string         `yaml:"tags" json:"tags"`
-	Options []PropertyOption `yaml:"options,flow" json:"options"` // e.g. [filter_by, cached]
+	Options []PropertyOption `yaml:"options,flow" json:"options"` // e.g. [unique, slice, optional]
 }
 
 func (p Property) CheckOption(opt PropertyOption) bool {
@@ -71,6 +83,29 @@ func (p Property) CheckOption(opt PropertyOption) bool {
 		}
 	}
 	return false
+}
+
+func (p Property) ToScyllaType() string {
+	var t string
+	switch Primitive(p.Type) {
+	case Int32, UInt32:
+		t = "int"
+	case Int64, UInt64:
+		t = "bigint"
+	case Byte:
+		t = "smallint"
+	case String:
+		t = "text"
+	case Bytes:
+		t = "blob"
+	default:
+		panic("invalid primitive type")
+	}
+	if p.CheckOption(Slice) {
+		return fmt.Sprintf("list<%s>", t)
+	} else {
+		return t
+	}
 }
 
 // PropertyOption
