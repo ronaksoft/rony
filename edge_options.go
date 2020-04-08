@@ -3,7 +3,6 @@ package rony
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
-	quicGateway "git.ronaksoftware.com/ronak/rony/gateway/quic"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 )
 
@@ -89,26 +88,6 @@ func WithHttpGateway(config httpGateway.Config) Option {
 
 		edge.gatewayProtocol = gateway.HTTP
 		edge.gateway = gatewayHttp
-		return
-	}
-}
-
-func WithQuicGateway(config quicGateway.Config) Option {
-	return func(edge *EdgeServer) {
-		if edge.gatewayProtocol != gateway.Undefined {
-			panic(ErrGatewayAlreadyInitialized)
-		}
-		gatewayQuic, err := quicGateway.New(config)
-		if err != nil {
-			panic(err)
-		}
-		gatewayQuic.MessageHandler = edge.onGatewayMessage
-		gatewayQuic.ConnectHandler = edge.onConnect
-		gatewayQuic.CloseHandler = edge.onClose
-		gatewayQuic.FlushFunc = edge.onFlush
-
-		edge.gatewayProtocol = gateway.QUIC
-		edge.gateway = gatewayQuic
 		return
 	}
 }

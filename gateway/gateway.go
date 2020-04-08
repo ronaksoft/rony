@@ -18,7 +18,6 @@ type Protocol string
 const (
 	Undefined Protocol = ""
 	Websocket Protocol = "websocket"
-	QUIC      Protocol = "quic"
 	HTTP      Protocol = "http"
 )
 

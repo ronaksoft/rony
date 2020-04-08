@@ -42,11 +42,11 @@ const (
 
 // DispatchCtx
 type DispatchCtx struct {
-	kind        byte
-	serverID    []byte
-	conn        gateway.Conn
 	streamID    int64
 	authID      int64
+	serverID    []byte
+	kind        byte
+	conn        gateway.Conn
 	req         *MessageEnvelope
 	carrierChan chan *carrier
 }
