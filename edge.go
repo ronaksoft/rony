@@ -138,34 +138,6 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 	}
 
 	waitGroup := acquireWaitGroup()
-	waitGroup.Add(1)
-	go func() {
-		for c := range dispatchCtx.carrierChan {
-			switch c.kind {
-			case carrierUpdate:
-				edge.dispatcher.DispatchUpdate(dispatchCtx, c.AuthID, c.UpdateEnvelope)
-				releaseUpdateEnvelope(c.UpdateEnvelope)
-			case carrierMessage:
-				edge.dispatcher.DispatchMessage(dispatchCtx, c.AuthID, c.MessageEnvelope)
-				releaseMessageEnvelope(c.MessageEnvelope)
-			case carrierCluster:
-				err := edge.ClusterSend(c.ServerID, c.AuthID, c.MessageEnvelope)
-				if err != nil {
-					log.Error("ClusterMessage Error",
-						zap.Bool("GatewayRequest", dispatchCtx.conn != nil),
-						zap.Int64("authID", c.AuthID),
-						zap.Uint64("RequestID", c.MessageEnvelope.RequestID),
-						zap.String("C", edge.getConstructorName(c.MessageEnvelope.Constructor)),
-						zap.Error(err),
-					)
-				}
-				releaseMessageEnvelope(c.MessageEnvelope)
-			}
-			releaseCarrier(c)
-		}
-		waitGroup.Done()
-	}()
-
 	switch dispatchCtx.req.Constructor {
 	case C_MessageContainer:
 		x := &MessageContainer{}
@@ -195,7 +167,6 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req)
 		releaseRequestCtx(ctx)
 	}
-	dispatchCtx.Stop()
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
 	return nil
@@ -266,25 +237,20 @@ func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx) {
 }
 
 func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
-	dispatchCtx := acquireDispatchCtx(conn, streamID, 0, edge.serverID)
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
 
 	err := edge.dispatcher.DispatchRequest(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return
 	}
-
-	startTime := time.Now()
 	err = edge.execute(dispatchCtx)
-	if ce := log.Check(log.DebugLevel, "Execute Time"); ce != nil {
-		ce.Write(zap.Duration("D", time.Now().Sub(startTime)))
-	}
+
 	switch err {
 	case nil:
 	case ErrNotRaftLeader:
 		edge.onError(dispatchCtx, ErrCodeUnavailable, ErrItemRaftLeader)
 	default:
-		log.Warn("Error On Execute", zap.Error(err))
 		edge.onError(dispatchCtx, ErrCodeInternal, ErrItemServer)
 	}
 	releaseDispatchCtx(dispatchCtx)

@@ -241,7 +241,7 @@ func (d delegateNode) NotifyMsg(data []byte) {
 
 	cm := acquireClusterMessage()
 	_ = cm.Unmarshal(data)
-	dispatchCtx := acquireDispatchCtx(nil, 0, cm.AuthID, cm.Sender)
+	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.AuthID, cm.Sender)
 	dispatchCtx.FillEnvelope(cm.Envelope.RequestID, cm.Envelope.Constructor, cm.Envelope.Message)
 	releaseClusterMessage(cm)
 

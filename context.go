@@ -1,11 +1,15 @@
 package rony
 
 import (
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
 	"hash/crc32"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -27,11 +31,11 @@ const (
 )
 
 type carrier struct {
-	kind            byte
-	AuthID          int64
 	ServerID        []byte
+	AuthID          int64
 	MessageEnvelope *MessageEnvelope
 	UpdateEnvelope  *UpdateEnvelope
+	kind            byte
 }
 
 const (
@@ -42,28 +46,28 @@ const (
 
 // DispatchCtx
 type DispatchCtx struct {
-	streamID    int64
-	authID      int64
-	serverID    []byte
-	kind        byte
-	conn        gateway.Conn
-	req         *MessageEnvelope
-	carrierChan chan *carrier
+	streamID int64
+	authID   int64
+	serverID []byte
+	conn     gateway.Conn
+	req      *MessageEnvelope
+	edge     *EdgeServer
+	kind     byte
 }
 
-func newDispatchCtx() *DispatchCtx {
+func newDispatchCtx(edge *EdgeServer) *DispatchCtx {
 	return &DispatchCtx{
-		carrierChan: make(chan *carrier, 10),
-		req:         &MessageEnvelope{},
+		edge: edge,
+		req:  &MessageEnvelope{},
 	}
 }
 
-func (ctx *DispatchCtx) reset() {
-	ctx.carrierChan = make(chan *carrier, 10)
-}
-
-func (ctx *DispatchCtx) Stop() {
-	close(ctx.carrierChan)
+func (ctx *DispatchCtx) Debug() {
+	fmt.Println("###")
+	t := reflect.Indirect(reflect.ValueOf(ctx))
+	for i := 0; i < t.NumField(); i++ {
+		fmt.Println(t.Type().Field(i).Name, t.Type().Field(i).Offset, t.Type().Field(i).Type.Size())
+	}
 }
 
 func (ctx *DispatchCtx) Conn() gateway.Conn {
@@ -199,7 +203,15 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 	}
 	_, _ = proto.MarshalTo(envelope.Message)
 
-	ctx.dispatchCtx.carrierChan <- acquireMessageCarrier(authID, envelope)
+	ctx.dispatchCtx.edge.dispatcher.DispatchMessage(ctx.dispatchCtx, authID, envelope)
+	releaseMessageEnvelope(envelope)
+	// ctx.dispatchCtx.carrierChan <- carrier{
+	// 	kind:            carrierMessage,
+	// 	AuthID:          authID,
+	// 	ServerID:        nil,
+	// 	MessageEnvelope: envelope,
+	// 	UpdateEnvelope:  nil,
+	// }
 }
 
 func (ctx *RequestCtx) PushError(requestID uint64, code, item string) {
@@ -221,7 +233,25 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 		envelope.Message = envelope.Message[:protoSize]
 	}
 	_, _ = proto.MarshalTo(envelope.Message)
-	ctx.dispatchCtx.carrierChan <- acquireClusterMessageCarrier(authID, serverID, envelope)
+
+	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), authID, envelope)
+	if err != nil {
+		log.Error("ClusterMessage Error",
+			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),
+			zap.Int64("AuthID", authID),
+			zap.Uint64("RequestID", envelope.RequestID),
+			zap.String("C", ctx.dispatchCtx.edge.getConstructorName(envelope.Constructor)),
+			zap.Error(err),
+		)
+	}
+	releaseMessageEnvelope(envelope)
+	// ctx.dispatchCtx.carrierChan <- carrier{
+	// 	kind:            carrierCluster,
+	// 	AuthID:          authID,
+	// 	ServerID:        []byte(serverID),
+	// 	MessageEnvelope: envelope,
+	// 	UpdateEnvelope:  nil,
+	// }
 }
 
 func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor int64, proto ProtoBufferMessage) {
@@ -240,7 +270,17 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor int6
 		envelope.Update = envelope.Update[:protoSize]
 	}
 	_, _ = proto.MarshalTo(envelope.Update)
-	ctx.dispatchCtx.carrierChan <- acquireUpdateCarrier(authID, envelope)
+
+	ctx.dispatchCtx.edge.dispatcher.DispatchUpdate(ctx.dispatchCtx, authID, envelope)
+	releaseUpdateEnvelope(envelope)
+
+	// ctx.dispatchCtx.carrierChan <- carrier{
+	// 	kind:            carrierUpdate,
+	// 	AuthID:          authID,
+	// 	ServerID:        nil,
+	// 	MessageEnvelope: nil,
+	// 	UpdateEnvelope:  envelope,
+	// }
 }
 
 // ProtoBufferMessage
