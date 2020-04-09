@@ -29,6 +29,25 @@ func (s *RepoPlugin) Init(g *gen.Generator) {
 }
 
 func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
+
+	s.generateVars(desc)
+
+	// Generate Init Function
+	s.g.P("func Init(s *gocql.Session) {")
+	s.g.In()
+	s.g.P("dbs = s")
+	s.g.Out()
+	s.g.P("}")
+	s.g.Nl() // End of Init
+
+	s.generateCreateTables(desc)
+	s.generateSaveModel(desc)
+	s.generateGet(desc)
+	s.generateList(desc)
+	s.generateDelete(desc)
+
+}
+func (s *RepoPlugin) generateVars(desc *gen.Descriptor) {
 	s.g.P("var (")
 	s.g.In()
 	s.g.P("dbs	*gocql.Session")
@@ -134,24 +153,9 @@ func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 	s.g.Out()
 	s.g.P(")")
 	s.g.Nl(2) // End of Vars
-
-	// Define Init Function
-	s.g.P("func Init(s *gocql.Session) {")
-	s.g.In()
-	s.g.P("dbs = s")
-	s.g.Out()
-	s.g.P("}")
-	s.g.Nl() // End of Init
-
-	s.generateCreateTables(desc)
-	s.generateSaveModel(desc)
-	s.generateGet(desc)
-	s.generateList(desc)
-	s.generateDelete(desc)
-
 }
 func (s *RepoPlugin) generateCreateTables(desc *gen.Descriptor) {
-	// Define CreateTables Function
+	// Generate CreateTables Function
 	s.g.P("func CreateTables(s *gocql.Session, db string) error {")
 	s.g.In()
 
@@ -391,9 +395,6 @@ func (s *RepoPlugin) generateGet(desc *gen.Descriptor) {
 		}
 	}
 }
-func (s *RepoPlugin) generateList(desc *gen.Descriptor) {
-
-}
 func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {
 	for _, m := range desc.Models {
 		args := strings.Builder{}
@@ -428,6 +429,9 @@ func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {
 		s.g.P("}")
 		s.g.Nl()
 	}
+}
+func (s *RepoPlugin) generateList(desc *gen.Descriptor) {
+
 }
 
 func (s *RepoPlugin) GeneratePrepend(desc *gen.Descriptor) {
