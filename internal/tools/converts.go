@@ -35,6 +35,22 @@ func StrToUInt32(s string) uint32 {
 	return uint32(v)
 }
 
+func Int64ToStr(x int64) string {
+	return strconv.FormatInt(x, 10)
+}
+
+func Int32ToStr(x int32) string {
+	return strconv.FormatInt(int64(x), 10)
+}
+
+func UInt64ToStr(x uint64) string {
+	return strconv.FormatUint(x, 10)
+}
+
+func UInt32ToStr(x uint32) string {
+	return strconv.FormatUint(uint64(x), 10)
+}
+
 // ByteToStr converts byte slice to a string without memory allocation.
 // Note it may break if string and/or slice header will change
 // in the future go versions.

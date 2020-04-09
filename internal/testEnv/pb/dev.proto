@@ -34,12 +34,12 @@ message AskResponse {
 }
 
 message ReqSimple1 {
-    required string P1 = 1;
+    required bytes P1 = 1;
     required int64 P2 = 2;
 }
 
 message UpdateSimple1 {
-    required string P1 = 1;
+    required bytes P1 = 1;
 }
 
 message UpdateSimple2 {

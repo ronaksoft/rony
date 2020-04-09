@@ -72,7 +72,7 @@ func initHandlers(edge *rony.EdgeServer) {
 			ctx.PushError(in.RequestID, "Invalid", "Proto")
 			return
 		}
-		res.P1 = tools.StrToByte(req.P1)
+		res.P1 = req.P1
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
 	edge.AddHandler(101, func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
@@ -83,13 +83,13 @@ func initHandlers(edge *rony.EdgeServer) {
 			ctx.PushError(in.RequestID, "Invalid", "Proto")
 			return
 		}
-		res.P1 = tools.StrToByte(req.P1)
+		res.P1 = req.P1
 
 		ts := time.Now().Unix()
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
 			ctx.PushUpdate(ctx.AuthID(), i, 301, ts, &pb.UpdateSimple1{
-				P1: fmt.Sprintf("%d", i),
+				P1: tools.StrToByte(tools.Int64ToStr(i)),
 			})
 		}
 	})
@@ -127,7 +127,7 @@ func TestEdgeServerSimple(t *testing.T) {
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		c.So(err, ShouldBeNil)
 		for i := int64(1); i <= 10; i++ {
-			req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}
+			req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(i))}
 			envelope := &rony.MessageEnvelope{}
 			envelope.RequestID = tools.RandomUint64()
 			envelope.Constructor = 101

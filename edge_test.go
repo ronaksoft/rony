@@ -7,7 +7,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 /*
@@ -105,25 +104,26 @@ func initHandlers(edge *EdgeServer) {
 			ctx.PushError(in.RequestID, "Invalid", "Proto")
 			return
 		}
-		res.P1 = tools.StrToByte(req.P1)
+		res.P1 = req.P1
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
 	edge.AddHandler(101, func(ctx *RequestCtx, in *MessageEnvelope) {
-		req := &pb.ReqSimple1{}
-		res := &pb.ResSimple1{}
+		req := pb.PoolReqSimple1.Get()
+		defer pb.PoolReqSimple1.Put(req)
+		res := pb.PoolResSimple1.Get()
+		defer pb.PoolResSimple1.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
 			ctx.PushError(in.RequestID, "Invalid", "Proto")
 			return
 		}
-		res.P1 = tools.StrToByte(req.P1)
+		res.P1 = req.P1
 
-		u := &pb.UpdateSimple1{
-			P1: "EQ",
-		}
+		u := pb.PoolUpdateSimple1.Get()
+		defer pb.PoolUpdateSimple1.Put(u)
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID(), i, 301, time.Now().Unix(), u)
+			ctx.PushUpdate(ctx.AuthID(), i, 301, tools.TimeUnix(), u)
 		}
 	})
 }
@@ -143,9 +143,32 @@ func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer
 	return edge
 }
 
-func BenchmarkEdgeServer(b *testing.B) {
+func BenchmarkEdgeServerSerial(b *testing.B) {
 	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
-	req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", 100)}
+
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
+	envelope := &MessageEnvelope{}
+	envelope.RequestID = tools.RandomUint64()
+	envelope.Constructor = 101
+	envelope.Message, _ = req.Marshal()
+	proto := &pb.ProtoMessage{}
+	proto.AuthID = 100
+	proto.Payload, _ = envelope.Marshal()
+	bytes, _ := proto.Marshal()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.SetParallelism(1000)
+	conn := mockGatewayConn{}
+
+	for i := 0; i < b.N; i++ {
+		edgeServer.onGatewayMessage(&conn, 0, bytes)
+	}
+}
+
+func BenchmarkEdgeServerParallel(b *testing.B) {
+	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
@@ -164,7 +187,4 @@ func BenchmarkEdgeServer(b *testing.B) {
 			edgeServer.onGatewayMessage(&conn, 0, bytes)
 		}
 	})
-	// for i := 0; i < b.N; i++ {
-	// 	edgeServer.onGatewayMessage(&conn, 0, bytes)
-	// }
 }
