@@ -315,7 +315,7 @@ func benchRoutine(authID int64, count int, port string) {
 	for i := 0; i < count; i++ {
 		req := &pb.EchoRequest{
 			Int:       tools.RandomInt64(0),
-			Bool:      true,
+			Bool:      false,
 			Timestamp: time.Now().UnixNano(),
 		}
 		reqBytes, _ := req.Marshal()

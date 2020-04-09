@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"time"
@@ -46,6 +47,10 @@ func GenEchoHandler(serverID string) rony.Handler {
 		if err != nil {
 			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
 			return
+		}
+
+		if req.Bool {
+			fmt.Println(serverID)
 		}
 
 		res.Bool = req.Bool
