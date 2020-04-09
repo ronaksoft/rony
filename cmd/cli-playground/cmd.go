@@ -4,8 +4,8 @@ import (
 	context2 "context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -73,8 +73,8 @@ func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 		}
 
 		Edges[serverID] = rony.NewEdgeServer(serverID, &dispatcher{}, opts...)
-		Edges[serverID].AddHandler(msg.C_EchoRequest, GenEchoHandler(serverID))
-		Edges[serverID].AddHandler(msg.C_AskRequest, GenAskHandler(serverID))
+		Edges[serverID].AddHandler(pb.C_EchoRequest, GenEchoHandler(serverID))
+		Edges[serverID].AddHandler(pb.C_AskRequest, GenAskHandler(serverID))
 		err := Edges[serverID].Run()
 		if err != nil {
 			fmt.Println(err)
@@ -185,19 +185,19 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		defer conn.Close()
-		req := msg.PoolEchoRequest.Get()
-		defer msg.PoolEchoRequest.Put(req)
+		req := pb.PoolEchoRequest.Get()
+		defer pb.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
 
 		envelope := &rony.MessageEnvelope{
-			Constructor: msg.C_EchoRequest,
+			Constructor: pb.C_EchoRequest,
 			RequestID:   tools.RandomUint64(),
 			Message:     nil,
 		}
 		envelope.Message, _ = req.Marshal()
-		proto := &msg.ProtoMessage{}
+		proto := &pb.ProtoMessage{}
 		proto.AuthID = 1000
 		proto.Payload, _ = envelope.Marshal()
 		bytes, _ := proto.Marshal()
@@ -206,7 +206,7 @@ var EchoCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("Sent:", proto.AuthID, envelope.RequestID, msg.ConstructorNames[envelope.Constructor])
+		fmt.Println("Sent:", proto.AuthID, envelope.RequestID, pb.ConstructorNames[envelope.Constructor])
 
 		conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 		resBytes, err := wsutil.ReadServerBinary(conn)
@@ -225,7 +225,7 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("Received:", proto.AuthID, envelope.RequestID, msg.ConstructorNames[envelope.Constructor])
+		fmt.Println("Received:", proto.AuthID, envelope.RequestID, pb.ConstructorNames[envelope.Constructor])
 		switch envelope.Constructor {
 		case rony.C_Error:
 			res := rony.Error{}
@@ -235,8 +235,8 @@ var EchoCmd = &cobra.Command{
 				return
 			}
 			fmt.Println("Error:", res.Code, res.Items)
-		case msg.C_EchoResponse:
-			res := msg.EchoResponse{}
+		case pb.C_EchoResponse:
+			res := pb.EchoResponse{}
 			err = res.Unmarshal(envelope.Message)
 			if err != nil {
 				fmt.Println(err)
@@ -307,18 +307,18 @@ func benchRoutine(authID int64, count int, port string) {
 	}
 	defer conn.Close()
 	for i := 0; i < count; i++ {
-		req := &msg.EchoRequest{
+		req := &pb.EchoRequest{
 			Int:       tools.RandomInt64(0),
 			Bool:      true,
 			Timestamp: time.Now().UnixNano(),
 		}
 		reqBytes, _ := req.Marshal()
 		envelope := &rony.MessageEnvelope{
-			Constructor: msg.C_EchoRequest,
+			Constructor: pb.C_EchoRequest,
 			RequestID:   tools.RandomUint64(),
 			Message:     reqBytes,
 		}
-		proto := &msg.ProtoMessage{
+		proto := &pb.ProtoMessage{
 			AuthID: authID,
 		}
 		proto.Payload, _ = envelope.Marshal()
@@ -354,8 +354,8 @@ func benchRoutine(authID int64, count int, port string) {
 				return
 			}
 			fmt.Println("ERROR!!! In Response", authID)
-		case msg.C_EchoResponse:
-			res := msg.EchoResponse{}
+		case pb.C_EchoResponse:
+			res := pb.EchoResponse{}
 			err = res.Unmarshal(envelope.Message)
 			if err != nil {
 				fmt.Println(err)
@@ -430,16 +430,16 @@ func benchRoutine(authID int64, count int, port string) {
 // 	}
 // 	defer conn.Close()
 // 	for i := 0; i < count; i++ {
-// 		req := &msg.AskRequest{
+// 		req := &pb.AskRequest{
 // 			ServerID: serverID,
 // 		}
 // 		reqBytes, _ := req.Marshal()
 // 		envelope := &rony.MessageEnvelope{
-// 			Constructor: msg.C_AskRequest,
+// 			Constructor: pb.C_AskRequest,
 // 			RequestID:   tools.RandomUint64(),
 // 			Message:     reqBytes,
 // 		}
-// 		proto := &msg.ProtoMessage{
+// 		proto := &pb.ProtoMessage{
 // 			AuthID: authID,
 // 		}
 // 		proto.Payload, _ = envelope.Marshal()
@@ -475,8 +475,8 @@ func benchRoutine(authID int64, count int, port string) {
 // 				return
 // 			}
 // 			fmt.Println("ERROR!!! In Response", authID)
-// 		case msg.C_AskResponse:
-// 			res := msg.AskResponse{}
+// 		case pb.C_AskResponse:
+// 			res := pb.AskResponse{}
 // 			err = res.Unmarshal(envelope.Message)
 // 			if err != nil {
 // 				fmt.Println(err)

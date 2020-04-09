@@ -2,12 +2,12 @@ package rony
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 /*
@@ -82,7 +82,7 @@ func (t testDispatcher) DispatchMessage(ctx *DispatchCtx, authID int64, envelope
 }
 
 func (t testDispatcher) DispatchRequest(ctx *DispatchCtx, data []byte) (err error) {
-	proto := &msg.ProtoMessage{}
+	proto := pb.PoolProtoMessage.Get()
 	err = proto.Unmarshal(data)
 	if err != nil {
 		return
@@ -92,6 +92,7 @@ func (t testDispatcher) DispatchRequest(ctx *DispatchCtx, data []byte) (err erro
 		return
 	}
 	ctx.SetAuthID(proto.AuthID)
+	pb.PoolProtoMessage.Put(proto)
 	return
 }
 
@@ -117,11 +118,12 @@ func initHandlers(edge *EdgeServer) {
 		}
 		res.P1 = tools.StrToByte(req.P1)
 
+		u := &pb.UpdateSimple1{
+			P1: "EQ",
+		}
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID(), i, 301, &pb.UpdateSimple1{
-				P1: "EQ",
-			})
+			ctx.PushUpdate(ctx.AuthID(), i, 301, time.Now().Unix(), u)
 		}
 	})
 }
@@ -148,7 +150,7 @@ func BenchmarkEdgeServer(b *testing.B) {
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
 	envelope.Message, _ = req.Marshal()
-	proto := &msg.ProtoMessage{}
+	proto := &pb.ProtoMessage{}
 	proto.AuthID = 100
 	proto.Payload, _ = envelope.Marshal()
 	bytes, _ := proto.Marshal()
@@ -156,9 +158,13 @@ func BenchmarkEdgeServer(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetParallelism(1000)
+	conn := mockGatewayConn{}
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			edgeServer.onGatewayMessage(mockGatewayConn{}, 0, bytes)
+			edgeServer.onGatewayMessage(&conn, 0, bytes)
 		}
 	})
+	// for i := 0; i < b.N; i++ {
+	// 	edgeServer.onGatewayMessage(&conn, 0, bytes)
+	// }
 }

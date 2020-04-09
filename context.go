@@ -11,7 +11,6 @@ import (
 	"hash/crc32"
 	"reflect"
 	"sync"
-	"time"
 )
 
 /*
@@ -205,13 +204,6 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 
 	ctx.dispatchCtx.edge.dispatcher.DispatchMessage(ctx.dispatchCtx, authID, envelope)
 	releaseMessageEnvelope(envelope)
-	// ctx.dispatchCtx.carrierChan <- carrier{
-	// 	kind:            carrierMessage,
-	// 	AuthID:          authID,
-	// 	ServerID:        nil,
-	// 	MessageEnvelope: envelope,
-	// 	UpdateEnvelope:  nil,
-	// }
 }
 
 func (ctx *RequestCtx) PushError(requestID uint64, code, item string) {
@@ -245,18 +237,11 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 		)
 	}
 	releaseMessageEnvelope(envelope)
-	// ctx.dispatchCtx.carrierChan <- carrier{
-	// 	kind:            carrierCluster,
-	// 	AuthID:          authID,
-	// 	ServerID:        []byte(serverID),
-	// 	MessageEnvelope: envelope,
-	// 	UpdateEnvelope:  nil,
-	// }
 }
 
-func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor int64, proto ProtoBufferMessage) {
+func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts int64, proto ProtoBufferMessage) {
 	envelope := acquireUpdateEnvelope()
-	envelope.Timestamp = time.Now().Unix()
+	envelope.Timestamp = ts
 	envelope.UpdateID = updateID
 	if updateID != 0 {
 		envelope.UCount = 1
@@ -273,14 +258,6 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor int6
 
 	ctx.dispatchCtx.edge.dispatcher.DispatchUpdate(ctx.dispatchCtx, authID, envelope)
 	releaseUpdateEnvelope(envelope)
-
-	// ctx.dispatchCtx.carrierChan <- carrier{
-	// 	kind:            carrierUpdate,
-	// 	AuthID:          authID,
-	// 	ServerID:        nil,
-	// 	MessageEnvelope: nil,
-	// 	UpdateEnvelope:  envelope,
-	// }
 }
 
 // ProtoBufferMessage

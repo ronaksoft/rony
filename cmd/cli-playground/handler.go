@@ -2,7 +2,7 @@ package main
 
 import (
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
+	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"time"
 )
 
@@ -17,10 +17,10 @@ import (
 
 func GenAskHandler(serverID string) rony.Handler {
 	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
-		req := msg.PoolAskRequest.Get()
-		defer msg.PoolAskRequest.Put(req)
-		res := msg.PoolAskResponse.Get()
-		defer msg.PoolAskResponse.Put(res)
+		req := pb.PoolAskRequest.Get()
+		defer pb.PoolAskRequest.Put(req)
+		res := pb.PoolAskResponse.Get()
+		defer pb.PoolAskResponse.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
 			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
@@ -31,17 +31,17 @@ func GenAskHandler(serverID string) rony.Handler {
 			ctx.PushClusterMessage(req.ServerID, ctx.AuthID(), in.RequestID, in.Constructor, req)
 		} else {
 			res.Responder = serverID
-			ctx.PushMessage(ctx.AuthID(), in.RequestID, msg.C_AskResponse, res)
+			ctx.PushMessage(ctx.AuthID(), in.RequestID, pb.C_AskResponse, res)
 		}
 	}
 }
 
 func GenEchoHandler(serverID string) rony.Handler {
 	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
-		req := msg.PoolEchoRequest.Get()
-		defer msg.PoolEchoRequest.Put(req)
-		res := msg.PoolEchoResponse.Get()
-		defer msg.PoolEchoResponse.Put(res)
+		req := pb.PoolEchoRequest.Get()
+		defer pb.PoolEchoRequest.Put(req)
+		res := pb.PoolEchoResponse.Get()
+		defer pb.PoolEchoResponse.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
 			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
@@ -54,7 +54,7 @@ func GenEchoHandler(serverID string) rony.Handler {
 		res.Timestamp = time.Now().UnixNano()
 		res.Delay = res.Timestamp - req.Timestamp
 
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, msg.C_EchoResponse, res)
+		ctx.PushMessage(ctx.AuthID(), in.RequestID, pb.C_EchoResponse, res)
 	}
 
 }

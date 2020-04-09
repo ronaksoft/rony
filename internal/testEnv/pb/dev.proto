@@ -1,5 +1,5 @@
 syntax = "proto2";
-package msg;
+package pb;
 
 // ProtoMessage
 // If AuthID == 0 then Payload is a MessageEnvelop otherwise Payload is a ProtoEncryptedPayload
@@ -31,4 +31,21 @@ message AskRequest {
 message AskResponse {
     required string Coordinator = 1;
     required string Responder = 2;
+}
+
+message ReqSimple1 {
+    required string P1 = 1;
+    required int64 P2 = 2;
+}
+
+message UpdateSimple1 {
+    required string P1 = 1;
+}
+
+message UpdateSimple2 {
+    required int64 P2 = 2;
+}
+
+message ResSimple1 {
+    required bytes P1 = 1;
 }

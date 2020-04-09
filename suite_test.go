@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/cmd/cli-playground/msg"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
@@ -47,7 +46,7 @@ func (t testDispatcher) DispatchMessage(ctx *rony.DispatchCtx, authID int64, env
 }
 
 func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte) (err error) {
-	proto := &msg.ProtoMessage{}
+	proto := &pb.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
 		return
@@ -86,9 +85,10 @@ func initHandlers(edge *rony.EdgeServer) {
 		}
 		res.P1 = tools.StrToByte(req.P1)
 
+		ts := time.Now().Unix()
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID(), i, 301, &pb.UpdateSimple1{
+			ctx.PushUpdate(ctx.AuthID(), i, 301, ts, &pb.UpdateSimple1{
 				P1: fmt.Sprintf("%d", i),
 			})
 		}
@@ -132,7 +132,7 @@ func TestEdgeServerSimple(t *testing.T) {
 			envelope.RequestID = tools.RandomUint64()
 			envelope.Constructor = 101
 			envelope.Message, _ = req.Marshal()
-			proto := &msg.ProtoMessage{}
+			proto := &pb.ProtoMessage{}
 			proto.AuthID = i
 			proto.Payload, _ = envelope.Marshal()
 			bytes, _ := proto.Marshal()
