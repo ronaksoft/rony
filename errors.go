@@ -46,6 +46,7 @@ var (
 	ErrNotFound                  = errors.New("not found")
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftNotSet                = errors.New("raft not set")
+	ErrRaftExecuteOnLeader       = errors.New("raft execute on leader")
 )
 
 func Wrap(txt string, err error) error {

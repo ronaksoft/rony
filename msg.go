@@ -1,5 +1,7 @@
 package rony
 
+import "git.ronaksoftware.com/ronak/rony/internal/pools"
+
 /*
    Creation Time: 2020 - Jan - 27
    Created by:  (ehsan)
@@ -35,6 +37,18 @@ func (m *MessageEnvelope) Clone() *MessageEnvelope {
 	return c
 }
 
+func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) {
+	e.Constructor = m.Constructor
+	e.RequestID = m.RequestID
+	if len(m.Message) > cap(e.Message) {
+		pools.Bytes.Put(e.Message)
+		e.Message = pools.Bytes.GetLen(len(m.Message))
+	} else {
+		e.Message = e.Message[:len(m.Message)]
+	}
+	copy(e.Message, m.Message)
+}
+
 func (m *UpdateEnvelope) Clone() *UpdateEnvelope {
 	c := &UpdateEnvelope{
 		Constructor: m.Constructor,
@@ -45,4 +59,18 @@ func (m *UpdateEnvelope) Clone() *UpdateEnvelope {
 	c.Update = make([]byte, len(m.Update))
 	copy(c.Update, m.Update)
 	return c
+}
+
+func (m *UpdateEnvelope) CopyTo(u *UpdateEnvelope) {
+	u.Constructor = m.Constructor
+	u.UCount = m.UCount
+	u.UpdateID = m.UpdateID
+	u.Timestamp = m.Timestamp
+	if len(m.Update) > cap(u.Update) {
+		pools.Bytes.Put(u.Update)
+		u.Update = pools.Bytes.GetLen(len(m.Update))
+	} else {
+		u.Update = u.Update[:len(m.Update)]
+	}
+	copy(u.Update, m.Update)
 }

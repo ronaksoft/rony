@@ -58,7 +58,9 @@ var clusterMessagePool sync.Pool
 func acquireClusterMessage() *ClusterMessage {
 	v := clusterMessagePool.Get()
 	if v == nil {
-		return &ClusterMessage{}
+		return &ClusterMessage{
+			Envelope: &MessageEnvelope{},
+		}
 	}
 	return v.(*ClusterMessage)
 }
@@ -77,7 +79,9 @@ var raftCommandPool sync.Pool
 func acquireRaftCommand() *RaftCommand {
 	v := raftCommandPool.Get()
 	if v == nil {
-		return &RaftCommand{}
+		return &RaftCommand{
+			Envelope: &MessageEnvelope{},
+		}
 	}
 	return v.(*RaftCommand)
 }
@@ -85,7 +89,6 @@ func acquireRaftCommand() *RaftCommand {
 func releaseRaftCommand(x *RaftCommand) {
 	x.Sender = x.Sender[:0]
 	x.AuthID = 0
-	x.Envelope = nil
 	x.Envelope.Message = x.Envelope.Message[:0]
 	x.Envelope.RequestID = 0
 	x.Envelope.Constructor = 0

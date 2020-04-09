@@ -118,7 +118,7 @@ func (edge *EdgeServer) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 		}
 		raftCmd := acquireRaftCommand()
 		raftCmd.AuthID = dispatchCtx.authID
-		raftCmd.Envelope = dispatchCtx.req
+		dispatchCtx.req.CopyTo(raftCmd.Envelope)
 		raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
 		_, err = raftCmd.MarshalTo(raftCmdBytes)
 		if err != nil {

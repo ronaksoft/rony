@@ -1,6 +1,7 @@
 package rony
 
 import (
+	"bytes"
 	"github.com/hashicorp/raft"
 	"io"
 )
@@ -24,12 +25,19 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	if err != nil {
 		return err
 	}
-	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.AuthID, nil)
+
+	// We dont execute the command, if we are the sender server
+	if bytes.Equal(raftCmd.Sender, fsm.edge.serverID) {
+		releaseRaftCommand(raftCmd)
+		return ErrRaftExecuteOnLeader
+	}
+
+	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.AuthID, raftCmd.Sender)
 	dispatchCtx.FillEnvelope(raftCmd.Envelope.RequestID, raftCmd.Envelope.Constructor, raftCmd.Envelope.Message)
 	err = fsm.edge.execute(dispatchCtx)
 	releaseDispatchCtx(dispatchCtx)
 	releaseRaftCommand(raftCmd)
-	return err
+	return nil
 }
 
 func (fsm raftFSM) Snapshot() (raft.FSMSnapshot, error) {
