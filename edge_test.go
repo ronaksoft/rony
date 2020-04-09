@@ -3,10 +3,13 @@ package rony
 import (
 	"fmt"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 /*
@@ -67,6 +70,8 @@ func (m mockGatewayConn) Persistent() bool {
 var (
 	receivedMessages int32
 	receivedUpdates  int32
+	raftServers      map[string]*EdgeServer
+	raftLeader       *EdgeServer
 )
 
 type testDispatcher struct {
@@ -143,8 +148,44 @@ func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer
 	return edge
 }
 
-func BenchmarkEdgeServerGatewayMessageSerial(b *testing.B) {
-	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
+func initRaft() {
+	if raftServers == nil {
+		raftServers = make(map[string]*EdgeServer)
+	}
+	ids := []string{"AdamRaft", "EveRaft", "AbelRaft"}
+	for idx, id := range ids {
+		if raftServers[id] == nil {
+			bootstrap := false
+			if idx == 0 {
+				bootstrap = true
+			}
+			edgeServer := initEdgeServer(id, 8080+idx,
+				WithDataPath(filepath.Join("./_hdd/", id)),
+				WithReplicaSet(1, 9080+idx, bootstrap),
+				WithGossipPort(7080+idx),
+			)
+			err := edgeServer.Run()
+			if err != nil {
+				panic(err)
+			}
+			if bootstrap {
+				time.Sleep(time.Second)
+			}
+			raftServers[id] = edgeServer
+		}
+	}
+	time.Sleep(time.Second)
+	for _, id := range ids {
+		if raftServers[id].Stats().RaftState == "Leader" {
+			raftLeader = raftServers[id]
+			return
+		}
+	}
+	panic("should not be here")
+}
+
+func BenchmarkEdgeServerMessageSerial(b *testing.B) {
+	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd/adam"))
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &MessageEnvelope{}
@@ -166,8 +207,8 @@ func BenchmarkEdgeServerGatewayMessageSerial(b *testing.B) {
 	}
 }
 
-func BenchmarkEdgeServerGatewayMessageParallel(b *testing.B) {
-	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
+func BenchmarkEdgeServerMessageParallel(b *testing.B) {
+	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd/adam"))
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
@@ -187,4 +228,54 @@ func BenchmarkEdgeServerGatewayMessageParallel(b *testing.B) {
 			edgeServer.onGatewayMessage(&conn, 0, bytes)
 		}
 	})
+}
+
+func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
+	log.SetLevel(log.ErrorLevel)
+	initRaft()
+
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
+	envelope := &MessageEnvelope{}
+	envelope.RequestID = tools.RandomUint64()
+	envelope.Constructor = 101
+	envelope.Message, _ = req.Marshal()
+	proto := &pb.ProtoMessage{}
+	proto.AuthID = 100
+	proto.Payload, _ = envelope.Marshal()
+	bytes, _ := proto.Marshal()
+
+	// b.SetParallelism(1000)
+	conn := mockGatewayConn{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raftLeader.onGatewayMessage(&conn, 0, bytes)
+	}
+	b.StopTimer()
+}
+
+func BenchmarkEdgeServerWithRaftMessageParallel(b *testing.B) {
+	log.SetLevel(log.ErrorLevel)
+	initRaft()
+
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
+	envelope := &MessageEnvelope{}
+	envelope.RequestID = tools.RandomUint64()
+	envelope.Constructor = 101
+	envelope.Message, _ = req.Marshal()
+	proto := &pb.ProtoMessage{}
+	proto.AuthID = 100
+	proto.Payload, _ = envelope.Marshal()
+	bytes, _ := proto.Marshal()
+
+	b.SetParallelism(1000)
+	conn := mockGatewayConn{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			raftLeader.onGatewayMessage(&conn, 0, bytes)
+		}
+	})
+	b.StopTimer()
 }

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -250,6 +251,10 @@ var EchoCmd = &cobra.Command{
 	},
 }
 
+var (
+	received      int64
+	receivedDelay int64
+)
 var BenchCmd = &cobra.Command{
 	Use: "bench",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -292,6 +297,7 @@ var BenchCmd = &cobra.Command{
 		}
 		fmt.Println("Total Time:", d, ", ", t)
 		fmt.Println("Avg:", int(float64(t)/d.Seconds()))
+		fmt.Println("Avg Delay:", time.Duration(receivedDelay/received))
 		profiler.Stop()
 	},
 }
@@ -364,7 +370,8 @@ func benchRoutine(authID int64, count int, port string) {
 			if res.Bool != req.Bool || res.Int != req.Int {
 				fmt.Println("MisMatch!!! In Response", authID)
 			}
-			// fmt.Println("Delay:", time.Duration(res.Delay))
+			atomic.AddInt64(&receivedDelay, res.Delay)
+			atomic.AddInt64(&received, 1)
 		default:
 			fmt.Println("UNKNOWN!!!!")
 		}

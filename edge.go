@@ -317,6 +317,7 @@ func (edge *EdgeServer) runGossip() error {
 	conf.Events = &delegateEvents{edge: edge}
 	conf.Delegate = &delegateNode{edge: edge}
 	conf.LogOutput = ioutil.Discard
+	conf.Logger = nil
 	conf.BindPort = edge.gossipPort
 	if s, err := memberlist.Create(conf); err != nil {
 		return err
