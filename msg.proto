@@ -40,7 +40,7 @@ message ClusterMessage {
 
 // RaftCommand
 message RaftCommand {
-    required uint64 ConnID = 1;
+    required bytes Sender = 1;
     required int64 AuthID = 2;
     required MessageEnvelope Envelope = 3;
 }

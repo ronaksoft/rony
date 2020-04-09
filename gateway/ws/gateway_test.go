@@ -185,10 +185,10 @@ func BenchmarkGatewayParallel(b *testing.B) {
 
 		for pb.Next() {
 			// for i := 0; i < 10; i++ {
-				wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
-				_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-				m, _ = wsutil.ReadServerMessage(conn, m)
-				m = m[:0]
+			wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+			_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+			m, _ = wsutil.ReadServerMessage(conn, m)
+			m = m[:0]
 			// }
 
 		}

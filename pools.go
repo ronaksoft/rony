@@ -83,7 +83,7 @@ func acquireRaftCommand() *RaftCommand {
 }
 
 func releaseRaftCommand(x *RaftCommand) {
-	x.ConnID = 0
+	x.Sender = x.Sender[:0]
 	x.AuthID = 0
 	x.Envelope = nil
 	x.Envelope.Message = x.Envelope.Message[:0]
