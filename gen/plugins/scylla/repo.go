@@ -37,8 +37,10 @@ func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 		validateModel(&m)
 		tbVarName := fmt.Sprintf("tb%s", strcase.ToCamel(m.Name))
 		tbValName := fmt.Sprintf("\"%s\"", strcase.ToSnake(m.Name))
-		qpVarName := fmt.Sprintf("qpGet%s", strcase.ToCamel(m.Name))
 		s.g.P(tbVarName, "=", tbValName)
+
+		// Define Get
+		qpVarName := fmt.Sprintf("qpGet%s", strcase.ToCamel(m.Name))
 		s.g.P(qpVarName, "=", "sync.Pool {")
 		s.g.In()
 		s.g.P("New: func() interface{} {")
@@ -58,6 +60,7 @@ func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 		s.g.Out()
 		s.g.P("}")
 
+		// Define Save
 		qpVarName = fmt.Sprintf("qpSave%s", strcase.ToCamel(m.Name))
 		s.g.P(qpVarName, "=", "sync.Pool {")
 		s.g.In()
@@ -80,12 +83,33 @@ func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 		s.g.Out()
 		s.g.P("}")
 
+		// Define Delete
+		qpVarName = fmt.Sprintf("qpDelete%s", strcase.ToCamel(m.Name))
+		s.g.P(qpVarName, "=", "sync.Pool {")
+		s.g.In()
+		s.g.P("New: func() interface{} {")
+		s.g.In()
+		s.g.Pns("stmt, name := qb.Delete(", tbVarName, ").")
+		s.g.P("Where(")
+		s.g.In()
+		for _, k := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
+			s.g.Pns("qb.Eq(\"", strcase.ToSnake(k), "\"),")
+		}
+		s.g.Out()
+		s.g.P(").ToCql()")
+		s.g.P("return gocqlx.Query(dbs.Query(stmt), name)")
+		s.g.Out()
+		s.g.P("},")
+		s.g.Out()
+		s.g.P("}")
+
 		for _, fk := range append(m.FilterKeys) {
 			tbVarName := fmt.Sprintf("tb%sBy%s", strcase.ToCamel(m.Name), strcase.ToCamel(fk.Name))
 			tbValName := fmt.Sprintf("\"%s_by_%s\"", strcase.ToSnake(m.Name), strcase.ToSnake(fk.Name))
-			qpVarName := fmt.Sprintf("qpGet%sBy%s", strcase.ToCamel(m.Name), strcase.ToCamel(fk.Name))
-
 			s.g.P(tbVarName, "=", tbValName)
+
+			// Define GetBy
+			qpVarName := fmt.Sprintf("qpGet%sBy%s", strcase.ToCamel(m.Name), strcase.ToCamel(fk.Name))
 			s.g.P(qpVarName, "=", "sync.Pool {")
 			s.g.In()
 			s.g.P("New: func() interface{} {")
@@ -123,6 +147,7 @@ func (s *RepoPlugin) Generate(desc *gen.Descriptor) {
 	s.generateSaveModel(desc)
 	s.generateGet(desc)
 	s.generateList(desc)
+	s.generateDelete(desc)
 
 }
 func (s *RepoPlugin) generateCreateTables(desc *gen.Descriptor) {
@@ -369,7 +394,41 @@ func (s *RepoPlugin) generateGet(desc *gen.Descriptor) {
 func (s *RepoPlugin) generateList(desc *gen.Descriptor) {
 
 }
-func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {}
+func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {
+	for _, m := range desc.Models {
+		args := strings.Builder{}
+		for idx, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
+			p, _ := m.GetProperty(pn)
+			if idx != 0 {
+				args.WriteRune(',')
+			}
+			args.WriteString(strcase.ToLowerCamel(p.Name))
+			args.WriteRune(' ')
+			if p.CheckOption(gen.Slice) {
+				args.WriteString("[]")
+			}
+			args.WriteString(p.Type)
+		}
+		s.g.Pns("func Delete", strcase.ToCamel(m.Name), "(", args.String(), ") error {")
+		s.g.In()
+		qpVarName := fmt.Sprintf("qpDelete%s", strcase.ToCamel(m.Name))
+		s.g.P(fmt.Sprintf("q := %s.Get().(*gocqlx.Queryx)", qpVarName))
+		binds := strings.Builder{}
+		for idx, pn := range append(m.PrimaryKey.PartitionKeys, m.PrimaryKey.ClusteringKeys...) {
+			if idx != 0 {
+				binds.WriteString(", ")
+			}
+			binds.WriteString(strcase.ToLowerCamel(pn))
+		}
+		s.g.P(fmt.Sprintf("q.Bind(%s)", binds.String()))
+		s.g.P("err := q.Exec()")
+		s.g.P(fmt.Sprintf("%s.Put(q)", qpVarName))
+		s.g.P("return err")
+		s.g.Out()
+		s.g.P("}")
+		s.g.Nl()
+	}
+}
 
 func (s *RepoPlugin) GeneratePrepend(desc *gen.Descriptor) {
 	s.g.P("package", strcase.ToLowerCamel(desc.Name))

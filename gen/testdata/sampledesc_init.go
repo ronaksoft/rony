@@ -37,6 +37,16 @@ var (
 			return gocqlx.Query(dbs.Query(stmt), name) 
 		}, 
 	} 
+	qpDeleteModel1 = sync.Pool { 
+		New: func() interface{} { 
+			stmt, name := qb.Delete(tbModel1).
+			Where( 
+				qb.Eq("p_1"),
+				qb.Eq("p_3"),
+			).ToCql() 
+			return gocqlx.Query(dbs.Query(stmt), name) 
+		}, 
+	} 
 	tbModel1ByP3 = "model_1_by_p_3" 
 	qpGetModel1ByP3 = sync.Pool { 
 		New: func() interface{} { 
@@ -65,6 +75,15 @@ var (
 			stmt, name := qb.Insert(tbModel2).
 			Columns("pq_1","data").
 			ToCql() 
+			return gocqlx.Query(dbs.Query(stmt), name) 
+		}, 
+	} 
+	qpDeleteModel2 = sync.Pool { 
+		New: func() interface{} { 
+			stmt, name := qb.Delete(tbModel2).
+			Where( 
+				qb.Eq("pq_1"),
+			).ToCql() 
 			return gocqlx.Query(dbs.Query(stmt), name) 
 		}, 
 	} 
@@ -232,5 +251,21 @@ func GetModel2(pQ1 int64) (*Model2, error) {
 	} 
 
 	return v, nil 
+} 
+
+func DeleteModel1(p1 string,p3 string) error {
+	q := qpDeleteModel1.Get().(*gocqlx.Queryx) 
+	q.Bind(p1, p3) 
+	err := q.Exec() 
+	qpDeleteModel1.Put(q) 
+	return err 
+} 
+
+func DeleteModel2(pQ1 int64) error {
+	q := qpDeleteModel2.Get().(*gocqlx.Queryx) 
+	q.Bind(pQ1) 
+	err := q.Exec() 
+	qpDeleteModel2.Put(q) 
+	return err 
 } 
 
