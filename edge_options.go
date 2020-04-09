@@ -15,8 +15,10 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+// Option
 type Option func(edge *EdgeServer)
 
+// WithReplicaSet
 func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
 	return func(edge *EdgeServer) {
 		edge.raftFSM = raftFSM{edge: edge}
@@ -27,18 +29,21 @@ func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
 	}
 }
 
+// WithShardSet
 func WithShardSet(shardSet uint32) Option {
 	return func(edge *EdgeServer) {
 		edge.shardSet = shardSet
 	}
 }
 
+// WithGossipPort
 func WithGossipPort(gossipPort int) Option {
 	return func(edge *EdgeServer) {
 		edge.gossipPort = gossipPort
 	}
 }
 
+// WithCustomerConstructorName will be used to give a human readable names to messages
 func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
 	return func(edge *EdgeServer) {
 		edge.getConstructorName = func(constructor int64) string {
@@ -52,12 +57,15 @@ func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
 	}
 }
 
+// WithDataPath set where the internal data for raft and gossip are stored.
 func WithDataPath(path string) Option {
 	return func(edge *EdgeServer) {
 		edge.dataPath = path
 	}
 }
 
+// WithWebsocketGateway set the gateway to websocket.
+// Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithWebsocketGateway(config websocketGateway.Config) Option {
 	return func(edge *EdgeServer) {
 		if edge.gatewayProtocol != gateway.Undefined {
@@ -77,6 +85,8 @@ func WithWebsocketGateway(config websocketGateway.Config) Option {
 	}
 }
 
+// WithHttpGateway set the gateway to http
+// Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithHttpGateway(config httpGateway.Config) Option {
 	return func(edge *EdgeServer) {
 		if edge.gatewayProtocol != gateway.Undefined {

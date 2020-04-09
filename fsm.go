@@ -15,6 +15,7 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+// raftFSM is the finite state machine which will be used when Raft is enabled.
 type raftFSM struct {
 	edge *EdgeServer
 }
@@ -41,16 +42,17 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 }
 
 func (fsm raftFSM) Snapshot() (raft.FSMSnapshot, error) {
-	return &snapshot{}, nil
+	return &raftSnapshot{}, nil
 }
 
 func (fsm raftFSM) Restore(io.ReadCloser) error {
 	return nil
 }
 
-type snapshot struct{}
+// raftSnapshot is used for snapshot of Raft logs
+type raftSnapshot struct{}
 
-func (s snapshot) Persist(sink raft.SnapshotSink) error {
+func (s raftSnapshot) Persist(sink raft.SnapshotSink) error {
 	_, err := sink.Write([]byte{})
 	if err != nil {
 		return err
@@ -58,5 +60,5 @@ func (s snapshot) Persist(sink raft.SnapshotSink) error {
 	return sink.Close()
 }
 
-func (s snapshot) Release() {
+func (s raftSnapshot) Release() {
 }

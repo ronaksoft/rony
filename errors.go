@@ -40,6 +40,7 @@ const (
 	ErrItemRequest    = "REQUEST"
 )
 
+// Errors
 var (
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
 	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")
@@ -49,6 +50,8 @@ var (
 	ErrRaftExecuteOnLeader       = errors.New("raft execute on leader")
 )
 
+
+// Wrap is used to wrap an internal error
 func Wrap(txt string, err error) error {
 	return errors.New(fmt.Sprintf("%s: %v", txt, err))
 }
