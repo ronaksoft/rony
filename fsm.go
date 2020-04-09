@@ -1,9 +1,7 @@
 package rony
 
 import (
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"github.com/hashicorp/raft"
-	"go.uber.org/zap"
 	"io"
 )
 
@@ -24,15 +22,14 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := acquireRaftCommand()
 	err := raftCmd.Unmarshal(raftLog.Data)
 	if err != nil {
-		log.Fatal("Error On Raft Apply",
-			zap.Int("Len", len(raftLog.Data)),
-			zap.Any("LogType", raftLog.Type),
-			zap.Uint64("Index", raftLog.Index),
-			zap.Uint64("Term", raftLog.Term),
-		)
+		return err
 	}
+	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.AuthID, nil)
+	dispatchCtx.FillEnvelope(raftCmd.Envelope.RequestID, raftCmd.Envelope.Constructor, raftCmd.Envelope.Message)
+	err = fsm.edge.execute(dispatchCtx)
+	releaseDispatchCtx(dispatchCtx)
 	releaseRaftCommand(raftCmd)
-	return nil
+	return err
 }
 
 func (fsm raftFSM) Snapshot() (raft.FSMSnapshot, error) {

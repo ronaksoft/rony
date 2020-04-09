@@ -246,12 +246,12 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	releaseClusterMessage(cm)
 
 	d.edge.rateLimitChan <- struct{}{}
-	go func(clusterMessage *ClusterMessage) {
+	go func() {
 		// TODO:: handle error, for instance we might send back an error to the sender
-		_ = d.edge.execute(dispatchCtx)
+		_ = d.edge.executePrepare(dispatchCtx)
 		releaseDispatchCtx(dispatchCtx)
 		<-d.edge.rateLimitChan
-	}(cm)
+	}()
 }
 
 func (d delegateNode) GetBroadcasts(overhead, limit int) [][]byte {

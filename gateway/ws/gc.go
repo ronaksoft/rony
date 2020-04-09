@@ -31,6 +31,9 @@ func newGC(gw *Gateway) *connGC {
 	bgConf.CleanWindow = time.Second
 	bgConf.Verbose = false
 	bgConf.OnRemoveWithReason = gc.onRemove
+	bgConf.Shards = 128
+	bgConf.MaxEntrySize = 8
+	bgConf.MaxEntriesInWindow = 100000
 	gc.bg, _ = bigcache.NewBigCache(bgConf)
 
 	go func() {

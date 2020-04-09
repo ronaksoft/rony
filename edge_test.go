@@ -143,7 +143,7 @@ func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer
 	return edge
 }
 
-func BenchmarkEdgeServerSerial(b *testing.B) {
+func BenchmarkEdgeServerGatewayMessageSerial(b *testing.B) {
 	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
@@ -166,7 +166,7 @@ func BenchmarkEdgeServerSerial(b *testing.B) {
 	}
 }
 
-func BenchmarkEdgeServerParallel(b *testing.B) {
+func BenchmarkEdgeServerGatewayMessageParallel(b *testing.B) {
 	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd"))
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &MessageEnvelope{}

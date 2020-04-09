@@ -111,7 +111,7 @@ func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
 }
 
-func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
+func (edge *EdgeServer) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
 			return ErrNotRaftLeader
@@ -132,7 +132,10 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 			return
 		}
 	}
-
+	err = edge.execute(dispatchCtx)
+	return err
+}
+func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 	waitGroup := acquireWaitGroup()
 	switch dispatchCtx.req.Constructor {
 	case C_MessageContainer:
@@ -240,8 +243,7 @@ func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data
 		releaseDispatchCtx(dispatchCtx)
 		return
 	}
-	err = edge.execute(dispatchCtx)
-
+	err = edge.executePrepare(dispatchCtx)
 	switch err {
 	case nil:
 	case ErrNotRaftLeader:

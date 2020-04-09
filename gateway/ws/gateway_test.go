@@ -104,7 +104,48 @@ func TestGateway(t *testing.T) {
 	})
 }
 
-func BenchmarkGateway(b *testing.B) {
+func BenchmarkGatewaySerial(b *testing.B) {
+	var err error
+	gw, err = websocketGateway.New(websocketGateway.Config{
+		MaxIdleTime:          time.Second * 3,
+		NewConnectionWorkers: 1,
+		MaxConcurrency:       1000,
+		ListenAddress:        ":81",
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
+	}
+	gw.Run()
+	time.Sleep(time.Second)
+	var (
+		m    []wsutil.Message
+		conn net.Conn
+	)
+	for try := 0; try < 5; try++ {
+		conn, _, _, err = ws.Dial(context.Background(), "ws://localhost:81")
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		// for i := 0; i < 10; i++ {
+		wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+		_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+		m, _ = wsutil.ReadServerMessage(conn, m)
+		m = m[:0]
+	}
+}
+func BenchmarkGatewayParallel(b *testing.B) {
 	var err error
 	gw, err = websocketGateway.New(websocketGateway.Config{
 		MaxIdleTime:          time.Second * 3,
@@ -143,12 +184,12 @@ func BenchmarkGateway(b *testing.B) {
 		}
 
 		for pb.Next() {
-			for i := 0; i < 10; i++ {
+			// for i := 0; i < 10; i++ {
 				wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
 				_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
 				m, _ = wsutil.ReadServerMessage(conn, m)
 				m = m[:0]
-			}
+			// }
 
 		}
 	})
