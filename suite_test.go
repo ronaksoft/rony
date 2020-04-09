@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoftware.com/ronak/rony/edge"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
@@ -36,16 +37,16 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(ctx *rony.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(ctx *rony.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte) (err error) {
+func (t testDispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err error) {
 	proto := &pb.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
@@ -63,8 +64,8 @@ func (t testDispatcher) DispatchRequest(ctx *rony.DispatchCtx, data []byte) (err
 
 func (t testDispatcher) DispatchClusterMessage(envelope *rony.MessageEnvelope) {}
 
-func initHandlers(edge *rony.EdgeServer) {
-	edge.AddHandler(100, func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
+func initHandlers(edgeServer *edge.Server) {
+	edgeServer.AddHandler(100, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -75,7 +76,7 @@ func initHandlers(edge *rony.EdgeServer) {
 		res.P1 = req.P1
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
-	edge.AddHandler(101, func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
+	edgeServer.AddHandler(101, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -95,19 +96,19 @@ func initHandlers(edge *rony.EdgeServer) {
 	})
 }
 
-func initEdgeServer(serverID string, clientPort int, opts ...rony.Option) *rony.EdgeServer {
+func initEdgeServer(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		rony.WithWebsocketGateway(websocketGateway.Config{
+		edge.WithWebsocketGateway(websocketGateway.Config{
 			NewConnectionWorkers: 1,
 			MaxConcurrency:       10,
 			MaxIdleTime:          0,
 			ListenAddress:        fmt.Sprintf(":%d", clientPort),
 		}),
 	)
-	edge := rony.NewEdgeServer(serverID, &testDispatcher{}, opts...)
-	initHandlers(edge)
+	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
+	initHandlers(edgeServer)
 
-	return edge
+	return edgeServer
 }
 
 func init() {
@@ -118,10 +119,10 @@ func init() {
 func TestEdgeServerSimple(t *testing.T) {
 	Convey("Simple Edge", t, func(c C) {
 		clientPort := 8080
-		edge := initEdgeServer("Adam", clientPort,
-			rony.WithDataPath("./_hdd"),
+		edgeServer := initEdgeServer("Adam", clientPort,
+			edge.WithDataPath("./_hdd"),
 		)
-		err := edge.Run()
+		err := edgeServer.Run()
 		c.So(err, ShouldBeNil)
 		time.Sleep(time.Second)
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
@@ -139,7 +140,7 @@ func TestEdgeServerSimple(t *testing.T) {
 			err = wsutil.WriteClientBinary(conn, bytes)
 			c.So(err, ShouldBeNil)
 		}
-		edge.Shutdown()
+		edgeServer.Shutdown()
 	})
 }
 
@@ -147,21 +148,21 @@ func TestEdgeServerRaft(t *testing.T) {
 	Convey("Replicated Edge", t, func(c C) {
 		clientPort1 := 8081
 		edge1 := initEdgeServer("Raft.01", clientPort1,
-			rony.WithDataPath("./_hdd/edge01"),
-			rony.WithReplicaSet(1, 9091, true),
-			rony.WithGossipPort(9081),
+			edge.WithDataPath("./_hdd/edge01"),
+			edge.WithReplicaSet(1, 9091, true),
+			edge.WithGossipPort(9081),
 		)
 		clientPort2 := 8082
 		edge2 := initEdgeServer("Raft.02", clientPort2,
-			rony.WithDataPath("./_hdd/edge02"),
-			rony.WithReplicaSet(1, 9092, false),
-			rony.WithGossipPort(9082),
+			edge.WithDataPath("./_hdd/edge02"),
+			edge.WithReplicaSet(1, 9092, false),
+			edge.WithGossipPort(9082),
 		)
 		clientPort3 := 8083
 		edge3 := initEdgeServer("Raft.03", clientPort3,
-			rony.WithDataPath("./_hdd/edge03"),
-			rony.WithReplicaSet(1, 9093, false),
-			rony.WithGossipPort(9083),
+			edge.WithDataPath("./_hdd/edge03"),
+			edge.WithReplicaSet(1, 9093, false),
+			edge.WithGossipPort(9083),
 		)
 
 		// Run Edge 01

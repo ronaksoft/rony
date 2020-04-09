@@ -1,6 +1,7 @@
-package rony
+package edge
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
@@ -16,11 +17,11 @@ import (
 */
 
 // Option
-type Option func(edge *EdgeServer)
+type Option func(edge *Server)
 
 // WithReplicaSet
 func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		edge.raftFSM = raftFSM{edge: edge}
 		edge.replicaSet = replicaSet
 		edge.raftEnabled = true
@@ -31,24 +32,24 @@ func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
 
 // WithShardSet
 func WithShardSet(shardSet uint32) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		edge.shardSet = shardSet
 	}
 }
 
 // WithGossipPort
 func WithGossipPort(gossipPort int) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		edge.gossipPort = gossipPort
 	}
 }
 
 // WithCustomerConstructorName will be used to give a human readable names to messages
 func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		edge.getConstructorName = func(constructor int64) string {
 			// Lookup internal messages first
-			n := ConstructorNames[constructor]
+			n := rony.ConstructorNames[constructor]
 			if len(n) > 0 {
 				return n
 			}
@@ -59,7 +60,7 @@ func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
 
 // WithDataPath set where the internal data for raft and gossip are stored.
 func WithDataPath(path string) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		edge.dataPath = path
 	}
 }
@@ -67,9 +68,9 @@ func WithDataPath(path string) Option {
 // WithWebsocketGateway set the gateway to websocket.
 // Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithWebsocketGateway(config websocketGateway.Config) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		if edge.gatewayProtocol != gateway.Undefined {
-			panic(ErrGatewayAlreadyInitialized)
+			panic(rony.ErrGatewayAlreadyInitialized)
 		}
 		gatewayWebsocket, err := websocketGateway.New(config)
 		if err != nil {
@@ -88,9 +89,9 @@ func WithWebsocketGateway(config websocketGateway.Config) Option {
 // WithHttpGateway set the gateway to http
 // Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithHttpGateway(config httpGateway.Config) Option {
-	return func(edge *EdgeServer) {
+	return func(edge *Server) {
 		if edge.gatewayProtocol != gateway.Undefined {
-			panic(ErrGatewayAlreadyInitialized)
+			panic(rony.ErrGatewayAlreadyInitialized)
 		}
 		gatewayHttp := httpGateway.New(config)
 		gatewayHttp.MessageHandler = edge.onGatewayMessage

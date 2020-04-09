@@ -1,7 +1,8 @@
-package rony
+package edge
 
 import (
 	"fmt"
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
@@ -32,8 +33,8 @@ const (
 type carrier struct {
 	ServerID        []byte
 	AuthID          int64
-	MessageEnvelope *MessageEnvelope
-	UpdateEnvelope  *UpdateEnvelope
+	MessageEnvelope *rony.MessageEnvelope
+	UpdateEnvelope  *rony.UpdateEnvelope
 	kind            byte
 }
 
@@ -49,15 +50,15 @@ type DispatchCtx struct {
 	authID   int64
 	serverID []byte
 	conn     gateway.Conn
-	req      *MessageEnvelope
-	edge     *EdgeServer
+	req      *rony.MessageEnvelope
+	edge     *Server
 	kind     byte
 }
 
-func newDispatchCtx(edge *EdgeServer) *DispatchCtx {
+func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		edge: edge,
-		req:  &MessageEnvelope{},
+		req:  &rony.MessageEnvelope{},
 	}
 }
 
@@ -207,7 +208,7 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 }
 
 func (ctx *RequestCtx) PushError(requestID uint64, code, item string) {
-	ctx.PushMessage(ctx.dispatchCtx.authID, requestID, C_Error, &Error{
+	ctx.PushMessage(ctx.dispatchCtx.authID, requestID, rony.C_Error, &rony.Error{
 		Code:  code,
 		Items: item,
 	})

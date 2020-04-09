@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"time"
 )
@@ -16,8 +17,8 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-func GenAskHandler(serverID string) rony.Handler {
-	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
+func GenAskHandler(serverID string) edge.Handler {
+	return func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 		req := pb.PoolAskRequest.Get()
 		defer pb.PoolAskRequest.Put(req)
 		res := pb.PoolAskResponse.Get()
@@ -37,8 +38,8 @@ func GenAskHandler(serverID string) rony.Handler {
 	}
 }
 
-func GenEchoHandler(serverID string) rony.Handler {
-	return func(ctx *rony.RequestCtx, in *rony.MessageEnvelope) {
+func GenEchoHandler(serverID string) edge.Handler {
+	return func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 		req := pb.PoolEchoRequest.Get()
 		defer pb.PoolEchoRequest.Put(req)
 		res := pb.PoolEchoResponse.Get()

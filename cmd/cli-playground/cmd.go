@@ -4,6 +4,7 @@ import (
 	context2 "context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoftware.com/ronak/rony/edge"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
@@ -28,10 +29,10 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-var Edges map[string]*rony.EdgeServer
+var Edges map[string]*edge.Server
 
 func init() {
-	Edges = make(map[string]*rony.EdgeServer)
+	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		StartCmd, StopCmd, ListCmd, JoinCmd, EchoCmd, BenchCmd, // ClusterMessageCmd,
 		MembersCmd,
@@ -57,23 +58,23 @@ var StartCmd = &cobra.Command{
 
 func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
 	if _, ok := Edges[serverID]; !ok {
-		opts := make([]rony.Option, 0)
+		opts := make([]edge.Option, 0)
 		opts = append(opts,
-			rony.WithWebsocketGateway(websocketGateway.Config{
+			edge.WithWebsocketGateway(websocketGateway.Config{
 				NewConnectionWorkers: 1,
 				MaxConcurrency:       1000,
 				MaxIdleTime:          0,
 				ListenAddress:        "0.0.0.0:0",
 			}),
-			rony.WithDataPath(filepath.Join("./_hdd", serverID)),
-			rony.WithGossipPort(port),
+			edge.WithDataPath(filepath.Join("./_hdd", serverID)),
+			edge.WithGossipPort(port),
 		)
 
 		if replicaSet != 0 {
-			opts = append(opts, rony.WithReplicaSet(replicaSet, port*10, bootstrap))
+			opts = append(opts, edge.WithReplicaSet(replicaSet, port*10, bootstrap))
 		}
 
-		Edges[serverID] = rony.NewEdgeServer(serverID, &dispatcher{}, opts...)
+		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
 		Edges[serverID].AddHandler(pb.C_EchoRequest, GenEchoHandler(serverID))
 		Edges[serverID].AddHandler(pb.C_AskRequest, GenAskHandler(serverID))
 		err := Edges[serverID].Run()

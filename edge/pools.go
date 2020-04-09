@@ -1,6 +1,7 @@
-package rony
+package edge
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"sync"
@@ -18,15 +19,15 @@ import (
 // MessageEnvelope Pool
 var messageEnvelopePool sync.Pool
 
-func acquireMessageEnvelope() *MessageEnvelope {
+func acquireMessageEnvelope() *rony.MessageEnvelope {
 	v := messageEnvelopePool.Get()
 	if v == nil {
-		return &MessageEnvelope{}
+		return &rony.MessageEnvelope{}
 	}
-	return v.(*MessageEnvelope)
+	return v.(*rony.MessageEnvelope)
 }
 
-func releaseMessageEnvelope(x *MessageEnvelope) {
+func releaseMessageEnvelope(x *rony.MessageEnvelope) {
 	x.Message = x.Message[:0]
 	x.Constructor = 0
 	x.RequestID = 0
@@ -36,15 +37,15 @@ func releaseMessageEnvelope(x *MessageEnvelope) {
 // UpdateEnvelope Pool
 var updateEnvelopePool sync.Pool
 
-func acquireUpdateEnvelope() *UpdateEnvelope {
+func acquireUpdateEnvelope() *rony.UpdateEnvelope {
 	v := updateEnvelopePool.Get()
 	if v == nil {
-		return &UpdateEnvelope{}
+		return &rony.UpdateEnvelope{}
 	}
-	return v.(*UpdateEnvelope)
+	return v.(*rony.UpdateEnvelope)
 }
 
-func releaseUpdateEnvelope(x *UpdateEnvelope) {
+func releaseUpdateEnvelope(x *rony.UpdateEnvelope) {
 	x.Update = x.Update[:0]
 	x.UpdateID = 0
 	x.UCount = 0
@@ -55,17 +56,17 @@ func releaseUpdateEnvelope(x *UpdateEnvelope) {
 
 var clusterMessagePool sync.Pool
 
-func acquireClusterMessage() *ClusterMessage {
+func acquireClusterMessage() *rony.ClusterMessage {
 	v := clusterMessagePool.Get()
 	if v == nil {
-		return &ClusterMessage{
-			Envelope: &MessageEnvelope{},
+		return &rony.ClusterMessage{
+			Envelope: &rony.MessageEnvelope{},
 		}
 	}
-	return v.(*ClusterMessage)
+	return v.(*rony.ClusterMessage)
 }
 
-func releaseClusterMessage(x *ClusterMessage) {
+func releaseClusterMessage(x *rony.ClusterMessage) {
 	x.AuthID = 0
 	x.Sender = x.Sender[:0]
 	x.Envelope.Constructor = 0
@@ -76,17 +77,17 @@ func releaseClusterMessage(x *ClusterMessage) {
 
 var raftCommandPool sync.Pool
 
-func acquireRaftCommand() *RaftCommand {
+func acquireRaftCommand() *rony.RaftCommand {
 	v := raftCommandPool.Get()
 	if v == nil {
-		return &RaftCommand{
-			Envelope: &MessageEnvelope{},
+		return &rony.RaftCommand{
+			Envelope: &rony.MessageEnvelope{},
 		}
 	}
-	return v.(*RaftCommand)
+	return v.(*rony.RaftCommand)
 }
 
-func releaseRaftCommand(x *RaftCommand) {
+func releaseRaftCommand(x *rony.RaftCommand) {
 	x.Sender = x.Sender[:0]
 	x.AuthID = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
@@ -137,7 +138,7 @@ func releaseRequestCtx(ctx *RequestCtx) {
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *EdgeServer, conn gateway.Conn, streamID int64, authID int64, serverID []byte) *DispatchCtx {
+func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, authID int64, serverID []byte) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)

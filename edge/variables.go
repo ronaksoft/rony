@@ -1,4 +1,4 @@
-package rony
+package edge
 
 import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"

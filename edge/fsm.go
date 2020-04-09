@@ -1,7 +1,8 @@
-package rony
+package edge
 
 import (
 	"bytes"
+	"git.ronaksoftware.com/ronak/rony"
 	"github.com/hashicorp/raft"
 	"io"
 )
@@ -17,7 +18,7 @@ import (
 
 // raftFSM is the finite state machine which will be used when Raft is enabled.
 type raftFSM struct {
-	edge *EdgeServer
+	edge *Server
 }
 
 func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
@@ -30,7 +31,7 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	// We dont execute the command, if we are the sender server
 	if bytes.Equal(raftCmd.Sender, fsm.edge.serverID) {
 		releaseRaftCommand(raftCmd)
-		return ErrRaftExecuteOnLeader
+		return rony.ErrRaftExecuteOnLeader
 	}
 
 	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.AuthID, raftCmd.Sender)

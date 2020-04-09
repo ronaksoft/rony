@@ -11,8 +11,8 @@ import "git.ronaksoftware.com/ronak/rony/internal/pools"
    Copyright Ronak Software Group 2018
 */
 
-//go:generate protoc -I=.  --gogofaster_out=. msg.proto
 //go:generate protoc -I=. --gorony_out=. msg.proto
+//go:generate protoc -I=./vendor -I=.  --gogofaster_out=. msg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )

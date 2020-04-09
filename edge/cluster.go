@@ -1,7 +1,8 @@
-package rony
+package edge
 
 import (
 	"fmt"
+	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
@@ -22,19 +23,19 @@ import (
 */
 
 // ClusterMembers returns a list of all the discovered nodes in the cluster
-func (edge *EdgeServer) ClusterMembers() []*ClusterMember {
+func (edge *Server) ClusterMembers() []*ClusterMember {
 	return edge.cluster.Members()
 }
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *EdgeServer) ClusterSend(serverID []byte, authID int64, envelope *MessageEnvelope) error {
+func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.MessageEnvelope) error {
 	m := edge.cluster.GetByID(tools.ByteToStr(serverID))
 	if m == nil {
-		return ErrNotFound
+		return rony.ErrNotFound
 	}
 
-	clusterMessage := &ClusterMessage{
+	clusterMessage := &rony.ClusterMessage{
 		AuthID:   authID,
 		Sender:   edge.serverID,
 		Envelope: envelope,
@@ -49,7 +50,7 @@ func (edge *EdgeServer) ClusterSend(serverID []byte, authID int64, envelope *Mes
 	return err
 }
 
-func (edge *EdgeServer) updateCluster(timeout time.Duration) error {
+func (edge *Server) updateCluster(timeout time.Duration) error {
 	return edge.gossip.UpdateNode(timeout)
 }
 
@@ -64,12 +65,12 @@ type ClusterMember struct {
 	Addr        net.IP
 	Port        uint16
 	RaftPort    int
-	RaftState   RaftState
+	RaftState   rony.RaftState
 	node        *memberlist.Node
 }
 
 func convertMember(sm *memberlist.Node) *ClusterMember {
-	edgeNode := EdgeNode{}
+	edgeNode := rony.EdgeNode{}
 	err := edgeNode.Unmarshal(sm.Meta)
 	if err != nil {
 		log.Warn("Error On ConvertMember",
@@ -183,7 +184,7 @@ func (c *Cluster) Members() []*ClusterMember {
 }
 
 type delegateEvents struct {
-	edge *EdgeServer
+	edge *Server
 }
 
 func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
@@ -205,11 +206,11 @@ func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
 }
 
 type delegateNode struct {
-	edge *EdgeServer
+	edge *Server
 }
 
 func (d delegateNode) NodeMeta(limit int) []byte {
-	n := EdgeNode{
+	n := rony.EdgeNode{
 		ServerID:    d.edge.serverID,
 		ReplicaSet:  d.edge.replicaSet,
 		ShardSet:    d.edge.shardSet,
@@ -217,10 +218,10 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 		ShardMin:    d.edge.shardMin,
 		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
-		RaftState:   RaftState_None,
+		RaftState:   rony.RaftState_None,
 	}
 	if d.edge.raftEnabled {
-		n.RaftState = RaftState(d.edge.raft.State() + 1)
+		n.RaftState = rony.RaftState(d.edge.raft.State() + 1)
 	}
 
 	b, _ := n.Marshal()

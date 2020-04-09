@@ -1,4 +1,4 @@
-package rony
+package edge
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ type EdgeStats struct {
 }
 
 // Stats exports some internal metrics data packed in 'EdgeStats' struct
-func (edge *EdgeServer) Stats() *EdgeStats {
+func (edge *Server) Stats() *EdgeStats {
 	s := EdgeStats{
 		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalNode().Addr.String(), edge.gossip.LocalNode().Port),
 		Members:         len(edge.gossip.Members()),

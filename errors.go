@@ -50,7 +50,6 @@ var (
 	ErrRaftExecuteOnLeader       = errors.New("raft execute on leader")
 )
 
-
 // Wrap is used to wrap an internal error
 func Wrap(txt string, err error) error {
 	return errors.New(fmt.Sprintf("%s: %v", txt, err))

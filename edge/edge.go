@@ -1,7 +1,8 @@
-package rony
+package edge
 
 import (
 	"fmt"
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
@@ -29,18 +30,17 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-//go:generate protoc -I=./vendor -I=.  --gogofaster_out=. msg.proto
-type Handler func(ctx *RequestCtx, in *MessageEnvelope)
+type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
 // Dispatcher
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *UpdateEnvelope)
+	DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *rony.UpdateEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchMessage(ctx *DispatchCtx, authID int64, envelope *MessageEnvelope)
+	DispatchMessage(ctx *DispatchCtx, authID int64, envelope *rony.MessageEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
@@ -48,8 +48,8 @@ type Dispatcher interface {
 	DispatchRequest(ctx *DispatchCtx, data []byte) (err error)
 }
 
-// EdgeServer
-type EdgeServer struct {
+// Server
+type Server struct {
 	// General
 	serverID        []byte
 	replicaSet      uint32
@@ -80,8 +80,8 @@ type EdgeServer struct {
 	badgerStore   *raftbadger.BadgerStore
 }
 
-func NewEdgeServer(serverID string, dispatcher Dispatcher, opts ...Option) *EdgeServer {
-	edgeServer := &EdgeServer{
+func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
+	edgeServer := &Server{
 		handlers:   make(map[int64][]Handler),
 		serverID:   []byte(serverID),
 		dispatcher: dispatcher,
@@ -103,18 +103,18 @@ func NewEdgeServer(serverID string, dispatcher Dispatcher, opts ...Option) *Edge
 	return edgeServer
 }
 
-func (edge *EdgeServer) GetServerID() string {
+func (edge *Server) GetServerID() string {
 	return string(edge.serverID)
 }
 
-func (edge *EdgeServer) AddHandler(constructor int64, handler ...Handler) {
+func (edge *Server) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
 }
 
-func (edge *EdgeServer) executePrepare(dispatchCtx *DispatchCtx) (err error) {
+func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() != raft.Leader {
-			return ErrNotRaftLeader
+			return rony.ErrNotRaftLeader
 		}
 		raftCmd := acquireRaftCommand()
 		raftCmd.AuthID = dispatchCtx.authID
@@ -136,11 +136,11 @@ func (edge *EdgeServer) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 	err = edge.execute(dispatchCtx)
 	return err
 }
-func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
+func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	waitGroup := acquireWaitGroup()
 	switch dispatchCtx.req.Constructor {
-	case C_MessageContainer:
-		x := &MessageContainer{}
+	case rony.C_MessageContainer:
+		x := &rony.MessageContainer{}
 		err = x.Unmarshal(dispatchCtx.req.Message)
 		if err != nil {
 			return
@@ -171,7 +171,7 @@ func (edge *EdgeServer) execute(dispatchCtx *DispatchCtx) (err error) {
 	releaseWaitGroup(waitGroup)
 	return nil
 }
-func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *MessageEnvelope) {
+func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
 	defer edge.recoverPanic(dispatchCtx)
 
 	startTime := time.Now()
@@ -184,7 +184,7 @@ func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *Reques
 	}
 	handlers, ok := edge.handlers[in.Constructor]
 	if !ok {
-		requestCtx.PushError(in.RequestID, ErrCodeInvalid, ErrItemHandler)
+		requestCtx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemHandler)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (edge *EdgeServer) executeFunc(dispatchCtx *DispatchCtx, requestCtx *Reques
 
 	return
 }
-func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx) {
+func (edge *Server) recoverPanic(dispatchCtx *DispatchCtx) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
 			zap.ByteString("ServerID", edge.serverID),
@@ -236,7 +236,7 @@ func (edge *EdgeServer) recoverPanic(dispatchCtx *DispatchCtx) {
 	}
 }
 
-func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
+func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
 
 	err := edge.dispatcher.DispatchRequest(dispatchCtx, data)
@@ -247,29 +247,29 @@ func (edge *EdgeServer) onGatewayMessage(conn gateway.Conn, streamID int64, data
 	err = edge.executePrepare(dispatchCtx)
 	switch err {
 	case nil:
-	case ErrNotRaftLeader:
-		edge.onError(dispatchCtx, ErrCodeUnavailable, ErrItemRaftLeader)
+	case rony.ErrNotRaftLeader:
+		edge.onError(dispatchCtx, rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 	default:
-		edge.onError(dispatchCtx, ErrCodeInternal, ErrItemServer)
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
 	releaseDispatchCtx(dispatchCtx)
 }
-func (edge *EdgeServer) onError(dispatchCtx *DispatchCtx, code, item string) {
+func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
-	ErrorMessage(envelope, code, item)
+	rony.ErrorMessage(envelope, code, item)
 	edge.dispatcher.DispatchMessage(dispatchCtx, dispatchCtx.authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
-func (edge *EdgeServer) onConnect(connID uint64)   {}
-func (edge *EdgeServer) onClose(conn gateway.Conn) {}
-func (edge *EdgeServer) onFlush(conn gateway.Conn) [][]byte {
+func (edge *Server) onConnect(connID uint64)   {}
+func (edge *Server) onClose(conn gateway.Conn) {}
+func (edge *Server) onFlush(conn gateway.Conn) [][]byte {
 	return nil
 }
 
 // Run runs the selected gateway, if gateway is not setup it returns error
-func (edge *EdgeServer) Run() (err error) {
+func (edge *Server) Run() (err error) {
 	if edge.gatewayProtocol == gateway.Undefined {
-		return ErrGatewayNotInitialized
+		return rony.ErrGatewayNotInitialized
 	}
 
 	log.Info("Edge Server Started",
@@ -305,11 +305,11 @@ func (edge *EdgeServer) Run() (err error) {
 	}()
 	return
 }
-func (edge *EdgeServer) runGateway() {
+func (edge *Server) runGateway() {
 	edge.gateway.Run()
 	return
 }
-func (edge *EdgeServer) runGossip() error {
+func (edge *Server) runGossip() error {
 	dirPath := filepath.Join(edge.dataPath, "gossip")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
 
@@ -328,7 +328,7 @@ func (edge *EdgeServer) runGossip() error {
 
 	return edge.updateCluster(gossipUpdateTimeout)
 }
-func (edge *EdgeServer) runRaft(notifyChan chan bool) (err error) {
+func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 	// Initialize LogStore for Raft
 	dirPath := filepath.Join(edge.dataPath, "raft")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
@@ -393,13 +393,13 @@ func (edge *EdgeServer) runRaft(notifyChan chan bool) (err error) {
 }
 
 // JoinCluster joins this node to one or more cluster members
-func (edge *EdgeServer) JoinCluster(addr ...string) error {
+func (edge *Server) JoinCluster(addr ...string) error {
 	_, err := edge.gossip.Join(addr)
 	return err
 }
-func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
+func (edge *Server) joinRaft(nodeID, addr string) error {
 	if !edge.raftEnabled {
-		return ErrRaftNotSet
+		return rony.ErrRaftNotSet
 	}
 	futureConfig := edge.raft.GetConfiguration()
 	if err := futureConfig.Error(); err != nil {
@@ -425,7 +425,7 @@ func (edge *EdgeServer) joinRaft(nodeID, addr string) error {
 }
 
 // Shutdown gracefully shutdown the services
-func (edge *EdgeServer) Shutdown() {
+func (edge *Server) Shutdown() {
 	// First shutdown gateway to not accept
 	edge.gateway.Shutdown()
 

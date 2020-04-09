@@ -1,7 +1,8 @@
-package rony
+package edge
 
 import (
 	"fmt"
+	"git.ronaksoftware.com/ronak/rony"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
@@ -70,18 +71,18 @@ func (m mockGatewayConn) Persistent() bool {
 var (
 	receivedMessages int32
 	receivedUpdates  int32
-	raftServers      map[string]*EdgeServer
-	raftLeader       *EdgeServer
+	raftServers      map[string]*Server
+	raftLeader       *Server
 )
 
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *UpdateEnvelope) {
+func (t testDispatcher) DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(ctx *DispatchCtx, authID int64, envelope *MessageEnvelope) {
+func (t testDispatcher) DispatchMessage(ctx *DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
@@ -100,8 +101,8 @@ func (t testDispatcher) DispatchRequest(ctx *DispatchCtx, data []byte) (err erro
 	return
 }
 
-func initHandlers(edge *EdgeServer) {
-	edge.AddHandler(100, func(ctx *RequestCtx, in *MessageEnvelope) {
+func initHandlers(edge *Server) {
+	edge.AddHandler(100, func(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		req := &pb.ReqSimple1{}
 		res := &pb.ResSimple1{}
 		err := req.Unmarshal(in.Message)
@@ -112,7 +113,7 @@ func initHandlers(edge *EdgeServer) {
 		res.P1 = req.P1
 		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
 	})
-	edge.AddHandler(101, func(ctx *RequestCtx, in *MessageEnvelope) {
+	edge.AddHandler(101, func(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		req := pb.PoolReqSimple1.Get()
 		defer pb.PoolReqSimple1.Put(req)
 		res := pb.PoolResSimple1.Get()
@@ -133,7 +134,7 @@ func initHandlers(edge *EdgeServer) {
 	})
 }
 
-func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer {
+func initEdgeServer(serverID string, clientPort int, opts ...Option) *Server {
 	opts = append(opts,
 		WithWebsocketGateway(websocketGateway.Config{
 			NewConnectionWorkers: 1,
@@ -142,7 +143,7 @@ func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer
 			ListenAddress:        fmt.Sprintf(":%d", clientPort),
 		}),
 	)
-	edge := NewEdgeServer(serverID, &testDispatcher{}, opts...)
+	edge := NewServer(serverID, &testDispatcher{}, opts...)
 	initHandlers(edge)
 
 	return edge
@@ -150,7 +151,7 @@ func initEdgeServer(serverID string, clientPort int, opts ...Option) *EdgeServer
 
 func initRaft() {
 	if raftServers == nil {
-		raftServers = make(map[string]*EdgeServer)
+		raftServers = make(map[string]*Server)
 	}
 	ids := []string{"AdamRaft", "EveRaft", "AbelRaft"}
 	for idx, id := range ids {
@@ -188,7 +189,7 @@ func BenchmarkEdgeServerMessageSerial(b *testing.B) {
 	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd/adam"))
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &MessageEnvelope{}
+	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
 	envelope.Message, _ = req.Marshal()
@@ -210,7 +211,7 @@ func BenchmarkEdgeServerMessageSerial(b *testing.B) {
 func BenchmarkEdgeServerMessageParallel(b *testing.B) {
 	edgeServer := initEdgeServer("Adam", 8080, WithDataPath("./_hdd/adam"))
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &MessageEnvelope{}
+	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
 	envelope.Message, _ = req.Marshal()
@@ -235,7 +236,7 @@ func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
 	initRaft()
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &MessageEnvelope{}
+	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
 	envelope.Message, _ = req.Marshal()
@@ -259,7 +260,7 @@ func BenchmarkEdgeServerWithRaftMessageParallel(b *testing.B) {
 	initRaft()
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &MessageEnvelope{}
+	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
 	envelope.Constructor = 101
 	envelope.Message, _ = req.Marshal()
