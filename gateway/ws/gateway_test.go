@@ -4,12 +4,14 @@ import (
 	"context"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -34,21 +36,22 @@ func init() {
 }
 
 func TestGateway(t *testing.T) {
+	runtime.GOMAXPROCS(1)
 	Convey("Test Websocket Gateway", t, func() {
 		Convey("Run the Server", func(c C) {
 			var err error
 			gw, err = websocketGateway.New(websocketGateway.Config{
 				MaxIdleTime:          time.Second * 3,
 				NewConnectionWorkers: 1,
-				MaxConcurrency:       1000,
+				MaxConcurrency:       16,
 				ListenAddress:        ":81",
 			})
 			c.So(err, ShouldBeNil)
 
 			gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
-				c.So(data, ShouldHaveLength, 4)
-				err := conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
-				c.So(err, ShouldBeNil)
+				// c.So(data, ShouldHaveLength, 4)
+				_ = conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
+				// c.So(err, ShouldBeNil)
 			}
 			gw.Run()
 			time.Sleep(time.Second)
@@ -57,7 +60,7 @@ func TestGateway(t *testing.T) {
 		Convey("Run the Clients", func(c C) {
 			var td, tc int64
 			wg := sync.WaitGroup{}
-			for j := 0; j < 10; j++ {
+			for j := 0; j < 500; j++ {
 				wg.Add(1)
 				go func(j int) {
 					var conn net.Conn
@@ -70,15 +73,15 @@ func TestGateway(t *testing.T) {
 					}
 					c.So(err, ShouldBeNil)
 					m := make([]wsutil.Message, 0, 10)
-					for i := 0; i < 5; i++ {
-						err := wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+					for i := 0; i < 50; i++ {
+						err := wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, tools.StrToByte("ABCD"))
 						if err != nil {
 							c.Println(err)
 						}
 						// c.So(err, ShouldBeNil)
 						st := time.Now()
 						_ = conn.SetDeadline(time.Now().Add(time.Second))
-						m, err = wsutil.ReadServerMessage(conn, m)
+						m, err = wsutil.ReadMessage(conn, ws.StateClientSide, m)
 						atomic.AddInt64(&tc, 1)
 						atomic.AddInt64(&td, int64(time.Now().Sub(st)))
 					}
@@ -108,7 +111,7 @@ func BenchmarkGatewaySerial(b *testing.B) {
 	var err error
 	gw, err = websocketGateway.New(websocketGateway.Config{
 		MaxIdleTime:          time.Second * 3,
-		NewConnectionWorkers: 1,
+		NewConnectionWorkers: 10,
 		MaxConcurrency:       1000,
 		ListenAddress:        ":81",
 	})
@@ -135,22 +138,29 @@ func BenchmarkGatewaySerial(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
 	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// for i := 0; i < 10; i++ {
-		wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+		err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, tools.StrToByte("ABdwdwewefwefwefwewefwefwefweCD"))
+		if err != nil {
+			b.Fatal(err)
+		}
 		_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-		m, _ = wsutil.ReadServerMessage(conn, m)
+		m, _ = wsutil.ReadMessage(conn, ws.StateClientSide, m)
+		for idx := range m {
+			pools.Bytes.Put(m[idx].Payload)
+		}
 		m = m[:0]
 	}
+	b.StopTimer()
 }
 func BenchmarkGatewayParallel(b *testing.B) {
+	b.SetParallelism(10)
 	var err error
 	gw, err = websocketGateway.New(websocketGateway.Config{
-		MaxIdleTime:          time.Second * 3,
+		MaxIdleTime:          time.Second * 30,
 		NewConnectionWorkers: 1,
-		MaxConcurrency:       1000,
+		MaxConcurrency:       runtime.NumCPU() * 2,
 		ListenAddress:        ":81",
 	})
 	if err != nil {
@@ -163,10 +173,9 @@ func BenchmarkGatewayParallel(b *testing.B) {
 	gw.Run()
 	time.Sleep(time.Second)
 
-	b.ResetTimer()
-	b.ReportAllocs()
 
-	b.SetParallelism(10)
+	b.ReportAllocs()
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		var (
 			m    []wsutil.Message
@@ -182,15 +191,23 @@ func BenchmarkGatewayParallel(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-
+		defer conn.Close()
 		for pb.Next() {
-			// for i := 0; i < 10; i++ {
-			wsutil.WriteClientBinary(conn, tools.StrToByte("ABCD"))
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, tools.StrToByte("ABewerwerwewerwerwerwerwerwerwCD"))
+			if err != nil {
+				b.Fatal(err)
+			}
 			_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
-			m, _ = wsutil.ReadServerMessage(conn, m)
-			m = m[:0]
-			// }
+			m, err = wsutil.ReadMessage(conn, ws.StateClientSide, m)
+			if err != nil {
+				b.Fatal(err)
+			}
 
+			for idx := range m {
+				pools.Bytes.Put(m[idx].Payload)
+			}
+			m = m[:0]
 		}
 	})
+	b.StopTimer()
 }

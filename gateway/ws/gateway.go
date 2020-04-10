@@ -2,11 +2,11 @@ package websocketGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
+	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/valyala/tcplisten"
 	"go.uber.org/zap"
@@ -232,16 +232,19 @@ func (g *Gateway) removeConnection(wcID uint64) {
 }
 
 func (g *Gateway) readPump() {
+	var (
+		err error
+	)
 	defer g.waitGroupReaders.Done()
+	ms := make([]wsutil.Message, 0, 10)
 	for wc := range g.connsInQ {
-		var ms []wsutil.Message
-
 		_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
-		ms, err := wsutil.ReadClientMessage(wc.conn, ms)
+		ms = ms[:0]
+		ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
 				ce.Write(
-					zap.Int64("authID", wc.AuthID),
+					zap.Int64("AuthID", wc.AuthID),
 					zap.Error(err),
 				)
 			}
@@ -263,7 +266,7 @@ func (g *Gateway) readPump() {
 				if wc.GetAuthID() != 0 {
 					wc.Flush()
 				}
-				err = wsutil.WriteServerMessage(wc.conn, ws.OpPong, ms[idx].Payload)
+				err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
 				if err != nil {
 					log.Warn("Error On Write OpPing", zap.Error(err))
 				}
@@ -277,6 +280,7 @@ func (g *Gateway) readPump() {
 			default:
 				log.Warn("Unknown OpCode")
 			}
+			pools.Bytes.Put(ms[idx].Payload)
 		}
 
 	}
@@ -296,7 +300,7 @@ func (g *Gateway) writePump() {
 		case ws.OpBinary:
 			// Try to write to the wire in WEBSOCKET_WRITE_SHORT_WAIT time
 			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-			err := wsutil.WriteServerMessage(wr.wc.conn, ws.OpBinary, wr.payload)
+			err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpBinary, wr.payload)
 			if err != nil {
 				if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
 					ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
@@ -309,7 +313,7 @@ func (g *Gateway) writePump() {
 			pools.Bytes.Put(wr.payload)
 		case ws.OpPing:
 			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-			err := wsutil.WriteServerMessage(wr.wc.conn, ws.OpPong, nil)
+			err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpPong, nil)
 			if err != nil {
 				g.removeConnection(wr.wc.ConnID)
 			}
