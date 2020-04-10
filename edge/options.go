@@ -76,7 +76,7 @@ func WithWebsocketGateway(config websocketGateway.Config) Option {
 		if err != nil {
 			panic(err)
 		}
-		gatewayWebsocket.MessageHandler = edge.onGatewayMessage
+		gatewayWebsocket.MessageHandler = edge.HandleGatewayMessage
 		gatewayWebsocket.ConnectHandler = edge.onConnect
 		gatewayWebsocket.CloseHandler = edge.onClose
 		gatewayWebsocket.FlushFunc = edge.onFlush
@@ -94,7 +94,7 @@ func WithHttpGateway(config httpGateway.Config) Option {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
 		gatewayHttp := httpGateway.New(config)
-		gatewayHttp.MessageHandler = edge.onGatewayMessage
+		gatewayHttp.MessageHandler = edge.HandleGatewayMessage
 		gatewayHttp.FlushFunc = edge.onFlush
 
 		edge.gatewayProtocol = gateway.HTTP

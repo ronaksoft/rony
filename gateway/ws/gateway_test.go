@@ -154,6 +154,7 @@ func BenchmarkGatewaySerial(b *testing.B) {
 	}
 	b.StopTimer()
 }
+
 func BenchmarkGatewayParallel(b *testing.B) {
 	b.SetParallelism(10)
 	var err error
@@ -172,7 +173,6 @@ func BenchmarkGatewayParallel(b *testing.B) {
 	}
 	gw.Run()
 	time.Sleep(time.Second)
-
 
 	b.ReportAllocs()
 	b.ResetTimer()

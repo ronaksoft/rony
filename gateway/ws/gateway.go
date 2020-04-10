@@ -44,15 +44,13 @@ type Gateway struct {
 	// Internal Controlling Params
 	newConnWorkers     int
 	maxConcurrency     int
-	maxIdleTime        time.Duration
+	maxIdleTime        int64
 	listener           net.Listener
 	listenOn           string
 	conns              map[uint64]*Conn
 	connsMtx           sync.RWMutex
 	connsTotal         int32
 	connsLastID        uint64
-	connsInQ           chan *Conn
-	connsOutQ          chan writeRequest
 	connGC             *connGC
 	poller             netpoll.Poller
 	stop               int32
@@ -69,15 +67,13 @@ func New(config Config) (*Gateway, error) {
 	g.newConnWorkers = config.NewConnectionWorkers
 	g.maxConcurrency = config.MaxConcurrency
 	g.conns = make(map[uint64]*Conn, 100000)
-	g.connsInQ = make(chan *Conn, config.MaxConcurrency)
-	g.connsOutQ = make(chan writeRequest, config.MaxConcurrency)
 	g.waitGroupWriters = &sync.WaitGroup{}
 	g.waitGroupReaders = &sync.WaitGroup{}
 	g.waitGroupAcceptors = &sync.WaitGroup{}
 	if config.MaxIdleTime == 0 {
-		g.maxIdleTime = defaultConnIdleTime
+		g.maxIdleTime = int64(defaultConnIdleTime.Seconds())
 	} else {
-		g.maxIdleTime = config.MaxIdleTime
+		g.maxIdleTime = int64(config.MaxIdleTime)
 	}
 	g.connGC = newGC(g)
 	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
@@ -182,7 +178,7 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 		ConnID:       connID,
 		conn:         conn,
 		gateway:      g,
-		lastActivity: time.Now(),
+		lastActivity: time.Now().Unix(),
 		flushChan:    make(chan bool, 1),
 	}
 	g.connsMtx.Lock()
@@ -231,94 +227,91 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	}
 }
 
-func (g *Gateway) readPump() {
+func (g *Gateway) readPump(wc *Conn) {
+	defer g.waitGroupReaders.Done()
 	var (
 		err error
+		ms  []wsutil.Message
 	)
-	defer g.waitGroupReaders.Done()
-	ms := make([]wsutil.Message, 0, 10)
-	for wc := range g.connsInQ {
-		_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
-		ms = ms[:0]
-		ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
-		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
-				ce.Write(
-					zap.Int64("AuthID", wc.AuthID),
-					zap.Error(err),
-				)
+
+	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
+	ms = ms[:0]
+	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
+	if err != nil {
+		if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
+			ce.Write(
+				zap.Int64("AuthID", wc.AuthID),
+				zap.Error(err),
+			)
+		}
+		// remove the connection from the list
+		wc.gateway.removeConnection(wc.ConnID)
+		return
+	}
+	atomic.AddUint64(&g.cntReads, 1)
+	_ = wc.gateway.poller.Resume(wc.desc)
+
+	// handle messages
+	for idx := range ms {
+		switch ms[idx].OpCode {
+		case ws.OpPong:
+			if wc.GetAuthID() != 0 {
+				wc.Flush()
 			}
+		case ws.OpPing:
+			if wc.GetAuthID() != 0 {
+				wc.Flush()
+			}
+			err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
+			if err != nil {
+				log.Warn("Error On Write OpPing", zap.Error(err))
+			}
+		case ws.OpBinary:
+			atomic.AddUint64(&wc.Counters.IncomingCount, 1)
+			atomic.AddUint64(&wc.Counters.IncomingBytes, uint64(len(ms[idx].Payload)))
+			g.MessageHandler(wc, 0, ms[idx].Payload)
+		case ws.OpClose:
 			// remove the connection from the list
 			wc.gateway.removeConnection(wc.ConnID)
-			continue
+		default:
+			log.Warn("Unknown OpCode")
 		}
-		atomic.AddUint64(&g.cntReads, 1)
-		_ = wc.gateway.poller.Resume(wc.desc)
-
-		// handle messages
-		for idx := range ms {
-			switch ms[idx].OpCode {
-			case ws.OpPong:
-				if wc.GetAuthID() != 0 {
-					wc.Flush()
-				}
-			case ws.OpPing:
-				if wc.GetAuthID() != 0 {
-					wc.Flush()
-				}
-				err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
-				if err != nil {
-					log.Warn("Error On Write OpPing", zap.Error(err))
-				}
-			case ws.OpBinary:
-				atomic.AddUint64(&wc.Counters.IncomingCount, 1)
-				atomic.AddUint64(&wc.Counters.IncomingBytes, uint64(len(ms[idx].Payload)))
-				g.MessageHandler(wc, 0, ms[idx].Payload)
-			case ws.OpClose:
-				// remove the connection from the list
-				wc.gateway.removeConnection(wc.ConnID)
-			default:
-				log.Warn("Unknown OpCode")
-			}
-			pools.Bytes.Put(ms[idx].Payload)
-		}
-
+		pools.Bytes.Put(ms[idx].Payload)
 	}
-
 }
 
-func (g *Gateway) writePump() {
+func (g *Gateway) writePump(wr writeRequest) {
 	defer g.waitGroupWriters.Done()
-	for wr := range g.connsOutQ {
-		if wr.wc.closed {
-			continue
-		}
-		atomic.AddUint64(&wr.wc.Counters.OutgoingCount, 1)
-		atomic.AddUint64(&wr.wc.Counters.OutgoingBytes, uint64(len(wr.payload)))
 
-		switch wr.opCode {
-		case ws.OpBinary:
-			// Try to write to the wire in WEBSOCKET_WRITE_SHORT_WAIT time
-			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-			err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpBinary, wr.payload)
-			if err != nil {
-				if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
-					ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
-				}
-				g.removeConnection(wr.wc.ConnID)
-			} else {
-				atomic.AddUint64(&g.cntWrites, 1)
+	if wr.wc.closed {
+		return
+	}
+	atomic.AddUint64(&wr.wc.Counters.OutgoingCount, 1)
+	atomic.AddUint64(&wr.wc.Counters.OutgoingBytes, uint64(len(wr.payload)))
+
+	switch wr.opCode {
+	case ws.OpBinary:
+		// Try to write to the wire in WEBSOCKET_WRITE_SHORT_WAIT time
+		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
+		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpBinary, wr.payload)
+		if err != nil {
+			if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
+				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
 			}
-			// Put the bytes into the pool to be reused again
-			pools.Bytes.Put(wr.payload)
-		case ws.OpPing:
-			_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-			err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpPong, nil)
-			if err != nil {
-				g.removeConnection(wr.wc.ConnID)
-			}
+			g.removeConnection(wr.wc.ConnID)
+		} else {
+			atomic.AddUint64(&g.cntWrites, 1)
+		}
+		// Put the bytes into the pool to be reused again
+		pools.Bytes.Put(wr.payload)
+	case ws.OpPing:
+		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
+		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpPong, nil)
+		if err != nil {
+			g.removeConnection(wr.wc.ConnID)
 		}
 	}
+
 }
 
 // Run
@@ -343,13 +336,6 @@ func (g *Gateway) Run() {
 		g.waitGroupAcceptors.Add(1)
 		go g.connectionAcceptor()
 	}
-	for i := 0; i < g.maxConcurrency; i++ {
-		g.waitGroupReaders.Add(1)
-		go g.readPump()
-
-		g.waitGroupWriters.Add(1)
-		go g.writePump()
-	}
 }
 
 // Shutdown
@@ -366,13 +352,11 @@ func (g *Gateway) Shutdown() {
 
 	// 2. Close all readPumps
 	log.Info("Read Pumpers are closing")
-	close(g.connsInQ)
 	g.waitGroupReaders.Wait()
 	log.Info("Read Pumpers all closed")
 
 	// 3. Close all writePumps
 	log.Info("Write Pumpers are closing")
-	close(g.connsOutQ)
 	g.waitGroupWriters.Wait()
 	log.Info("Write Pumpers all closed")
 
@@ -401,17 +385,4 @@ func (g *Gateway) GetConnection(connID uint64) *Conn {
 // TotalConnections
 func (g *Gateway) TotalConnections() int32 {
 	return atomic.LoadInt32(&g.connsTotal)
-}
-
-// Stats
-func (g *Gateway) Stats() Stats {
-	return Stats{
-		InQueue:  len(g.connsInQ),
-		OutQueue: len(g.connsOutQ),
-	}
-}
-
-type Stats struct {
-	InQueue  int
-	OutQueue int
 }

@@ -17,9 +17,10 @@ import (
 */
 
 type connGC struct {
-	bg     *bigcache.BigCache
-	gw     *Gateway
-	inChan chan uint64
+	bg      *bigcache.BigCache
+	gw      *Gateway
+	inChan  chan uint64
+	timeNow int64
 }
 
 func newGC(gw *Gateway) *connGC {
@@ -27,7 +28,7 @@ func newGC(gw *Gateway) *connGC {
 		gw:     gw,
 		inChan: make(chan uint64, 1000),
 	}
-	bgConf := bigcache.DefaultConfig(gw.maxIdleTime)
+	bgConf := bigcache.DefaultConfig(time.Duration(gw.maxIdleTime) * time.Second)
 	bgConf.CleanWindow = time.Second
 	bgConf.Verbose = false
 	bgConf.OnRemoveWithReason = gc.onRemove
@@ -43,6 +44,13 @@ func newGC(gw *Gateway) *connGC {
 			_ = gc.bg.Set(tools.ByteToStr(b), b)
 		}
 	}()
+
+	go func() {
+		for {
+			gc.timeNow = time.Now().Unix()
+			time.Sleep(time.Second)
+		}
+	}()
 	return gc
 }
 
@@ -51,7 +59,7 @@ func (gc *connGC) onRemove(key string, entry []byte, reason bigcache.RemoveReaso
 	case bigcache.Expired:
 		connID := binary.BigEndian.Uint64(entry)
 		if wsConn := gc.gw.GetConnection(connID); wsConn != nil {
-			if time.Now().Sub(wsConn.lastActivity) > gc.gw.maxIdleTime {
+			if gc.timeNow-wsConn.lastActivity > gc.gw.maxIdleTime {
 				gc.gw.removeConnection(connID)
 			} else {
 				gc.monitorConnection(connID)

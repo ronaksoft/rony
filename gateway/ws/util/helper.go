@@ -61,7 +61,6 @@ func ReadMessage(r io.Reader, s ws.State, m []Message) ([]Message, error) {
 	return append(m, Message{OpCode: h.OpCode, Payload: p}), nil
 }
 
-
 // WriteMessage is a helper function that writes message to the w. It
 // constructs single frame with given operation code and payload.
 // It uses given state to prepare side-dependent things, like cipher

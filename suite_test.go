@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
-	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	. "github.com/smartystreets/goconvey/convey"
-	"go.uber.org/zap"
 	"os"
-	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -30,136 +26,60 @@ import (
 */
 
 var (
-	receivedMessages int32
-	receivedUpdates  int32
+	clientPort = 8080
 )
-
-type testDispatcher struct {
-}
-
-func (t testDispatcher) DispatchUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
-	atomic.AddInt32(&receivedUpdates, 1)
-}
-
-func (t testDispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
-	log.Warn("Message Received", zap.Uint64("ReqID", envelope.RequestID))
-	atomic.AddInt32(&receivedMessages, 1)
-}
-
-func (t testDispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err error) {
-	proto := &pb.ProtoMessage{}
-	err = proto.Unmarshal(data)
-	if err != nil {
-		return
-	}
-	envelope := &rony.MessageEnvelope{}
-	err = envelope.Unmarshal(proto.Payload)
-	if err != nil {
-		return
-	}
-	ctx.FillEnvelope(envelope.RequestID, envelope.Constructor, envelope.Message)
-	ctx.SetAuthID(proto.AuthID)
-	return
-}
-
-func (t testDispatcher) DispatchClusterMessage(envelope *rony.MessageEnvelope) {}
-
-func initHandlers(edgeServer *edge.Server) {
-	edgeServer.AddHandler(100, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := &pb.ReqSimple1{}
-		res := &pb.ResSimple1{}
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(in.RequestID, "Invalid", "Proto")
-			return
-		}
-		res.P1 = req.P1
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
-	})
-	edgeServer.AddHandler(101, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := &pb.ReqSimple1{}
-		res := &pb.ResSimple1{}
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(in.RequestID, "Invalid", "Proto")
-			return
-		}
-		res.P1 = req.P1
-
-		ts := time.Now().Unix()
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
-		for i := int64(10); i < 20; i++ {
-			ctx.PushUpdate(ctx.AuthID(), i, 301, ts, &pb.UpdateSimple1{
-				P1: tools.StrToByte(tools.Int64ToStr(i)),
-			})
-		}
-	})
-}
-
-func initEdgeServer(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
-	opts = append(opts,
-		edge.WithWebsocketGateway(websocketGateway.Config{
-			NewConnectionWorkers: 1,
-			MaxConcurrency:       10,
-			MaxIdleTime:          0,
-			ListenAddress:        fmt.Sprintf(":%d", clientPort),
-		}),
-	)
-	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
-	initHandlers(edgeServer)
-
-	return edgeServer
-}
 
 func init() {
 	_ = os.MkdirAll("./_hdd", os.ModePerm)
 	testEnv.Init()
+	testEnv.EdgeServer = testEnv.InitEdgeServer("Adam", clientPort,
+		edge.WithDataPath("./_hdd"),
+	)
+	err := testEnv.EdgeServer.Run()
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second)
 }
 
 func TestEdgeServerSimple(t *testing.T) {
 	Convey("Simple Edge", t, func(c C) {
-		clientPort := 8080
-		edgeServer := initEdgeServer("Adam", clientPort,
-			edge.WithDataPath("./_hdd"),
-		)
-		err := edgeServer.Run()
-		c.So(err, ShouldBeNil)
-		time.Sleep(time.Second)
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		c.So(err, ShouldBeNil)
 		for i := int64(1); i <= 10; i++ {
 			req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(i))}
-			envelope := &rony.MessageEnvelope{}
-			envelope.RequestID = tools.RandomUint64()
-			envelope.Constructor = 101
+			envelope := &rony.MessageEnvelope{
+				RequestID:   tools.RandomUint64(),
+				Constructor: 101,
+			}
 			envelope.Message, _ = req.Marshal()
 			proto := &pb.ProtoMessage{}
 			proto.AuthID = i
 			proto.Payload, _ = envelope.Marshal()
 			bytes, _ := proto.Marshal()
-			err = wsutil.WriteClientBinary(conn, bytes)
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, bytes)
 			c.So(err, ShouldBeNil)
 		}
-		edgeServer.Shutdown()
+		testEnv.EdgeServer.Shutdown()
 	})
 }
 
 func TestEdgeServerRaft(t *testing.T) {
 	Convey("Replicated Edge", t, func(c C) {
 		clientPort1 := 8081
-		edge1 := initEdgeServer("Raft.01", clientPort1,
+		edge1 := testEnv.InitEdgeServer("Raft.01", clientPort1,
 			edge.WithDataPath("./_hdd/edge01"),
 			edge.WithReplicaSet(1, 9091, true),
 			edge.WithGossipPort(9081),
 		)
 		clientPort2 := 8082
-		edge2 := initEdgeServer("Raft.02", clientPort2,
+		edge2 := testEnv.InitEdgeServer("Raft.02", clientPort2,
 			edge.WithDataPath("./_hdd/edge02"),
 			edge.WithReplicaSet(1, 9092, false),
 			edge.WithGossipPort(9082),
 		)
 		clientPort3 := 8083
-		edge3 := initEdgeServer("Raft.03", clientPort3,
+		edge3 := testEnv.InitEdgeServer("Raft.03", clientPort3,
 			edge.WithDataPath("./_hdd/edge03"),
 			edge.WithReplicaSet(1, 9093, false),
 			edge.WithGossipPort(9083),
@@ -206,4 +126,41 @@ func TestEdgeServerRaft(t *testing.T) {
 
 		time.Sleep(10 * time.Second)
 	})
+}
+
+func BenchmarkServer(b *testing.B) {
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(3232343434))}
+	envelope := &rony.MessageEnvelope{}
+	envelope.RequestID = tools.RandomUint64()
+	envelope.Constructor = 101
+	envelope.Message, _ = req.Marshal()
+	proto := &pb.ProtoMessage{}
+	proto.AuthID = tools.RandomInt64(0)
+	proto.Payload, _ = envelope.Marshal()
+	bytes, _ := proto.Marshal()
+	clientPort := 8080
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(p *testing.PB) {
+		var (
+			ms []wsutil.Message
+		)
+		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
+		if err != nil {
+			b.Fatal(err)
+		}
+		for p.Next() {
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, bytes)
+			if err != nil {
+				b.Error("Write", err)
+			}
+			ms, err = wsutil.ReadMessage(conn, ws.StateClientSide, ms)
+			if err != nil {
+				b.Error("Read", err)
+			}
+			ms = ms[:0]
+		}
+	})
+	b.StopTimer()
 }

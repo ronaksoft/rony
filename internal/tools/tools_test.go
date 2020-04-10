@@ -2,7 +2,6 @@ package tools
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"runtime"
 	"testing"
 	"time"
@@ -16,10 +15,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2018
 */
-
-func init() {
-	testEnv.Init()
-}
 
 func BenchmarkRandomInt64(b *testing.B) {
 	b.ReportAllocs()

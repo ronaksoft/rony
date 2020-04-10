@@ -41,7 +41,7 @@ type Conn struct {
 
 	// Internals
 	gateway      *Gateway
-	lastActivity time.Time
+	lastActivity int64
 	conn         net.Conn
 	desc         *netpoll.Desc
 	writeErrors  int32
@@ -98,21 +98,10 @@ func (wc *Conn) startEvent(event netpoll.Event) {
 		return
 	}
 	if event&netpoll.EventRead != 0 {
-		wc.lastActivity = time.Now()
-		select {
-		case wc.gateway.connsInQ <- wc:
-			if ce := log.Check(log.DebugLevel, "Websocket StartRead"); ce != nil {
-				ce.Write(
-					zap.Uint64("ConnID", wc.ConnID),
-					zap.Int64("authID", wc.AuthID),
-					zap.String("ClientType", wc.ClientType),
-					zap.String("IP", wc.ClientIP),
-				)
-			}
-		default:
-			log.Info("Websocket Dropped, Busy Server")
-			// wc.gateway.removeConnection(wc.ConnID)
-		}
+		wc.lastActivity = time.Now().Unix()
+		// TODO:: rate limit this
+		wc.gateway.waitGroupReaders.Add(1)
+		wc.gateway.readPump(wc)
 	}
 
 }
@@ -125,17 +114,14 @@ func (wc *Conn) SendBinary(streamID int64, payload []byte) error {
 	if wc.closed {
 		return ErrWriteToClosedConn
 	}
-
-	select {
-	case wc.gateway.connsOutQ <- writeRequest{
+	wc.gateway.waitGroupWriters.Add(1)
+	p := pools.Bytes.GetLen(len(payload))
+	copy(p, payload)
+	wc.gateway.writePump(writeRequest{
 		wc:      wc,
-		payload: payload,
+		payload: p,
 		opCode:  ws.OpBinary,
-	}:
-	default:
-		return ErrWriteToFullBufferedConn
-
-	}
+	})
 	return nil
 }
 
