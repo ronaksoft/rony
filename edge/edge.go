@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"time"
@@ -456,4 +457,14 @@ func (edge *Server) Shutdown() {
 
 	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
+}
+
+// Shutdown blocks until any of the signals has been called
+func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, signals...)
+
+	// Wait for signal
+	<-ch
+	edge.Shutdown()
 }

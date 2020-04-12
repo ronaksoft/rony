@@ -8,7 +8,6 @@ import (
 	"github.com/valyala/tcplisten"
 	"net"
 	"net/http"
-	"time"
 )
 
 /*
@@ -22,10 +21,9 @@ import (
 
 // Config
 type Config struct {
-	Concurrency    int
-	RequestTimeout time.Duration
-	ListenAddress  string
-	MaxBodySize    int
+	Concurrency   int
+	ListenAddress string
+	MaxBodySize   int
 }
 
 // Gateway
@@ -37,14 +35,12 @@ type Gateway struct {
 	listenOn    string
 	concurrency int
 	maxBodySize int
-	reqTimeout  time.Duration
 }
 
 // New
 func New(config Config) *Gateway {
 	g := new(Gateway)
 	g.listenOn = config.ListenAddress
-	g.reqTimeout = config.RequestTimeout
 	g.concurrency = config.Concurrency
 	g.maxBodySize = config.MaxBodySize
 	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {}
