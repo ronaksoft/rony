@@ -26,12 +26,13 @@ func (p *poolProtoMessage) Get() *ProtoMessage {
 	if !ok {
 		return &ProtoMessage{}
 	}
-	x.AuthID = 0
-	x.MessageKey = nil
 	return x
 }
 
 func (p *poolProtoMessage) Put(x *ProtoMessage) {
+	x.AuthID = 0
+	x.MessageKey = x.MessageKey[:0]
+	x.Payload = x.Payload[:0]
 	p.pool.Put(x)
 }
 
@@ -132,6 +133,7 @@ func (p *poolReqSimple1) Get() *ReqSimple1 {
 }
 
 func (p *poolReqSimple1) Put(x *ReqSimple1) {
+	x.P1 = x.P1[:0]
 	p.pool.Put(x)
 }
 
@@ -152,6 +154,7 @@ func (p *poolUpdateSimple1) Get() *UpdateSimple1 {
 }
 
 func (p *poolUpdateSimple1) Put(x *UpdateSimple1) {
+	x.P1 = x.P1[:0]
 	p.pool.Put(x)
 }
 
@@ -192,6 +195,7 @@ func (p *poolResSimple1) Get() *ResSimple1 {
 }
 
 func (p *poolResSimple1) Put(x *ResSimple1) {
+	x.P1 = x.P1[:0]
 	p.pool.Put(x)
 }
 

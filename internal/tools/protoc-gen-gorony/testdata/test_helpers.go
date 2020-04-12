@@ -47,6 +47,8 @@ func (p *poolMessage2) Get() *Message2 {
 		return &Message2{}
 	}
 	x.Param1 = 0
+	x.P2 = x.P2[:0]
+	x.P3 = x.P3[:0]
 	return x
 }
 

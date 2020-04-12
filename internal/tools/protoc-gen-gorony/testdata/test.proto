@@ -9,4 +9,6 @@ message Message1 {
 
 message Message2 {
     optional fixed32 Param1 = 1;
+    optional bytes P2 = 2;
+    repeated int32 P3 = 3;
 }

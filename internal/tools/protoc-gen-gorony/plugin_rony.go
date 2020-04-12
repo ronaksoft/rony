@@ -55,15 +55,6 @@ func (g *GenPools) Generate(file *generator.FileDescriptor) {
 		g.g.P(fmt.Sprintf("return &%s{}", *mt.Name))
 		g.g.Out()
 		g.g.P("}")
-
-		for _, ft := range mt.Field {
-			if *ft.Label == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
-				g.g.P(fmt.Sprintf("x.%s = %s", *ft.Name, zeroValue(ft.Type)))
-			}
-			if *ft.Label == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-				g.g.P(fmt.Sprintf("x.%s = x.%s[:0]", *ft.Name, *ft.Name))
-			}
-		}
 		g.g.P("return x")
 		g.g.Out()
 		g.g.P("}")
@@ -71,6 +62,13 @@ func (g *GenPools) Generate(file *generator.FileDescriptor) {
 
 		g.g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", *mt.Name, *mt.Name))
 		g.g.In()
+		for _, ft := range mt.Field {
+			if *ft.Label == descriptor.FieldDescriptorProto_LABEL_REPEATED || *ft.Type == descriptor.FieldDescriptorProto_TYPE_BYTES {
+				g.g.P(fmt.Sprintf("x.%s = x.%s[:0]", *ft.Name, *ft.Name))
+			} else if *ft.Label == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
+				g.g.P(fmt.Sprintf("x.%s = %s", *ft.Name, zeroValue(ft.Type)))
+			}
+		}
 		g.g.P("p.pool.Put(x)")
 		g.g.Out()
 		g.g.P("}")

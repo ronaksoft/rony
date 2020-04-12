@@ -30,6 +30,7 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 }
 
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
+	x.Message = x.Message[:0]
 	p.pool.Put(x)
 }
 
@@ -50,6 +51,7 @@ func (p *poolUpdateEnvelope) Get() *UpdateEnvelope {
 }
 
 func (p *poolUpdateEnvelope) Put(x *UpdateEnvelope) {
+	x.Update = x.Update[:0]
 	p.pool.Put(x)
 }
 
@@ -66,11 +68,11 @@ func (p *poolMessageContainer) Get() *MessageContainer {
 	if !ok {
 		return &MessageContainer{}
 	}
-	x.Envelopes = x.Envelopes[:0]
 	return x
 }
 
 func (p *poolMessageContainer) Put(x *MessageContainer) {
+	x.Envelopes = x.Envelopes[:0]
 	p.pool.Put(x)
 }
 
@@ -111,6 +113,7 @@ func (p *poolClusterMessage) Get() *ClusterMessage {
 }
 
 func (p *poolClusterMessage) Put(x *ClusterMessage) {
+	x.Sender = x.Sender[:0]
 	p.pool.Put(x)
 }
 
@@ -131,6 +134,7 @@ func (p *poolRaftCommand) Get() *RaftCommand {
 }
 
 func (p *poolRaftCommand) Put(x *RaftCommand) {
+	x.Sender = x.Sender[:0]
 	p.pool.Put(x)
 }
 
@@ -147,16 +151,17 @@ func (p *poolEdgeNode) Get() *EdgeNode {
 	if !ok {
 		return &EdgeNode{}
 	}
+	return x
+}
+
+func (p *poolEdgeNode) Put(x *EdgeNode) {
+	x.ServerID = x.ServerID[:0]
 	x.ReplicaSet = 0
 	x.ShardSet = 0
 	x.RaftPort = 0
 	x.ShardMin = 0
 	x.ShardMax = 0
 	x.RaftState = 0
-	return x
-}
-
-func (p *poolEdgeNode) Put(x *EdgeNode) {
 	p.pool.Put(x)
 }
 
