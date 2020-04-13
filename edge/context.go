@@ -197,7 +197,7 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 	protoSize := proto.Size()
 	if protoSize > cap(envelope.Message) {
 		pools.Bytes.Put(envelope.Message)
-		envelope.Message = pools.Bytes.GetLen(proto.Size())
+		envelope.Message = pools.Bytes.GetLen(protoSize)
 	} else {
 		envelope.Message = envelope.Message[:protoSize]
 	}
@@ -225,7 +225,7 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 	protoSize := proto.Size()
 	if protoSize > cap(envelope.Message) {
 		pools.Bytes.Put(envelope.Message)
-		envelope.Message = pools.Bytes.GetLen(proto.Size())
+		envelope.Message = pools.Bytes.GetLen(protoSize)
 	} else {
 		envelope.Message = envelope.Message[:protoSize]
 	}
@@ -255,7 +255,7 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts 
 	protoSize := proto.Size()
 	if protoSize > cap(envelope.Update) {
 		pools.Bytes.Put(envelope.Update)
-		envelope.Update = pools.Bytes.GetLen(proto.Size())
+		envelope.Update = pools.Bytes.GetLen(protoSize)
 	} else {
 		envelope.Update = envelope.Update[:protoSize]
 	}
