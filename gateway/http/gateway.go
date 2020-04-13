@@ -59,8 +59,8 @@ func (g *Gateway) Run() {
 	tcpConfig := tcplisten.Config{
 		ReusePort:   false,
 		FastOpen:    true,
-		DeferAccept: false,
-		Backlog:     8192,
+		DeferAccept: true,
+		Backlog:     2048,
 	}
 	listener, err := tcpConfig.NewListener("tcp4", g.listenOn)
 	if err != nil {
@@ -87,7 +87,6 @@ func (g *Gateway) Run() {
 				}
 			}
 		}
-
 	}()
 }
 
