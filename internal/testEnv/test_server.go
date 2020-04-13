@@ -121,7 +121,7 @@ func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.O
 func InitEdgeServerWithHttp(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithHttpGateway(httpGateway.Config{
-			Concurrency:   100000,
+			Concurrency:   1 << 20,
 			ListenAddress: fmt.Sprintf(":%d", clientPort),
 			MaxBodySize:   1 << 22,
 		}),

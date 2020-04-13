@@ -96,7 +96,6 @@ func WithHttpGateway(config httpGateway.Config) Option {
 		gatewayHttp := httpGateway.New(config)
 		gatewayHttp.MessageHandler = edge.HandleGatewayMessage
 		gatewayHttp.FlushFunc = edge.onFlush
-
 		edge.gatewayProtocol = gateway.HTTP
 		edge.gateway = gatewayHttp
 		return

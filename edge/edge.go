@@ -239,7 +239,6 @@ func (edge *Server) recoverPanic(dispatchCtx *DispatchCtx) {
 
 func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
-
 	err := edge.dispatcher.DispatchRequest(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)

@@ -26,6 +26,10 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+var (
+	serverIsRunning bool
+)
+
 func init() {
 	_ = os.MkdirAll("./_hdd", os.ModePerm)
 	testEnv.Init()
@@ -131,7 +135,7 @@ func TestEdgeServerRaftWebsocket(t *testing.T) {
 }
 
 func TestEdgeServerSimpleHttp(t *testing.T) {
-	clientPort := 8088
+	clientPort := 6051
 	edgeServer := testEnv.InitEdgeServerWithHttp("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
 	)
@@ -162,7 +166,19 @@ func TestEdgeServerSimpleHttp(t *testing.T) {
 	})
 }
 
-func BenchmarkServer(b *testing.B) {
+func BenchmarkServerWithWebsocket(b *testing.B) {
+	clientPort := 6050
+	if !serverIsRunning {
+		serverIsRunning = true
+		edgeServer := testEnv.InitEdgeServerWithWebsocket("BenchWS", clientPort,
+			edge.WithDataPath("./_hdd"),
+		)
+		err := edgeServer.Run()
+		if err != nil {
+			b.Fatal(err)
+		}
+		time.Sleep(time.Second * 2)
+	}
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(3232343434))}
 	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
@@ -172,7 +188,6 @@ func BenchmarkServer(b *testing.B) {
 	proto.AuthID = tools.RandomInt64(0)
 	proto.Payload, _ = envelope.Marshal()
 	bytes, _ := proto.Marshal()
-	clientPort := 8080
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -197,4 +212,53 @@ func BenchmarkServer(b *testing.B) {
 		}
 	})
 	b.StopTimer()
+}
+
+func BenchmarkServerWithHttp(b *testing.B) {
+	httpClient := fasthttp.Client{
+		MaxConnsPerHost: 1000000,
+	}
+	clientPort := 6050
+	if !serverIsRunning {
+		serverIsRunning = true
+		edgeServer := testEnv.InitEdgeServerWithHttp("BenchWS", clientPort,
+			edge.WithDataPath("./_hdd"),
+		)
+		err := edgeServer.Run()
+		if err != nil {
+			b.Fatal(err)
+		}
+		time.Sleep(time.Second * 2)
+	}
+	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(3232343434))}
+	envelope := &rony.MessageEnvelope{}
+	envelope.RequestID = tools.RandomUint64()
+	envelope.Constructor = 101
+	envelope.Message, _ = req.Marshal()
+	proto := &pb.ProtoMessage{}
+	proto.AuthID = tools.RandomInt64(0)
+	proto.Payload, _ = envelope.Marshal()
+	bytes, _ := proto.Marshal()
+
+	testEnv.ResetCounters()
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			req := fasthttp.AcquireRequest()
+			res := fasthttp.AcquireResponse()
+			req.SetBody(bytes)
+			req.SetRequestURI(fmt.Sprintf("http://127.0.0.1:%d", clientPort))
+			req.Header.SetMethod("POST")
+			req.Header.SetContentType("application/protobuf")
+			err := httpClient.Do(req, res)
+			if err != nil {
+				b.Error("Post", err)
+			}
+			fasthttp.ReleaseRequest(req)
+			fasthttp.ReleaseResponse(res)
+		}
+	})
+	b.StopTimer()
+	fmt.Println(testEnv.ReceivedMessages(), testEnv.ReceivedMessages())
 }

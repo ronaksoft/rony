@@ -1,6 +1,7 @@
 package httpGateway
 
 import (
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
@@ -43,7 +44,9 @@ func New(config Config) *Gateway {
 	g.listenOn = config.ListenAddress
 	g.concurrency = config.Concurrency
 	g.maxBodySize = config.MaxBodySize
-	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {}
+	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+		fmt.Println("Request Received")
+	}
 	g.FlushFunc = func(c gateway.Conn) [][]byte {
 		return nil
 	}
@@ -71,7 +74,6 @@ func (g *Gateway) Run() {
 			Handler:            g.requestHandler,
 			DisableKeepalive:   true,
 			MaxRequestBodySize: g.maxBodySize,
-			// MaxConnsPerIP:    500,
 		}
 		for {
 			err := server.Serve(listener)
@@ -90,6 +92,7 @@ func (g *Gateway) Run() {
 }
 
 func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
+	req.SetConnectionClose()
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	req.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	req.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
@@ -126,8 +129,9 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		ClientIP:   clientIP,
 		ClientType: clientType,
 	}
-	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 
+
+	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 }
 
 func (g *Gateway) Shutdown() {}
