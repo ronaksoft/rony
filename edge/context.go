@@ -201,7 +201,11 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 	} else {
 		envelope.Message = envelope.Message[:protoSize]
 	}
-	_, _ = proto.MarshalTo(envelope.Message)
+	_, err := proto.MarshalTo(envelope.Message)
+	if err != nil {
+		log.Error("Error On Marshaling Message", zap.Error(err))
+		return
+	}
 
 	ctx.dispatchCtx.edge.dispatcher.DispatchMessage(ctx.dispatchCtx, authID, envelope)
 	releaseMessageEnvelope(envelope)
@@ -255,7 +259,11 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts 
 	} else {
 		envelope.Update = envelope.Update[:protoSize]
 	}
-	_, _ = proto.MarshalTo(envelope.Update)
+	_, err := proto.MarshalTo(envelope.Update)
+	if err != nil {
+		log.Error("Error On Marshaling Update", zap.Error(err))
+		return
+	}
 
 	ctx.dispatchCtx.edge.dispatcher.DispatchUpdate(ctx.dispatchCtx, authID, envelope)
 	releaseUpdateEnvelope(envelope)
