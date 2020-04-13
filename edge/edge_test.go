@@ -26,7 +26,7 @@ var (
 	raftLeader  *edge.Server
 )
 
-func initRaft() {
+func initRaftWithWebsocket() {
 	if raftServers == nil {
 		raftServers = make(map[string]*edge.Server)
 	}
@@ -37,7 +37,7 @@ func initRaft() {
 			if idx == 0 {
 				bootstrap = true
 			}
-			edgeServer := testEnv.InitEdgeServer(id, 8080+idx,
+			edgeServer := testEnv.InitEdgeServerWithWebsocket(id, 8080+idx,
 				edge.WithDataPath(filepath.Join("./_hdd/", id)),
 				edge.WithReplicaSet(1, 9080+idx, bootstrap),
 				edge.WithGossipPort(7080+idx),
@@ -63,7 +63,7 @@ func initRaft() {
 }
 
 func BenchmarkEdgeServerMessageSerial(b *testing.B) {
-	edgeServer := testEnv.InitEdgeServer("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
+	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &rony.MessageEnvelope{}
@@ -86,7 +86,7 @@ func BenchmarkEdgeServerMessageSerial(b *testing.B) {
 }
 
 func BenchmarkEdgeServerMessageParallel(b *testing.B) {
-	edgeServer := testEnv.InitEdgeServer("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
+	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &rony.MessageEnvelope{}
 	envelope.RequestID = tools.RandomUint64()
@@ -110,7 +110,7 @@ func BenchmarkEdgeServerMessageParallel(b *testing.B) {
 
 func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
 	log.SetLevel(log.ErrorLevel)
-	initRaft()
+	initRaftWithWebsocket()
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &rony.MessageEnvelope{}
@@ -134,7 +134,7 @@ func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
 
 func BenchmarkEdgeServerWithRaftMessageParallel(b *testing.B) {
 	log.SetLevel(log.ErrorLevel)
-	initRaft()
+	initRaftWithWebsocket()
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &rony.MessageEnvelope{}

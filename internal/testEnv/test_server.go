@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
+	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
@@ -25,7 +26,6 @@ import (
 var (
 	receivedMessages int32
 	receivedUpdates  int32
-	EdgeServer       *edge.Server
 )
 
 type testDispatcher struct {
@@ -103,7 +103,7 @@ func initHandlers(edgeServer *edge.Server) {
 	})
 }
 
-func InitEdgeServer(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
+func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithWebsocketGateway(websocketGateway.Config{
 			NewConnectionWorkers: 1,
@@ -116,4 +116,30 @@ func InitEdgeServer(serverID string, clientPort int, opts ...edge.Option) *edge.
 	initHandlers(edgeServer)
 
 	return edgeServer
+}
+
+func InitEdgeServerWithHttp(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
+	opts = append(opts,
+		edge.WithHttpGateway(httpGateway.Config{
+			Concurrency:   100000,
+			ListenAddress: fmt.Sprintf(":%d", clientPort),
+			MaxBodySize:   1 << 22,
+		}),
+	)
+	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
+	initHandlers(edgeServer)
+
+	return edgeServer
+}
+
+func ResetCounters() {
+	atomic.StoreInt32(&receivedMessages, 0)
+	atomic.StoreInt32(&receivedUpdates, 0)
+}
+func ReceivedMessages() int32 {
+	return atomic.LoadInt32(&receivedMessages)
+}
+
+func ReceivedUpdates() int32 {
+	return atomic.LoadInt32(&receivedUpdates)
 }

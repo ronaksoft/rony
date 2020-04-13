@@ -11,6 +11,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/valyala/fasthttp"
 	"os"
 	"testing"
 	"time"
@@ -25,24 +26,23 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-var (
-	clientPort = 8080
-)
-
 func init() {
 	_ = os.MkdirAll("./_hdd", os.ModePerm)
 	testEnv.Init()
-	testEnv.EdgeServer = testEnv.InitEdgeServer("Adam", clientPort,
+
+}
+
+func TestEdgeServerSimpleWebsocket(t *testing.T) {
+	clientPort := 8080
+	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
 	)
-	err := testEnv.EdgeServer.Run()
+	err := edgeServer.Run()
 	if err != nil {
 		panic(err)
 	}
 	time.Sleep(time.Second)
-}
 
-func TestEdgeServerSimple(t *testing.T) {
 	Convey("Simple Edge", t, func(c C) {
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		c.So(err, ShouldBeNil)
@@ -60,26 +60,27 @@ func TestEdgeServerSimple(t *testing.T) {
 			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, bytes)
 			c.So(err, ShouldBeNil)
 		}
-		testEnv.EdgeServer.Shutdown()
+		edgeServer.Shutdown()
 	})
 }
 
-func TestEdgeServerRaft(t *testing.T) {
+func TestEdgeServerRaftWebsocket(t *testing.T) {
 	Convey("Replicated Edge", t, func(c C) {
 		clientPort1 := 8081
-		edge1 := testEnv.InitEdgeServer("Raft.01", clientPort1,
+		testEnv.ResetCounters()
+		edge1 := testEnv.InitEdgeServerWithWebsocket("Raft.01", clientPort1,
 			edge.WithDataPath("./_hdd/edge01"),
 			edge.WithReplicaSet(1, 9091, true),
 			edge.WithGossipPort(9081),
 		)
 		clientPort2 := 8082
-		edge2 := testEnv.InitEdgeServer("Raft.02", clientPort2,
+		edge2 := testEnv.InitEdgeServerWithWebsocket("Raft.02", clientPort2,
 			edge.WithDataPath("./_hdd/edge02"),
 			edge.WithReplicaSet(1, 9092, false),
 			edge.WithGossipPort(9082),
 		)
 		clientPort3 := 8083
-		edge3 := testEnv.InitEdgeServer("Raft.03", clientPort3,
+		edge3 := testEnv.InitEdgeServerWithWebsocket("Raft.03", clientPort3,
 			edge.WithDataPath("./_hdd/edge03"),
 			edge.WithReplicaSet(1, 9093, false),
 			edge.WithGossipPort(9083),
@@ -101,30 +102,63 @@ func TestEdgeServerRaft(t *testing.T) {
 		err = edge1.JoinCluster("127.0.0.1:9083")
 		c.So(err, ShouldBeNil)
 
-		// conn, _, _, err := ws.Dial(context2.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort1))
-		// c.So(err, ShouldBeNil)
-		// c.So(conn, ShouldNotBeNil)
-		// for i := 1; i < 11; i++ {
-		// 	req := &pb.ReqSimple1{P1: fmt.Sprintf("%d", i)}
-		// 	reqBytes, _ := req.Marshal()
-		// 	msgIn := pools.AcquireMessageEnvelope()
-		// 	msgIn.RequestID = uint64(i)
-		// 	msgIn.Constructor = 101
-		// 	msgIn.Message = reqBytes
-		// 	msgInBytes, _ := msgIn.Marshal()
-		// 	err = wsutil.WriteClientBinary(conn, msgInBytes)
-		// 	c.So(err, ShouldBeNil)
-		// }
-		// time.Sleep(time.Second * 3)
-		// edge1.Shutdown()
-		// time.Sleep(time.Second)
-		// edge2.Shutdown()
-		// time.Sleep(time.Second)
-		// edge3.Shutdown()
-		// c.So(receivedMessages, ShouldEqual, 30)
-		// c.So(receivedUpdates, ShouldEqual, 300)
+		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort1))
+		c.So(err, ShouldBeNil)
+		c.So(conn, ShouldNotBeNil)
+		for i := 1; i < 11; i++ {
+			req := &pb.ReqSimple1{P1: tools.StrToByte(fmt.Sprintf("%d", i))}
+			reqBytes, _ := req.Marshal()
+			msgIn := &rony.MessageEnvelope{}
+			msgIn.RequestID = uint64(i)
+			msgIn.Constructor = 101
+			msgIn.Message = reqBytes
+			proto := &pb.ProtoMessage{}
+			proto.AuthID = int64(i)
+			proto.Payload, _ = msgIn.Marshal()
+			protoBytes, _ := proto.Marshal()
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, protoBytes)
+			c.So(err, ShouldBeNil)
+		}
+		time.Sleep(time.Second * 3)
+		edge2.Shutdown()
+		time.Sleep(time.Second)
+		edge3.Shutdown()
+		time.Sleep(time.Second)
+		edge1.Shutdown()
+		c.So(testEnv.ReceivedMessages(), ShouldEqual, 30)
+		c.So(testEnv.ReceivedUpdates(), ShouldEqual, 300)
+	})
+}
 
-		time.Sleep(10 * time.Second)
+func TestEdgeServerSimpleHttp(t *testing.T) {
+	clientPort := 8088
+	edgeServer := testEnv.InitEdgeServerWithHttp("Adam", clientPort,
+		edge.WithDataPath("./_hdd"),
+	)
+	err := edgeServer.Run()
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second)
+
+	Convey("Simple Edge With Http", t, func(c C) {
+		for i := int64(1); i <= 10; i++ {
+			req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(i))}
+			envelope := &rony.MessageEnvelope{
+				RequestID:   tools.RandomUint64(),
+				Constructor: 101,
+			}
+			envelope.Message, _ = req.Marshal()
+			proto := &pb.ProtoMessage{}
+			proto.AuthID = i
+			proto.Payload, _ = envelope.Marshal()
+			bytes, _ := proto.Marshal()
+			args := fasthttp.AcquireArgs()
+			args.AppendBytes(bytes)
+			_, _, err = fasthttp.Post(nil, fmt.Sprintf("http://127.0.0.1:%d", clientPort), args)
+			c.So(err, ShouldBeNil)
+		}
+		edgeServer.Shutdown()
 	})
 }
 

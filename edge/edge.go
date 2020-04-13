@@ -385,7 +385,12 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 		}
 		f := edge.raft.BootstrapCluster(bootConfig)
 		if err := f.Error(); err != nil {
-			log.Warn("Error On Raft Bootstrap", zap.Error(err))
+			if err == raft.ErrCantBootstrap {
+				log.Info("Error On Raft Bootstrap", zap.Error(err))
+			} else {
+				log.Warn("Error On Raft Bootstrap", zap.Error(err))
+			}
+
 		}
 		time.Sleep(time.Second * 3)
 	}
@@ -427,13 +432,21 @@ func (edge *Server) joinRaft(nodeID, addr string) error {
 
 // Shutdown gracefully shutdown the services
 func (edge *Server) Shutdown() {
-	// First shutdown gateway to not accept
+	// First shutdown gateway to not accept any more request
 	edge.gateway.Shutdown()
 
 	// Second shutdown raft, if it is enabled
 	if edge.raftEnabled {
 		if f := edge.raft.Snapshot(); f.Error() != nil {
-			log.Warn("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
+			if f.Error() != raft.ErrNothingNewToSnapshot {
+				log.Warn("Error On Shutdown (Raft Snapshot)",
+					zap.Error(f.Error()),
+					zap.String("ServerID", edge.GetServerID()),
+				)
+			} else {
+				log.Info("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
+			}
+
 		}
 		if f := edge.raft.Shutdown(); f.Error() != nil {
 			log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(f.Error()))
