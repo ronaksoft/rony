@@ -172,7 +172,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	return nil
 }
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
-	defer edge.recoverPanic(dispatchCtx)
+	defer edge.recoverPanic(dispatchCtx, requestCtx, in)
 
 	startTime := time.Now()
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
@@ -225,13 +225,14 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 
 	return
 }
-func (edge *Server) recoverPanic(dispatchCtx *DispatchCtx) {
+func (edge *Server) recoverPanic(dispatchCtx *DispatchCtx, ctx RequestCtx, in *rony.MessageEnvelope) {
 	if r := recover(); r != nil {
 		log.Error("Panic Recovered",
 			zap.ByteString("ServerID", edge.serverID),
 			zap.Uint64("ConnID", dispatchCtx.conn.GetConnID()),
 			zap.Int64("AuthID", dispatchCtx.authID),
 		)
+		ctx.PushError(in.RequestID, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
 }
 
