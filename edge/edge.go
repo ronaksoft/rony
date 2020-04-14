@@ -18,7 +18,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime/debug"
 	"time"
 )
 
@@ -173,8 +172,6 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	return nil
 }
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
-	defer edge.recoverPanic(dispatchCtx)
-
 	startTime := time.Now()
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
 		ce.Write(
@@ -225,16 +222,6 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	}
 
 	return
-}
-func (edge *Server) recoverPanic(dispatchCtx *DispatchCtx) {
-	if r := recover(); r != nil {
-		log.Error("Panic Recovered",
-			zap.ByteString("ServerID", edge.serverID),
-			zap.Uint64("ConnID", dispatchCtx.conn.GetConnID()),
-			zap.Int64("AuthID", dispatchCtx.authID),
-			zap.ByteString("Stack", debug.Stack()),
-		)
-	}
 }
 
 func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
