@@ -5,18 +5,14 @@ models:
       - This is a comment for model1
       - The second line of the comment
     properties:
-      - name: P1
-        type: string
+      - def: P1 string
         comment: This parameter is a string value
-      - name: P2
-        type: int32
+      - def: P2 int32 [slice]
         comment: This parameter is []int32 value
-        options: [slice]
         tags:
           - json:p1
           - bson
-      - name: P3
-        type: string
+      - def: P3 string
     unique_key:
       name: ID
       partition_keys: ["P1"]
@@ -29,16 +25,9 @@ models:
     comments:
       - This is a Model 2
     properties:
-      - name: PQ1
-        type: int64
+      - def: PQ1 int64
         comment: Really! this is int64 :D
     unique_key:
       name: PQ1
       partition_keys: ["PQ1"]
       clustering_keys: []
-apis:
-  - input:
-      constructor: 10001
-    outputs:
-      - constructor: 2001
-      - constructor: 2002

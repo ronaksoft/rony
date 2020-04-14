@@ -58,7 +58,7 @@ func (g *ProtoBuffer) Generate(desc *gen.Descriptor) {
 						tags.WriteString(parts[0])
 						tags.WriteRune(':')
 						tags.WriteString("\\\"")
-						tags.WriteString(strcase.ToSnake(p.Name))
+						tags.WriteString(strcase.ToSnake(p.Def.Name()))
 						tags.WriteString("\\\"")
 					case 2:
 						tags.WriteString(parts[0])
@@ -74,9 +74,9 @@ func (g *ProtoBuffer) Generate(desc *gen.Descriptor) {
 			}
 
 			if tags.Len() > 0 {
-				g.g.P(ro, p.Type, p.Name, "=", idx+1, fmt.Sprintf("[%s]", tags.String()), ";", "//", p.Comment)
+				g.g.P(ro, p.Def.Type(), p.Def.Name(), "=", idx+1, fmt.Sprintf("[%s]", tags.String()), ";", "//", p.Comment)
 			} else {
-				g.g.P(ro, p.Type, p.Name, "=", idx+1, ";", "//", p.Comment)
+				g.g.P(ro, p.Def.Type(), p.Def.Name(), "=", idx+1, ";", "//", p.Comment)
 			}
 
 		}

@@ -193,7 +193,7 @@ func (s *RepoPlugin) generateCreateTables(desc *gen.Descriptor) {
 			}
 			s.g.Pns(
 				"stmtB.WriteString(\"",
-				fmt.Sprintf("%s %s,", strcase.ToSnake(p.Name), p.ToScyllaType()),
+				fmt.Sprintf("%s %s,", strcase.ToSnake(p.Def.Name()), p.ToScyllaType()),
 				"\\n\")",
 			)
 		}
@@ -227,9 +227,9 @@ func (s *RepoPlugin) generateCreateTables(desc *gen.Descriptor) {
 					panic(err)
 				}
 				if idx == 0 {
-					s.g.P("stmtB.WriteString(\"WHERE", strcase.ToSnake(p.Name), "IS NOT NULL\\n\")")
+					s.g.P("stmtB.WriteString(\"WHERE", strcase.ToSnake(p.Def.Name()), "IS NOT NULL\\n\")")
 				} else {
-					s.g.P("stmtB.WriteString(\"AND", strcase.ToSnake(p.Name), "IS NOT NULL\\n\")")
+					s.g.P("stmtB.WriteString(\"AND", strcase.ToSnake(p.Def.Name()), "IS NOT NULL\\n\")")
 				}
 			}
 			s.g.Pns("stmtB.WriteString(\"PRIMARY KEY ", primaryKey, "\")")
@@ -290,12 +290,12 @@ func (s *RepoPlugin) generateGet(desc *gen.Descriptor) {
 			if idx != 0 {
 				args.WriteRune(',')
 			}
-			args.WriteString(strcase.ToLowerCamel(p.Name))
+			args.WriteString(strcase.ToLowerCamel(p.Def.Name()))
 			args.WriteRune(' ')
 			if p.CheckOption(gen.Slice) {
 				args.WriteString("[]")
 			}
-			args.WriteString(p.Type)
+			args.WriteString(p.Def.Type())
 		}
 		s.g.Pns("func Get", strcase.ToCamel(m.Name), "(", args.String(), ") (*", m.Name, ", error) {")
 		s.g.In()
@@ -345,12 +345,12 @@ func (s *RepoPlugin) generateGet(desc *gen.Descriptor) {
 				if idx != 0 {
 					args.WriteRune(',')
 				}
-				args.WriteString(strcase.ToLowerCamel(p.Name))
+				args.WriteString(strcase.ToLowerCamel(p.Def.Name()))
 				args.WriteRune(' ')
 				if p.CheckOption(gen.Slice) {
 					args.WriteString("[]")
 				}
-				args.WriteString(p.Type)
+				args.WriteString(p.Def.Type())
 			}
 			s.g.Pns("func Get", strcase.ToCamel(m.Name), "By", strcase.ToCamel(fk.Name), "(", args.String(), ") (*", m.Name, ", error) {")
 			s.g.In()
@@ -403,12 +403,12 @@ func (s *RepoPlugin) generateDelete(desc *gen.Descriptor) {
 			if idx != 0 {
 				args.WriteRune(',')
 			}
-			args.WriteString(strcase.ToLowerCamel(p.Name))
+			args.WriteString(strcase.ToLowerCamel(p.Def.Name()))
 			args.WriteRune(' ')
 			if p.CheckOption(gen.Slice) {
 				args.WriteString("[]")
 			}
-			args.WriteString(p.Type)
+			args.WriteString(p.Def.Type())
 		}
 		s.g.Pns("func Delete", strcase.ToCamel(m.Name), "(", args.String(), ") error {")
 		s.g.In()

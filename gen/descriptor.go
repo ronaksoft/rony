@@ -5,6 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 /*
@@ -20,7 +21,6 @@ import (
 type Descriptor struct {
 	Name   string  `yaml:"name" json:"name"`
 	Models []Model `yaml:"models" json:"models"`
-	APIs   []API   `yaml:"apis" json:"apis"`
 }
 
 // Primitive
@@ -52,7 +52,7 @@ type Model struct {
 
 func (m *Model) GetProperty(name string) (Property, error) {
 	for _, p := range m.Properties {
-		if p.Name == name {
+		if p.Def.Name() == name {
 			return p, nil
 		}
 	}
@@ -69,16 +69,15 @@ type FilterKey struct {
 
 // Property
 type Property struct {
-	Name    string           `yaml:"name" json:"name"`
-	Type    string           `yaml:"type" json:"type"`
-	Comment string           `yaml:"comment" json:"comment"`
-	Tags    []string         `yaml:"tags" json:"tags"`
-	Options []PropertyOption `yaml:"options,flow" json:"options"` // e.g. [unique, slice, optional]
+	Def     PropertyDefinition `yaml:"def" json:"def"`
+	Comment string             `yaml:"comment" json:"comment"`
+	Tags    []string           `yaml:"tags" json:"tags"`
 }
 
 func (p Property) CheckOption(opt PropertyOption) bool {
-	for idx := range p.Options {
-		if p.Options[idx] == opt {
+	opts := p.Def.Options()
+	for idx := range opts {
+		if opts[idx] == opt {
 			return true
 		}
 	}
@@ -87,7 +86,7 @@ func (p Property) CheckOption(opt PropertyOption) bool {
 
 func (p Property) ToScyllaType() string {
 	var t string
-	switch Primitive(p.Type) {
+	switch Primitive(p.Def.Type()) {
 	case Int32, UInt32:
 		t = "int"
 	case Int64, UInt64:
@@ -121,15 +120,40 @@ const (
 	Optional PropertyOption = "optional"
 )
 
-// API
-type API struct {
-	Input   Message   `yaml:"input" json:"input"`
-	Outputs []Message `yaml:"outputs" json:"outputs"`
+type PropertyDefinition string
+
+func (pd PropertyDefinition) Name() string {
+	parts := strings.SplitN(string(pd), " ", 3)
+	if len(parts) < 2 {
+		panic(fmt.Sprintf("property definition must have name and type: %v", pd))
+	}
+	return parts[0]
 }
 
-// Message
-type Message struct {
-	Constructor int64 `yaml:"constructor" json:"constructor"`
+func (pd PropertyDefinition) Type() string {
+	parts := strings.SplitN(string(pd), " ", 3)
+	if len(parts) < 2 {
+		panic(fmt.Sprintf("property definition must have name and type: %v", pd))
+	}
+	return parts[1]
+}
+
+func (pd PropertyDefinition) Options() []PropertyOption {
+	var (
+		opts  []PropertyOption
+		parts = strings.SplitN(string(pd), " ", 3)
+	)
+	if len(parts) < 2 {
+		panic(fmt.Sprintf("property definition must have name and type: %v", pd))
+	}
+	if len(parts) != 3 {
+		return nil
+	}
+	for _, opt := range strings.Split(strings.Trim(parts[2], "[]"), ",") {
+		opts = append(opts, PropertyOption(strings.TrimSpace(opt)))
+	}
+
+	return opts
 }
 
 var (
