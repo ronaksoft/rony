@@ -201,7 +201,7 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 	} else {
 		envelope.Message = envelope.Message[:protoSize]
 	}
-	_, err := proto.MarshalTo(envelope.Message)
+	_, err := proto.MarshalToSizedBuffer(envelope.Message)
 	if err != nil {
 		log.Error("Error On Marshaling Message", zap.Error(err))
 		return
@@ -229,7 +229,7 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 	} else {
 		envelope.Message = envelope.Message[:protoSize]
 	}
-	_, _ = proto.MarshalTo(envelope.Message)
+	_, _ = proto.MarshalToSizedBuffer(envelope.Message)
 
 	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), authID, envelope)
 	if err != nil {
@@ -259,7 +259,7 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts 
 	} else {
 		envelope.Update = envelope.Update[:protoSize]
 	}
-	_, err := proto.MarshalTo(envelope.Update)
+	_, err := proto.MarshalToSizedBuffer(envelope.Update)
 	if err != nil {
 		log.Error("Error On Marshaling Update", zap.Error(err))
 		return
@@ -275,4 +275,5 @@ type ProtoBufferMessage interface {
 	proto.Sizer
 	proto.Unmarshaler
 	MarshalTo([]byte) (int, error)
+	MarshalToSizedBuffer([]byte) (int, error)
 }

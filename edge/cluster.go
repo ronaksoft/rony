@@ -41,7 +41,7 @@ func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.Me
 		Envelope: envelope,
 	}
 	b := pools.Bytes.GetLen(clusterMessage.Size())
-	_, err := clusterMessage.MarshalTo(b)
+	_, err := clusterMessage.MarshalToSizedBuffer(b)
 	if err != nil {
 		return err
 	}

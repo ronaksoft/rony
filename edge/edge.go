@@ -121,7 +121,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 		raftCmd.Sender = edge.serverID
 		dispatchCtx.req.CopyTo(raftCmd.Envelope)
 		raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
-		_, err = raftCmd.MarshalTo(raftCmdBytes)
+		_, err = raftCmd.MarshalToSizedBuffer(raftCmdBytes)
 		if err != nil {
 			return
 		}
