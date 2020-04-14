@@ -130,7 +130,10 @@ func (ctx *RequestCtx) Return() {
 }
 
 func (ctx *RequestCtx) ConnID() uint64 {
-	return ctx.dispatchCtx.conn.GetConnID()
+	if ctx.dispatchCtx.conn != nil {
+		return ctx.dispatchCtx.conn.GetConnID()
+	}
+	return 0
 }
 
 func (ctx *RequestCtx) AuthID() int64 {
