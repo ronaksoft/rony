@@ -172,7 +172,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
-
+	edge.dispatcher.Done(dispatchCtx)
 	return nil
 }
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
