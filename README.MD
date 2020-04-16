@@ -8,15 +8,28 @@
 
 
 ### Performance
-Rony is very fast and with very low overhead. In a non-raft environment it adds < 40us latency, and
+Rony is very fast and with very low overhead. In a non-raft environment it adds < 25us latency, and
 in raft-enabled scenario around 1ms latency.
 
 Rony has negligible memory footprint by reusing buffers and pooling.
 
+```commandline
+BenchmarkEdgeServerMessageSerial
+BenchmarkEdgeServerMessageSerial-16                       901370              1195 ns/op              87 B/op          2 allocs/op
+BenchmarkEdgeServerMessageParallel
+BenchmarkEdgeServerMessageParallel-16                    4521645               272 ns/op              83 B/op          2 allocs/op
+BenchmarkEdgeServerWithRaftMessageSerial
+BenchmarkEdgeServerWithRaftMessageSerial-16                 9541            132065 ns/op            5034 B/op        116 allocs/op
+BenchmarkEdgeServerWithRaftMessageParallel
+BenchmarkEdgeServerWithRaftMessageParallel-16             124658              8438 ns/op            4462 B/op         51 allocs/op
+
+BenchmarkServerWithWebsocket-16            46514             25138 ns/op             691 B/op         19 allocs/op
+```
+
 ### Easy Setup
 ```
 func main() {
-    server := rony.NewEdgeServer(bundleID, instanceID, &dispatcher{},
+    server := rony.NewEdgeServer(serverID, &dispatcher{},
     	rony.WithWebsocketGateway(websocketGateway.Config{
     		NewConnectionWorkers: 10,
     		MaxConcurrency:       1000,
@@ -47,5 +60,7 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 }
 ```
 **This code does not run, please check example directory for working examples**
+
+
 
 
