@@ -285,10 +285,14 @@ func (edge *Server) Run() (err error) {
 			return
 		}
 	}
-	err = edge.runGossip()
-	if err != nil {
-		return
+
+	if edge.gatewayProtocol != gateway.Undefined {
+		err = edge.runGossip()
+		if err != nil {
+			return
+		}
 	}
+
 
 	go func() {
 		for range notifyChan {
@@ -457,13 +461,15 @@ func (edge *Server) Shutdown() {
 	}
 
 	// Shutdown gossip
-	err := edge.gossip.Leave(gossipLeaveTimeout)
-	if err != nil {
-		log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
-	}
-	err = edge.gossip.Shutdown()
-	if err != nil {
-		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
+	if edge.gossip != nil {
+		err := edge.gossip.Leave(gossipLeaveTimeout)
+		if err != nil {
+			log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
+		}
+		err = edge.gossip.Shutdown()
+		if err != nil {
+			log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
+		}
 	}
 
 	edge.gatewayProtocol = gateway.Undefined
