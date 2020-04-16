@@ -1,6 +1,7 @@
 package httpGateway
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
@@ -18,6 +19,7 @@ import (
 type Conn struct {
 	gateway    *Gateway
 	req        *fasthttp.RequestCtx
+	buf        chan *rony.MessageEnvelope
 	AuthID     int64
 	AuthKey    []byte
 	UserID     int64
@@ -26,25 +28,27 @@ type Conn struct {
 	ClientType string
 }
 
-func (c *Conn) IncServerSeq(int64) int64 {
-	return 1
-}
-
 func (c *Conn) Flush() {
 	// Read the flush function
 	bytesSlice := c.gateway.FlushFunc(c)
 
-	for idx := 0; idx < len(bytesSlice); idx++ {
-		_, err := c.req.Write(bytesSlice[idx])
-		if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
-			ce.Write(
-				zap.Uint64("ConnID", c.ConnID),
-				zap.Int64("authID", c.AuthID),
-				zap.Error(err),
-			)
-		}
+	_, err := c.req.Write(bytesSlice)
+	if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
+		ce.Write(
+			zap.Uint64("ConnID", c.ConnID),
+			zap.Int64("authID", c.AuthID),
+			zap.Error(err),
+		)
 	}
 	return
+}
+
+func (c *Conn) Push(m *rony.MessageEnvelope) {
+	c.buf <- m
+}
+
+func (c *Conn) Pop() *rony.MessageEnvelope {
+	return <-c.buf
 }
 
 func (c *Conn) GetAuthID() int64 {
@@ -53,22 +57,6 @@ func (c *Conn) GetAuthID() int64 {
 
 func (c *Conn) SetAuthID(authID int64) {
 	c.AuthID = authID
-}
-
-func (c *Conn) GetAuthKey() []byte {
-	return c.AuthKey
-}
-
-func (c *Conn) SetAuthKey(authKey []byte) {
-	c.AuthKey = authKey
-}
-
-func (c *Conn) GetUserID() int64 {
-	return c.UserID
-}
-
-func (c *Conn) SetUserID(userID int64) {
-	c.UserID = userID
 }
 
 func (c *Conn) GetConnID() uint64 {

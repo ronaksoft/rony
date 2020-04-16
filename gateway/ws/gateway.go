@@ -1,6 +1,7 @@
 package websocketGateway
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
@@ -79,7 +80,7 @@ func New(config Config) (*Gateway, error) {
 	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
 	g.CloseHandler = func(c gateway.Conn) {}
 	g.ConnectHandler = func(connID uint64) {}
-	g.FlushFunc = func(c gateway.Conn) [][]byte { return nil }
+	g.FlushFunc = func(c gateway.Conn) []byte { return nil }
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -174,12 +175,12 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 	connID := atomic.AddUint64(&g.connsLastID, 1)
 	wsConn := Conn{
 		ClientIP:     clientIP,
-		ClientType:   clientType,
 		ConnID:       connID,
 		conn:         conn,
 		gateway:      g,
 		lastActivity: time.Now().Unix(),
 		flushChan:    make(chan bool, 1),
+		buf:          make(chan *rony.MessageEnvelope, 100),
 	}
 	g.connsMtx.Lock()
 	g.conns[connID] = &wsConn

@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"git.ronaksoftware.com/ronak/rony"
 )
 
 /*
@@ -23,14 +23,12 @@ const (
 
 type Conn interface {
 	GetAuthID() int64
-	GetAuthKey() []byte
 	GetConnID() uint64
 	GetClientIP() string
-	GetUserID() int64
+	Push(m *rony.MessageEnvelope)
+	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
 	SetAuthID(int64)
-	SetAuthKey([]byte)
-	SetUserID(int64)
 	Flush()
 	Persistent() bool
 }
@@ -44,11 +42,4 @@ type Gateway interface {
 type ConnectHandler func(connID uint64)
 type MessageHandler func(c Conn, streamID int64, data []byte)
 type CloseHandler func(c Conn)
-type FlushFunc func(c Conn) [][]byte
-
-type ProtoBufferMessage interface {
-	proto.Marshaler
-	proto.Sizer
-	proto.Unmarshaler
-	MarshalTo([]byte) (int, error)
-}
+type FlushFunc func(c Conn) []byte

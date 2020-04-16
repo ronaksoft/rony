@@ -1,5 +1,7 @@
 package testEnv
 
+import "git.ronaksoftware.com/ronak/rony"
+
 /*
    Creation Time: 2020 - Apr - 10
    Created by:  (ehsan)
@@ -15,7 +17,15 @@ func (m MockGatewayConn) GetAuthID() int64 {
 	return 0
 }
 
-func (m MockGatewayConn) GetAuthKey() []byte {
+func (m MockGatewayConn) SetAuthID(int64) {
+	return
+}
+
+func (m MockGatewayConn) Push(e *rony.MessageEnvelope) {
+
+}
+
+func (m MockGatewayConn) Pop() *rony.MessageEnvelope {
 	return nil
 }
 
@@ -27,24 +37,8 @@ func (m MockGatewayConn) GetClientIP() string {
 	return ""
 }
 
-func (m MockGatewayConn) GetUserID() int64 {
-	return 0
-}
-
 func (m MockGatewayConn) SendBinary(streamID int64, data []byte) error {
 	return nil
-}
-
-func (m MockGatewayConn) SetAuthID(int64) {
-	return
-}
-
-func (m MockGatewayConn) SetAuthKey([]byte) {
-	return
-}
-
-func (m MockGatewayConn) SetUserID(int64) {
-	return
 }
 
 func (m MockGatewayConn) Flush() {

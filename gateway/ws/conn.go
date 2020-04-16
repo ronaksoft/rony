@@ -3,6 +3,7 @@
 package websocketGateway
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"github.com/gobwas/ws"
@@ -29,17 +30,13 @@ import (
 // Conn
 type Conn struct {
 	sync.Mutex
-	ConnID     uint64
-	AuthID     int64
-	UserID     int64
-	AuthKey    []byte
-	ClientIP   string
-	Counters   ConnCounters
-	ServerSeq  int64
-	ClientSeq  int64
-	ClientType string
+	ConnID   uint64
+	AuthID   int64
+	ClientIP string
+	Counters ConnCounters
 
 	// Internals
+	buf          chan *rony.MessageEnvelope
 	gateway      *Gateway
 	lastActivity int64
 	conn         net.Conn
@@ -58,18 +55,6 @@ func (wc *Conn) SetAuthID(authID int64) {
 	wc.AuthID = authID
 }
 
-func (wc *Conn) GetAuthKey() []byte {
-	return wc.AuthKey
-}
-
-func (wc *Conn) SetAuthKey(authKey []byte) {
-	wc.AuthKey = authKey
-}
-
-func (wc *Conn) IncServerSeq(x int64) int64 {
-	return atomic.AddInt64(&wc.ServerSeq, x)
-}
-
 func (wc *Conn) GetConnID() uint64 {
 	return wc.ConnID
 }
@@ -78,12 +63,12 @@ func (wc *Conn) GetClientIP() string {
 	return wc.ClientIP
 }
 
-func (wc *Conn) GetUserID() int64 {
-	return wc.UserID
+func (wc *Conn) Push(m *rony.MessageEnvelope) {
+	wc.buf <- m
 }
 
-func (wc *Conn) SetUserID(userID int64) {
-	wc.UserID = userID
+func (wc *Conn) Pop() *rony.MessageEnvelope {
+	return <-wc.buf
 }
 
 type ConnCounters struct {
@@ -168,16 +153,14 @@ func (wc *Conn) flushJob() {
 	// Reset the flushing flag, let the flusher run again
 	atomic.StoreInt32(&wc.flushing, 0)
 
-	for idx := 0; idx < len(bytesSlice); idx++ {
-		err := wc.SendBinary(0, bytesSlice[idx])
-		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
-				ce.Write(
-					zap.Uint64("ConnID", wc.ConnID),
-					zap.Int64("authID", wc.AuthID),
-					zap.Error(err),
-				)
-			}
+	err := wc.SendBinary(0, bytesSlice)
+	if err != nil {
+		if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
+			ce.Write(
+				zap.Uint64("ConnID", wc.ConnID),
+				zap.Int64("authID", wc.AuthID),
+				zap.Error(err),
+			)
 		}
 	}
 	pools.ReleaseTimer(timer)
