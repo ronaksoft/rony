@@ -268,8 +268,6 @@ func (g *Gateway) readPump(wc *Conn) {
 				log.Warn("Error On Write OpPing", zap.Error(err))
 			}
 		case ws.OpBinary:
-			atomic.AddUint64(&wc.Counters.IncomingCount, 1)
-			atomic.AddUint64(&wc.Counters.IncomingBytes, uint64(len(ms[idx].Payload)))
 			g.MessageHandler(wc, 0, ms[idx].Payload)
 		case ws.OpClose:
 			// remove the connection from the list
@@ -287,8 +285,6 @@ func (g *Gateway) writePump(wr writeRequest) {
 	if wr.wc.closed {
 		return
 	}
-	atomic.AddUint64(&wr.wc.Counters.OutgoingCount, 1)
-	atomic.AddUint64(&wr.wc.Counters.OutgoingBytes, uint64(len(wr.payload)))
 
 	switch wr.opCode {
 	case ws.OpBinary:

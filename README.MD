@@ -1,12 +1,14 @@
 # RONY  **(Fast and Scalable RPC Framework)**
 
+
+---
 ### Features
 1. Gossip Protocol
 2. Raft
 3. ProtocolBuffer friendly rpc
 4. Multiple gateways: Websocket, Http, Quic
 
-
+---
 ### Performance
 Rony is very fast and with very low overhead. In a non-raft environment it adds < 25us latency, and
 in raft-enabled scenario around 1ms latency.
@@ -26,6 +28,7 @@ BenchmarkEdgeServerWithRaftMessageParallel-16             124658              84
 BenchmarkServerWithWebsocket-16            46514             25138 ns/op             691 B/op         19 allocs/op
 ```
 
+---
 ### Easy Setup
 ```
 func main() {
@@ -61,6 +64,12 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 ```
 **This code does not run, please check example directory for working examples**
 
+---
+### Summary
+
+### Contribution
+We need to make a clear and understandable documentation for Rony, so any help would be appreciated. We also appreciate benchmarking Rony 
+against other platforms for common scenarios and will be cited.
 
 
 

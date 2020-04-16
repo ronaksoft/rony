@@ -33,7 +33,6 @@ type Conn struct {
 	ConnID   uint64
 	AuthID   int64
 	ClientIP string
-	Counters ConnCounters
 
 	// Internals
 	buf          chan *rony.MessageEnvelope
@@ -41,7 +40,6 @@ type Conn struct {
 	lastActivity int64
 	conn         net.Conn
 	desc         *netpoll.Desc
-	writeErrors  int32
 	closed       bool
 	flushChan    chan bool
 	flushing     int32
@@ -69,13 +67,6 @@ func (wc *Conn) Push(m *rony.MessageEnvelope) {
 
 func (wc *Conn) Pop() *rony.MessageEnvelope {
 	return <-wc.buf
-}
-
-type ConnCounters struct {
-	IncomingCount uint64
-	IncomingBytes uint64
-	OutgoingCount uint64
-	OutgoingBytes uint64
 }
 
 func (wc *Conn) startEvent(event netpoll.Event) {
