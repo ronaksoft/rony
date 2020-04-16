@@ -14,8 +14,8 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-// EdgeStats exports some internal metrics data
-type EdgeStats struct {
+// Stats exports some internal metrics data
+type Stats struct {
 	Address         string
 	RaftMembers     int
 	RaftState       string
@@ -25,9 +25,9 @@ type EdgeStats struct {
 	GatewayAddr     string
 }
 
-// Stats exports some internal metrics data packed in 'EdgeStats' struct
-func (edge *Server) Stats() *EdgeStats {
-	s := EdgeStats{
+// Stats exports some internal metrics data packed in 'Stats' struct
+func (edge *Server) Stats() *Stats {
+	s := Stats{
 		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalNode().Addr.String(), edge.gossip.LocalNode().Port),
 		Members:         len(edge.gossip.Members()),
 		MembershipScore: edge.gossip.GetHealthScore(),
