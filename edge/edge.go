@@ -68,6 +68,7 @@ type Server struct {
 	preHandlers        []Handler
 	handlers           map[int64][]Handler
 	postHandlers       []Handler
+	readonlyHandlers   map[int64]struct{}
 	getConstructorName GetConstructorNameFunc
 
 	// Raft & Gossip
@@ -85,9 +86,10 @@ type Server struct {
 
 func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 	edgeServer := &Server{
-		handlers:   make(map[int64][]Handler),
-		serverID:   []byte(serverID),
-		dispatcher: dispatcher,
+		handlers:         make(map[int64][]Handler),
+		readonlyHandlers: make(map[int64]struct{}),
+		serverID:         []byte(serverID),
+		dispatcher:       dispatcher,
 		getConstructorName: func(constructor int64) string {
 			return fmt.Sprintf("%d", constructor)
 		},
@@ -112,6 +114,11 @@ func (edge *Server) GetServerID() string {
 
 func (edge *Server) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
+}
+
+func (edge *Server) AddReadOnlyHandler(constructor int64, handler ...Handler) {
+	edge.readonlyHandlers[constructor] = struct{}{}
+	edge.AddHandler(constructor, handler...)
 }
 
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
