@@ -129,7 +129,6 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		ClientType: clientType,
 	}
 
-
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 }
 

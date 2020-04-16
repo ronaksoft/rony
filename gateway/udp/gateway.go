@@ -9,4 +9,4 @@ package udp
    Copyright Ronak Software Group 2020
 */
 
-type Gateway struct {}
+type Gateway struct{}

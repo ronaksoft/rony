@@ -37,15 +37,18 @@ type GetConstructorNameFunc func(constructor int64) string
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchUpdate(ctx *DispatchCtx, authID int64, envelope *rony.UpdateEnvelope)
+	OnUpdate(ctx *DispatchCtx, authID int64, envelope *rony.UpdateEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	DispatchMessage(ctx *DispatchCtx, authID int64, envelope *rony.MessageEnvelope)
+	OnMessage(ctx *DispatchCtx, authID int64, envelope *rony.MessageEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	// Note that conn IS NOT nil in any circumstances.
-	DispatchRequest(ctx *DispatchCtx, data []byte) (err error)
+	Prepare(ctx *DispatchCtx, data []byte) (err error)
+	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
+	// messages and updates in one go.
+	Done(ctx *DispatchCtx)
 }
 
 // Server
@@ -169,6 +172,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
+
 	return nil
 }
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
@@ -238,7 +242,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 
 func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
-	err := edge.dispatcher.DispatchRequest(dispatchCtx, data)
+	err := edge.dispatcher.Prepare(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return
@@ -256,7 +260,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
 	rony.ErrorMessage(envelope, code, item)
-	edge.dispatcher.DispatchMessage(dispatchCtx, dispatchCtx.authID, envelope)
+	edge.dispatcher.OnMessage(dispatchCtx, dispatchCtx.authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
 func (edge *Server) onConnect(connID uint64)   {}
@@ -292,7 +296,6 @@ func (edge *Server) Run() (err error) {
 			return
 		}
 	}
-
 
 	go func() {
 		for range notifyChan {

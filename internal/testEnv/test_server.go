@@ -31,11 +31,11 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) DispatchUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
+func (t testDispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }
 
-func (t testDispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
+func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		b := pools.Bytes.GetLen(envelope.Size())
 		_, _ = envelope.MarshalTo(b)
@@ -48,7 +48,7 @@ func (t testDispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, env
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err error) {
+func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte) (err error) {
 	proto := pb.PoolProtoMessage.Get()
 	err = proto.Unmarshal(data)
 	if err != nil {
@@ -63,7 +63,7 @@ func (t testDispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err
 	return
 }
 
-func (t testDispatcher) DispatchClusterMessage(envelope *rony.MessageEnvelope) {}
+func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
 func initHandlers(edgeServer *edge.Server) {
 	edgeServer.AddHandler(100, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {

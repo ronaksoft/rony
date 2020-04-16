@@ -210,7 +210,7 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 		return
 	}
 
-	ctx.dispatchCtx.edge.dispatcher.DispatchMessage(ctx.dispatchCtx, authID, envelope)
+	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
 
@@ -268,7 +268,7 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts 
 		return
 	}
 
-	ctx.dispatchCtx.edge.dispatcher.DispatchUpdate(ctx.dispatchCtx, authID, envelope)
+	ctx.dispatchCtx.edge.dispatcher.OnUpdate(ctx.dispatchCtx, authID, envelope)
 	releaseUpdateEnvelope(envelope)
 }
 

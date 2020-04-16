@@ -10,11 +10,11 @@ import (
 
 type dispatcher struct{}
 
-func (d dispatcher) DispatchUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
+func (d dispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 
 }
 
-func (d dispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
+func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	proto := &pb.ProtoMessage{}
 	proto.AuthID = authID
 	proto.Payload, _ = envelope.Marshal()
@@ -29,7 +29,7 @@ func (d dispatcher) DispatchMessage(ctx *edge.DispatchCtx, authID int64, envelop
 
 }
 
-func (d dispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err error) {
+func (d dispatcher) Prepare(ctx *edge.DispatchCtx, data []byte) (err error) {
 	proto := &pb.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {
@@ -42,3 +42,5 @@ func (d dispatcher) DispatchRequest(ctx *edge.DispatchCtx, data []byte) (err err
 	ctx.SetAuthID(proto.AuthID)
 	return
 }
+
+func (d dispatcher) Done(ctx *edge.DispatchCtx) {}

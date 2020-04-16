@@ -217,8 +217,8 @@ func BenchmarkServerWithWebsocket(b *testing.B) {
 func BenchmarkServerWithHttp(b *testing.B) {
 	httpClient := fasthttp.Client{
 		MaxConnsPerHost: 1000000,
-		WriteTimeout: time.Second,
-		ReadTimeout: time.Second,
+		WriteTimeout:    time.Second,
+		ReadTimeout:     time.Second,
 	}
 	clientPort := 6050
 	if !serverIsRunning {
