@@ -267,10 +267,6 @@ func (edge *Server) onFlush(conn gateway.Conn) [][]byte {
 
 // Run runs the selected gateway, if gateway is not setup it returns error
 func (edge *Server) Run() (err error) {
-	if edge.gatewayProtocol == gateway.Undefined {
-		return rony.ErrGatewayNotInitialized
-	}
-
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
@@ -278,7 +274,9 @@ func (edge *Server) Run() (err error) {
 
 	// We must run the gateway before gossip since some information about the gateway will be spread to other nodes
 	// by gossip protocol.
-	edge.runGateway()
+	if edge.gatewayProtocol != gateway.Undefined {
+		edge.runGateway()
+	}
 
 	notifyChan := make(chan bool, 1)
 	if edge.raftEnabled {
@@ -431,7 +429,9 @@ func (edge *Server) joinRaft(nodeID, addr string) error {
 // Shutdown gracefully shutdown the services
 func (edge *Server) Shutdown() {
 	// First shutdown gateway to not accept any more request
-	edge.gateway.Shutdown()
+	if edge.gateway != nil {
+		edge.gateway.Shutdown()
+	}
 
 	// Second shutdown raft, if it is enabled
 	if edge.raftEnabled {
