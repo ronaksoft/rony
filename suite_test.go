@@ -251,14 +251,12 @@ func BenchmarkServerWithHttp(b *testing.B) {
 			res := fasthttp.AcquireResponse()
 			req.SetBody(bytes)
 			req.SetRequestURI(fmt.Sprintf("http://127.0.0.1:%d", clientPort))
-			req.SetConnectionClose()
 			req.Header.SetMethod("POST")
 			req.Header.SetContentType("application/protobuf")
 			err := httpClient.Do(req, res)
 			if err != nil {
 				b.Error("Post", err)
 			}
-			res.SetConnectionClose()
 			fasthttp.ReleaseRequest(req)
 			fasthttp.ReleaseResponse(res)
 		}

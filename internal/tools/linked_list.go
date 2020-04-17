@@ -175,7 +175,7 @@ func (ll *LinkedList) RemoveAt(index int32) {
 }
 
 func (ll *LinkedList) Reset() {
-	panic("implement it")
+	for ll.PickHeadData() != nil {}
 }
 
 func (ll *LinkedList) String() string {
