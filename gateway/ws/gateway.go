@@ -181,7 +181,7 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 	g.connsMtx.Lock()
 	g.conns[connID] = &wsConn
 	g.connsMtx.Unlock()
-	if ce := log.Check(log.DebugLevel, "Websocket Connection connected"); ce != nil {
+	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", connID),
 			zap.String("Client", clientType),
@@ -217,7 +217,7 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	wsConn.Unlock()
 	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
 		ce.Write(
-			zap.Uint64("ConnectionID", wcID),
+			zap.Uint64("ConnID", wcID),
 			zap.Int32("Total", totalConns),
 		)
 	}
