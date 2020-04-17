@@ -29,7 +29,6 @@ type Conn interface {
 	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
 	SetAuthID(int64)
-	Flush()
 	Persistent() bool
 }
 
@@ -42,4 +41,3 @@ type Gateway interface {
 type ConnectHandler func(connID uint64)
 type MessageHandler func(c Conn, streamID int64, data []byte)
 type CloseHandler func(c Conn)
-type FlushFunc func(c Conn) []byte

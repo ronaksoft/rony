@@ -272,9 +272,6 @@ func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 }
 func (edge *Server) onConnect(connID uint64)   {}
 func (edge *Server) onClose(conn gateway.Conn) {}
-func (edge *Server) onFlush(conn gateway.Conn) []byte {
-	return nil
-}
 
 // Run runs the selected gateway, if gateway is not setup it returns error
 func (edge *Server) Run() (err error) {

@@ -30,7 +30,6 @@ type Config struct {
 // Gateway
 type Gateway struct {
 	gateway.MessageHandler
-	gateway.FlushFunc
 
 	// Internal Controlling Params
 	listenOn    string
@@ -47,10 +46,6 @@ func New(config Config) *Gateway {
 	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
 		fmt.Println("Request Received")
 	}
-	g.FlushFunc = func(c gateway.Conn) []byte {
-		return nil
-	}
-
 	return g
 }
 

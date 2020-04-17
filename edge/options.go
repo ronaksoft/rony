@@ -79,7 +79,6 @@ func WithWebsocketGateway(config websocketGateway.Config) Option {
 		gatewayWebsocket.MessageHandler = edge.HandleGatewayMessage
 		gatewayWebsocket.ConnectHandler = edge.onConnect
 		gatewayWebsocket.CloseHandler = edge.onClose
-		gatewayWebsocket.FlushFunc = edge.onFlush
 		edge.gatewayProtocol = gateway.Websocket
 		edge.gateway = gatewayWebsocket
 		return
@@ -95,7 +94,6 @@ func WithHttpGateway(config httpGateway.Config) Option {
 		}
 		gatewayHttp := httpGateway.New(config)
 		gatewayHttp.MessageHandler = edge.HandleGatewayMessage
-		gatewayHttp.FlushFunc = edge.onFlush
 		edge.gatewayProtocol = gateway.HTTP
 		edge.gateway = gatewayHttp
 		return

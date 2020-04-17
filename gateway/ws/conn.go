@@ -4,13 +4,12 @@ package websocketGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"time"
 
-	"go.uber.org/zap"
 	"io"
 	"net"
 	"sync"
@@ -35,14 +34,12 @@ type Conn struct {
 	ClientIP string
 
 	// Internals
-	buf          chan *rony.MessageEnvelope
+	buf          *tools.LinkedList
 	gateway      *Gateway
 	lastActivity int64
 	conn         net.Conn
 	desc         *netpoll.Desc
 	closed       bool
-	flushChan    chan bool
-	flushing     int32
 }
 
 func (wc *Conn) GetAuthID() int64 {
@@ -62,11 +59,15 @@ func (wc *Conn) GetClientIP() string {
 }
 
 func (wc *Conn) Push(m *rony.MessageEnvelope) {
-	wc.buf <- m
+	wc.buf.Append(m)
 }
 
 func (wc *Conn) Pop() *rony.MessageEnvelope {
-	return <-wc.buf
+	v := wc.buf.PickHeadData()
+	if v != nil {
+		return v.(*rony.MessageEnvelope)
+	}
+	return nil
 }
 
 func (wc *Conn) startEvent(event netpoll.Event) {
@@ -107,54 +108,6 @@ func (wc *Conn) Disconnect() {
 
 func (wc *Conn) Persistent() bool {
 	return true
-}
-
-// Flush
-func (wc *Conn) Flush() {
-	if atomic.CompareAndSwapInt32(&wc.flushing, 0, 1) {
-		go wc.flushJob()
-	}
-	select {
-	case wc.flushChan <- true:
-	default:
-	}
-}
-
-func (wc *Conn) flushJob() {
-	timer := pools.AcquireTimer(flushDebounceTime)
-
-	keepGoing := true
-	cnt := 0
-	for keepGoing {
-		if cnt++; cnt > flushDebounceMax {
-			break
-		}
-		select {
-		case <-wc.flushChan:
-			pools.ResetTimer(timer, flushDebounceTime)
-		case <-timer.C:
-			// Stop the loop
-			keepGoing = false
-		}
-	}
-
-	// Read the flush function
-	bytesSlice := wc.gateway.FlushFunc(wc)
-
-	// Reset the flushing flag, let the flusher run again
-	atomic.StoreInt32(&wc.flushing, 0)
-
-	err := wc.SendBinary(0, bytesSlice)
-	if err != nil {
-		if ce := log.Check(log.DebugLevel, "Error On Write To Websocket Conn"); ce != nil {
-			ce.Write(
-				zap.Uint64("ConnID", wc.ConnID),
-				zap.Int64("authID", wc.AuthID),
-				zap.Error(err),
-			)
-		}
-	}
-	pools.ReleaseTimer(timer)
 }
 
 // Check will check the underlying net.Conn if it is stalled or not. This code has been

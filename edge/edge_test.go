@@ -59,7 +59,7 @@ func initRaftWithWebsocket() {
 			return
 		}
 	}
-	panic("should not be here")
+	panic("BUG!! should not be here")
 }
 
 func BenchmarkEdgeServerMessageSerial(b *testing.B) {

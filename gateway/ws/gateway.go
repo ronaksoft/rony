@@ -1,7 +1,6 @@
 package websocketGateway
 
 import (
-	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
@@ -40,7 +39,6 @@ type Gateway struct {
 	gateway.ConnectHandler
 	gateway.MessageHandler
 	gateway.CloseHandler
-	gateway.FlushFunc
 
 	// Internal Controlling Params
 	newConnWorkers     int
@@ -80,7 +78,6 @@ func New(config Config) (*Gateway, error) {
 	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
 	g.CloseHandler = func(c gateway.Conn) {}
 	g.ConnectHandler = func(connID uint64) {}
-	g.FlushFunc = func(c gateway.Conn) []byte { return nil }
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -179,8 +176,7 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 		conn:         conn,
 		gateway:      g,
 		lastActivity: time.Now().Unix(),
-		flushChan:    make(chan bool, 1),
-		buf:          make(chan *rony.MessageEnvelope, 100),
+		buf:          tools.NewLinkedList(),
 	}
 	g.connsMtx.Lock()
 	g.conns[connID] = &wsConn
@@ -217,7 +213,6 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	if !wsConn.closed {
 		g.CloseHandler(wsConn)
 		wsConn.closed = true
-		wsConn.flushChan = nil
 	}
 	wsConn.Unlock()
 	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
@@ -256,13 +251,7 @@ func (g *Gateway) readPump(wc *Conn) {
 	for idx := range ms {
 		switch ms[idx].OpCode {
 		case ws.OpPong:
-			if wc.GetAuthID() != 0 {
-				wc.Flush()
-			}
 		case ws.OpPing:
-			if wc.GetAuthID() != 0 {
-				wc.Flush()
-			}
 			err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
 			if err != nil {
 				log.Warn("Error On Write OpPing", zap.Error(err))
