@@ -83,8 +83,6 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 	return &ClusterMember{
 		ServerID:    tools.ByteToStr(edgeNode.ServerID),
 		ReplicaSet:  edgeNode.ReplicaSet,
-		ShardMin:    edgeNode.ShardMin,
-		ShardMax:    edgeNode.ShardMax,
 		GatewayAddr: edgeNode.GatewayAddr,
 		RaftPort:    int(edgeNode.RaftPort),
 		RaftState:   edgeNode.RaftState,
@@ -214,8 +212,6 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 		ServerID:    d.edge.serverID,
 		ReplicaSet:  d.edge.replicaSet,
 		ShardSet:    d.edge.shardSet,
-		ShardMax:    d.edge.shardMax,
-		ShardMin:    d.edge.shardMin,
 		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
 		RaftState:   rony.RaftState_None,

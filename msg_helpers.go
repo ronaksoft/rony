@@ -159,8 +159,6 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 	x.ReplicaSet = 0
 	x.ShardSet = 0
 	x.RaftPort = 0
-	x.ShardMin = 0
-	x.ShardMax = 0
 	x.RaftState = 0
 	p.pool.Put(x)
 }

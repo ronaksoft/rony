@@ -31,7 +31,7 @@ func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
 }
 
 // WithShardSet
-func WithShardSet(shardSet uint32) Option {
+func WithShardSet(shardSet uint64) Option {
 	return func(edge *Server) {
 		edge.shardSet = shardSet
 	}

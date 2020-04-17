@@ -57,10 +57,9 @@ enum RaftState {
 message EdgeNode {
     required bytes ServerID = 1;
     optional uint32 ReplicaSet = 2;
-    optional uint32 ShardSet = 3;
+    optional uint64 ShardSet = 3;
     optional uint32 RaftPort = 4;
-    optional uint32 ShardMin = 5;
-    optional uint32 ShardMax = 6;
-    required string GatewayAddr = 7;
-    optional RaftState RaftState = 8;
+    optional RaftState RaftState = 5;
+    required string GatewayAddr = 6;
+
 }

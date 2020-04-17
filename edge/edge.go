@@ -56,9 +56,7 @@ type Server struct {
 	// General
 	serverID        []byte
 	replicaSet      uint32
-	shardSet        uint32
-	shardMin        uint32
-	shardMax        uint32
+	shardSet        uint64
 	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
