@@ -49,14 +49,14 @@ var StartCmd = &cobra.Command{
 	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
-		replicaSet, _ := cmd.Flags().GetUint32(FlagReplicaSet)
+		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
 		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
 		startFunc(serverID, replicaSet, gossipPort, raftBootstrap)
 	},
 }
 
-func startFunc(serverID string, replicaSet uint32, port int, bootstrap bool) {
+func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,

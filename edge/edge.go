@@ -55,7 +55,7 @@ type Dispatcher interface {
 type Server struct {
 	// General
 	serverID        []byte
-	replicaSet      uint32
+	replicaSet      uint64
 	shardSet        uint64
 	dataPath        string
 	gatewayProtocol gateway.Protocol

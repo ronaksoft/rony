@@ -20,7 +20,7 @@ import (
 type Option func(edge *Server)
 
 // WithReplicaSet
-func WithReplicaSet(replicaSet uint32, bindPort int, bootstrap bool) Option {
+func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool) Option {
 	return func(edge *Server) {
 		edge.raftFSM = raftFSM{edge: edge}
 		edge.replicaSet = replicaSet

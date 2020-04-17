@@ -57,10 +57,8 @@ func (edge *Server) updateCluster(timeout time.Duration) error {
 // ClusterMember
 type ClusterMember struct {
 	ServerID    string
-	ReplicaSet  uint32
-	ShardSet    uint32
-	ShardMin    uint32
-	ShardMax    uint32
+	ReplicaSet  uint64
+	ShardSet    uint64
 	GatewayAddr string
 	Addr        net.IP
 	Port        uint16
@@ -96,8 +94,8 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 type Cluster struct {
 	sync.RWMutex
 	byServerID   map[string]*ClusterMember
-	byReplicaSet map[uint32][]*ClusterMember
-	byShardSet   map[uint32][]*ClusterMember
+	byReplicaSet map[uint64][]*ClusterMember
+	byShardSet   map[uint64][]*ClusterMember
 }
 
 func (c *Cluster) GetByID(id string) *ClusterMember {
@@ -119,8 +117,8 @@ func (c *Cluster) AddMember(m *ClusterMember) {
 	}
 
 	if c.byReplicaSet == nil {
-		c.byReplicaSet = make(map[uint32][]*ClusterMember)
-		c.byShardSet = make(map[uint32][]*ClusterMember)
+		c.byReplicaSet = make(map[uint64][]*ClusterMember)
+		c.byShardSet = make(map[uint64][]*ClusterMember)
 		c.byServerID = make(map[string]*ClusterMember)
 		c.byServerID[m.ServerID] = m
 		c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
@@ -157,7 +155,7 @@ func (c *Cluster) RemoveMember(m *ClusterMember) {
 	}
 
 	if c.byReplicaSet == nil {
-		c.byReplicaSet = make(map[uint32][]*ClusterMember)
+		c.byReplicaSet = make(map[uint64][]*ClusterMember)
 		c.byServerID = make(map[string]*ClusterMember)
 		return
 	}
