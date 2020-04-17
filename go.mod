@@ -8,7 +8,7 @@ require (
 	github.com/bbva/raft-badger v1.0.0
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger/v2 v2.0.0
-	github.com/getsentry/sentry-go v0.4.0
+	github.com/getsentry/sentry-go v0.6.0
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.3
 	github.com/gogo/protobuf v1.3.1

@@ -24,7 +24,7 @@ const maxBreadcrumbs = 100
 // Initial instance of the Hub that has no `Client` bound and an empty `Scope`
 var currentHub = NewHub(nil, NewScope()) //nolint: gochecknoglobals
 
-// Hub is the central object that can manages scopes and clients.
+// Hub is the central object that manages scopes and clients.
 //
 // This can be used to capture events and manage the scope.
 // The default hub that is available automatically.
@@ -322,7 +322,17 @@ func (hub *Hub) RecoverWithContext(ctx context.Context, err interface{}) *EventI
 	return client.RecoverWithContext(ctx, err, &EventHint{RecoveredException: err}, scope)
 }
 
-// Flush calls the method of a same name on currently bound `Client` instance.
+// Flush waits until the underlying Transport sends any buffered events to the
+// Sentry server, blocking for at most the given timeout. It returns false if
+// the timeout was reached. In that case, some events may not have been sent.
+//
+// Flush should be called before terminating the program to avoid
+// unintentionally dropping events.
+//
+// Do not call Flush indiscriminately after every call to CaptureEvent,
+// CaptureException or CaptureMessage. Instead, to have the SDK send events over
+// the network synchronously, configure it to use the HTTPSyncTransport in the
+// call to Init.
 func (hub *Hub) Flush(timeout time.Duration) bool {
 	client := hub.Client()
 

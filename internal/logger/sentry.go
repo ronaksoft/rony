@@ -70,7 +70,7 @@ func (c *sentryCore) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 
 	event := sentry.NewEvent()
 	event.Message = ent.Message
-	event.Timestamp = ent.Time.Unix()
+	event.Timestamp = ent.Time
 	event.Level = sentryLevel(ent.Level)
 	// event.Platform = config.RiverVersion
 	event.Extra = m
