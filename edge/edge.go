@@ -242,6 +242,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			zap.ByteString("ServerID", edge.serverID),
 			zap.Uint64("ConnID", ctx.ConnID()),
 			zap.Int64("AuthID", ctx.AuthID()),
+			zap.Any("Error", r),
 		)
 		ctx.PushError(in.RequestID, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
