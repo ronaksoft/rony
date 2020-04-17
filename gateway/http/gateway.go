@@ -101,35 +101,29 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		return
 	}
 
-	var clientIP string
-	var clientType string
+	conn := acquireConn(g, req)
+
 	var detected bool
 	req.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.ByteToStr(key) {
 		case "Cf-Connecting-Ip":
-			clientIP = string(value)
+			conn.ClientIP = append(conn.ClientIP[:0], value...)
 			detected = true
 		case "X-Forwarded-For", "X-Real-Ip", "Forwarded":
 			if !detected {
-				clientIP = string(value)
+				conn.ClientIP = append(conn.ClientIP[:0], value...)
 				detected = true
 			}
 		case "X-Client-Type":
-			clientType = string(value)
+			conn.ClientType = append(conn.ClientType[:0], value...)
 		}
 	})
 	if !detected {
-		clientIP = string(req.RemoteIP().To4())
-	}
-	conn := &Conn{
-		gateway:    g,
-		req:        req,
-		ConnID:     req.ConnID(),
-		ClientIP:   clientIP,
-		ClientType: clientType,
+		conn.ClientIP = append(conn.ClientIP, req.RemoteIP().To4()...)
 	}
 
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	releaseConn(conn)
 }
 
 func (g *Gateway) Shutdown() {}

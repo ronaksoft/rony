@@ -174,6 +174,7 @@ func BenchmarkGatewayParallel(b *testing.B) {
 	gw.Run()
 	time.Sleep(time.Second)
 
+	sendMessage := []byte(tools.RandomID(128))
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -193,7 +194,7 @@ func BenchmarkGatewayParallel(b *testing.B) {
 		}
 		defer conn.Close()
 		for pb.Next() {
-			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, tools.StrToByte("ABewerwerwewerwerwerwerwerwerwCD"))
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, sendMessage)
 			if err != nil {
 				b.Fatal(err)
 			}

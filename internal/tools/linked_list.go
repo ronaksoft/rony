@@ -15,26 +15,22 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-type nodePool struct {
-	pool sync.Pool
-}
+var (
+	nodePool sync.Pool
+)
 
-func (np *nodePool) Get() *Node {
-	if n, ok := np.pool.Get().(*Node); !ok {
+func acquireNode() *Node {
+	n, ok := nodePool.Get().(*Node)
+	if !ok {
 		return &Node{}
-	} else {
-		n.prev = nil
-		n.next = nil
-		n.data = nil
-		return n
 	}
+	return n
 }
 
-func (np *nodePool) Put(n *Node) {
-	np.pool.Put(n)
+func releaseNode(n *Node) {
+	*n = Node{}
+	nodePool.Put(n)
 }
-
-var _NodePool nodePool
 
 type Node struct {
 	next *Node
@@ -60,7 +56,7 @@ func NewLinkedList() *LinkedList {
 func (ll *LinkedList) Append(data interface{}) {
 	ll.lock.Lock()
 	ll.size += 1
-	n := _NodePool.Get()
+	n := acquireNode()
 	n.data = data
 	if ll.tail == nil {
 		ll.tail, ll.head = n, n
@@ -76,7 +72,7 @@ func (ll *LinkedList) Append(data interface{}) {
 func (ll *LinkedList) Prepend(data interface{}) {
 	ll.lock.Lock()
 	ll.size += 1
-	n := _NodePool.Get()
+	n := acquireNode()
 	n.data = data
 	if ll.head == nil {
 		ll.tail, ll.head = n, n
@@ -117,7 +113,7 @@ func (ll *LinkedList) PickHeadData() interface{} {
 	ll.size--
 	ll.lock.Unlock()
 	data := n.data
-	_NodePool.Put(n)
+	releaseNode(n)
 	return data
 }
 
@@ -141,7 +137,7 @@ func (ll *LinkedList) PickTailData() interface{} {
 	ll.size -= 1
 	ll.lock.Unlock()
 	data := n.data
-	_NodePool.Put(n)
+	releaseNode(n)
 	return data
 }
 
@@ -176,6 +172,10 @@ func (ll *LinkedList) RemoveAt(index int32) {
 	}
 	ll.size--
 	ll.lock.Unlock()
+}
+
+func (ll *LinkedList) Reset() {
+	panic("implement it")
 }
 
 func (ll *LinkedList) String() string {
