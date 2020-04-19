@@ -298,6 +298,10 @@ func (edge *Server) Run() (err error) {
 		if err != nil {
 			return
 		}
+
+		// Wait for booting up and joining the cluster
+		time.Sleep(2 * time.Second)
+
 	}
 
 	go func() {
@@ -398,9 +402,7 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 			}
 
 		}
-		time.Sleep(time.Second * 3)
 	}
-
 
 	return nil
 }
