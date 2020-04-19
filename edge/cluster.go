@@ -244,6 +244,7 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	go func() {
 		// TODO:: handle error, for instance we might send back an error to the sender
 		_ = d.edge.executePrepare(dispatchCtx)
+		d.edge.dispatcher.Done(dispatchCtx)
 		releaseDispatchCtx(dispatchCtx)
 		<-d.edge.rateLimitChan
 	}()

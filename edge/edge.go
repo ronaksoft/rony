@@ -177,7 +177,6 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
-	edge.dispatcher.Done(dispatchCtx)
 	return nil
 }
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
@@ -261,6 +260,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 	default:
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
+	edge.dispatcher.Done(dispatchCtx)
 	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {

@@ -38,6 +38,7 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	dispatchCtx.FillEnvelope(raftCmd.Envelope.RequestID, raftCmd.Envelope.Constructor, raftCmd.Envelope.Message)
 
 	err = fsm.edge.execute(dispatchCtx)
+	fsm.edge.dispatcher.Done(dispatchCtx)
 	releaseDispatchCtx(dispatchCtx)
 	releaseRaftCommand(raftCmd)
 	return nil
