@@ -400,6 +400,9 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 		}
 		time.Sleep(time.Second * 3)
 	}
+	for edge.raft.Leader() == "" {
+		time.Sleep(time.Second)
+	}
 
 	return nil
 }
