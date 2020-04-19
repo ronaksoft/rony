@@ -33,6 +33,7 @@ type Gateway struct {
 
 	// Internal Controlling Params
 	listenOn    string
+	listener    net.Listener
 	concurrency int
 	maxBodySize int
 }
@@ -51,13 +52,14 @@ func New(config Config) *Gateway {
 
 // Run
 func (g *Gateway) Run() {
+	var err error
 	tcpConfig := tcplisten.Config{
 		ReusePort:   false,
 		FastOpen:    true,
 		DeferAccept: true,
 		Backlog:     2048,
 	}
-	listener, err := tcpConfig.NewListener("tcp4", g.listenOn)
+	g.listener, err = tcpConfig.NewListener("tcp4", g.listenOn)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -71,7 +73,7 @@ func (g *Gateway) Run() {
 			MaxRequestBodySize: g.maxBodySize,
 		}
 		for {
-			err := server.Serve(listener)
+			err := server.Serve(g.listener)
 			if err != nil {
 				if nErr, ok := err.(net.Error); ok {
 					if !nErr.Temporary() {
@@ -125,5 +127,5 @@ func (g *Gateway) Shutdown() {}
 
 // Addr return the address which gateway is listen on
 func (g *Gateway) Addr() string {
-	return g.listenOn
+	return g.listener.Addr().String()
 }
