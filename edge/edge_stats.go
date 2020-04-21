@@ -19,6 +19,7 @@ type Stats struct {
 	Address         string
 	RaftMembers     int
 	RaftState       string
+	ReplicaSet      uint64
 	Members         int
 	MembershipScore int
 	GatewayProtocol gateway.Protocol
@@ -33,6 +34,7 @@ func (edge *Server) Stats() *Stats {
 		MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
 		GatewayAddr:     edge.gateway.Addr(),
+		ReplicaSet:      edge.replicaSet,
 	}
 
 	if edge.raftEnabled {

@@ -39,7 +39,7 @@ func init() {
 	)
 
 	RootCmd.PersistentFlags().String(FlagServerID, "Node", "")
-	RootCmd.PersistentFlags().String(FlagReplicaSet, "", "")
+	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 801, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 
@@ -117,15 +117,15 @@ var ListCmd = &cobra.Command{
 func listFunc() {
 	var rows []string
 	rows = append(rows,
-		"ServerID | Raft Members | Raft State |  Members | Membership State | Gateway ",
-		"------- | ------ | ------ | -------- | ------- | ------",
+		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Membership State | Gateway ",
+		"------- | ----------- | ------ | ------ | -------- | ------- | ------",
 	)
 
 	for id, s := range Edges {
 		edgeStats := s.Stats()
 		rows = append(rows,
-			fmt.Sprintf("%s | %d | %s | %d | %d | %s(%s)", id,
-				edgeStats.RaftMembers, edgeStats.RaftState,
+			fmt.Sprintf("%s | %d | %d | %s | %d | %d | %s(%s)", id,
+				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
 				edgeStats.Members, edgeStats.MembershipScore,
 				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
 			),
