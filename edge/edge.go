@@ -120,31 +120,33 @@ func (edge *Server) AddReadOnlyHandler(constructor int64, handler ...Handler) {
 }
 
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
+	readyOnly := false
 	if edge.raftEnabled {
-		if edge.raft.State() != raft.Leader {
-			return rony.ErrNotRaftLeader
-		}
-		raftCmd := acquireRaftCommand()
-		raftCmd.AuthID = dispatchCtx.authID
-		raftCmd.Sender = edge.serverID
-		dispatchCtx.req.CopyTo(raftCmd.Envelope)
-		raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
-		_, err = raftCmd.MarshalToSizedBuffer(raftCmdBytes)
-		if err != nil {
-			return
-		}
-		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
-		err = f.Error()
-		pools.Bytes.Put(raftCmdBytes)
-		releaseRaftCommand(raftCmd)
-		if err != nil {
-			return
+		if edge.raft.State() == raft.Leader {
+			raftCmd := acquireRaftCommand()
+			raftCmd.AuthID = dispatchCtx.authID
+			raftCmd.Sender = edge.serverID
+			dispatchCtx.req.CopyTo(raftCmd.Envelope)
+			raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
+			_, err = raftCmd.MarshalToSizedBuffer(raftCmdBytes)
+			if err != nil {
+				return
+			}
+			f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
+			err = f.Error()
+			pools.Bytes.Put(raftCmdBytes)
+			releaseRaftCommand(raftCmd)
+			if err != nil {
+				return
+			}
+		} else {
+			readyOnly = true
 		}
 	}
-	err = edge.execute(dispatchCtx)
+	err = edge.execute(dispatchCtx, readyOnly)
 	return err
 }
-func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
+func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error) {
 	waitGroup := acquireWaitGroup()
 	switch dispatchCtx.req.Constructor {
 	case rony.C_MessageContainer:
@@ -159,7 +161,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *RequestCtx, idx int) {
-				edge.executeFunc(dispatchCtx, ctx, x.Envelopes[idx])
+				edge.executeFunc(dispatchCtx, ctx, x.Envelopes[idx], readyOnly)
 				nextChan <- struct{}{}
 				waitGroup.Done()
 				releaseRequestCtx(ctx)
@@ -172,14 +174,14 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 		}
 	default:
 		ctx := acquireRequestCtx(dispatchCtx, false)
-		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req)
+		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req, readyOnly)
 		releaseRequestCtx(ctx)
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
 	return nil
 }
-func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope) {
+func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope, readOnly bool) {
 	defer edge.recoverPanic(requestCtx, in)
 
 	startTime := time.Now()
@@ -189,6 +191,13 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 			zap.Uint64("RequestID", in.RequestID),
 			zap.Int64("AuthID", dispatchCtx.authID),
 		)
+	}
+	if readOnly {
+		_, ok := edge.readonlyHandlers[in.Constructor]
+		if !ok {
+			requestCtx.PushError(in.RequestID, rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
+			return
+		}
 	}
 	handlers, ok := edge.handlers[in.Constructor]
 	if !ok {
