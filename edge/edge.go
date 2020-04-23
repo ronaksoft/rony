@@ -288,12 +288,6 @@ func (edge *Server) Run() (err error) {
 		zap.String("Gateway", string(edge.gatewayProtocol)),
 	)
 
-	// We must run the gateway before gossip since some information about the gateway will be spread to other nodes
-	// by gossip protocol.
-	if edge.gatewayProtocol != gateway.Undefined {
-		edge.runGateway()
-	}
-
 	notifyChan := make(chan bool, 1)
 	if edge.raftEnabled {
 		err = edge.runRaft(notifyChan)
@@ -308,9 +302,7 @@ func (edge *Server) Run() (err error) {
 			return
 		}
 
-		// Wait for booting up and joining the cluster
-		time.Sleep(2 * time.Second)
-
+		edge.runGateway()
 	}
 
 	go func() {
