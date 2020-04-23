@@ -52,7 +52,7 @@ func New(config Config) (*Gateway, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ta.IP == nil {
+	if ta.IP.IsUnspecified() {
 		addrs, err := net.InterfaceAddrs()
 		if err == nil {
 			for _, a := range addrs {
