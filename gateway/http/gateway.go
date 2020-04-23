@@ -3,7 +3,6 @@ package httpGateway
 import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
@@ -41,6 +40,9 @@ type Gateway struct {
 
 // New
 func New(config Config) (*Gateway, error) {
+	var (
+		err error
+	)
 	g := new(Gateway)
 	g.listenOn = config.ListenAddress
 	g.concurrency = config.Concurrency
@@ -48,7 +50,18 @@ func New(config Config) (*Gateway, error) {
 	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
 		fmt.Println("Request Received")
 	}
-	ta, err := net.ResolveTCPAddr("tcp4", config.ListenAddress)
+	tcpConfig := tcplisten.Config{
+		ReusePort:   false,
+		FastOpen:    true,
+		DeferAccept: true,
+		Backlog:     2048,
+	}
+	g.listener, err = tcpConfig.NewListener("tcp4", g.listenOn)
+	if err != nil {
+		return nil, err
+	}
+
+	ta, err := net.ResolveTCPAddr("tcp4", g.listener.Addr().String())
 	if err != nil {
 		return nil, err
 	}
@@ -58,20 +71,20 @@ func New(config Config) (*Gateway, error) {
 			for _, a := range addrs {
 				switch x := a.(type) {
 				case *net.IPNet:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.IPAddr:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.TCPAddr:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				}
 			}
 		}
@@ -84,18 +97,6 @@ func New(config Config) (*Gateway, error) {
 
 // Run
 func (g *Gateway) Run() {
-	var err error
-	tcpConfig := tcplisten.Config{
-		ReusePort:   false,
-		FastOpen:    true,
-		DeferAccept: true,
-		Backlog:     2048,
-	}
-	g.listener, err = tcpConfig.NewListener("tcp4", g.listenOn)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	go func() {
 		server := fasthttp.Server{
 			Name:               "River Edge Server",

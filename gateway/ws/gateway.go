@@ -92,7 +92,22 @@ func New(config Config) (*Gateway, error) {
 		g.poller = poller
 	}
 
-	ta, err := net.ResolveTCPAddr("tcp4", config.ListenAddress)
+	tcpConfig := tcplisten.Config{
+		ReusePort:   true,
+		FastOpen:    true,
+		DeferAccept: false,
+		Backlog:     8192,
+	}
+
+	// Setup Listener to listen for TCP connections
+	listener, err := tcpConfig.NewListener("tcp4", g.listenOn)
+	if err != nil {
+		return nil, err
+	}
+
+	g.listener = listener
+
+	ta, err := net.ResolveTCPAddr("tcp4", listener.Addr().String())
 	if err != nil {
 		return nil, err
 	}
@@ -102,20 +117,20 @@ func New(config Config) (*Gateway, error) {
 			for _, a := range addrs {
 				switch x := a.(type) {
 				case *net.IPNet:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.IPAddr:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.TCPAddr:
-					if x.IP.To4() == nil {
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				}
 			}
 		}
@@ -335,21 +350,6 @@ func (g *Gateway) writePump(wr writeRequest) {
 
 // Run
 func (g *Gateway) Run() {
-	tcpConfig := tcplisten.Config{
-		ReusePort:   true,
-		FastOpen:    true,
-		DeferAccept: false,
-		Backlog:     8192,
-	}
-
-	// Setup Listener to listen for TCP connections
-	listener, err := tcpConfig.NewListener("tcp4", g.listenOn)
-	if err != nil {
-		log.Fatal(err.Error())
-		return
-	}
-
-	g.listener = listener
 	// Run multiple connection acceptor
 	for i := 0; i < g.newConnWorkers; i++ {
 		g.waitGroupAcceptors.Add(1)
