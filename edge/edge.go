@@ -281,8 +281,8 @@ func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 func (edge *Server) onConnect(connID uint64)   {}
 func (edge *Server) onClose(conn gateway.Conn) {}
 
-// Run runs the selected gateway, if gateway is not setup it returns error
-func (edge *Server) Run() (err error) {
+// RunCluster runs the gossip and raft if it is set
+func (edge *Server) RunCluster() (err error) {
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
@@ -301,8 +301,6 @@ func (edge *Server) Run() (err error) {
 		if err != nil {
 			return
 		}
-
-		edge.runGateway()
 	}
 
 	go func() {
@@ -315,10 +313,6 @@ func (edge *Server) Run() (err error) {
 			}
 		}
 	}()
-	return
-}
-func (edge *Server) runGateway() {
-	edge.gateway.Run()
 	return
 }
 func (edge *Server) runGossip() error {
@@ -406,6 +400,11 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 	}
 
 	return nil
+}
+
+// RunGateway runs the gateway then we can accept clients requests
+func (edge *Server) RunGateway() {
+	edge.gateway.Run()
 }
 
 // JoinCluster joins this node to one or more cluster members

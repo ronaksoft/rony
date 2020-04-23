@@ -42,13 +42,14 @@ func initRaftWithWebsocket() {
 				edge.WithReplicaSet(1, 9080+idx, bootstrap),
 				edge.WithGossipPort(7080+idx),
 			)
-			err := edgeServer.Run()
+			err := edgeServer.RunCluster()
 			if err != nil {
 				panic(err)
 			}
 			if bootstrap {
 				time.Sleep(time.Second)
 			}
+			edgeServer.RunGateway()
 			raftServers[id] = edgeServer
 		}
 	}

@@ -41,11 +41,12 @@ func TestEdgeServerSimpleWebsocket(t *testing.T) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
 	)
-	err := edgeServer.Run()
+	err := edgeServer.RunCluster()
 	if err != nil {
 		panic(err)
 	}
 	time.Sleep(time.Second)
+	edgeServer.RunGateway()
 
 	Convey("Simple Edge", t, func(c C) {
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
@@ -91,14 +92,17 @@ func TestEdgeServerRaftWebsocket(t *testing.T) {
 		)
 
 		// Run Edge 01
-		err := edge1.Run()
+		err := edge1.RunCluster()
 		c.So(err, ShouldBeNil)
+		edge1.RunGateway()
 		// Run Edge 02
-		err = edge2.Run()
+		err = edge2.RunCluster()
 		c.So(err, ShouldBeNil)
+		edge1.RunGateway()
 		// Run Edge 03
-		err = edge3.Run()
+		err = edge3.RunCluster()
 		c.So(err, ShouldBeNil)
+		edge1.RunGateway()
 
 		// Join Nodes
 		err = edge1.JoinCluster("127.0.0.1:9082")
@@ -139,10 +143,11 @@ func TestEdgeServerSimpleHttp(t *testing.T) {
 	edgeServer := testEnv.InitEdgeServerWithHttp("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
 	)
-	err := edgeServer.Run()
+	err := edgeServer.RunCluster()
 	if err != nil {
 		panic(err)
 	}
+	edgeServer.RunGateway()
 	time.Sleep(time.Second)
 
 	Convey("Simple Edge With Http", t, func(c C) {
@@ -173,11 +178,12 @@ func BenchmarkServerWithWebsocket(b *testing.B) {
 		edgeServer := testEnv.InitEdgeServerWithWebsocket("BenchWS", clientPort,
 			edge.WithDataPath("./_hdd"),
 		)
-		err := edgeServer.Run()
+		err := edgeServer.RunCluster()
 		if err != nil {
 			b.Fatal(err)
 		}
 		time.Sleep(time.Second * 2)
+		edgeServer.RunGateway()
 	}
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(3232343434))}
 	envelope := &rony.MessageEnvelope{}
@@ -226,11 +232,12 @@ func BenchmarkServerWithHttp(b *testing.B) {
 		edgeServer := testEnv.InitEdgeServerWithHttp("BenchWS", clientPort,
 			edge.WithDataPath("./_hdd"),
 		)
-		err := edgeServer.Run()
+		err := edgeServer.RunCluster()
 		if err != nil {
 			b.Fatal(err)
 		}
 		time.Sleep(time.Second * 2)
+		edgeServer.RunGateway()
 	}
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(3232343434))}
 	envelope := &rony.MessageEnvelope{}

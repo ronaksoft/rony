@@ -77,12 +77,13 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
 		Edges[serverID].AddHandler(pb.C_EchoRequest, GenEchoHandler(serverID))
 		Edges[serverID].AddHandler(pb.C_AskRequest, GenAskHandler(serverID))
-		err := Edges[serverID].Run()
+		err := Edges[serverID].RunCluster()
 		if err != nil {
 			fmt.Println(err)
 			delete(Edges, serverID)
 			return
 		}
+		Edges[serverID].RunGateway()
 		StopCmd.AddCommand(&cobra.Command{
 			Use: serverID,
 			Run: func(cmd *cobra.Command, args []string) {
