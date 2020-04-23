@@ -425,11 +425,15 @@ func (edge *Server) joinRaft(nodeID, addr string) error {
 	if !edge.raftEnabled {
 		return rony.ErrRaftNotSet
 	}
+	if edge.raft.State() != raft.Leader {
+		return rony.ErrNotRaftLeader
+	}
 	futureConfig := edge.raft.GetConfiguration()
 	if err := futureConfig.Error(); err != nil {
 		return err
 	}
-	for _, srv := range futureConfig.Configuration().Servers {
+	raftConf := futureConfig.Configuration()
+	for _, srv := range raftConf.Servers {
 		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
 			return nil
 		}

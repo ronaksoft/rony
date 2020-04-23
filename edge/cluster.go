@@ -198,7 +198,9 @@ func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
 func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
-	_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+	if cm.ReplicaSet == d.edge.replicaSet {
+		_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+	}
 }
 
 type delegateNode struct {
