@@ -160,6 +160,7 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 	x.ShardSet = 0
 	x.RaftPort = 0
 	x.RaftState = 0
+	x.GatewayAddr = x.GatewayAddr[:0]
 	p.pool.Put(x)
 }
 

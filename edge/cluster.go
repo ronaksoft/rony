@@ -59,7 +59,7 @@ type ClusterMember struct {
 	ServerID    string
 	ReplicaSet  uint64
 	ShardSet    uint64
-	GatewayAddr string
+	GatewayAddr []string
 	Addr        net.IP
 	Port        uint16
 	RaftPort    int

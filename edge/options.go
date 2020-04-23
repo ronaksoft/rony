@@ -92,7 +92,10 @@ func WithHttpGateway(config httpGateway.Config) Option {
 		if edge.gatewayProtocol != gateway.Undefined {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
-		gatewayHttp := httpGateway.New(config)
+		gatewayHttp, err := httpGateway.New(config)
+		if err != nil {
+			panic(err)
+		}
 		gatewayHttp.MessageHandler = edge.HandleGatewayMessage
 		edge.gatewayProtocol = gateway.HTTP
 		edge.gateway = gatewayHttp

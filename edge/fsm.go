@@ -48,7 +48,8 @@ func (fsm raftFSM) Snapshot() (raft.FSMSnapshot, error) {
 	return &raftSnapshot{}, nil
 }
 
-func (fsm raftFSM) Restore(io.ReadCloser) error {
+func (fsm raftFSM) Restore(rd io.ReadCloser) error {
+
 	return nil
 }
 

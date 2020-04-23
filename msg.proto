@@ -60,6 +60,6 @@ message EdgeNode {
     optional uint64 ShardSet = 3;
     optional uint32 RaftPort = 4;
     optional RaftState RaftState = 5;
-    required string GatewayAddr = 6;
+    repeated string GatewayAddr = 6;
 
 }

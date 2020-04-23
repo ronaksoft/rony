@@ -34,12 +34,13 @@ type Gateway struct {
 	// Internal Controlling Params
 	listenOn    string
 	listener    net.Listener
+	addrs       []string
 	concurrency int
 	maxBodySize int
 }
 
 // New
-func New(config Config) *Gateway {
+func New(config Config) (*Gateway, error) {
 	g := new(Gateway)
 	g.listenOn = config.ListenAddress
 	g.concurrency = config.Concurrency
@@ -47,7 +48,38 @@ func New(config Config) *Gateway {
 	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
 		fmt.Println("Request Received")
 	}
-	return g
+	ta, err := net.ResolveTCPAddr("tcp4", config.ListenAddress)
+	if err != nil {
+		return nil, err
+	}
+	if ta.IP == nil {
+		addrs, err := net.InterfaceAddrs()
+		if err == nil {
+			for _, a := range addrs {
+				switch x := a.(type) {
+				case *net.IPNet:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				case *net.IPAddr:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				case *net.TCPAddr:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				}
+			}
+		}
+	} else {
+		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
+	}
+
+	return g, nil
 }
 
 // Run
@@ -126,6 +158,6 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 func (g *Gateway) Shutdown() {}
 
 // Addr return the address which gateway is listen on
-func (g *Gateway) Addr() string {
-	return g.listener.Addr().String()
+func (g *Gateway) Addr() []string {
+	return g.addrs
 }

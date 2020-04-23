@@ -176,7 +176,11 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		gatewayAddr := e1.Stats().GatewayAddr
-		parts := strings.Split(gatewayAddr, ":")
+		if len(gatewayAddr) == 0 {
+			fmt.Println("No Gateway Addr", gatewayAddr)
+			return
+		}
+		parts := strings.Split(gatewayAddr[0], ":")
 		if len(parts) != 2 {
 			fmt.Println("Invalid Gateway Addr", gatewayAddr)
 			return
@@ -273,7 +277,7 @@ var BenchCmd = &cobra.Command{
 			count = tools.StrToInt32(args[1])
 		}
 		gatewayAddr := e1.Stats().GatewayAddr
-		parts := strings.Split(gatewayAddr, ":")
+		parts := strings.Split(gatewayAddr[0], ":")
 		if len(parts) != 2 {
 			fmt.Println("Invalid Gateway Addr", gatewayAddr)
 			return

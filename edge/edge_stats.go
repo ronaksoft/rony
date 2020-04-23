@@ -23,7 +23,7 @@ type Stats struct {
 	Members         int
 	MembershipScore int
 	GatewayProtocol gateway.Protocol
-	GatewayAddr     string
+	GatewayAddr     []string
 }
 
 // Stats exports some internal metrics data packed in 'Stats' struct

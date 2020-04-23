@@ -1,6 +1,7 @@
 package websocketGateway
 
 import (
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
@@ -58,6 +59,7 @@ type Gateway struct {
 	waitGroupWriters   *sync.WaitGroup
 	cntReads           uint64
 	cntWrites          uint64
+	addrs              []string
 }
 
 func New(config Config) (*Gateway, error) {
@@ -88,6 +90,37 @@ func New(config Config) (*Gateway, error) {
 		return nil, err
 	} else {
 		g.poller = poller
+	}
+
+	ta, err := net.ResolveTCPAddr("tcp4", config.ListenAddress)
+	if err != nil {
+		return nil, err
+	}
+	if ta.IP == nil {
+		addrs, err := net.InterfaceAddrs()
+		if err == nil {
+			for _, a := range addrs {
+				switch x := a.(type) {
+				case *net.IPNet:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				case *net.IPAddr:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				case *net.TCPAddr:
+					if x.IP.To4() == nil {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.String(), ta.Port))
+				}
+			}
+		}
+	} else {
+		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
 	}
 
 	return g, nil
@@ -353,8 +386,8 @@ func (g *Gateway) Shutdown() {
 }
 
 // Addr return the address which gateway is listen on
-func (g *Gateway) Addr() string {
-	return g.listener.Addr().String()
+func (g *Gateway) Addr() []string {
+	return g.addrs
 }
 
 // GetConnection
