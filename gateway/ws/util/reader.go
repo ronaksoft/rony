@@ -198,29 +198,3 @@ func (r *Reader) reset() {
 	r.opCode = 0
 }
 
-// NextReader prepares next message read from r. It returns header that
-// describes the message and io.Reader to read message's payload. It returns
-// non-nil error when it is not possible to read message's initial frame.
-//
-// Note that next NextReader() on the same r should be done after reading all
-// bytes from previously returned io.Reader. For more performant way to discard
-// message use Reader and its Discard() method.
-//
-// Note that it will not handle any "intermediate" frames, that possibly could
-// be received between text/binary continuation frames. That is, if peer sent
-// text/binary frame with fin flag "false", then it could send ping frame, and
-// eventually remaining part of text/binary frame with fin "true" – with
-// NextReader() the ping frame will be dropped without any notice. To handle
-// this rare, but possible situation (and if you do not know exactly which
-// frames peer could send), you could use Reader with OnIntermediate field set.
-func NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error) {
-	rd := &Reader{
-		Source: r,
-		State:  s,
-	}
-	header, err := rd.NextFrame()
-	if err != nil {
-		return header, nil, err
-	}
-	return header, rd, nil
-}

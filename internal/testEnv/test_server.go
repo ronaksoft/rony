@@ -38,7 +38,7 @@ func (t testDispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *
 func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		b := pools.Bytes.GetLen(envelope.Size())
-		_, _ = envelope.MarshalTo(b)
+		_, _ = envelope.MarshalToSizedBuffer(b)
 		err := ctx.Conn().SendBinary(ctx.StreamID(), b)
 		if err != nil {
 			log.Warn("Error On SendBinary", zap.Error(err))
@@ -60,6 +60,7 @@ func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte) (err error) 
 		return
 	}
 	ctx.SetAuthID(proto.AuthID)
+	pb.PoolProtoMessage.Put(proto)
 	return
 }
 

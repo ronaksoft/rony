@@ -300,6 +300,7 @@ func (g *Gateway) readPump(wc *Conn) {
 		switch ms[idx].OpCode {
 		case ws.OpPong:
 		case ws.OpPing:
+			_ = wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 			err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
 			if err != nil {
 				log.Warn("Error On Write OpPing", zap.Error(err))
@@ -338,12 +339,6 @@ func (g *Gateway) writePump(wr writeRequest) {
 		}
 		// Put the bytes into the pool to be reused again
 		pools.Bytes.Put(wr.payload)
-	case ws.OpPing:
-		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpPong, nil)
-		if err != nil {
-			g.removeConnection(wr.wc.ConnID)
-		}
 	}
 
 }

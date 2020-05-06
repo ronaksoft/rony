@@ -63,7 +63,7 @@ func initRaftWithWebsocket() {
 	panic("BUG!! should not be here")
 }
 
-func BenchmarkEdgeServerMessageSerial(b *testing.B) {
+func BenchmarkStandaloneSerial(b *testing.B) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
 
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
@@ -86,7 +86,7 @@ func BenchmarkEdgeServerMessageSerial(b *testing.B) {
 	}
 }
 
-func BenchmarkEdgeServerMessageParallel(b *testing.B) {
+func BenchmarkStandaloneParallel(b *testing.B) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
 	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
 	envelope := &rony.MessageEnvelope{}
@@ -109,7 +109,7 @@ func BenchmarkEdgeServerMessageParallel(b *testing.B) {
 	})
 }
 
-func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
+func BenchmarkRaftSerial(b *testing.B) {
 	log.SetLevel(log.ErrorLevel)
 	initRaftWithWebsocket()
 
@@ -133,7 +133,7 @@ func BenchmarkEdgeServerWithRaftMessageSerial(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkEdgeServerWithRaftMessageParallel(b *testing.B) {
+func BenchmarkRafParallel(b *testing.B) {
 	log.SetLevel(log.ErrorLevel)
 	initRaftWithWebsocket()
 

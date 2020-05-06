@@ -157,7 +157,7 @@ func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, authID 
 		pools.Bytes.Put(ctx.serverID)
 		ctx.serverID = pools.Bytes.GetCap(len(serverID))
 	}
-	ctx.serverID = append(ctx.serverID, serverID...)
+	ctx.serverID = append(ctx.serverID[:0], serverID...)
 	return ctx
 }
 

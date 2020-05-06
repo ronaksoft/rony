@@ -36,7 +36,7 @@ func init() {
 
 }
 
-func TestEdgeServerSimpleWebsocket(t *testing.T) {
+func TestEdgeStandaloneWebsocket(t *testing.T) {
 	clientPort := 8080
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
@@ -69,7 +69,7 @@ func TestEdgeServerSimpleWebsocket(t *testing.T) {
 	})
 }
 
-func TestEdgeServerRaftWebsocket(t *testing.T) {
+func TestEdgeRaftWebsocket(t *testing.T) {
 	Convey("Replicated Edge", t, func(c C) {
 		clientPort1 := 8081
 		testEnv.ResetCounters()
@@ -138,7 +138,7 @@ func TestEdgeServerRaftWebsocket(t *testing.T) {
 	})
 }
 
-func TestEdgeServerSimpleHttp(t *testing.T) {
+func TestEdgeStandaloneHttp(t *testing.T) {
 	clientPort := 6051
 	edgeServer := testEnv.InitEdgeServerWithHttp("Adam", clientPort,
 		edge.WithDataPath("./_hdd"),
@@ -171,7 +171,7 @@ func TestEdgeServerSimpleHttp(t *testing.T) {
 	})
 }
 
-func BenchmarkServerWithWebsocket(b *testing.B) {
+func BenchmarkStandaloneWebsocket(b *testing.B) {
 	clientPort := 6050
 	if !serverIsRunning {
 		serverIsRunning = true
@@ -197,13 +197,15 @@ func BenchmarkServerWithWebsocket(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
+	b.SetParallelism(10)
 	b.RunParallel(func(p *testing.PB) {
 		var (
 			ms []wsutil.Message
 		)
+		TryConnect:
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		if err != nil {
-			b.Fatal(err)
+			goto TryConnect
 		}
 		for p.Next() {
 			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, bytes)
@@ -220,7 +222,7 @@ func BenchmarkServerWithWebsocket(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkServerWithHttp(b *testing.B) {
+func BenchmarkStandaloneHttp(b *testing.B) {
 	httpClient := fasthttp.Client{
 		MaxConnsPerHost: 1000000,
 		WriteTimeout:    time.Second,
