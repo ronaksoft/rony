@@ -197,4 +197,3 @@ func (r *Reader) reset() {
 	r.frame = nil
 	r.opCode = 0
 }
-

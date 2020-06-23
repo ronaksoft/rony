@@ -145,7 +145,7 @@ func runServer() gateway.Gateway {
 		log.Fatal(err.Error())
 		return nil
 	}
-	gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
+	gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 		atomic.AddInt32(&cntServerReceived, 1)
 		err := c.SendBinary(0, []byte("HI"))
 		if err != nil {

@@ -202,7 +202,7 @@ func BenchmarkStandaloneWebsocket(b *testing.B) {
 		var (
 			ms []wsutil.Message
 		)
-		TryConnect:
+	TryConnect:
 		conn, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%d", clientPort))
 		if err != nil {
 			goto TryConnect

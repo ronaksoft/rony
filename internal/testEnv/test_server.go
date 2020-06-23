@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
+	"git.ronaksoftware.com/ronak/rony/gateway"
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
@@ -48,7 +49,7 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope 
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte) (err error) {
+func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	proto := pb.PoolProtoMessage.Get()
 	err = proto.Unmarshal(data)
 	if err != nil {

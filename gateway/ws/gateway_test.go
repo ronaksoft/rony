@@ -48,7 +48,7 @@ func TestGateway(t *testing.T) {
 			})
 			c.So(err, ShouldBeNil)
 
-			gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+			gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 				// c.So(data, ShouldHaveLength, 4)
 				_ = conn.(*websocketGateway.Conn).SendBinary(streamID, []byte{1, 2, 3, 4})
 				// c.So(err, ShouldBeNil)
@@ -119,7 +119,7 @@ func BenchmarkGatewaySerial(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
 	}
 	gw.Run()
@@ -168,7 +168,7 @@ func BenchmarkGatewayParallel(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
 	}
 	gw.Run()

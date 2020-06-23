@@ -45,7 +45,7 @@ type Dispatcher interface {
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	// Note that conn IS NOT nil in any circumstances.
-	Prepare(ctx *DispatchCtx, data []byte) (err error)
+	Prepare(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error)
 	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
@@ -254,9 +254,9 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
-func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
+func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
-	err := edge.dispatcher.Prepare(dispatchCtx, data)
+	err := edge.dispatcher.Prepare(dispatchCtx, data, kvs...)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return

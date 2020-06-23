@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
+	"git.ronaksoftware.com/ronak/rony/gateway"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 )
@@ -29,7 +30,7 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *ron
 
 }
 
-func (d dispatcher) Prepare(ctx *edge.DispatchCtx, data []byte) (err error) {
+func (d dispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	proto := &pb.ProtoMessage{}
 	err = proto.Unmarshal(data)
 	if err != nil {

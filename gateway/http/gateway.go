@@ -47,7 +47,7 @@ func New(config Config) (*Gateway, error) {
 	g.listenOn = config.ListenAddress
 	g.concurrency = config.Concurrency
 	g.maxBodySize = config.MaxBodySize
-	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
+	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 		fmt.Println("Request Received")
 	}
 	tcpConfig := tcplisten.Config{
@@ -133,7 +133,11 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 
 	conn := acquireConn(g, req)
 
-	var detected bool
+	var (
+		detected bool
+		kvs      = make([]gateway.KeyValue, 0, 4)
+	)
+
 	req.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.ByteToStr(key) {
 		case "Cf-Connecting-Ip":
@@ -146,13 +150,18 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			}
 		case "X-Client-Type":
 			conn.ClientType = append(conn.ClientType[:0], value...)
+		default:
+			kvs = append(kvs, gateway.KeyValue{
+				Key:   string(key),
+				Value: string(value),
+			})
 		}
 	})
 	if !detected {
 		conn.ClientIP = append(conn.ClientIP, req.RemoteIP().To4()...)
 	}
 
-	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	g.MessageHandler(conn, int64(req.ID()), req.PostBody(), kvs...)
 	releaseConn(conn)
 }
 

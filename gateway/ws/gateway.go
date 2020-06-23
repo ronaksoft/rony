@@ -77,7 +77,7 @@ func New(config Config) (*Gateway, error) {
 		g.maxIdleTime = int64(config.MaxIdleTime)
 	}
 	g.connGC = newGC(g)
-	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
+	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte, kvs ...gateway.KeyValue) {}
 	g.CloseHandler = func(c gateway.Conn) {}
 	g.ConnectHandler = func(connID uint64) {}
 	if poller, err := netpoll.New(&netpoll.Config{
