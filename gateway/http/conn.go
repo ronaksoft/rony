@@ -4,6 +4,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/valyala/fasthttp"
+	"net"
 )
 
 /*
@@ -49,7 +50,7 @@ func (c *Conn) GetConnID() uint64 {
 }
 
 func (c *Conn) GetClientIP() string {
-	return tools.ByteToStr(c.ClientIP)
+	return net.IP(c.ClientIP).String()
 }
 
 func (c *Conn) SendBinary(streamID int64, data []byte) error {
