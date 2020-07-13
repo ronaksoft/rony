@@ -12,7 +12,7 @@ import "git.ronaksoftware.com/ronak/rony/internal/pools"
 */
 
 //go:generate protoc -I=. --gorony_out=. msg.proto
-//go:generate protoc -I=./vendor -I=.  --gogofaster_out=. msg.proto
+//go:generate protoc -I=./vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )

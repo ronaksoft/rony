@@ -1,6 +1,10 @@
 syntax = "proto2";
 package rony;
 
+service Rony {
+    rpc Pipeline (stream MessageEnvelope) returns (stream MessageEnvelope){}
+}
+
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
 message MessageEnvelope {
