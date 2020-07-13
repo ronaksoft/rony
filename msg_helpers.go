@@ -93,8 +93,10 @@ func (p *poolError) Get() *Error {
 }
 
 func (p *poolError) Put(x *Error) {
-	x.EnglishDesc = ""
-	x.LocalDesc = ""
+	x.EnglishTemplate = ""
+	x.EnglishItems = x.EnglishItems[:0]
+	x.LocalTemplate = ""
+	x.LocalItems = x.LocalItems[:0]
 	p.pool.Put(x)
 }
 

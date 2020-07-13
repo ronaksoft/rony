@@ -29,8 +29,10 @@ message MessageContainer {
 message Error {
     required string Code = 1;
     required string Items = 2;
-    optional string EnglishDesc = 3;
-    optional string LocalDesc = 4;
+    optional string EnglishTemplate = 3;
+    repeated string EnglishItems = 4;
+    optional string LocalTemplate = 5;
+    repeated string LocalItems = 6;
 }
 
 // ClusterMessage
