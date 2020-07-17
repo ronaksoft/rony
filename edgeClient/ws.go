@@ -36,6 +36,10 @@ type Client struct {
 	pending     map[uint64]chan *rony.MessageEnvelope
 }
 
+func SetLogLevel(level log.Level) {
+	log.SetLevel(level)
+}
+
 func NewWebsocket(hostPort string, dialTimeout time.Duration, h MessageHandler) *Client {
 	c := Client{}
 	c.stopChan = make(chan struct{}, 1)
@@ -52,6 +56,7 @@ ConnectLoop:
 	conn, _, _, err := ws.Dial(context.Background(), c.hostPort)
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
+		time.Sleep(time.Duration(tools.RandomInt64(2000)) * time.Millisecond)
 		goto ConnectLoop
 	}
 	c.conn = conn
