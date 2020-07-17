@@ -7,7 +7,6 @@ import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
-	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
 	"hash/crc32"
 	"reflect"
@@ -193,7 +192,7 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 	return false
 }
 
-func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
+func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
@@ -221,7 +220,7 @@ func (ctx *RequestCtx) PushError(requestID uint64, code, item string) {
 	})
 }
 
-func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto ProtoBufferMessage) {
+func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
@@ -247,7 +246,7 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 	releaseMessageEnvelope(envelope)
 }
 
-func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts int64, proto ProtoBufferMessage) {
+func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireUpdateEnvelope()
 	envelope.Timestamp = ts
 	envelope.UpdateID = updateID
@@ -270,13 +269,4 @@ func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts 
 
 	ctx.dispatchCtx.edge.dispatcher.OnUpdate(ctx.dispatchCtx, authID, envelope)
 	releaseUpdateEnvelope(envelope)
-}
-
-// ProtoBufferMessage
-type ProtoBufferMessage interface {
-	proto.Marshaler
-	proto.Sizer
-	proto.Unmarshaler
-	MarshalTo([]byte) (int, error)
-	MarshalToSizedBuffer([]byte) (int, error)
 }

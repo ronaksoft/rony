@@ -1,6 +1,9 @@
 package rony
 
-import "git.ronaksoftware.com/ronak/rony/internal/pools"
+import (
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"github.com/gogo/protobuf/proto"
+)
 
 /*
    Creation Time: 2020 - Jan - 27
@@ -16,6 +19,15 @@ import "git.ronaksoftware.com/ronak/rony/internal/pools"
 var (
 	ConstructorNames = map[int64]string{}
 )
+
+// ProtoBufferMessage
+type ProtoBufferMessage interface {
+	proto.Marshaler
+	proto.Sizer
+	proto.Unmarshaler
+	MarshalTo([]byte) (int, error)
+	MarshalToSizedBuffer([]byte) (int, error)
+}
 
 func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
 	errMessage := PoolError.Get()
@@ -47,6 +59,15 @@ func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) {
 		e.Message = e.Message[:len(m.Message)]
 	}
 	copy(e.Message, m.Message)
+}
+
+func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMessage) {
+	m.RequestID = reqID
+	m.Constructor = constructor
+	b := pools.Bytes.GetLen(p.Size())
+	_, _ = p.MarshalToSizedBuffer(b)
+	m.Message = append(m.Message[:0], b...)
+	pools.Bytes.Put(b)
 }
 
 func (m *UpdateEnvelope) Clone() *UpdateEnvelope {
