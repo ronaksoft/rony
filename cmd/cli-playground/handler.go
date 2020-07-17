@@ -25,7 +25,7 @@ func GenAskHandler(serverID string) edge.Handler {
 		defer pb.PoolAskResponse.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
-			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
+			ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 			return
 		}
 
@@ -33,7 +33,7 @@ func GenAskHandler(serverID string) edge.Handler {
 			ctx.PushClusterMessage(req.ServerID, ctx.AuthID(), in.RequestID, in.Constructor, req)
 		} else {
 			res.Responder = serverID
-			ctx.PushMessage(ctx.AuthID(), in.RequestID, pb.C_AskResponse, res)
+			ctx.PushMessage( pb.C_AskResponse, res)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func GenEchoHandler(serverID string) edge.Handler {
 		defer pb.PoolEchoResponse.Put(res)
 		err := req.Unmarshal(in.Message)
 		if err != nil {
-			ctx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemRequest)
+			ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 			return
 		}
 
@@ -60,7 +60,7 @@ func GenEchoHandler(serverID string) edge.Handler {
 		res.Timestamp = time.Now().UnixNano()
 		res.Delay = res.Timestamp - req.Timestamp
 
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, pb.C_EchoResponse, res)
+		ctx.PushMessage( pb.C_EchoResponse, res)
 	}
 
 }

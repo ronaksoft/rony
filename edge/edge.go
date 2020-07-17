@@ -195,13 +195,13 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	if readOnly {
 		_, ok := edge.readonlyHandlers[in.Constructor]
 		if !ok {
-			requestCtx.PushError(in.RequestID, rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
+			requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 			return
 		}
 	}
 	handlers, ok := edge.handlers[in.Constructor]
 	if !ok {
-		requestCtx.PushError(in.RequestID, rony.ErrCodeInvalid, rony.ErrItemHandler)
+		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			zap.Int64("AuthID", ctx.AuthID()),
 			zap.Any("Error", r),
 		)
-		ctx.PushError(in.RequestID, rony.ErrCodeInternal, rony.ErrItemServer)
+		ctx.PushError(rony.ErrCodeInternal, rony.ErrItemServer)
 	}
 }
 

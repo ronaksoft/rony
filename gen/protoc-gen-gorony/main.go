@@ -13,8 +13,8 @@ func main() {
 	vanity.ForEachFile(files, vanity.TurnOnMarshalerAll)
 	vanity.ForEachFile(files, vanity.TurnOnSizerAll)
 	vanity.ForEachFile(files, vanity.TurnOnUnmarshalerAll)
-	resp := command.GeneratePlugin(req, &GenPools{}, "_helpers.go")
-	command.Write(resp)
 
+	command.Write(command.GeneratePlugin(req, &GenPools{}, "_rony.go"))
+	command.Write(command.GeneratePlugin(req, &GenServer{}, "_server.go"))
 	return
 }

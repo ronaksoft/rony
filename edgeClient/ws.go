@@ -79,7 +79,7 @@ func (c *Client) createDialer(timeout time.Duration) {
 			if err != nil {
 				return nil, err
 			}
-			log.Info("DNS LookIP", zap.String("Addr", addr), zap.Any("IPs", ips))
+			log.Debug("DNS LookIP", zap.String("Addr", addr), zap.Any("IPs", ips))
 			d := net.Dialer{Timeout: timeout}
 			for _, ip := range ips {
 				if ip.To4() != nil {

@@ -45,6 +45,7 @@ const (
 
 // DispatchCtx
 type DispatchCtx struct {
+	reqID    uint64
 	streamID int64
 	authID   int64
 	serverID []byte
@@ -86,6 +87,7 @@ func (ctx *DispatchCtx) SetAuthID(authID int64) {
 }
 
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
+	ctx.reqID = requestID
 	ctx.req.RequestID = requestID
 	ctx.req.Constructor = constructor
 	if len(payload) > cap(ctx.req.Message) {
@@ -137,6 +139,10 @@ func (ctx *RequestCtx) ConnID() uint64 {
 
 func (ctx *RequestCtx) AuthID() int64 {
 	return ctx.dispatchCtx.authID
+}
+
+func (ctx *RequestCtx) ReqID() uint64 {
+	return ctx.dispatchCtx.reqID
 }
 
 func (ctx *RequestCtx) StopExecution() {
@@ -192,7 +198,11 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 	return false
 }
 
-func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
+func (ctx *RequestCtx) PushMessage(constructor int64, proto rony.ProtoBufferMessage) {
+	ctx.PushCustomMessage(ctx.AuthID(), ctx.ReqID(), constructor, proto)
+}
+
+func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
 	envelope.RequestID = requestID
 	envelope.Constructor = constructor
@@ -213,8 +223,8 @@ func (ctx *RequestCtx) PushMessage(authID int64, requestID uint64, constructor i
 	releaseMessageEnvelope(envelope)
 }
 
-func (ctx *RequestCtx) PushError(requestID uint64, code, item string) {
-	ctx.PushMessage(ctx.dispatchCtx.authID, requestID, rony.C_Error, &rony.Error{
+func (ctx *RequestCtx) PushError(code, item string) {
+	ctx.PushMessage(rony.C_Error, &rony.Error{
 		Code:  code,
 		Items: item,
 	})

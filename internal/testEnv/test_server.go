@@ -9,8 +9,6 @@ import (
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"go.uber.org/zap"
 	"sync/atomic"
 )
@@ -50,59 +48,13 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope 
 }
 
 func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
-	proto := pb.PoolProtoMessage.Get()
-	err = proto.Unmarshal(data)
-	if err != nil {
-		return
-	}
-
-	err = ctx.UnmarshalEnvelope(proto.Payload)
-	if err != nil {
-		return
-	}
-	ctx.SetAuthID(proto.AuthID)
-	pb.PoolProtoMessage.Put(proto)
-	return
+	return ctx.UnmarshalEnvelope(data)
 }
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
 func initHandlers(edgeServer *edge.Server) {
-	edgeServer.AddHandler(100, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := pb.PoolReqSimple1.Get()
-		defer pb.PoolReqSimple1.Put(req)
-		res := pb.PoolResSimple1.Get()
-		defer pb.PoolResSimple1.Put(res)
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(in.RequestID, "Invalid", "Proto")
-			return
-		}
-		res.P1 = req.P1
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
-	})
 
-	edgeServer.AddHandler(101, func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := pb.PoolReqSimple1.Get()
-		defer pb.PoolReqSimple1.Put(req)
-		res := pb.PoolResSimple1.Get()
-		defer pb.PoolResSimple1.Put(res)
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(in.RequestID, "Invalid", "Proto")
-			return
-		}
-		res.P1 = req.P1
-
-		ts := tools.TimeUnix()
-		u := pb.PoolUpdateSimple1.Get()
-		defer pb.PoolUpdateSimple1.Put(u)
-		ctx.PushMessage(ctx.AuthID(), in.RequestID, 201, res)
-		for i := int64(10); i < 20; i++ {
-			u.P1 = tools.StrToByte(tools.Int64ToStr(i))
-			ctx.PushUpdate(ctx.AuthID(), i, 301, ts, u)
-		}
-	})
 }
 
 func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
@@ -138,6 +90,7 @@ func ResetCounters() {
 	atomic.StoreInt32(&receivedMessages, 0)
 	atomic.StoreInt32(&receivedUpdates, 0)
 }
+
 func ReceivedMessages() int32 {
 	return atomic.LoadInt32(&receivedMessages)
 }
