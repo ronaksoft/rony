@@ -71,5 +71,3 @@ var DemoClusterBroadcastCmd = &cobra.Command{
 
 	},
 }
-
-

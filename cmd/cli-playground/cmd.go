@@ -24,7 +24,7 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		StartCmd, StopCmd, ListCmd, JoinCmd,//  EchoCmd, BenchCmd, // ClusterMessageCmd,
+		StartCmd, StopCmd, ListCmd, JoinCmd, //  EchoCmd, BenchCmd, // ClusterMessageCmd,
 		// MembersCmd,
 	)
 

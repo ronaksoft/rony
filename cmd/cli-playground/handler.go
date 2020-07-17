@@ -33,7 +33,7 @@ func GenAskHandler(serverID string) edge.Handler {
 			ctx.PushClusterMessage(req.ServerID, ctx.AuthID(), in.RequestID, in.Constructor, req)
 		} else {
 			res.Responder = serverID
-			ctx.PushMessage( pb.C_AskResponse, res)
+			ctx.PushMessage(pb.C_AskResponse, res)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func GenEchoHandler(serverID string) edge.Handler {
 		res.Timestamp = time.Now().UnixNano()
 		res.Delay = res.Timestamp - req.Timestamp
 
-		ctx.PushMessage( pb.C_EchoResponse, res)
+		ctx.PushMessage(pb.C_EchoResponse, res)
 	}
 
 }

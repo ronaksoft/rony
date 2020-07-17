@@ -5,7 +5,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/edgeClient"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"testing"
-	"time"
 )
 
 /*
@@ -19,7 +18,9 @@ import (
 
 func TestClient_Connect(t *testing.T) {
 	testEnv.Init()
-	c := edgeClient.NewWebsocket("ws://127.0.0.1:8081", time.Second, nil)
+	c := edgeClient.NewWebsocket(edgeClient.Config{
+		HostPort: "ws://127.0.0.1:8081",
+	})
 	c.Connect()
 	_, err := c.Send(rony.C_MessageContainer, &rony.MessageContainer{})
 	if err != nil {

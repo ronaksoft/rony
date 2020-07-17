@@ -1,12 +1,9 @@
 package edge_test
 
 import (
-	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"path/filepath"
 	"testing"
 	"time"
@@ -65,96 +62,15 @@ func initRaftWithWebsocket() {
 
 func BenchmarkStandaloneSerial(b *testing.B) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
-
-	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &rony.MessageEnvelope{}
-	envelope.RequestID = tools.RandomUint64()
-	envelope.Constructor = 101
-	envelope.Message, _ = req.Marshal()
-	proto := &pb.ProtoMessage{}
-	proto.AuthID = 100
-	proto.Payload, _ = envelope.Marshal()
-	bytes, _ := proto.Marshal()
+	sampleServer := pb.NewSampleServer(testEnv.Handlers{})
+	sampleServer.Register(edgeServer)
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetParallelism(1000)
-	conn := testEnv.MockGatewayConn{}
+	// conn := testEnv.MockGatewayConn{}
 
 	for i := 0; i < b.N; i++ {
-		edgeServer.HandleGatewayMessage(&conn, 0, bytes)
+		// edgeServer.HandleGatewayMessage(&conn, 0, bytes)
 	}
-}
-
-func BenchmarkStandaloneParallel(b *testing.B) {
-	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
-	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &rony.MessageEnvelope{}
-	envelope.RequestID = tools.RandomUint64()
-	envelope.Constructor = 101
-	envelope.Message, _ = req.Marshal()
-	proto := &pb.ProtoMessage{}
-	proto.AuthID = 100
-	proto.Payload, _ = envelope.Marshal()
-	bytes, _ := proto.Marshal()
-
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.SetParallelism(1000)
-	conn := testEnv.MockGatewayConn{}
-	b.RunParallel(func(p *testing.PB) {
-		for p.Next() {
-			edgeServer.HandleGatewayMessage(&conn, 0, bytes)
-		}
-	})
-}
-
-func BenchmarkRaftSerial(b *testing.B) {
-	log.SetLevel(log.ErrorLevel)
-	initRaftWithWebsocket()
-
-	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &rony.MessageEnvelope{}
-	envelope.RequestID = tools.RandomUint64()
-	envelope.Constructor = 101
-	envelope.Message, _ = req.Marshal()
-	proto := &pb.ProtoMessage{}
-	proto.AuthID = 100
-	proto.Payload, _ = envelope.Marshal()
-	bytes, _ := proto.Marshal()
-
-	// b.SetParallelism(1000)
-	conn := testEnv.MockGatewayConn{}
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		raftLeader.HandleGatewayMessage(&conn, 0, bytes)
-	}
-	b.StopTimer()
-}
-
-func BenchmarkRafParallel(b *testing.B) {
-	log.SetLevel(log.ErrorLevel)
-	initRaftWithWebsocket()
-
-	req := &pb.ReqSimple1{P1: tools.StrToByte(tools.Int64ToStr(100))}
-	envelope := &rony.MessageEnvelope{}
-	envelope.RequestID = tools.RandomUint64()
-	envelope.Constructor = 101
-	envelope.Message, _ = req.Marshal()
-	proto := &pb.ProtoMessage{}
-	proto.AuthID = 100
-	proto.Payload, _ = envelope.Marshal()
-	bytes, _ := proto.Marshal()
-
-	b.SetParallelism(1000)
-	conn := testEnv.MockGatewayConn{}
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.RunParallel(func(p *testing.PB) {
-		for p.Next() {
-			raftLeader.HandleGatewayMessage(&conn, 0, bytes)
-		}
-	})
-	b.StopTimer()
 }

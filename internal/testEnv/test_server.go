@@ -53,10 +53,6 @@ func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gatew
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
-func initHandlers(edgeServer *edge.Server) {
-
-}
-
 func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithWebsocketGateway(websocketGateway.Config{
@@ -67,7 +63,6 @@ func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.O
 		}),
 	)
 	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
-	initHandlers(edgeServer)
 
 	return edgeServer
 }
@@ -81,7 +76,6 @@ func InitEdgeServerWithHttp(serverID string, clientPort int, opts ...edge.Option
 		}),
 	)
 	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
-	initHandlers(edgeServer)
 
 	return edgeServer
 }
