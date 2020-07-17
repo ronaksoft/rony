@@ -7,10 +7,12 @@ import (
 	"git.ronaksoftware.com/ronak/rony/edgeClient"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,7 +30,7 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		StartCmd, EchoCmd,
+		StartCmd, EchoCmd, BenchCmd,
 	)
 
 	RootCmd.PersistentFlags().String(FlagServerID, "Node", "")
@@ -54,7 +56,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
 			edge.WithWebsocketGateway(websocketGateway.Config{
-				NewConnectionWorkers: 1,
+				NewConnectionWorkers: 10,
 				MaxConcurrency:       1000,
 				MaxIdleTime:          0,
 				ListenAddress:        "0.0.0.0:0",
@@ -121,5 +123,63 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		cmd.Println(res)
+	},
+}
+
+var BenchCmd = &cobra.Command{
+	Use: "bench",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if len(args) != 1 {
+			fmt.Println("Needs ServerID, e.g. echo First.01")
+			return
+		}
+		e1 := Edges[args[0]]
+		if e1 == nil {
+			fmt.Println("Invalid Args")
+			return
+		}
+		gatewayAddr := e1.Stats().GatewayAddr
+		if len(gatewayAddr) == 0 {
+			fmt.Println("No Gateway Addr", gatewayAddr)
+			return
+		}
+		parts := strings.Split(gatewayAddr[0], ":")
+		if len(parts) != 2 {
+			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+			return
+		}
+		var dd int64
+		waitGroup := pools.AcquireWaitGroup()
+		for i := 0; i < 1000; i++ {
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				ec := edgeClient.NewWebsocket(edgeClient.Config{
+					HostPort: fmt.Sprintf("ws://127.0.0.1:%s", parts[1]),
+					Handler: func(m *rony.MessageEnvelope) {
+						cmd.Print(m)
+					},
+				})
+				c := pb.NewSampleClient(ec)
+				for i := 0; i < 100; i++ {
+					startTime := time.Now()
+					req := pb.PoolEchoRequest.Get()
+					req.Int = tools.RandomInt64(0)
+					req.Bool = true
+					req.Timestamp = time.Now().UnixNano()
+					_, err := c.Echo(req)
+					pb.PoolEchoRequest.Put(req)
+					if err != nil {
+						cmd.Println("Error:", err)
+						return
+					}
+					d := time.Now().Sub(startTime)
+					atomic.AddInt64(&dd, int64(d))
+				}
+			}()
+		}
+		waitGroup.Wait()
+		cmd.Println(time.Duration(dd/100000))
 	},
 }
