@@ -3,10 +3,12 @@ package edgeClient
 import (
 	"context"
 	"git.ronaksoftware.com/ronak/rony"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"go.uber.org/zap"
 	"net"
 	"sync"
 	"time"
@@ -46,19 +48,14 @@ func NewWebsocket(hostPort string, dialTimeout time.Duration, h MessageHandler) 
 }
 
 func (c *Client) Connect() {
-	go func() {
-
-		for {
-			// Connect Loop
-		ConnectLoop:
-			conn, _, _, err := ws.Dial(context.Background(), c.hostPort)
-			if err != nil {
-				goto ConnectLoop
-			}
-			c.conn = conn
-
-		}
-	}()
+ConnectLoop:
+	conn, _, _, err := ws.Dial(context.Background(), c.hostPort)
+	if err != nil {
+		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
+		goto ConnectLoop
+	}
+	c.conn = conn
+	go c.receiver()
 	return
 }
 
@@ -72,7 +69,9 @@ func (c *Client) receiver() {
 		_ = c.conn.SetReadDeadline(time.Now().Add(c.idleTimeout))
 		ms, err := wsutil.ReadServerMessage(c.conn, ms)
 		if err != nil {
-			break
+			_ = c.conn.Close()
+			c.Connect()
+			continue
 		}
 		for idx := range ms {
 			switch ms[idx].OpCode {
