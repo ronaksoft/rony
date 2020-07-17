@@ -45,7 +45,6 @@ const (
 
 // DispatchCtx
 type DispatchCtx struct {
-	reqID    uint64
 	streamID int64
 	authID   int64
 	serverID []byte
@@ -87,7 +86,6 @@ func (ctx *DispatchCtx) SetAuthID(authID int64) {
 }
 
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
-	ctx.reqID = requestID
 	ctx.req.RequestID = requestID
 	ctx.req.Constructor = constructor
 	if len(payload) > cap(ctx.req.Message) {
@@ -142,7 +140,7 @@ func (ctx *RequestCtx) AuthID() int64 {
 }
 
 func (ctx *RequestCtx) ReqID() uint64 {
-	return ctx.dispatchCtx.reqID
+	return ctx.dispatchCtx.req.RequestID
 }
 
 func (ctx *RequestCtx) StopExecution() {

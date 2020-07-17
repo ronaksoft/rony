@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"time"
@@ -17,50 +15,25 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-func GenAskHandler(serverID string) edge.Handler {
-	return func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := pb.PoolAskRequest.Get()
-		defer pb.PoolAskRequest.Put(req)
-		res := pb.PoolAskResponse.Get()
-		defer pb.PoolAskResponse.Put(res)
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
-			return
-		}
-
-		if req.ServerID != serverID {
-			ctx.PushClusterMessage(req.ServerID, ctx.AuthID(), in.RequestID, in.Constructor, req)
-		} else {
-			res.Responder = serverID
-			ctx.PushMessage(pb.C_AskResponse, res)
-		}
-	}
+type Handlers struct {
 }
 
-func GenEchoHandler(serverID string) edge.Handler {
-	return func(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-		req := pb.PoolEchoRequest.Get()
-		defer pb.PoolEchoRequest.Put(req)
-		res := pb.PoolEchoResponse.Get()
-		defer pb.PoolEchoResponse.Put(res)
-		err := req.Unmarshal(in.Message)
-		if err != nil {
-			ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
-			return
-		}
+func (h *Handlers) Func1(ctx *edge.RequestCtx, req *pb.Req1, res *pb.Res1) {
+	res.Item1 = req.Item1
+}
 
-		if req.Bool {
-			fmt.Println(serverID)
-		}
+func (h *Handlers) Func2(ctx *edge.RequestCtx, req *pb.Req2, res *pb.Res2) {
+	res.Item1 = req.Item1
+}
 
-		res.Bool = req.Bool
-		res.Int = req.Int
-		res.ServerID = serverID
-		res.Timestamp = time.Now().UnixNano()
-		res.Delay = res.Timestamp - req.Timestamp
+func (h *Handlers) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+	res.Bool = req.Bool
+	res.Int = req.Int
+	res.Timestamp = time.Now().UnixNano()
+	res.Delay = res.Timestamp - req.Timestamp
+}
 
-		ctx.PushMessage(pb.C_EchoResponse, res)
-	}
-
+func (h *Handlers) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {
+	res.Responder = req.ServerID
+	res.Coordinator = req.ServerID
 }
