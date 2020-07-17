@@ -36,25 +36,17 @@ func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
 }
 
 func (m *MessageEnvelope) Clone() *MessageEnvelope {
-	c := &MessageEnvelope{
-		Constructor: m.Constructor,
-		RequestID:   m.RequestID,
-	}
-	c.Message = make([]byte, len(m.Message))
-	copy(c.Message, m.Message)
+	c := PoolMessageEnvelope.Get()
+	c.Constructor = m.Constructor
+	c.RequestID = m.RequestID
+	c.Message = append(c.Message[:0], m.Message...)
 	return c
 }
 
 func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) {
 	e.Constructor = m.Constructor
 	e.RequestID = m.RequestID
-	if len(m.Message) > cap(e.Message) {
-		pools.Bytes.Put(e.Message)
-		e.Message = pools.Bytes.GetLen(len(m.Message))
-	} else {
-		e.Message = e.Message[:len(m.Message)]
-	}
-	copy(e.Message, m.Message)
+	e.Message = append(e.Message[:0], m.Message...)
 }
 
 func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMessage) {
