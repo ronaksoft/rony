@@ -2,7 +2,6 @@ package rony
 
 import (
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"github.com/gogo/protobuf/proto"
 )
 
 /*
@@ -22,10 +21,7 @@ var (
 
 // ProtoBufferMessage
 type ProtoBufferMessage interface {
-	proto.Marshaler
-	proto.Sizer
-	proto.Unmarshaler
-	MarshalTo([]byte) (int, error)
+	Size() int
 	MarshalToSizedBuffer([]byte) (int, error)
 }
 
