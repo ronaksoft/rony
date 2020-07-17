@@ -25,6 +25,12 @@ import (
 */
 
 type MessageHandler func(m *rony.MessageEnvelope)
+type Config struct {
+	HostPort    string
+	IdleTime    time.Duration
+	DialTimeout time.Duration
+	Handler     MessageHandler
+}
 type Client struct {
 	hostPort    string
 	idleTimeout time.Duration
@@ -42,12 +48,19 @@ func SetLogLevel(level log.Level) {
 	log.SetLevel(level)
 }
 
-func NewWebsocket(hostPort string, dialTimeout time.Duration, h MessageHandler) *Client {
+func NewWebsocket(config Config) *Client {
 	c := Client{}
 	c.stopChan = make(chan struct{}, 1)
-	c.dialTimeout = dialTimeout
-	c.hostPort = hostPort
-	c.h = h
+	c.hostPort = config.HostPort
+	c.h = config.Handler
+	if config.DialTimeout == 0 {
+		config.DialTimeout = time.Second * 3
+	}
+	if config.IdleTime == 0 {
+		config.IdleTime = time.Minute
+	}
+	c.idleTimeout = config.IdleTime
+	c.dialTimeout = config.DialTimeout
 	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
 	return &c
 }
@@ -92,7 +105,7 @@ ConnectLoop:
 	conn, _, _, err := c.dialer.Dial(context.Background(), c.hostPort)
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
-		time.Sleep(time.Duration(tools.RandomInt64(2000)) * time.Millisecond + time.Second)
+		time.Sleep(time.Duration(tools.RandomInt64(2000))*time.Millisecond + time.Second)
 		goto ConnectLoop
 	}
 	c.conn = conn
