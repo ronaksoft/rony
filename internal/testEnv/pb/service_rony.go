@@ -132,7 +132,7 @@ func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
 		return nil, err
 	}
 	switch in.Constructor {
-	case C_Func1:
+	case C_Res1:
 		x := &Res1{}
 		_ = x.Unmarshal(in.Message)
 		return x, nil
@@ -159,7 +159,7 @@ func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
 		return nil, err
 	}
 	switch in.Constructor {
-	case C_Func2:
+	case C_Res2:
 		x := &Res2{}
 		_ = x.Unmarshal(in.Message)
 		return x, nil
@@ -186,7 +186,7 @@ func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
 		return nil, err
 	}
 	switch in.Constructor {
-	case C_Echo:
+	case C_EchoResponse:
 		x := &EchoResponse{}
 		_ = x.Unmarshal(in.Message)
 		return x, nil
@@ -213,7 +213,7 @@ func (c *SampleClient) Ask(req *AskRequest) (*AskResponse, error) {
 		return nil, err
 	}
 	switch in.Constructor {
-	case C_Ask:
+	case C_AskResponse:
 		x := &AskResponse{}
 		_ = x.Unmarshal(in.Message)
 		return x, nil

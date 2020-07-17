@@ -152,7 +152,7 @@ func (g *GenRony) Generate(file *generator.FileDescriptor) {
 			g.g.P("}")
 			g.g.P("switch in.Constructor {")
 			g.g.In()
-			g.g.P("case C_", m.Name, ":")
+			g.g.P("case C_", outputType, ":")
 			g.g.In()
 			g.g.P("x := &", outputType, "{}")
 			g.g.P("_ = x.Unmarshal(in.Message)")
