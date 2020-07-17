@@ -2,6 +2,7 @@ package edgeClient
 
 import (
 	"context"
+	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
@@ -27,6 +28,7 @@ type MessageHandler func(m *rony.MessageEnvelope)
 type Client struct {
 	hostPort    string
 	idleTimeout time.Duration
+	dialTimeout time.Duration
 	dialer      ws.Dialer
 	conn        net.Conn
 	stop        bool
@@ -43,17 +45,51 @@ func SetLogLevel(level log.Level) {
 func NewWebsocket(hostPort string, dialTimeout time.Duration, h MessageHandler) *Client {
 	c := Client{}
 	c.stopChan = make(chan struct{}, 1)
-	c.dialer = ws.DefaultDialer
-	c.dialer.Timeout = dialTimeout
+	c.dialTimeout = dialTimeout
 	c.hostPort = hostPort
 	c.h = h
 	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
 	return &c
 }
 
+func (c *Client) createDialer(timeout time.Duration) {
+	c.dialer = ws.Dialer{
+		ReadBufferSize:  32 * 1024, // 32kB
+		WriteBufferSize: 32 * 1024, // 32kB
+		Timeout:         timeout,
+		NetDial: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
+			ips, err := net.LookupIP(host)
+			if err != nil {
+				return nil, err
+			}
+			log.Info("DNS LookIP", zap.String("Addr", addr), zap.Any("IPs", ips))
+			d := net.Dialer{Timeout: timeout}
+			for _, ip := range ips {
+				if ip.To4() != nil {
+					conn, err = d.DialContext(ctx, "tcp4", net.JoinHostPort(ip.String(), port))
+					if err != nil {
+						continue
+					}
+					return
+				}
+			}
+			return nil, fmt.Errorf("no connection")
+		},
+		OnStatusError: nil,
+		OnHeader:      nil,
+		TLSClient:     nil,
+		TLSConfig:     nil,
+		WrapConn:      nil,
+	}
+}
 func (c *Client) Connect() {
 ConnectLoop:
-	conn, _, _, err := ws.Dial(context.Background(), c.hostPort)
+	c.createDialer(c.dialTimeout)
+	conn, _, _, err := c.dialer.Dial(context.Background(), c.hostPort)
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
 		time.Sleep(time.Duration(tools.RandomInt64(2000)) * time.Millisecond)
