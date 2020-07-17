@@ -92,7 +92,7 @@ ConnectLoop:
 	conn, _, _, err := c.dialer.Dial(context.Background(), c.hostPort)
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
-		time.Sleep(time.Duration(tools.RandomInt64(2000)) * time.Millisecond)
+		time.Sleep(time.Duration(tools.RandomInt64(2000)) * time.Millisecond + time.Second)
 		goto ConnectLoop
 	}
 	c.conn = conn
@@ -112,7 +112,7 @@ func (c *Client) receiver() {
 		if err != nil {
 			_ = c.conn.Close()
 			c.Connect()
-			continue
+			return
 		}
 		for idx := range ms {
 			switch ms[idx].OpCode {
