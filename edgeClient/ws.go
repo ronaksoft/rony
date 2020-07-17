@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"go.uber.org/zap"
@@ -31,7 +31,7 @@ type Config struct {
 	DialTimeout time.Duration
 	Handler     MessageHandler
 }
-type Client struct {
+type Websocket struct {
 	hostPort    string
 	idleTimeout time.Duration
 	dialTimeout time.Duration
@@ -41,15 +41,15 @@ type Client struct {
 	stopChan    chan struct{}
 	h           MessageHandler
 	pendingMtx  sync.RWMutex
-	pending     map[uint64]chan *rony.MessageEnvelope
+	pending     map[uint64]MessageHandler
 }
 
 func SetLogLevel(level log.Level) {
 	log.SetLevel(level)
 }
 
-func NewWebsocket(config Config) *Client {
-	c := Client{}
+func NewWebsocket(config Config) Client {
+	c := Websocket{}
 	c.stopChan = make(chan struct{}, 1)
 	c.hostPort = config.HostPort
 	c.h = config.Handler
@@ -61,11 +61,13 @@ func NewWebsocket(config Config) *Client {
 	}
 	c.idleTimeout = config.IdleTime
 	c.dialTimeout = config.DialTimeout
-	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
+	c.pending = make(map[uint64]MessageHandler, 100)
+
+	c.connect()
 	return &c
 }
 
-func (c *Client) createDialer(timeout time.Duration) {
+func (c *Websocket) createDialer(timeout time.Duration) {
 	c.dialer = ws.Dialer{
 		ReadBufferSize:  32 * 1024, // 32kB
 		WriteBufferSize: 32 * 1024, // 32kB
@@ -99,7 +101,8 @@ func (c *Client) createDialer(timeout time.Duration) {
 		WrapConn:      nil,
 	}
 }
-func (c *Client) Connect() {
+
+func (c *Websocket) connect() {
 ConnectLoop:
 	c.createDialer(c.dialTimeout)
 	conn, _, _, err := c.dialer.Dial(context.Background(), c.hostPort)
@@ -113,7 +116,7 @@ ConnectLoop:
 	return
 }
 
-func (c *Client) receiver() {
+func (c *Websocket) receiver() {
 	var (
 		ms []wsutil.Message
 	)
@@ -124,7 +127,7 @@ func (c *Client) receiver() {
 		ms, err := wsutil.ReadServerMessage(c.conn, ms)
 		if err != nil {
 			_ = c.conn.Close()
-			c.Connect()
+			c.connect()
 			return
 		}
 		for idx := range ms {
@@ -140,50 +143,58 @@ func (c *Client) receiver() {
 	}
 }
 
-func (c *Client) extractor(e *rony.MessageEnvelope) {
+func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 	switch e.Constructor {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
 		_ = x.Unmarshal(e.Message)
 		for idx := range x.Envelopes {
 			c.pendingMtx.Lock()
-			ch := c.pending[x.Envelopes[idx].RequestID]
+			h := c.pending[x.Envelopes[idx].RequestID]
 			delete(c.pending, x.Envelopes[idx].RequestID)
 			c.pendingMtx.Unlock()
-			if ch != nil {
-				ch <- x.Envelopes[idx].Clone()
+			if h != nil {
+				h(x.Envelopes[idx])
 			} else {
 				c.h(x.Envelopes[idx].Clone())
 			}
 		}
 	default:
 		c.pendingMtx.Lock()
-		ch := c.pending[e.RequestID]
+		h := c.pending[e.RequestID]
 		delete(c.pending, e.RequestID)
 		c.pendingMtx.Unlock()
-		if ch != nil {
-			ch <- e.Clone()
+		if h != nil {
+			h(e)
 		} else {
 			c.h(e.Clone())
 		}
 	}
 }
 
-func (c *Client) Send(constructor int64, m rony.ProtoBufferMessage) (<-chan *rony.MessageEnvelope, error) {
-	reqID := tools.RandomUint64()
-	e := rony.PoolMessageEnvelope.Get()
-	e.Fill(reqID, constructor, m)
-	b := pools.Bytes.GetLen(e.Size())
-	_, err := e.MarshalToSizedBuffer(b)
+func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
+	b := pools.Bytes.GetLen(req.Size())
+	_, err := req.MarshalToSizedBuffer(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	resChan := make(chan *rony.MessageEnvelope)
+	waitGroup := pools.AcquireWaitGroup()
+	waitGroup.Add(1)
 	c.pendingMtx.Lock()
-	c.pending[reqID] = resChan
+	c.pending[req.RequestID] = func(m *rony.MessageEnvelope) {
+		m.CopyTo(res)
+		waitGroup.Done()
+	}
 	c.pendingMtx.Unlock()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
 	pools.Bytes.Put(b)
-	return resChan, err
+	if err != nil {
+		c.pendingMtx.Lock()
+		delete(c.pending, req.RequestID)
+		c.pendingMtx.Unlock()
+		waitGroup.Done()
+	}
+	waitGroup.Wait()
+	pools.ReleaseWaitGroup(waitGroup)
+	return err
 }

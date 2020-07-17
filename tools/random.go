@@ -3,7 +3,7 @@ package tools
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	mathRand "math/rand"
 	"sync"
 	"time"

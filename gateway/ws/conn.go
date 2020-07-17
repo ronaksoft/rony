@@ -4,8 +4,8 @@ package websocketGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"time"

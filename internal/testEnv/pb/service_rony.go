@@ -5,9 +5,13 @@ package pb
 
 import (
 	fmt "fmt"
+	rony "git.ronaksoftware.com/ronak/rony"
+	edge "git.ronaksoftware.com/ronak/rony/edge"
+	edgeClient "git.ronaksoftware.com/ronak/rony/edgeClient"
+	pools "git.ronaksoftware.com/ronak/rony/pools"
+	tools "git.ronaksoftware.com/ronak/rony/tools"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
-	sync "sync"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -15,188 +19,209 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-const C_Req1 int64 = 1772509555
+const C_Func1 int64 = 272094254
+const C_Func2 int64 = 2302576020
+const C_Echo int64 = 3073810188
+const C_Ask int64 = 1349233664
 
-type poolReq1 struct {
-	pool sync.Pool
+type ISample interface {
+	Func1(ctx *edge.RequestCtx, req *Req1, res *Res1)
+	Func2(ctx *edge.RequestCtx, req *Req2, res *Res2)
+	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
+	Ask(ctx *edge.RequestCtx, req *AskRequest, res *AskResponse)
 }
 
-func (p *poolReq1) Get() *Req1 {
-	x, ok := p.pool.Get().(*Req1)
-	if !ok {
-		return &Req1{}
+type SampleWrapper struct {
+	h ISample
+}
+
+func NewSampleServer(h ISample) SampleWrapper {
+	return SampleWrapper{
+		h: h,
 	}
-	return x
 }
 
-func (p *poolReq1) Put(x *Req1) {
-	x.Item1 = 0
-	p.pool.Put(x)
+func (sw *SampleWrapper) Register(e *edge.Server) {
+	e.AddHandler(C_Func1, sw.Func1Wrapper)
+	e.AddHandler(C_Func2, sw.Func2Wrapper)
+	e.AddHandler(C_Echo, sw.EchoWrapper)
+	e.AddHandler(C_Ask, sw.AskWrapper)
 }
 
-var PoolReq1 = poolReq1{}
-
-const C_Req2 int64 = 4038002889
-
-type poolReq2 struct {
-	pool sync.Pool
-}
-
-func (p *poolReq2) Get() *Req2 {
-	x, ok := p.pool.Get().(*Req2)
-	if !ok {
-		return &Req2{}
+func (sw *SampleWrapper) Func1Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolReq1.Get()
+	defer PoolReq1.Put(req)
+	res := PoolRes1.Get()
+	defer PoolRes1.Put(res)
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
 	}
-	return x
+
+	sw.h.Func1(ctx, req, res)
+	ctx.PushMessage(C_Res1, res)
 }
 
-func (p *poolReq2) Put(x *Req2) {
-	x.Item1 = ""
-	p.pool.Put(x)
-}
-
-var PoolReq2 = poolReq2{}
-
-const C_Res1 int64 = 1536179185
-
-type poolRes1 struct {
-	pool sync.Pool
-}
-
-func (p *poolRes1) Get() *Res1 {
-	x, ok := p.pool.Get().(*Res1)
-	if !ok {
-		return &Res1{}
+func (sw *SampleWrapper) Func2Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolReq2.Get()
+	defer PoolReq2.Put(req)
+	res := PoolRes2.Get()
+	defer PoolRes2.Put(res)
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
 	}
-	return x
+
+	sw.h.Func2(ctx, req, res)
+	ctx.PushMessage(C_Res2, res)
 }
 
-func (p *poolRes1) Put(x *Res1) {
-	x.Item1 = 0
-	p.pool.Put(x)
-}
-
-var PoolRes1 = poolRes1{}
-
-const C_Res2 int64 = 3264834123
-
-type poolRes2 struct {
-	pool sync.Pool
-}
-
-func (p *poolRes2) Get() *Res2 {
-	x, ok := p.pool.Get().(*Res2)
-	if !ok {
-		return &Res2{}
+func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	res := PoolEchoResponse.Get()
+	defer PoolEchoResponse.Put(res)
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
 	}
-	return x
+
+	sw.h.Echo(ctx, req, res)
+	ctx.PushMessage(C_EchoResponse, res)
 }
 
-func (p *poolRes2) Put(x *Res2) {
-	x.Item1 = ""
-	p.pool.Put(x)
-}
-
-var PoolRes2 = poolRes2{}
-
-const C_EchoRequest int64 = 1904100324
-
-type poolEchoRequest struct {
-	pool sync.Pool
-}
-
-func (p *poolEchoRequest) Get() *EchoRequest {
-	x, ok := p.pool.Get().(*EchoRequest)
-	if !ok {
-		return &EchoRequest{}
+func (sw *SampleWrapper) AskWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolAskRequest.Get()
+	defer PoolAskRequest.Put(req)
+	res := PoolAskResponse.Get()
+	defer PoolAskResponse.Put(res)
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
 	}
-	return x
+
+	sw.h.Ask(ctx, req, res)
+	ctx.PushMessage(C_AskResponse, res)
 }
 
-func (p *poolEchoRequest) Put(x *EchoRequest) {
-	x.Int = 0
-	x.Bool = false
-	x.Timestamp = 0
-	p.pool.Put(x)
+type SampleClient struct {
+	c edgeClient.Client
 }
 
-var PoolEchoRequest = poolEchoRequest{}
-
-const C_EchoResponse int64 = 4192619139
-
-type poolEchoResponse struct {
-	pool sync.Pool
-}
-
-func (p *poolEchoResponse) Get() *EchoResponse {
-	x, ok := p.pool.Get().(*EchoResponse)
-	if !ok {
-		return &EchoResponse{}
+func NewSampleClient(ec edgeClient.Client) *SampleClient {
+	return &SampleClient{
+		c: ec,
 	}
-	return x
 }
-
-func (p *poolEchoResponse) Put(x *EchoResponse) {
-	x.Int = 0
-	x.Bool = false
-	x.Timestamp = 0
-	x.Delay = 0
-	x.ServerID = ""
-	p.pool.Put(x)
-}
-
-var PoolEchoResponse = poolEchoResponse{}
-
-const C_AskRequest int64 = 3206229608
-
-type poolAskRequest struct {
-	pool sync.Pool
-}
-
-func (p *poolAskRequest) Get() *AskRequest {
-	x, ok := p.pool.Get().(*AskRequest)
-	if !ok {
-		return &AskRequest{}
+func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	b := pools.Bytes.GetLen(req.Size())
+	req.MarshalToSizedBuffer(b)
+	out.RequestID = tools.RandomUint64()
+	out.Constructor = C_Func1
+	out.Message = append(out.Message[:0], b...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
 	}
-	return x
-}
-
-func (p *poolAskRequest) Put(x *AskRequest) {
-	x.ServerID = ""
-	p.pool.Put(x)
-}
-
-var PoolAskRequest = poolAskRequest{}
-
-const C_AskResponse int64 = 489087205
-
-type poolAskResponse struct {
-	pool sync.Pool
-}
-
-func (p *poolAskResponse) Get() *AskResponse {
-	x, ok := p.pool.Get().(*AskResponse)
-	if !ok {
-		return &AskResponse{}
+	switch in.Constructor {
+	case C_Func1:
+		x := &Res1{}
+		_ = x.Unmarshal(in.Message)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.Message)
+		return nil, fmt.Errorf("%s:%s", x.Code, x.Items)
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.Constructor)
 	}
-	return x
 }
-
-func (p *poolAskResponse) Put(x *AskResponse) {
-	x.Coordinator = ""
-	x.Responder = ""
-	p.pool.Put(x)
+func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	b := pools.Bytes.GetLen(req.Size())
+	req.MarshalToSizedBuffer(b)
+	out.RequestID = tools.RandomUint64()
+	out.Constructor = C_Func2
+	out.Message = append(out.Message[:0], b...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
+	}
+	switch in.Constructor {
+	case C_Func2:
+		x := &Res2{}
+		_ = x.Unmarshal(in.Message)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.Message)
+		return nil, fmt.Errorf("%s:%s", x.Code, x.Items)
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.Constructor)
+	}
 }
-
-var PoolAskResponse = poolAskResponse{}
-
-func init() {
-	ConstructorNames[1772509555] = "Req1"
-	ConstructorNames[4038002889] = "Req2"
-	ConstructorNames[1536179185] = "Res1"
-	ConstructorNames[3264834123] = "Res2"
-	ConstructorNames[1904100324] = "EchoRequest"
-	ConstructorNames[4192619139] = "EchoResponse"
-	ConstructorNames[3206229608] = "AskRequest"
-	ConstructorNames[489087205] = "AskResponse"
+func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	b := pools.Bytes.GetLen(req.Size())
+	req.MarshalToSizedBuffer(b)
+	out.RequestID = tools.RandomUint64()
+	out.Constructor = C_Echo
+	out.Message = append(out.Message[:0], b...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
+	}
+	switch in.Constructor {
+	case C_Echo:
+		x := &EchoResponse{}
+		_ = x.Unmarshal(in.Message)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.Message)
+		return nil, fmt.Errorf("%s:%s", x.Code, x.Items)
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.Constructor)
+	}
+}
+func (c *SampleClient) Ask(req *AskRequest) (*AskResponse, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	b := pools.Bytes.GetLen(req.Size())
+	req.MarshalToSizedBuffer(b)
+	out.RequestID = tools.RandomUint64()
+	out.Constructor = C_Ask
+	out.Message = append(out.Message[:0], b...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
+	}
+	switch in.Constructor {
+	case C_Ask:
+		x := &AskResponse{}
+		_ = x.Unmarshal(in.Message)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.Message)
+		return nil, fmt.Errorf("%s:%s", x.Code, x.Items)
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.Constructor)
+	}
 }

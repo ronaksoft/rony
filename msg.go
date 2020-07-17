@@ -1,7 +1,7 @@
 package rony
 
 import (
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 )
 
 /*

@@ -16,15 +16,15 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type GenServer struct {
+type GenRony struct {
 	g *generator.Generator
 }
 
-func (g *GenServer) Name() string {
+func (g *GenRony) Name() string {
 	return "gen-server"
 }
 
-func (g *GenServer) Init(gen *generator.Generator) {
+func (g *GenRony) Init(gen *generator.Generator) {
 	if gen == nil {
 		g.g = generator.New()
 	} else {
@@ -32,14 +32,19 @@ func (g *GenServer) Init(gen *generator.Generator) {
 	}
 }
 
-func (g *GenServer) Generate(file *generator.FileDescriptor) {
+func (g *GenRony) Generate(file *generator.FileDescriptor) {
 	if len(file.Service) > 0 {
 		g.g.AddImport("git.ronaksoftware.com/ronak/rony/edge")
+		g.g.AddImport("git.ronaksoftware.com/ronak/rony/edgeClient")
+		g.g.AddImport("git.ronaksoftware.com/ronak/rony/pools")
+		g.g.AddImport("git.ronaksoftware.com/ronak/rony/tools")
 		if *file.Package != "rony" {
 			g.g.AddImport("git.ronaksoftware.com/ronak/rony")
 		}
 
 	}
+
+	// Generate Server
 	for _, s := range file.Service {
 		for _, m := range s.Method {
 			constructor := crc32.ChecksumIEEE([]byte(*m.Name))
@@ -105,8 +110,73 @@ func (g *GenServer) Generate(file *generator.FileDescriptor) {
 			g.g.P()
 		}
 	}
+
+	// Generate Client
+	for _, s := range file.Service {
+		g.g.P("type ", s.Name, "Client struct {")
+		g.g.In()
+		g.g.P("c edgeClient.Client")
+		g.g.Out()
+		g.g.P("}")
+		g.g.P()
+		g.g.P("func New", s.Name, "Client (ec edgeClient.Client) *", s.Name, "Client {")
+		g.g.In()
+		g.g.P("return &", s.Name, "Client{")
+		g.g.In()
+		g.g.P("c: ec,")
+		g.g.Out()
+		g.g.P("}")
+		g.g.Out()
+		g.g.P("}")
+
+		for _, m := range s.Method {
+			inputType := strings.Split(*m.InputType, ".")[2]
+			outputType := strings.Split(*m.OutputType, ".")[2]
+			// constructor := crc32.ChecksumIEEE([]byte(*m.Name))
+			g.g.P("func (c *", s.Name, "Client) ", m.Name, "(req *", inputType, ") (*", outputType, ", error) {")
+			g.g.In()
+			g.g.P("out := rony.PoolMessageEnvelope.Get()")
+			g.g.P("defer rony.PoolMessageEnvelope.Put(out)")
+			g.g.P("in := rony.PoolMessageEnvelope.Get()")
+			g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
+			g.g.P("b := pools.Bytes.GetLen(req.Size())")
+			g.g.P("req.MarshalToSizedBuffer(b)")
+			g.g.P("out.RequestID = tools.RandomUint64()")
+			g.g.P("out.Constructor = C_", m.Name)
+			g.g.P("out.Message = append(out.Message[:0], b...)")
+			g.g.P("err := c.c.Send(out, in)")
+			g.g.P("if err != nil {")
+			g.g.In()
+			g.g.P("return nil, err")
+			g.g.Out()
+			g.g.P("}")
+			g.g.P("switch in.Constructor {")
+			g.g.In()
+			g.g.P("case C_", m.Name, ":")
+			g.g.In()
+			g.g.P("x := &", outputType, "{}")
+			g.g.P("_ = x.Unmarshal(in.Message)")
+			g.g.P("return x, nil")
+			g.g.Out()
+			g.g.P("case rony.C_Error:")
+			g.g.In()
+			g.g.P("x := &rony.Error{}")
+			g.g.P("_ = x.Unmarshal(in.Message)")
+			g.g.P("return nil, fmt.Errorf(\"%s:%s\", x.Code, x.Items)")
+			g.g.Out()
+			g.g.P("default:")
+			g.g.In()
+			g.g.P("return nil, fmt.Errorf(\"unknown message: %d\", in.Constructor)")
+			g.g.Out()
+			g.g.Out()
+			g.g.P("}")
+			g.g.Out()
+			g.g.P("}")
+
+		}
+	}
 }
 
-func (g *GenServer) GenerateImports(file *generator.FileDescriptor) {
+func (g *GenRony) GenerateImports(file *generator.FileDescriptor) {
 
 }

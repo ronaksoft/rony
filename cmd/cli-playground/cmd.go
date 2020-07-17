@@ -7,7 +7,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/edgeClient"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/tools"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
@@ -108,40 +108,18 @@ var EchoCmd = &cobra.Command{
 				cmd.Print(m)
 			},
 		})
-		ec.Connect()
+		c := pb.NewSampleClient(ec)
 
 		req := pb.PoolEchoRequest.Get()
 		defer pb.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
-
-		resChan, err := ec.Send(pb.C_Echo, req)
+		res, err := c.Echo(req)
 		if err != nil {
-			fmt.Println(err)
+			cmd.Println("Error:", err)
 			return
 		}
-		envelope := <-resChan
-		switch envelope.Constructor {
-		case rony.C_Error:
-			res := rony.Error{}
-			err = res.Unmarshal(envelope.Message)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Println("Error:", res.Code, res.Items)
-		case pb.C_EchoResponse:
-			res := pb.EchoResponse{}
-			err = res.Unmarshal(envelope.Message)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			if res.Bool != req.Bool || res.Int != req.Int {
-				fmt.Println("ERROR!!! In Response")
-			}
-			fmt.Println("Delay:", time.Duration(res.Delay))
-		}
+		cmd.Println(res)
 	},
 }
