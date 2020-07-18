@@ -28,8 +28,8 @@ BenchmarkServerWithWebsocket-16            46514             25138 ns/op        
 ```
 
 ---
-### Easy Setup
-```
+### Easy Setup for advanced scenarios
+```go
 func main() {
     server := rony.NewEdgeServer(serverID, &dispatcher{},
     	rony.WithWebsocketGateway(websocketGateway.Config{
@@ -78,20 +78,19 @@ on the clients.
 ```
  
 ```
+
 ---
-### Summary
+## Summary
 
 ### Contribution
 We need to make a clear and understandable documentation for Rony, so any help would be appreciated. We also appreciate benchmarking Rony 
 against other platforms for common scenarios and will be cited.
 
-
-
 ### TODOs
-
 - [ ] Model Descriptor implementation for:
     1. Scylla/Aerospike
     2. MongoDB/Redis
+    3. Aggregate/Event/LiftBridge
 - [ ] Middleware support for server side rpc handlers
 - [ ] Update documentation
 - [ ] Improve test coverage
