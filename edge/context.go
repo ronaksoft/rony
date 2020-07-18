@@ -151,6 +151,10 @@ func (ctx *RequestCtx) StopExecution() {
 	ctx.stop = true
 }
 
+func (ctx *RequestCtx) Stopped() bool {
+	return ctx.stop
+}
+
 func (ctx *RequestCtx) Set(key string, v interface{}) {
 	ctx.mtx.Lock()
 	ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
@@ -230,6 +234,7 @@ func (ctx *RequestCtx) PushError(code, item string) {
 		Code:  code,
 		Items: item,
 	})
+	ctx.stop = true
 }
 
 func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
