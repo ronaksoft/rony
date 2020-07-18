@@ -114,6 +114,10 @@ func (edge *Server) AddHandler(constructor int64, handler ...Handler) {
 	edge.handlers[constructor] = handler
 }
 
+func (edge *Server) AddBeforeHandler(constructor int64, handlers ...Handler) {
+
+}
+
 func (edge *Server) AddReadOnlyHandler(constructor int64, handler ...Handler) {
 	edge.readonlyHandlers[constructor] = struct{}{}
 	edge.AddHandler(constructor, handler...)

@@ -38,7 +38,6 @@ type Websocket struct {
 	dialer      ws.Dialer
 	conn        net.Conn
 	stop        bool
-	stopChan    chan struct{}
 	h           MessageHandler
 	pendingMtx  sync.RWMutex
 	pending     map[uint64]MessageHandler
@@ -50,7 +49,6 @@ func SetLogLevel(level log.Level) {
 
 func NewWebsocket(config Config) Client {
 	c := Websocket{}
-	c.stopChan = make(chan struct{}, 1)
 	c.hostPort = config.HostPort
 	c.h = config.Handler
 	if config.DialTimeout == 0 {
@@ -127,7 +125,9 @@ func (c *Websocket) receiver() {
 		ms, err := wsutil.ReadServerMessage(c.conn, ms)
 		if err != nil {
 			_ = c.conn.Close()
-			c.connect()
+			if !c.stop {
+				c.connect()
+			}
 			return
 		}
 		for idx := range ms {
@@ -197,4 +197,9 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 	waitGroup.Wait()
 	pools.ReleaseWaitGroup(waitGroup)
 	return err
+}
+
+func (c *Websocket) Close() error {
+	c.stop = true
+	return c.conn.Close()
 }

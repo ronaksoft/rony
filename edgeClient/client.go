@@ -15,4 +15,5 @@ import (
 
 type Client interface {
 	Send(*rony.MessageEnvelope, *rony.MessageEnvelope) error
+	Close() error
 }
