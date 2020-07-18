@@ -180,6 +180,6 @@ var BenchCmd = &cobra.Command{
 			}()
 		}
 		waitGroup.Wait()
-		cmd.Println(time.Duration(dd/100000))
+		cmd.Println(time.Duration(dd / 100000))
 	},
 }

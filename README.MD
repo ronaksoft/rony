@@ -1,6 +1,5 @@
 # RONY  **(Fast and Scalable RPC Framework)**
 
-
 ---
 ### Features
 1. Gossip Protocol
@@ -64,6 +63,21 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 ```
 **This code does not run, please check example directory for working examples**
 
+### Code Generators
+You must install the following protoc plugins which generate the appropriate codes
+> 1. protoc-gen-gopool
+```
+Generates pools for each message
+```
+> 2. protoc-gen-gorony
+``` 
+Generates Server/Client template codes for boilerplate APIs on the server side, and stubs
+on the clients.
+```
+> 3. protoc-gen-gomodel-scylla
+```
+ 
+```
 ---
 ### Summary
 

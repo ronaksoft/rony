@@ -13,8 +13,8 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-//go:generate protoc -I=. --gorony_out=. msg.proto
-//go:generate protoc -I=./vendor -I=.  --gogofaster_out=plugins=grpc:. msg.proto
+//go:generate protoc -I=. --gopool_out=. msg.proto
+//go:generate protoc -I=.  --gogofaster_out=. msg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )

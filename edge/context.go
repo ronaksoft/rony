@@ -129,10 +129,14 @@ func (ctx *RequestCtx) Return() {
 }
 
 func (ctx *RequestCtx) ConnID() uint64 {
-	if ctx.dispatchCtx.conn != nil {
-		return ctx.dispatchCtx.conn.GetConnID()
+	if ctx.dispatchCtx.Conn() != nil {
+		return ctx.dispatchCtx.Conn().GetConnID()
 	}
 	return 0
+}
+
+func (ctx *RequestCtx) Conn() gateway.Conn {
+	return ctx.dispatchCtx.Conn()
 }
 
 func (ctx *RequestCtx) AuthID() int64 {
