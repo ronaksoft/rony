@@ -87,3 +87,13 @@ against other platforms for common scenarios and will be cited.
 
 
 
+### TODOs
+
+- [ ] Model Descriptor implementation for:
+    1. Scylla/Aerospike
+    2. MongoDB/Redis
+- [ ] Middleware support for server side rpc handlers
+- [ ] Update documentation
+- [ ] Improve test coverage
+- [ ] Support Actor model for communication between nodes 
+- [ ] CLI client generator, make testing server scenarios handy
