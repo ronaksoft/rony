@@ -30,6 +30,14 @@ var (
 type testDispatcher struct {
 }
 
+func (t testDispatcher) OnOpen(conn gateway.Conn) {
+
+}
+
+func (t testDispatcher) OnClose(conn gateway.Conn) {
+
+}
+
 func (t testDispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 	atomic.AddInt32(&receivedUpdates, 1)
 }

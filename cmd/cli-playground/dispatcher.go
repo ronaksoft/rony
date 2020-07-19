@@ -10,6 +10,14 @@ import (
 
 type dispatcher struct{}
 
+func (d dispatcher) OnOpen(conn gateway.Conn) {
+
+}
+
+func (d dispatcher) OnClose(conn gateway.Conn) {
+
+}
+
 func (d dispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
 
 }

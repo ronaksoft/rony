@@ -79,7 +79,7 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newGC(g)
 	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte, kvs ...gateway.KeyValue) {}
 	g.CloseHandler = func(c gateway.Conn) {}
-	g.ConnectHandler = func(connID uint64) {}
+	g.ConnectHandler = func(c gateway.Conn) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -237,7 +237,7 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *Con
 			zap.Int32("Total", totalConns),
 		)
 	}
-	g.ConnectHandler(connID)
+	g.ConnectHandler(&wsConn)
 	g.connGC.monitorConnection(connID)
 	return &wsConn
 }

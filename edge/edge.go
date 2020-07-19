@@ -49,6 +49,10 @@ type Dispatcher interface {
 	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
+	// This will be called when a new connection has been opened
+	OnOpen(conn gateway.Conn)
+	// This will be called when a connection is closed
+	OnClose(conn gateway.Conn)
 }
 
 // Server
@@ -282,8 +286,12 @@ func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	edge.dispatcher.OnMessage(dispatchCtx, dispatchCtx.authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
-func (edge *Server) onConnect(connID uint64)   {}
-func (edge *Server) onClose(conn gateway.Conn) {}
+func (edge *Server) onConnect(conn gateway.Conn) {
+	edge.dispatcher.OnOpen(conn)
+}
+func (edge *Server) onClose(conn gateway.Conn) {
+	edge.dispatcher.OnClose(conn)
+}
 
 // RunCluster runs the gossip and raft if it is set
 func (edge *Server) RunCluster() (err error) {
