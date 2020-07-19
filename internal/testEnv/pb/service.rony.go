@@ -60,7 +60,9 @@ func (sw *SampleWrapper) Func1Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnve
 	}
 
 	sw.h.Func1(ctx, req, res)
-	ctx.PushMessage(C_Res1, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_Res1, res)
+	}
 }
 
 func (sw *SampleWrapper) Func2Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
@@ -75,7 +77,9 @@ func (sw *SampleWrapper) Func2Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnve
 	}
 
 	sw.h.Func2(ctx, req, res)
-	ctx.PushMessage(C_Res2, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_Res2, res)
+	}
 }
 
 func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
@@ -90,7 +94,9 @@ func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	}
 
 	sw.h.Echo(ctx, req, res)
-	ctx.PushMessage(C_EchoResponse, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_EchoResponse, res)
+	}
 }
 
 func (sw *SampleWrapper) AskWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
@@ -105,7 +111,9 @@ func (sw *SampleWrapper) AskWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	}
 
 	sw.h.Ask(ctx, req, res)
-	ctx.PushMessage(C_AskResponse, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_AskResponse, res)
+	}
 }
 
 type SampleClient struct {
