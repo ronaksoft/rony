@@ -21,7 +21,6 @@ import (
 
 	"github.com/dgraph-io/badger/v2/options"
 	"github.com/dgraph-io/badger/v2/table"
-	"github.com/dgraph-io/badger/v2/y"
 )
 
 // Note: If you add a new option X make sure you also add a WithX method on Options.
@@ -50,6 +49,7 @@ type Options struct {
 	Logger              Logger
 	Compression         options.CompressionType
 	EventLogging        bool
+	InMemory            bool
 
 	// Fine tuning options.
 
@@ -64,6 +64,8 @@ type Options struct {
 	BloomFalsePositive float64
 	KeepL0InMemory     bool
 	MaxCacheSize       int64
+	MaxBfCacheSize     int64
+	LoadBloomsOnOpen   bool
 
 	NumLevelZeroTables      int
 	NumLevelZeroTablesStall int
@@ -72,15 +74,22 @@ type Options struct {
 	ValueLogFileSize   int64
 	ValueLogMaxEntries uint32
 
-	NumCompactors     int
-	CompactL0OnClose  bool
-	LogRotatesToFlush int32
+	NumCompactors        int
+	CompactL0OnClose     bool
+	LogRotatesToFlush    int32
+	ZSTDCompressionLevel int
+
 	// When set, checksum will be validated for each entry read from the value log file.
 	VerifyValueChecksum bool
 
 	// Encryption related options.
 	EncryptionKey                 []byte        // encryption key
 	EncryptionKeyRotationDuration time.Duration // key rotation duration
+
+	// BypassLockGaurd will bypass the lock guard on badger. Bypassing lock
+	// guard can cause data corruption if multiple badger instances are using
+	// the same directory. Use this options with caution.
+	BypassLockGuard bool
 
 	// ChecksumVerificationMode decides when db should verify checksums for SSTable blocks.
 	ChecksumVerificationMode options.ChecksumVerificationMode
@@ -99,11 +108,6 @@ type Options struct {
 // DefaultOptions sets a list of recommended options for good performance.
 // Feel free to modify these to suit your needs with the WithX methods.
 func DefaultOptions(path string) Options {
-	defaultCompression := options.ZSTD
-	// Use snappy as default compression algorithm if badger is built without CGO.
-	if !y.CgoEnabled {
-		defaultCompression = options.Snappy
-	}
 	return Options{
 		Dir:                 path,
 		ValueDir:            path,
@@ -126,8 +130,21 @@ func DefaultOptions(path string) Options {
 		CompactL0OnClose:        true,
 		KeepL0InMemory:          true,
 		VerifyValueChecksum:     false,
-		Compression:             defaultCompression,
-		MaxCacheSize:            1 << 30, // 1 GB
+		Compression:             options.None,
+		MaxCacheSize:            0,
+		MaxBfCacheSize:          0,
+		LoadBloomsOnOpen:        true,
+		// The following benchmarks were done on a 4 KB block size (default block size). The
+		// compression is ratio supposed to increase with increasing compression level but since the
+		// input for compression algorithm is small (4 KB), we don't get significant benefit at
+		// level 3.
+		// no_compression-16              10	 502848865 ns/op	 165.46 MB/s	-
+		// zstd_compression/level_1-16     7	 739037966 ns/op	 112.58 MB/s	2.93
+		// zstd_compression/level_3-16     7	 756950250 ns/op	 109.91 MB/s	2.72
+		// zstd_compression/level_15-16    1	11135686219 ns/op	   7.47 MB/s	4.38
+		// Benchmark code can be found in table/builder_test.go file
+		ZSTDCompressionLevel: 1,
+
 		// Nothing to read/write value log using standard File I/O
 		// MemoryMap to mmap() the value log files
 		// (2^30 - 1)*2 when mmapping < 2^31 - 1, max int32.
@@ -147,11 +164,14 @@ func DefaultOptions(path string) Options {
 
 func buildTableOptions(opt Options) table.Options {
 	return table.Options{
-		BlockSize:          opt.BlockSize,
-		BloomFalsePositive: opt.BloomFalsePositive,
-		LoadingMode:        opt.TableLoadingMode,
-		ChkMode:            opt.ChecksumVerificationMode,
-		Compression:        opt.Compression,
+		TableSize:            uint64(opt.MaxTableSize),
+		BlockSize:            opt.BlockSize,
+		BloomFalsePositive:   opt.BloomFalsePositive,
+		LoadBloomsOnOpen:     opt.LoadBloomsOnOpen,
+		LoadingMode:          opt.TableLoadingMode,
+		ChkMode:              opt.ChecksumVerificationMode,
+		Compression:          opt.Compression,
+		ZSTDCompressionLevel: opt.ZSTDCompressionLevel,
 	}
 }
 
@@ -528,7 +548,87 @@ func (opt Options) WithChecksumVerificationMode(cvMode options.ChecksumVerificat
 //
 // This value specifies how much data cache should hold in memory. A small size of cache means lower
 // memory consumption and lookups/iterations would take longer.
+// It is recommended to use a cache if you're using compression or encryption.
+// If compression and encryption both are disabled, adding a cache will lead to
+// unnecessary overhead which will affect the read performance. Setting size to zero disables the
+// cache altogether.
+//
+// Default value of MaxCacheSize is zero.
 func (opt Options) WithMaxCacheSize(size int64) Options {
 	opt.MaxCacheSize = size
+	return opt
+}
+
+// WithInMemory returns a new Options value with Inmemory mode set to the given value.
+//
+// When badger is running in InMemory mode, everything is stored in memory. No value/sst files are
+// created. In case of a crash all data will be lost.
+func (opt Options) WithInMemory(b bool) Options {
+	opt.InMemory = b
+	return opt
+}
+
+// WithZSTDCompressionLevel returns a new Options value with ZSTDCompressionLevel set
+// to the given value.
+//
+// The ZSTD compression algorithm supports 20 compression levels. The higher the compression
+// level, the better is the compression ratio but lower is the performance. Lower levels
+// have better performance and higher levels have better compression ratios.
+// We recommend using level 1 ZSTD Compression Level. Any level higher than 1 seems to
+// deteriorate badger's performance.
+// The following benchmarks were done on a 4 KB block size (default block size). The compression is
+// ratio supposed to increase with increasing compression level but since the input for compression
+// algorithm is small (4 KB), we don't get significant benefit at level 3. It is advised to write
+// your own benchmarks before choosing a compression algorithm or level.
+//
+// no_compression-16              10	 502848865 ns/op	 165.46 MB/s	-
+// zstd_compression/level_1-16     7	 739037966 ns/op	 112.58 MB/s	2.93
+// zstd_compression/level_3-16     7	 756950250 ns/op	 109.91 MB/s	2.72
+// zstd_compression/level_15-16    1	11135686219 ns/op	   7.47 MB/s	4.38
+// Benchmark code can be found in table/builder_test.go file
+func (opt Options) WithZSTDCompressionLevel(cLevel int) Options {
+	opt.ZSTDCompressionLevel = cLevel
+	return opt
+}
+
+// WithBypassLockGuard returns a new Options value with BypassLockGuard
+// set to the given value.
+//
+// When BypassLockGuard option is set, badger will not acquire a lock on the
+// directory. This could lead to data corruption if multiple badger instances
+// write to the same data directory. Use this option with caution.
+//
+// The default value of BypassLockGuard is false.
+func (opt Options) WithBypassLockGuard(b bool) Options {
+	opt.BypassLockGuard = b
+	return opt
+}
+
+// WithMaxBfCacheSize returns a new Options value with MaxBfCacheSize set to the given value.
+//
+// This value specifies how much memory should be used by the bloom filters.
+// Badger uses bloom filters to speed up lookups. Each table has its own bloom
+// filter and each bloom filter is approximately of 5 MB.
+//
+// Zero value for BfCacheSize means all the bloom filters will be kept in
+// memory and the cache is disabled.
+//
+// The default value of MaxBfCacheSize is 0 which means all bloom filters will
+// be kept in memory.
+func (opt Options) WithMaxBfCacheSize(size int64) Options {
+	opt.MaxBfCacheSize = size
+	return opt
+}
+
+// WithLoadBloomsOnOpen returns a new Options value with LoadBloomsOnOpen set to the given value.
+//
+// Badger uses bloom filters to speed up key lookups. When LoadBloomsOnOpen is set
+// to false, all bloom filters will be loaded on DB open. This is supposed to
+// improve the read speed but it will affect the time taken to open the DB. Set
+// this option to true to reduce the time taken to open the DB.
+//
+// The default value of LoadBloomsOnOpen is false.
+func (opt Options) WithLoadBloomsOnOpen(b bool) Options {
+	opt.LoadBloomsOnOpen = b
 	return opt
 }

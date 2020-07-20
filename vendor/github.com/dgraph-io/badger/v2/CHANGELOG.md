@@ -4,7 +4,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Serialization Versioning](VERSIONING.md).
 
-## [Unreleased]
+## [2.0.3] - 2020-03-27
+
+### Fixed
+
+- Add support for watching nil prefix in subscribe API (#1246)
+
+### Performance
+
+- Compress/Encrypt Blocks in the background (#1227)
+- Disable cache by default (#1257)
+
+### Features
+
+- Add BypassDirLock option (#1243)
+- Add separate cache for bloomfilters (#1260)
+
+### New APIs
+- badger.DB
+  - BfCacheMetrics (#1260)
+  - DataCacheMetrics (#1260)
+- badger.Options
+  - WithBypassLockGuard (#1243)
+  - WithLoadBloomsOnOpen (#1260)
+  - WithMaxBfCacheSize (#1260)
+
+## [2.0.2] - 2020-03-02
+
+### Fixed
+
+- Cast sz to uint32 to fix compilation on 32 bit. (#1175)
+- Fix checkOverlap in compaction. (#1166)
+- Avoid sync in inmemory mode. (#1190)
+- Support disabling the cache completely. (#1185)
+- Add support for caching bloomfilters. (#1204)
+- Fix int overflow for 32bit. (#1216)
+- Remove the 'this entry should've caught' log from value.go. (#1170)
+- Rework concurrency semantics of valueLog.maxFid.  (#1187)
+
+### Performance
+
+- Use fastRand instead of locked-rand in skiplist. (#1173)
+- Improve write stalling on level 0 and 1. (#1186)
+- Disable compression and set ZSTD Compression Level to 1. (#1191)
+
+## [2.0.1] - 2020-01-02 
+
+### New APIs
+
+- badger.Options
+  - WithInMemory (f5b6321)
+  - WithZSTDCompressionLevel (3eb4e72)
+  
+- Badger.TableInfo
+  - EstimatedSz (f46f8ea)
+  
+### Features
+
+- Introduce in-memory mode in badger. (#1113)
+
+### Fixed
+
+- Limit manifest's change set size. (#1119)
+- Cast idx to uint32 to fix compilation on i386. (#1118)
+- Fix request increment ref bug. (#1121)
+- Fix windows dataloss issue. (#1134)
+- Fix VerifyValueChecksum checks. (#1138)
+- Fix encryption in stream writer. (#1146)
+- Fix segmentation fault in vlog.Read. (header.Decode) (#1150) 
+- Fix merge iterator duplicates issue. (#1157)
+
+### Performance
+
+- Set level 15 as default compression level in Zstd. (#1111) 
+- Optimize createTable in stream_writer.go. (#1132)
 
 ## [2.0.0] - 2019-11-12
 
@@ -245,7 +318,10 @@ Bug fix:
 ## [1.0.1] - 2017-11-06
 * Fix an uint16 overflow when resizing key slice
 
-[Unreleased]: https://github.com/dgraph-io/badger/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/dgraph-io/badger/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/dgraph-io/badger/compare/v2.0.2...v2.0.3
+[2.0.2]: https://github.com/dgraph-io/badger/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/dgraph-io/badger/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/dgraph-io/badger/compare/v1.6.0...v2.0.0
 [1.6.0]: https://github.com/dgraph-io/badger/compare/v1.5.5...v1.6.0
 [1.5.5]: https://github.com/dgraph-io/badger/compare/v1.5.3...v1.5.5

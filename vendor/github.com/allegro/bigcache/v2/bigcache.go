@@ -33,13 +33,12 @@ type RemoveReason uint32
 
 const (
 	// Expired means the key is past its LifeWindow.
-	// @TODO: Go defaults to 0 so in case we want to return EntryStatus back to the caller Expired cannot be differentiated
-	Expired RemoveReason = iota
+	Expired = RemoveReason(1)
 	// NoSpace means the key is the oldest and the cache size was at its maximum when Set was called, or the
 	// entry exceeded the maximum shard size.
-	NoSpace
+	NoSpace = RemoveReason(2)
 	// Deleted means Delete was called and this key was removed as a result.
-	Deleted
+	Deleted = RemoveReason(3)
 )
 
 // NewBigCache initialize new instance of BigCache
@@ -134,6 +133,15 @@ func (c *BigCache) Set(key string, entry []byte) error {
 	return shard.set(key, hashedKey, entry)
 }
 
+// Append appends entry under the key if key exists, otherwise
+// it will set the key (same behaviour as Set()). With Append() you can
+// concatenate multiple entries under the same key in an lock optimized way.
+func (c *BigCache) Append(key string, entry []byte) error {
+	hashedKey := c.hash.Sum64(key)
+	shard := c.getShard(hashedKey)
+	return shard.append(key, hashedKey, entry)
+}
+
 // Delete removes the key
 func (c *BigCache) Delete(key string) error {
 	hashedKey := c.hash.Sum64(key)
@@ -185,7 +193,7 @@ func (c *BigCache) Stats() Stats {
 func (c *BigCache) KeyMetadata(key string) Metadata {
 	hashedKey := c.hash.Sum64(key)
 	shard := c.getShard(hashedKey)
-	return shard.getKeyMetadata(hashedKey)
+	return shard.getKeyMetadataWithLock(hashedKey)
 }
 
 // Iterator returns iterator function to iterate over EntryInfo's from whole cache.

@@ -1,19 +1,19 @@
-# github.com/BurntSushi/toml v0.3.1
-github.com/BurntSushi/toml
 # github.com/DataDog/zstd v1.4.1
 github.com/DataDog/zstd
-# github.com/allegro/bigcache/v2 v2.1.6
+# github.com/allegro/bigcache/v2 v2.2.3
 github.com/allegro/bigcache/v2
 github.com/allegro/bigcache/v2/queue
+# github.com/andybalholm/brotli v1.0.0
+github.com/andybalholm/brotli
 # github.com/armon/go-metrics v0.3.2
 github.com/armon/go-metrics
-# github.com/bbva/raft-badger v1.0.0
+# github.com/bbva/raft-badger v1.0.1
 github.com/bbva/raft-badger
 # github.com/c-bata/go-prompt v0.2.3
 github.com/c-bata/go-prompt
 # github.com/cespare/xxhash v1.1.0
 github.com/cespare/xxhash
-# github.com/dgraph-io/badger/v2 v2.0.0
+# github.com/dgraph-io/badger/v2 v2.0.3
 github.com/dgraph-io/badger/v2
 github.com/dgraph-io/badger/v2/options
 github.com/dgraph-io/badger/v2/pb
@@ -21,14 +21,14 @@ github.com/dgraph-io/badger/v2/skl
 github.com/dgraph-io/badger/v2/table
 github.com/dgraph-io/badger/v2/trie
 github.com/dgraph-io/badger/v2/y
-# github.com/dgraph-io/ristretto v0.0.0-20191025175511-c1f00be0418e
+# github.com/dgraph-io/ristretto v0.0.2-0.20200115201040-8f368f2f2ab3
 github.com/dgraph-io/ristretto
 github.com/dgraph-io/ristretto/z
 # github.com/dgryski/go-farm v0.0.0-20191112170834-c2139c5d712b
 github.com/dgryski/go-farm
 # github.com/dustin/go-humanize v1.0.0
 github.com/dustin/go-humanize
-# github.com/getsentry/sentry-go v0.6.0
+# github.com/getsentry/sentry-go v0.6.1
 github.com/getsentry/sentry-go
 # github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee
 github.com/gobwas/httphead
@@ -68,10 +68,6 @@ github.com/gogo/protobuf/vanity
 github.com/gogo/protobuf/vanity/command
 # github.com/golang/protobuf v1.3.4
 github.com/golang/protobuf/proto
-github.com/golang/protobuf/ptypes
-github.com/golang/protobuf/ptypes/any
-github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/timestamp
 # github.com/golang/snappy v0.0.1
 github.com/golang/snappy
 # github.com/google/btree v1.0.0
@@ -94,13 +90,11 @@ github.com/hashicorp/go-sockaddr
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/raft v1.1.2
 github.com/hashicorp/raft
-# github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
-github.com/iancoleman/strcase
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
 # github.com/jtolds/gls v4.20.0+incompatible
 github.com/jtolds/gls
-# github.com/klauspost/compress v1.9.0
+# github.com/klauspost/compress v1.10.7
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
@@ -120,12 +114,8 @@ github.com/miekg/dns
 github.com/nyaruka/phonenumbers
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
-# github.com/pkg/profile v1.4.0
-github.com/pkg/profile
 # github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942
 github.com/pkg/term/termios
-# github.com/ryanuber/columnize v2.1.0+incompatible
-github.com/ryanuber/columnize
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 github.com/sean-/seed
 # github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d
@@ -142,19 +132,17 @@ github.com/spf13/cobra
 github.com/spf13/pflag
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v1.9.0
+# github.com/valyala/fasthttp v1.15.1
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
 # github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 github.com/valyala/tcplisten
-# go.uber.org/atomic v1.5.0
+# go.uber.org/atomic v1.6.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.3.0
+# go.uber.org/multierr v1.5.0
 go.uber.org/multierr
-# go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee
-go.uber.org/tools/update-license
-# go.uber.org/zap v1.13.0
+# go.uber.org/zap v1.15.0
 go.uber.org/zap
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/bufferpool
@@ -164,113 +152,15 @@ go.uber.org/zap/zapcore
 # golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
-# golang.org/x/lint v0.0.0-20190930215403-16217165b5de
-golang.org/x/lint
-golang.org/x/lint/golint
-# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+# golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 golang.org/x/net/bpf
-golang.org/x/net/http/httpguts
-golang.org/x/net/http2
-golang.org/x/net/http2/hpack
-golang.org/x/net/idna
 golang.org/x/net/internal/iana
 golang.org/x/net/internal/socket
 golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
+# golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.0
-golang.org/x/text/secure/bidirule
-golang.org/x/text/transform
-golang.org/x/text/unicode/bidi
-golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.0.0-20191029190741-b9c20aec41a5
-golang.org/x/tools/go/analysis
-golang.org/x/tools/go/analysis/passes/inspect
-golang.org/x/tools/go/ast/astutil
-golang.org/x/tools/go/ast/inspector
-golang.org/x/tools/go/buildutil
-golang.org/x/tools/go/gcexportdata
-golang.org/x/tools/go/internal/gcimporter
-golang.org/x/tools/go/internal/packagesdriver
-golang.org/x/tools/go/packages
-golang.org/x/tools/go/types/objectpath
-golang.org/x/tools/go/types/typeutil
-golang.org/x/tools/internal/fastwalk
-golang.org/x/tools/internal/gopathwalk
-golang.org/x/tools/internal/semver
-golang.org/x/tools/internal/span
-# google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.30.0
-google.golang.org/grpc
-google.golang.org/grpc/attributes
-google.golang.org/grpc/backoff
-google.golang.org/grpc/balancer
-google.golang.org/grpc/balancer/base
-google.golang.org/grpc/balancer/grpclb/state
-google.golang.org/grpc/balancer/roundrobin
-google.golang.org/grpc/binarylog/grpc_binarylog_v1
-google.golang.org/grpc/codes
-google.golang.org/grpc/connectivity
-google.golang.org/grpc/credentials
-google.golang.org/grpc/credentials/internal
-google.golang.org/grpc/encoding
-google.golang.org/grpc/encoding/proto
-google.golang.org/grpc/grpclog
-google.golang.org/grpc/internal
-google.golang.org/grpc/internal/backoff
-google.golang.org/grpc/internal/balancerload
-google.golang.org/grpc/internal/binarylog
-google.golang.org/grpc/internal/buffer
-google.golang.org/grpc/internal/channelz
-google.golang.org/grpc/internal/envconfig
-google.golang.org/grpc/internal/grpclog
-google.golang.org/grpc/internal/grpcrand
-google.golang.org/grpc/internal/grpcsync
-google.golang.org/grpc/internal/grpcutil
-google.golang.org/grpc/internal/resolver/dns
-google.golang.org/grpc/internal/resolver/passthrough
-google.golang.org/grpc/internal/serviceconfig
-google.golang.org/grpc/internal/status
-google.golang.org/grpc/internal/syscall
-google.golang.org/grpc/internal/transport
-google.golang.org/grpc/keepalive
-google.golang.org/grpc/metadata
-google.golang.org/grpc/peer
-google.golang.org/grpc/resolver
-google.golang.org/grpc/serviceconfig
-google.golang.org/grpc/stats
-google.golang.org/grpc/status
-google.golang.org/grpc/tap
-# gopkg.in/yaml.v2 v2.2.5
-gopkg.in/yaml.v2
-# honnef.co/go/tools v0.0.1-2019.2.3
-honnef.co/go/tools/arg
-honnef.co/go/tools/cmd/staticcheck
-honnef.co/go/tools/config
-honnef.co/go/tools/deprecated
-honnef.co/go/tools/facts
-honnef.co/go/tools/functions
-honnef.co/go/tools/go/types/typeutil
-honnef.co/go/tools/internal/cache
-honnef.co/go/tools/internal/passes/buildssa
-honnef.co/go/tools/internal/renameio
-honnef.co/go/tools/internal/sharedcheck
-honnef.co/go/tools/lint
-honnef.co/go/tools/lint/lintdsl
-honnef.co/go/tools/lint/lintutil
-honnef.co/go/tools/lint/lintutil/format
-honnef.co/go/tools/loader
-honnef.co/go/tools/printf
-honnef.co/go/tools/simple
-honnef.co/go/tools/ssa
-honnef.co/go/tools/ssautil
-honnef.co/go/tools/staticcheck
-honnef.co/go/tools/staticcheck/vrp
-honnef.co/go/tools/stylecheck
-honnef.co/go/tools/unused
-honnef.co/go/tools/version

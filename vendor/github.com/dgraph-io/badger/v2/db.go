@@ -92,6 +92,7 @@ type DB struct {
 	pub        *publisher
 	registry   *KeyRegistry
 	blockCache *ristretto.Cache
+	bfCache    *ristretto.Cache
 }
 
 const (
@@ -146,7 +147,8 @@ func (db *DB) replayFunction() func(Entry, valuePointer) error {
 			ExpiresAt: e.ExpiresAt,
 		}
 
-		if e.meta&bitFinTxn > 0 {
+		switch {
+		case e.meta&bitFinTxn > 0:
 			txnTs, err := strconv.ParseUint(string(e.Value), 10, 64)
 			if err != nil {
 				return errors.Wrapf(err, "Unable to parse txn fin: %q", e.Value)
@@ -160,7 +162,7 @@ func (db *DB) replayFunction() func(Entry, valuePointer) error {
 			txn = txn[:0]
 			lastCommit = 0
 
-		} else if e.meta&bitTxn > 0 {
+		case e.meta&bitTxn > 0:
 			txnTs := y.ParseTs(nk)
 			if lastCommit == 0 {
 				lastCommit = txnTs
@@ -174,7 +176,7 @@ func (db *DB) replayFunction() func(Entry, valuePointer) error {
 			te := txnEntry{nk: nk, v: v}
 			txn = append(txn, te)
 
-		} else {
+		default:
 			// This entry is from a rewrite.
 			toLSM(nk, v)
 
@@ -188,6 +190,9 @@ func (db *DB) replayFunction() func(Entry, valuePointer) error {
 
 // Open returns a new DB object.
 func Open(opt Options) (db *DB, err error) {
+	if opt.InMemory && (opt.Dir != "" || opt.ValueDir != "") {
+		return nil, errors.New("Cannot use badger in Disk-less mode with Dir or ValueDir set")
+	}
 	opt.maxBatchSize = (15 * opt.MaxTableSize) / 100
 	opt.maxBatchCount = opt.maxBatchSize / int64(skl.MaxNodeSize)
 
@@ -203,7 +208,16 @@ func Open(opt Options) (db *DB, err error) {
 		return nil, errors.Errorf("Valuethreshold greater than max batch size of %d. Either "+
 			"reduce opt.ValueThreshold or increase opt.MaxTableSize.", opt.maxBatchSize)
 	}
-	// Compact L0 on close if either it is set or if KeepL0InMemory is set.
+	if !(opt.ValueLogFileSize <= 2<<30 && opt.ValueLogFileSize >= 1<<20) {
+		return nil, ErrValueLogSize
+	}
+	if !(opt.ValueLogLoadingMode == options.FileIO ||
+		opt.ValueLogLoadingMode == options.MemoryMap) {
+		return nil, ErrInvalidLoadingMode
+	}
+
+	// Compact L0 on close if either it is set or if KeepL0InMemory is set. When
+	// keepL0InMemory is set we need to compact L0 on close otherwise we might lose data.
 	opt.CompactL0OnClose = opt.CompactL0OnClose || opt.KeepL0InMemory
 
 	if opt.ReadOnly {
@@ -212,60 +226,48 @@ func Open(opt Options) (db *DB, err error) {
 		// Do not perform compaction in read only mode.
 		opt.CompactL0OnClose = false
 	}
-
-	for _, path := range []string{opt.Dir, opt.ValueDir} {
-		dirExists, err := exists(path)
-		if err != nil {
-			return nil, y.Wrapf(err, "Invalid Dir: %q", path)
-		}
-		if !dirExists {
-			if opt.ReadOnly {
-				return nil, errors.Errorf("Cannot find directory %q for read-only open", path)
-			}
-			// Try to create the directory
-			err = os.Mkdir(path, 0700)
-			if err != nil {
-				return nil, y.Wrapf(err, "Error Creating Dir: %q", path)
-			}
-		}
-	}
-	absDir, err := filepath.Abs(opt.Dir)
-	if err != nil {
-		return nil, err
-	}
-	absValueDir, err := filepath.Abs(opt.ValueDir)
-	if err != nil {
-		return nil, err
-	}
 	var dirLockGuard, valueDirLockGuard *directoryLockGuard
-	dirLockGuard, err = acquireDirectoryLock(opt.Dir, lockFile, opt.ReadOnly)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if dirLockGuard != nil {
-			_ = dirLockGuard.release()
-		}
-	}()
-	if absValueDir != absDir {
-		valueDirLockGuard, err = acquireDirectoryLock(opt.ValueDir, lockFile, opt.ReadOnly)
-		if err != nil {
+
+	// Create directories and acquire lock on it only if badger is not running in InMemory mode.
+	// We don't have any directories/files in InMemory mode so we don't need to acquire
+	// any locks on them.
+	if !opt.InMemory {
+		if err := createDirs(opt); err != nil {
 			return nil, err
 		}
-		defer func() {
-			if valueDirLockGuard != nil {
-				_ = valueDirLockGuard.release()
+		if !opt.BypassLockGuard {
+			dirLockGuard, err = acquireDirectoryLock(opt.Dir, lockFile, opt.ReadOnly)
+			if err != nil {
+				return nil, err
 			}
-		}()
+			defer func() {
+				if dirLockGuard != nil {
+					_ = dirLockGuard.release()
+				}
+			}()
+			absDir, err := filepath.Abs(opt.Dir)
+			if err != nil {
+				return nil, err
+			}
+			absValueDir, err := filepath.Abs(opt.ValueDir)
+			if err != nil {
+				return nil, err
+			}
+			if absValueDir != absDir {
+				valueDirLockGuard, err = acquireDirectoryLock(opt.ValueDir, lockFile, opt.ReadOnly)
+				if err != nil {
+					return nil, err
+				}
+				defer func() {
+					if valueDirLockGuard != nil {
+						_ = valueDirLockGuard.release()
+					}
+				}()
+			}
+		}
 	}
-	if !(opt.ValueLogFileSize <= 2<<30 && opt.ValueLogFileSize >= 1<<20) {
-		return nil, ErrValueLogSize
-	}
-	if !(opt.ValueLogLoadingMode == options.FileIO ||
-		opt.ValueLogLoadingMode == options.MemoryMap) {
-		return nil, ErrInvalidLoadingMode
-	}
-	manifestFile, manifest, err := openOrCreateManifestFile(opt.Dir, opt.ReadOnly)
+
+	manifestFile, manifest, err := openOrCreateManifestFile(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -280,17 +282,6 @@ func Open(opt Options) (db *DB, err error) {
 		elog = trace.NewEventLog("Badger", "DB")
 	}
 
-	config := ristretto.Config{
-		// Use 5% of cache memory for storing counters.
-		NumCounters: int64(float64(opt.MaxCacheSize) * 0.05 * 2),
-		MaxCost:     int64(float64(opt.MaxCacheSize) * 0.95),
-		BufferItems: 64,
-		Metrics:     true,
-	}
-	cache, err := ristretto.NewCache(&config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create cache")
-	}
 	db = &DB{
 		imm:           make([]*skl.Skiplist, 0, opt.NumMemtables),
 		flushChan:     make(chan flushTask, opt.NumMemtables),
@@ -302,22 +293,52 @@ func Open(opt Options) (db *DB, err error) {
 		valueDirGuard: valueDirLockGuard,
 		orc:           newOracle(opt),
 		pub:           newPublisher(),
-		blockCache:    cache,
 	}
 
+	if opt.MaxCacheSize > 0 {
+		config := ristretto.Config{
+			// Use 5% of cache memory for storing counters.
+			NumCounters: int64(float64(opt.MaxCacheSize) * 0.05 * 2),
+			MaxCost:     int64(float64(opt.MaxCacheSize) * 0.95),
+			BufferItems: 64,
+			Metrics:     true,
+		}
+		db.blockCache, err = ristretto.NewCache(&config)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create data cache")
+		}
+	}
+
+	if opt.MaxBfCacheSize > 0 {
+		config := ristretto.Config{
+			// Use 5% of cache memory for storing counters.
+			NumCounters: int64(float64(opt.MaxBfCacheSize) * 0.05 * 2),
+			MaxCost:     int64(float64(opt.MaxBfCacheSize) * 0.95),
+			BufferItems: 64,
+			Metrics:     true,
+		}
+		db.blockCache, err = ristretto.NewCache(&config)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create bf cache")
+		}
+	}
+
+	if db.opt.InMemory {
+		db.opt.SyncWrites = false
+		// If badger is running in memory mode, push everything into the LSM Tree.
+		db.opt.ValueThreshold = math.MaxInt32
+	}
 	krOpt := KeyRegistryOptions{
 		ReadOnly:                      opt.ReadOnly,
 		Dir:                           opt.Dir,
 		EncryptionKey:                 opt.EncryptionKey,
 		EncryptionKeyRotationDuration: opt.EncryptionKeyRotationDuration,
+		InMemory:                      opt.InMemory,
 	}
 
-	kr, err := OpenKeyRegistry(krOpt)
-	if err != nil {
+	if db.registry, err = OpenKeyRegistry(krOpt); err != nil {
 		return nil, err
 	}
-	db.registry = kr
-	// Calculate initial size.
 	db.calculateSize()
 	db.closers.updateSize = y.NewCloser(1)
 	go db.updateSize(db.closers.updateSize)
@@ -327,6 +348,9 @@ func Open(opt Options) (db *DB, err error) {
 	if db.lc, err = newLevelsController(db, &manifest); err != nil {
 		return nil, err
 	}
+
+	// Initialize vlog struct.
+	db.vlog.init(db)
 
 	if !opt.ReadOnly {
 		db.closers.compactors = y.NewCloser(1)
@@ -370,8 +394,10 @@ func Open(opt Options) (db *DB, err error) {
 	db.closers.writes = y.NewCloser(1)
 	go db.doWrites(db.closers.writes)
 
-	db.closers.valueGC = y.NewCloser(1)
-	go db.vlog.waitOnGC(db.closers.valueGC)
+	if !db.opt.InMemory {
+		db.closers.valueGC = y.NewCloser(1)
+		go db.vlog.waitOnGC(db.closers.valueGC)
+	}
 
 	db.closers.pub = y.NewCloser(1)
 	go db.pub.listenForUpdates(db.closers.pub)
@@ -382,9 +408,20 @@ func Open(opt Options) (db *DB, err error) {
 	return db, nil
 }
 
-// CacheMetrics returns the metrics for the underlying cache.
-func (db *DB) CacheMetrics() *ristretto.Metrics {
-	return db.blockCache.Metrics
+// DataCacheMetrics returns the metrics for the underlying data cache.
+func (db *DB) DataCacheMetrics() *ristretto.Metrics {
+	if db.blockCache != nil {
+		return db.blockCache.Metrics
+	}
+	return nil
+}
+
+// BfCacheMetrics returns the metrics for the underlying bloom filter cache.
+func (db *DB) BfCacheMetrics() *ristretto.Metrics {
+	if db.bfCache != nil {
+		return db.bfCache.Metrics
+	}
+	return nil
 }
 
 // Close closes a DB. It's crucial to call it to ensure all the pending updates make their way to
@@ -402,8 +439,10 @@ func (db *DB) close() (err error) {
 
 	atomic.StoreInt32(&db.blockWrites, 1)
 
-	// Stop value GC first.
-	db.closers.valueGC.SignalAndWait()
+	if !db.opt.InMemory {
+		// Stop value GC first.
+		db.closers.valueGC.SignalAndWait()
+	}
 
 	// Stop writes next.
 	db.closers.writes.SignalAndWait()
@@ -474,8 +513,12 @@ func (db *DB) close() (err error) {
 	db.closers.updateSize.SignalAndWait()
 	db.orc.Stop()
 	db.blockCache.Close()
+	db.bfCache.Close()
 
 	db.elog.Finish()
+	if db.opt.InMemory {
+		return
+	}
 
 	if db.dirLockGuard != nil {
 		if guardErr := db.dirLockGuard.release(); err == nil {
@@ -497,10 +540,10 @@ func (db *DB) close() (err error) {
 	// Fsync directories to ensure that lock file, and any other removed files whose directory
 	// we haven't specifically fsynced, are guaranteed to have their directory entry removal
 	// persisted to disk.
-	if syncErr := syncDir(db.opt.Dir); err == nil {
+	if syncErr := db.syncDir(db.opt.Dir); err == nil {
 		err = errors.Wrap(syncErr, "DB.Close")
 	}
-	if syncErr := syncDir(db.opt.ValueDir); err == nil {
+	if syncErr := db.syncDir(db.opt.ValueDir); err == nil {
 		err = errors.Wrap(syncErr, "DB.Close")
 	}
 
@@ -626,7 +669,10 @@ func (db *DB) shouldWriteValueToLSM(e Entry) bool {
 }
 
 func (db *DB) writeToLSM(b *request) error {
-	if len(b.Ptrs) != len(b.Entries) {
+	// We should check the length of b.Prts and b.Entries only when badger is not
+	// running in InMemory mode. In InMemory mode, we don't write anything to the
+	// value log and that's why the length of b.Ptrs will always be zero.
+	if !db.opt.InMemory && len(b.Ptrs) != len(b.Entries) {
 		return errors.Errorf("Ptrs and Entries don't match: %+v", b)
 	}
 
@@ -668,7 +714,6 @@ func (db *DB) writeRequests(reqs []*request) error {
 		}
 	}
 	db.elog.Printf("writeRequests called. Writing to value log")
-
 	err := db.vlog.write(reqs)
 	if err != nil {
 		done(err)
@@ -726,11 +771,10 @@ func (db *DB) sendToWriteCh(entries []*Entry) (*request, error) {
 	// We can only service one request because we need each txn to be stored in a contigous section.
 	// Txns should not interleave among other txns or rewrites.
 	req := requestPool.Get().(*request)
+	req.reset()
 	req.Entries = entries
-	req.Wg = sync.WaitGroup{}
 	req.Wg.Add(1)
 	req.IncrRef()     // for db write
-	req.IncrRef()     // for publisher updates
 	db.writeCh <- req // Handled in doWrites.
 	y.NumPuts.Add(int64(len(entries)))
 
@@ -891,11 +935,16 @@ func buildL0Table(ft flushTask, bopts table.Options) []byte {
 	defer iter.Close()
 	b := table.NewTableBuilder(bopts)
 	defer b.Close()
+	var vp valuePointer
 	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
 		if len(ft.dropPrefix) > 0 && bytes.HasPrefix(iter.Key(), ft.dropPrefix) {
 			continue
 		}
-		b.Add(iter.Key(), iter.Value())
+		vs := iter.Value()
+		if vs.Meta&bitValuePointer > 0 {
+			vp.Decode(vs.Value)
+		}
+		b.Add(iter.Key(), iter.Value(), vp.Len)
 	}
 	return b.Finish()
 }
@@ -932,6 +981,7 @@ func (db *DB) handleFlushTask(ft flushTask) error {
 	bopts.DataKey = dk
 	// Builder does not need cache but the same options are used for opening table.
 	bopts.Cache = db.blockCache
+	bopts.BfCache = db.bfCache
 	tableData := buildL0Table(ft, bopts)
 
 	fileID := db.lc.reserveFileID()
@@ -950,7 +1000,7 @@ func (db *DB) handleFlushTask(ft flushTask) error {
 
 	// Don't block just to sync the directory entry.
 	dirSyncCh := make(chan error, 1)
-	go func() { dirSyncCh <- syncDir(db.opt.Dir) }()
+	go func() { dirSyncCh <- db.syncDir(db.opt.Dir) }()
 
 	if _, err = fd.Write(tableData); err != nil {
 		db.elog.Errorf("ERROR while writing to level 0: %v", err)
@@ -1021,6 +1071,9 @@ func exists(path string) (bool, error) {
 // This function does a filewalk, calculates the size of vlog and sst files and stores it in
 // y.LSMSize and y.VlogSize.
 func (db *DB) calculateSize() {
+	if db.opt.InMemory {
+		return
+	}
 	newInt := func(val int64) *expvar.Int {
 		v := new(expvar.Int)
 		v.Add(val)
@@ -1034,9 +1087,10 @@ func (db *DB) calculateSize() {
 				return err
 			}
 			ext := filepath.Ext(path)
-			if ext == ".sst" {
+			switch ext {
+			case ".sst":
 				lsmSize += info.Size()
-			} else if ext == ".vlog" {
+			case ".vlog":
 				vlogSize += info.Size()
 			}
 			return nil
@@ -1058,6 +1112,9 @@ func (db *DB) calculateSize() {
 
 func (db *DB) updateSize(lc *y.Closer) {
 	defer lc.Done()
+	if db.opt.InMemory {
+		return
+	}
 
 	metricsTicker := time.NewTicker(time.Minute)
 	defer metricsTicker.Stop()
@@ -1100,6 +1157,9 @@ func (db *DB) updateSize(lc *y.Closer) {
 // Note: Every time GC is run, it would produce a spike of activity on the LSM
 // tree.
 func (db *DB) RunValueLogGC(discardRatio float64) error {
+	if db.opt.InMemory {
+		return ErrGCInMemoryMode
+	}
 	if discardRatio >= 1.0 || discardRatio <= 0.0 {
 		return ErrInvalidRequest
 	}
@@ -1187,11 +1247,12 @@ func (seq *Sequence) Release() error {
 func (seq *Sequence) updateLease() error {
 	return seq.db.Update(func(txn *Txn) error {
 		item, err := txn.Get(seq.key)
-		if err == ErrKeyNotFound {
+		switch {
+		case err == ErrKeyNotFound:
 			seq.next = 0
-		} else if err != nil {
+		case err != nil:
 			return err
-		} else {
+		default:
 			var num uint64
 			if err := item.Value(func(v []byte) error {
 				num = binary.BigEndian.Uint64(v)
@@ -1479,6 +1540,8 @@ func (db *DB) dropAll() (func(), error) {
 	db.lc.nextFileID = 1
 	db.opt.Infof("Deleted %d value log files. DropAll done.\n", num)
 	db.blockCache.Clear()
+	db.bfCache.Clear()
+
 	return resume, nil
 }
 
@@ -1541,46 +1604,48 @@ type KVList = pb.KVList
 // This function blocks until the given context is done or an error occurs.
 // The given function will be called with a new KVList containing the modified keys and the
 // corresponding values.
-func (db *DB) Subscribe(ctx context.Context, cb func(kv *KVList), prefixes ...[]byte) error {
+func (db *DB) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes ...[]byte) error {
 	if cb == nil {
 		return ErrNilCallback
 	}
-	if len(prefixes) == 0 {
-		return ErrNoPrefixes
-	}
+
 	c := y.NewCloser(1)
 	recvCh, id := db.pub.newSubscriber(c, prefixes...)
-	slurp := func(batch *pb.KVList) {
-		defer func() {
-			if len(batch.GetKv()) > 0 {
-				cb(batch)
-			}
-		}()
+	slurp := func(batch *pb.KVList) error {
 		for {
 			select {
 			case kvs := <-recvCh:
 				batch.Kv = append(batch.Kv, kvs.Kv...)
 			default:
-				return
+				if len(batch.GetKv()) > 0 {
+					return cb(batch)
+				}
+				return nil
 			}
 		}
 	}
 	for {
 		select {
 		case <-c.HasBeenClosed():
-			slurp(new(pb.KVList))
-			// Drain if any pending updates.
-			c.Done()
 			// No need to delete here. Closer will be called only while
 			// closing DB. Subscriber will be deleted by cleanSubscribers.
-			return nil
+			err := slurp(new(pb.KVList))
+			// Drain if any pending updates.
+			c.Done()
+			return err
 		case <-ctx.Done():
 			c.Done()
 			db.pub.deleteSubscriber(id)
 			// Delete the subscriber to avoid further updates.
 			return ctx.Err()
 		case batch := <-recvCh:
-			slurp(batch)
+			err := slurp(batch)
+			if err != nil {
+				c.Done()
+				// Delete the subscriber if there is an error by the callback.
+				db.pub.deleteSubscriber(id)
+				return err
+			}
 		}
 	}
 }
@@ -1588,4 +1653,31 @@ func (db *DB) Subscribe(ctx context.Context, cb func(kv *KVList), prefixes ...[]
 // shouldEncrypt returns bool, which tells whether to encrypt or not.
 func (db *DB) shouldEncrypt() bool {
 	return len(db.opt.EncryptionKey) > 0
+}
+
+func (db *DB) syncDir(dir string) error {
+	if db.opt.InMemory {
+		return nil
+	}
+	return syncDir(dir)
+}
+
+func createDirs(opt Options) error {
+	for _, path := range []string{opt.Dir, opt.ValueDir} {
+		dirExists, err := exists(path)
+		if err != nil {
+			return y.Wrapf(err, "Invalid Dir: %q", path)
+		}
+		if !dirExists {
+			if opt.ReadOnly {
+				return errors.Errorf("Cannot find directory %q for read-only open", path)
+			}
+			// Try to create the directory
+			err = os.Mkdir(path, 0700)
+			if err != nil {
+				return y.Wrapf(err, "Error Creating Dir: %q", path)
+			}
+		}
+	}
+	return nil
 }

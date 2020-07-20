@@ -87,6 +87,9 @@ type manifestFile struct {
 
 	// Used to track the current state of the manifest, used when rewriting.
 	manifest Manifest
+
+	// Used to indicate if badger was opened in InMemory mode.
+	inMemory bool
 }
 
 const (
@@ -114,11 +117,14 @@ func (m *Manifest) clone() Manifest {
 	return ret
 }
 
-// openOrCreateManifestFile opens a Badger manifest file if it exists, or creates on if
-// one doesn’t.
-func openOrCreateManifestFile(dir string, readOnly bool) (
+// openOrCreateManifestFile opens a Badger manifest file if it exists, or creates one if
+// doesn’t exists.
+func openOrCreateManifestFile(opt Options) (
 	ret *manifestFile, result Manifest, err error) {
-	return helpOpenOrCreateManifestFile(dir, readOnly, manifestDeletionsRewriteThreshold)
+	if opt.InMemory {
+		return &manifestFile{inMemory: true}, Manifest{}, nil
+	}
+	return helpOpenOrCreateManifestFile(opt.Dir, opt.ReadOnly, manifestDeletionsRewriteThreshold)
 }
 
 func helpOpenOrCreateManifestFile(dir string, readOnly bool, deletionsThreshold int) (
@@ -180,6 +186,9 @@ func helpOpenOrCreateManifestFile(dir string, readOnly bool, deletionsThreshold 
 }
 
 func (mf *manifestFile) close() error {
+	if mf.inMemory {
+		return nil
+	}
 	return mf.fp.Close()
 }
 
@@ -188,6 +197,9 @@ func (mf *manifestFile) close() error {
 // this depends on the filesystem -- some might append garbage data if a system crash happens at
 // the wrong time.)
 func (mf *manifestFile) addChanges(changesParam []*pb.ManifestChange) error {
+	if mf.inMemory {
+		return nil
+	}
 	changes := pb.ManifestChangeSet{Changes: changesParam}
 	buf, err := proto.Marshal(&changes)
 	if err != nil {
@@ -353,6 +365,11 @@ func ReplayManifestFile(fp *os.File) (Manifest, int64, error) {
 				version, magicVersion)
 	}
 
+	stat, err := fp.Stat()
+	if err != nil {
+		return Manifest{}, 0, err
+	}
+
 	build := createManifest()
 	var offset int64
 	for {
@@ -366,6 +383,12 @@ func ReplayManifestFile(fp *os.File) (Manifest, int64, error) {
 			return Manifest{}, 0, err
 		}
 		length := y.BytesToU32(lenCrcBuf[0:4])
+		// Sanity check to ensure we don't over-allocate memory.
+		if length > uint32(stat.Size()) {
+			return Manifest{}, 0, errors.Errorf(
+				"Buffer length: %d greater than file size: %d. Manifest file might be corrupted",
+				length, stat.Size())
+		}
 		var buf = make([]byte, length)
 		if _, err := io.ReadFull(&r, buf); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {

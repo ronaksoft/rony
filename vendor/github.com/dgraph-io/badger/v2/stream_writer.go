@@ -243,13 +243,18 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
+	// Sort tables at the end.
+	for _, l := range sw.db.lc.levels {
+		l.sortTables()
+	}
+
 	// Now sync the directories, so all the files are registered.
 	if sw.db.opt.ValueDir != sw.db.opt.Dir {
-		if err := syncDir(sw.db.opt.ValueDir); err != nil {
+		if err := sw.db.syncDir(sw.db.opt.ValueDir); err != nil {
 			return err
 		}
 	}
-	if err := syncDir(sw.db.opt.Dir); err != nil {
+	if err := sw.db.syncDir(sw.db.opt.Dir); err != nil {
 		return err
 	}
 	return sw.db.lc.validate()
@@ -297,12 +302,14 @@ func (w *sortedWriter) handleRequests() {
 
 	process := func(req *request) {
 		for i, e := range req.Entries {
-			vptr := req.Ptrs[i]
-			if !vptr.IsZero() {
-				y.AssertTrue(w.head.Less(vptr))
-				w.head = vptr
+			// If badger is running in InMemory mode, len(req.Ptrs) == 0.
+			if i < len(req.Ptrs) {
+				vptr := req.Ptrs[i]
+				if !vptr.IsZero() {
+					y.AssertTrue(w.head.Less(vptr))
+					w.head = vptr
+				}
 			}
-
 			var vs y.ValueStruct
 			if e.skipVlog {
 				vs = y.ValueStruct{
@@ -312,6 +319,7 @@ func (w *sortedWriter) handleRequests() {
 					ExpiresAt: e.ExpiresAt,
 				}
 			} else {
+				vptr := req.Ptrs[i]
 				vs = y.ValueStruct{
 					Value:     vptr.Encode(),
 					Meta:      e.meta | bitValuePointer,
@@ -354,7 +362,11 @@ func (w *sortedWriter) Add(key []byte, vs y.ValueStruct) error {
 	}
 
 	w.lastKey = y.SafeCopy(w.lastKey, key)
-	w.builder.Add(key, vs)
+	var vp valuePointer
+	if vs.Meta&bitValuePointer > 0 {
+		vp.Decode(vs.Value)
+	}
+	w.builder.Add(key, vs, vp.Len)
 	return nil
 }
 
@@ -401,19 +413,27 @@ func (w *sortedWriter) createTable(builder *table.Builder) error {
 		return nil
 	}
 	fileID := w.db.lc.reserveFileID()
-	fd, err := y.CreateSyncedFile(table.NewFilename(fileID, w.db.opt.Dir), true)
-	if err != nil {
-		return err
-	}
-	if _, err := fd.Write(data); err != nil {
-		return err
-	}
 	opts := buildTableOptions(w.db.opt)
 	opts.DataKey = builder.DataKey()
 	opts.Cache = w.db.blockCache
-	tbl, err := table.OpenTable(fd, opts)
-	if err != nil {
-		return err
+	opts.BfCache = w.db.bfCache
+	var tbl *table.Table
+	if w.db.opt.InMemory {
+		var err error
+		if tbl, err = table.OpenInMemoryTable(data, fileID, &opts); err != nil {
+			return err
+		}
+	} else {
+		fd, err := y.CreateSyncedFile(table.NewFilename(fileID, w.db.opt.Dir), true)
+		if err != nil {
+			return err
+		}
+		if _, err := fd.Write(data); err != nil {
+			return err
+		}
+		if tbl, err = table.OpenTable(fd, opts); err != nil {
+			return err
+		}
 	}
 	lc := w.db.lc
 
@@ -442,6 +462,7 @@ func (w *sortedWriter) createTable(builder *table.Builder) error {
 	// Now that table can be opened successfully, let's add this to the MANIFEST.
 	change := &pb.ManifestChange{
 		Id:          tbl.ID(),
+		KeyId:       tbl.KeyID(),
 		Op:          pb.ManifestChange_CREATE,
 		Level:       uint32(lhandler.level),
 		Compression: uint32(tbl.CompressionType()),
@@ -449,9 +470,11 @@ func (w *sortedWriter) createTable(builder *table.Builder) error {
 	if err := w.db.manifest.addChanges([]*pb.ManifestChange{change}); err != nil {
 		return err
 	}
-	if err := lhandler.replaceTables([]*table.Table{}, []*table.Table{tbl}); err != nil {
-		return err
-	}
+
+	// We are not calling lhandler.replaceTables() here, as it sorts tables on every addition.
+	// We can sort all tables only once during Flush() call.
+	lhandler.addTable(tbl)
+
 	// Release the ref held by OpenTable.
 	_ = tbl.DecrRef()
 	w.db.opt.Infof("Table created: %d at level: %d for stream: %d. Size: %s\n",

@@ -124,6 +124,16 @@ func main() {
 Please note that Badger obtains a lock on the directories so multiple processes
 cannot open the same database at the same time.
 
+#### In-Memory Mode/Diskless Mode
+By default, Badger ensures all the data is persisted to the disk. It also supports a pure
+in-memory mode. When Badger is running in in-memory mode, all the data is stored in the memory.
+Reads and writes are much faster in in-memory mode, but all the data stored in Badger will be lost
+in case of a crash or close. To open badger in in-memory mode, set the `InMemory` option.
+
+```
+opt := badger.DefaultOptions("").WithInMemory(true)
+```
+
 ### Transactions
 
 #### Read-only transactions
@@ -242,7 +252,7 @@ on it.
 
 ```go
 err := db.Update(func(txn *badger.Txn) error {
-  e := NewEntry([]byte("answer"), []byte("42"))
+  e := badger.NewEntry([]byte("answer"), []byte("42"))
   err := txn.SetEntry(e)
   return err
 })
@@ -391,7 +401,7 @@ and `Txn.SetEntry()` API methods.
 
 ```go
 err := db.Update(func(txn *badger.Txn) error {
-  e := NewEntry([]byte("answer"), []byte("42")).WithTTL(time.Hour)
+  e := badger.NewEntry([]byte("answer"), []byte("42")).WithTTL(time.Hour)
   err := txn.SetEntry(e)
   return err
 })
@@ -404,7 +414,7 @@ metadata can be set using `Entry.WithMeta()` and `Txn.SetEntry()` API methods.
 
 ```go
 err := db.Update(func(txn *badger.Txn) error {
-  e := NewEntry([]byte("answer"), []byte("42")).WithMeta(byte(1))
+  e := badger.NewEntry([]byte("answer"), []byte("42")).WithMeta(byte(1))
   err := txn.SetEntry(e)
   return err
 })
@@ -415,7 +425,7 @@ then can be set using `Txn.SetEntry()`.
 
 ```go
 err := db.Update(func(txn *badger.Txn) error {
-  e := NewEntry([]byte("answer"), []byte("42")).WithMeta(byte(1)).WithTTL(time.Hour)
+  e := badger.NewEntry([]byte("answer"), []byte("42")).WithMeta(byte(1)).WithTTL(time.Hour)
   err := txn.SetEntry(e)
   return err
 })
@@ -738,6 +748,7 @@ Below is a list of known projects that use Badger:
 
 * [0-stor](https://github.com/zero-os/0-stor) - Single device object store.
 * [Dgraph](https://github.com/dgraph-io/dgraph) - Distributed graph database.
+* [Jaeger](https://github.com/jaegertracing/jaeger) - Distributed tracing platform.
 * [TalariaDB](https://github.com/grab/talaria) - Distributed, low latency time-series database.
 * [Dispatch Protocol](https://github.com/dispatchlabs/disgo) - Blockchain protocol for distributed application data analytics.
 * [Sandglass](https://github.com/celrenheit/sandglass) - distributed, horizontally scalable, persistent, time sorted message queue.
@@ -765,6 +776,7 @@ Below is a list of known projects that use Badger:
 * [Volument](https://volument.com/) - A new take on website analytics backed by Badger.
 * [Sloop](https://github.com/salesforce/sloop) - Kubernetes History Visualization.
 * [KVdb](https://kvdb.io/) - Hosted key-value store and serverless platform built on top of Badger.
+* [Dkron](https://dkron.io/) - Distributed, fault tolerant job scheduling system.
 
 If you are using Badger in a project please send a pull request to add it to the list.
 
