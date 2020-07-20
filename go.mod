@@ -31,8 +31,8 @@ require (
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.3
+	github.com/spf13/cobra v1.0.0
+	github.com/spf13/pflag v1.0.5
 	github.com/valyala/fasthttp v1.15.1
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.15.0
