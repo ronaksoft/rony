@@ -14,6 +14,6 @@ func main() {
 	vanity.ForEachFile(files, vanity.TurnOnSizerAll)
 	vanity.ForEachFile(files, vanity.TurnOnUnmarshalerAll)
 
-	command.Write(command.GeneratePlugin(req, &GenPools{}, ".pools.go"))
+	command.Write(command.GeneratePlugin(req, &GenModelScylla{}, ".pools.go"))
 	return
 }

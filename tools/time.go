@@ -1,6 +1,9 @@
 package tools
 
-import "time"
+import (
+	"sync/atomic"
+	"time"
+)
 
 /*
    Creation Time: 2020 - Apr - 09
@@ -16,14 +19,15 @@ var (
 )
 
 func init() {
+	timeInSec = time.Now().Unix()
 	go func() {
 		for {
-			timeInSec = time.Now().Unix()
 			time.Sleep(time.Second)
+			atomic.AddInt64(&timeInSec, time.Now().Unix()-atomic.LoadInt64(&timeInSec))
 		}
 	}()
 }
 
 func TimeUnix() int64 {
-	return timeInSec
+	return atomic.LoadInt64(&timeInSec)
 }

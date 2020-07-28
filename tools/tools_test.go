@@ -54,7 +54,7 @@ func TestSanitizePhone(t *testing.T) {
 	}
 
 	for ph, cph := range phones {
-		sph := SanitizePhone(ph, "IR", false)
+		sph := SanitizePhone(ph, "IR")
 		if sph != cph {
 			t.Fatal()
 		}

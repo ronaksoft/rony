@@ -112,3 +112,11 @@ func RandomUint64() (x uint64) {
 	rndGen.PutRand(rnd)
 	return
 }
+
+func SecureRandomUint64() (x uint64) {
+	b := pools.TinyBytes.GetLen(8)
+	_, _ = rand.Read(b)
+	x = binary.BigEndian.Uint64(b)
+	pools.TinyBytes.Put(b)
+	return
+}

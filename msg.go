@@ -14,7 +14,7 @@ import (
 */
 
 //go:generate protoc -I=. --gopool_out=. msg.proto
-//go:generate protoc -I=.  --gogofaster_out=. msg.proto
+//go:generate protoc -I=. --gogofaster_out=. msg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )
@@ -83,3 +83,13 @@ func (m *UpdateEnvelope) CopyTo(u *UpdateEnvelope) {
 	}
 	copy(u.Update, m.Update)
 }
+
+func (m *UpdateEnvelope) Fill(updateID int64, constructor int64, p ProtoBufferMessage) {
+	m.UpdateID = updateID
+	m.Constructor = constructor
+	b := pools.Bytes.GetLen(p.Size())
+	_, _ = p.MarshalToSizedBuffer(b)
+	m.Update = append(m.Update[:0], b...)
+	pools.Bytes.Put(b)
+}
+

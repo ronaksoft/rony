@@ -230,9 +230,17 @@ func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constru
 }
 
 func (ctx *RequestCtx) PushError(code, item string) {
+	ctx.PushCustomError(code, item, "", nil, "", nil)
+}
+
+func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems []string, localTxt string, localItems []string) {
 	ctx.PushMessage(rony.C_Error, &rony.Error{
-		Code:  code,
-		Items: item,
+		Code:            code,
+		Items:           item,
+		EnglishItems:    enItems,
+		EnglishTemplate: enTxt,
+		LocalTemplate:   localTxt,
+		LocalItems:      localItems,
 	})
 	ctx.stop = true
 }

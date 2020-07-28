@@ -1,4 +1,4 @@
-package main
+package pools
 
 import (
 	"fmt"
@@ -17,23 +17,29 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-type GenModelScylla struct {
+type Generator struct {
 	g *generator.Generator
 }
 
-func (g *GenModelScylla) Name() string {
-	return "gen-model-scylla"
+func (g *Generator) Name() string {
+	return "gen-rony-pools"
 }
 
-func (g *GenModelScylla) Init(gen *generator.Generator) {
+func (g *Generator) Init(gen *generator.Generator) {
 	if gen == nil {
 		g.g = generator.New()
 	} else {
 		g.g = gen
 	}
+
 }
 
-func (g *GenModelScylla) Generate(file *generator.FileDescriptor) {
+func (g *Generator) GenerateImports(file *generator.FileDescriptor) {
+	g.g.AddImport("sync")
+	// g.g.AddImport("git.ronaksoftware.com/river")
+}
+
+func (g *Generator) Generate(file *generator.FileDescriptor) {
 	g.g.AddImport("sync")
 	initFunc := strings.Builder{}
 	initFunc.WriteString("func init() {\n")
@@ -96,7 +102,4 @@ func zeroValue(t *descriptor.FieldDescriptorProto_Type) string {
 	}
 }
 
-func (g *GenModelScylla) GenerateImports(file *generator.FileDescriptor) {
-	g.g.AddImport("sync")
-	// g.g.AddImport("git.ronaksoftware.com/river")
-}
+

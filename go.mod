@@ -1,6 +1,6 @@
 module git.ronaksoftware.com/ronak/rony
 
-go 1.13
+go 1.14
 
 require (
 	github.com/allegro/bigcache/v2 v2.2.3
@@ -11,6 +11,7 @@ require (
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.3
+	github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/google/btree v1.0.0
@@ -29,6 +30,8 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
+	github.com/scylladb/gocqlx v1.5.0 // indirect
+	github.com/scylladb/gocqlx/v2 v2.1.0 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.0.0

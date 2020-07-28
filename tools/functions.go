@@ -21,8 +21,6 @@ import (
 
 var (
 	RegExPhone    *regexp.Regexp
-	RegExColour   *regexp.Regexp
-	RegExUsername *regexp.Regexp
 )
 
 func init() {
@@ -31,24 +29,10 @@ func init() {
 		panic(err)
 	}
 	RegExPhone = exp1
-	exp2, err := regexp.Compile("^#[0-9A-F]{6}$")
-	if err != nil {
-		panic(err)
-	}
-	RegExColour = exp2
-	exp3, err := regexp.Compile("^[a-zA-Z][\\da-zA-Z]{4,31}$")
-	if err != nil {
-		panic(err)
-	}
-	RegExUsername = exp3
-
 }
 
-func SanitizePhone(phoneNumber string, defaultRegion string, testMode bool) string {
+func SanitizePhone(phoneNumber string, defaultRegion string) string {
 	phoneNumber = strings.TrimLeft(phoneNumber, "0+ ")
-	if testMode && strings.HasPrefix(phoneNumber, "237400") {
-		return phoneNumber
-	}
 	if !RegExPhone.MatchString(phoneNumber) {
 		return ""
 	}
