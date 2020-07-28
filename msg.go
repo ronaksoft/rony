@@ -92,4 +92,3 @@ func (m *UpdateEnvelope) Fill(updateID int64, constructor int64, p ProtoBufferMe
 	m.Update = append(m.Update[:0], b...)
 	pools.Bytes.Put(b)
 }
-

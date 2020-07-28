@@ -54,31 +54,31 @@ var RootCmd = &cobra.Command{
 				}
 
 				// go func() {
-					g := generator.New()
+				g := generator.New()
 
-					fmt.Println("Lets read descriptors from stdin")
-					data, err := ioutil.ReadAll(os.Stdin)
-					if err != nil {
-						g.Error(err, "reading input")
-					}
+				fmt.Println("Lets read descriptors from stdin")
+				data, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					g.Error(err, "reading input")
+				}
 
-					if err := proto.Unmarshal(data, g.Request); err != nil {
-						g.Error(err, "parsing input proto")
-					}
+				if err := proto.Unmarshal(data, g.Request); err != nil {
+					g.Error(err, "parsing input proto")
+				}
 
-					if len(g.Request.FileToGenerate) == 0 {
-						g.Fail("no files to generate")
-					}
+				if len(g.Request.FileToGenerate) == 0 {
+					g.Fail("no files to generate")
+				}
 
-					files := g.Request.GetProtoFile()
-					files = vanity.FilterFiles(files, vanity.NotGoogleProtobufDescriptorProto)
+				files := g.Request.GetProtoFile()
+				files = vanity.FilterFiles(files, vanity.NotGoogleProtobufDescriptorProto)
 
-					vanity.ForEachFile(files, vanity.TurnOnMarshalerAll)
-					vanity.ForEachFile(files, vanity.TurnOnSizerAll)
-					vanity.ForEachFile(files, vanity.TurnOnUnmarshalerAll)
+				vanity.ForEachFile(files, vanity.TurnOnMarshalerAll)
+				vanity.ForEachFile(files, vanity.TurnOnSizerAll)
+				vanity.ForEachFile(files, vanity.TurnOnUnmarshalerAll)
 
-					fmt.Println("Lets write generated code to the stdout")
-					command.Write(command.GeneratePlugin(g.Request, &pools.Generator{}, ".pools.go"))
+				fmt.Println("Lets write generated code to the stdout")
+				command.Write(command.GeneratePlugin(g.Request, &pools.Generator{}, ".pools.go"))
 				// }()
 
 				protocArgs = append(protocArgs[:0], " --descriptor_set_in", "/dev/stdin")

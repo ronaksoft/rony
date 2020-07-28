@@ -101,5 +101,3 @@ func zeroValue(t *descriptor.FieldDescriptorProto_Type) string {
 		return "0"
 	}
 }
-
-

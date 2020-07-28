@@ -20,7 +20,7 @@ import (
 */
 
 var (
-	RegExPhone    *regexp.Regexp
+	RegExPhone *regexp.Regexp
 )
 
 func init() {

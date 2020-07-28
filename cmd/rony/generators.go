@@ -12,7 +12,7 @@ package main
 type Generator int
 
 const (
-	_     Generator = iota
+	_ Generator = iota
 	Pools
 	RPC
 	ModelScylla

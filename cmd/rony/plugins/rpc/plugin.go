@@ -193,4 +193,3 @@ func genClient(g *Generator, s *descriptor.ServiceDescriptorProto) {
 
 	}
 }
-

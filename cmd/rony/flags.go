@@ -17,6 +17,3 @@ var (
 	FlagOutputDir  = "output.dir"
 	FlagProtoC     = "protoc.path"
 )
-
-
-

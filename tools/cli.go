@@ -30,12 +30,9 @@ func SetPersistentFlags(cmd *cobra.Command, opts ...FlagOption) {
 	}
 }
 
-
-
-
 /*
 	Flags
- */
+*/
 
 func StringFlag(name, value, usage string) FlagOption {
 	return func(fs *pflag.FlagSet) {
@@ -135,7 +132,6 @@ func GetBool(cmd *cobra.Command, name string) bool {
 	return f
 }
 
-
 func DurationFlag(name string, value time.Duration, usage string) FlagOption {
 	return func(fs *pflag.FlagSet) {
 		fs.Duration(name, value, usage)
@@ -169,5 +165,3 @@ func Int64SliceFlag(name string, value []int64, usage string) FlagOption {
 		fs.Int64Slice(name, value, usage)
 	}
 }
-
-
