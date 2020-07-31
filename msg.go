@@ -1,7 +1,7 @@
 package rony
 
 import (
-	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 )
 
 /*
@@ -35,7 +35,8 @@ func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 }
 
 func (m *MessageEnvelope) Clone() *MessageEnvelope {
-	c := &MessageEnvelope{}
+	// c := &MessageEnvelope{}
+	c := PoolMessageEnvelope.Get()
 	c.Constructor = m.Constructor
 	c.RequestID = m.RequestID
 	c.Message = append(c.Message[:0], m.Message...)
@@ -52,7 +53,8 @@ func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) *MessageEnvelope {
 func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMessage) {
 	m.RequestID = reqID
 	m.Constructor = constructor
-	b := pools.Bytes.GetLen(p.Size())
+	protoSize := p.Size()
+	b := pools.Bytes.GetLen(protoSize)
 	_, _ = p.MarshalToSizedBuffer(b)
 	m.Message = append(m.Message[:0], b...)
 	pools.Bytes.Put(b)

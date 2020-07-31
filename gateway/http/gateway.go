@@ -3,7 +3,7 @@ package httpGateway
 import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"net"

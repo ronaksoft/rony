@@ -12,5 +12,5 @@ import "github.com/gobwas/pool/pbytes"
 */
 
 var TinyBytes = pbytes.New(4, 128)
-var Bytes = pbytes.New(32, 64*(1<<10))
+var Bytes = pbytes.New(32, 32*(1<<10))
 var LargeBytes = pbytes.New(32*(1<<10), 1<<20)

@@ -25,7 +25,8 @@ func (h Handlers) Func2(ctx *edge.RequestCtx, req *pb.Req2, res *pb.Res2) {
 }
 
 func (h Handlers) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
-	panic("implement me")
+	res.Int = req.Int
+	res.Bool = req.Bool
 }
 
 func (h Handlers) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {

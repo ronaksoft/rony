@@ -5,7 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 )
 
 type dispatcher struct{}

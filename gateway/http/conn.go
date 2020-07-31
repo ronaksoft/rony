@@ -2,7 +2,7 @@ package httpGateway
 
 import (
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/tools"
+	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/valyala/fasthttp"
 	"net"
 )

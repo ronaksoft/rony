@@ -8,7 +8,7 @@ import (
 	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"go.uber.org/zap"
 	"sync/atomic"
 )

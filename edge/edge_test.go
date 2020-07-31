@@ -1,6 +1,7 @@
 package edge_test
 
 import (
+	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
@@ -68,9 +69,16 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetParallelism(1000)
-	// conn := testEnv.MockGatewayConn{}
-
+	conn := testEnv.MockGatewayConn{}
+	req := pb.EchoRequest{
+		Int:       100,
+		Bool:      false,
+		Timestamp: 32809238402,
+	}
+	e := &rony.MessageEnvelope{}
+	e.Fill(100, pb.C_Echo, &req)
+	reqBytes, _ := e.Marshal()
 	for i := 0; i < b.N; i++ {
-		// edgeServer.HandleGatewayMessage(&conn, 0, bytes)
+		edgeServer.HandleGatewayMessage(&conn, 0, reqBytes)
 	}
 }
