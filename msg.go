@@ -25,12 +25,11 @@ type ProtoBufferMessage interface {
 	MarshalToSizedBuffer([]byte) (int, error)
 }
 
-func ErrorMessage(out *MessageEnvelope, errCode, errItem string) {
+func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 	errMessage := PoolError.Get()
 	errMessage.Code = errCode
 	errMessage.Items = errItem
-	out.Message, _ = errMessage.Marshal()
-	out.Constructor = C_Error
+	out.Fill(reqID, C_Error, errMessage)
 	PoolError.Put(errMessage)
 	return
 }
@@ -56,4 +55,16 @@ func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMes
 	_, _ = p.MarshalToSizedBuffer(b)
 	m.Message = append(m.Message[:0], b...)
 	pools.Bytes.Put(b)
+}
+
+func (m *RaftCommand) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
+	m.Sender = append(m.Sender[:0], senderID...)
+	m.AuthID = authID
+	e.CopyTo(m.Envelope)
+}
+
+func (m *ClusterMessage) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
+	m.Sender = append(m.Sender[:0], senderID...)
+	m.AuthID = authID
+	e.CopyTo(m.Envelope)
 }

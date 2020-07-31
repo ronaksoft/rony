@@ -131,9 +131,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() == raft.Leader {
 			raftCmd := acquireRaftCommand()
-			raftCmd.AuthID = dispatchCtx.authID
-			raftCmd.Sender = edge.serverID
-			dispatchCtx.req.CopyTo(raftCmd.Envelope)
+			raftCmd.Fill(edge.serverID, dispatchCtx.authID, dispatchCtx.req)
 			raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
 			_, err = raftCmd.MarshalToSizedBuffer(raftCmdBytes)
 			if err != nil {
@@ -191,8 +189,10 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error
 func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope, readOnly bool) {
 	defer edge.recoverPanic(requestCtx, in)
 
-	startTime := time.Now()
+	var startTime time.Time
+
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
+		startTime = time.Now()
 		ce.Write(
 			zap.String("Constructor", edge.getConstructorName(in.Constructor)),
 			zap.Uint64("RequestID", in.RequestID),
@@ -202,7 +202,14 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	if readOnly {
 		_, ok := edge.readonlyHandlers[in.Constructor]
 		if !ok {
-			requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
+			if leaderID := edge.raft.Leader(); leaderID != "" {
+				requestCtx.PushMessage(
+					rony.C_Redirect,
+					&rony.Redirect{
+						LeaderHostPort: edge.cluster.GetByID(string(leaderID)).GatewayAddr,
+					},
+				)
+			}
 			return
 		}
 	}
@@ -272,11 +279,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 		return
 	}
 	err = edge.executePrepare(dispatchCtx)
-	switch err {
-	case nil:
-	case rony.ErrNotRaftLeader:
-		edge.onError(dispatchCtx, rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
-	default:
+	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
 	edge.dispatcher.Done(dispatchCtx)
@@ -284,7 +287,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 }
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
-	rony.ErrorMessage(envelope, code, item)
+	rony.ErrorMessage(envelope, dispatchCtx.req.RequestID, code, item)
 	edge.dispatcher.OnMessage(dispatchCtx, dispatchCtx.authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
@@ -425,36 +428,6 @@ func (edge *Server) RunGateway() {
 func (edge *Server) JoinCluster(addr ...string) error {
 	_, err := edge.gossip.Join(addr)
 	return err
-}
-func (edge *Server) joinRaft(nodeID, addr string) error {
-	if !edge.raftEnabled {
-		return rony.ErrRaftNotSet
-	}
-	if edge.raft.State() != raft.Leader {
-		return rony.ErrNotRaftLeader
-	}
-	futureConfig := edge.raft.GetConfiguration()
-	if err := futureConfig.Error(); err != nil {
-		return err
-	}
-	raftConf := futureConfig.Configuration()
-	for _, srv := range raftConf.Servers {
-		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
-			return nil
-		}
-		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
-			future := edge.raft.RemoveServer(srv.ID, 0, 0)
-			if err := future.Error(); err != nil {
-				return err
-			}
-		}
-	}
-
-	future := edge.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
-	if err := future.Error(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Shutdown gracefully shutdown the services

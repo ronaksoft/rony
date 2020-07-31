@@ -7,6 +7,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
 	"git.ronaksoftware.com/ronak/rony/pools"
 	"git.ronaksoftware.com/ronak/rony/tools"
+	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
 	"net"
 	"sync"
@@ -35,11 +36,8 @@ func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.Me
 		return rony.ErrNotFound
 	}
 
-	clusterMessage := &rony.ClusterMessage{
-		AuthID:   authID,
-		Sender:   edge.serverID,
-		Envelope: envelope,
-	}
+	clusterMessage := acquireClusterMessage()
+	clusterMessage.Fill(edge.serverID, authID, envelope)
 	b := pools.Bytes.GetLen(clusterMessage.Size())
 	_, err := clusterMessage.MarshalToSizedBuffer(b)
 	if err != nil {
@@ -47,6 +45,7 @@ func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.Me
 	}
 	err = edge.gossip.SendBestEffort(m.node, b)
 	pools.Bytes.Put(b)
+	releaseClusterMessage(clusterMessage)
 	return err
 }
 
@@ -187,7 +186,7 @@ func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
 	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
 	}
 }
 
@@ -199,8 +198,39 @@ func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
 	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = d.edge.joinRaft(cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
 	}
+}
+
+func joinRaft(edge *Server, nodeID, addr string) error {
+	if !edge.raftEnabled {
+		return rony.ErrRaftNotSet
+	}
+	if edge.raft.State() != raft.Leader {
+		return rony.ErrNotRaftLeader
+	}
+	futureConfig := edge.raft.GetConfiguration()
+	if err := futureConfig.Error(); err != nil {
+		return err
+	}
+	raftConf := futureConfig.Configuration()
+	for _, srv := range raftConf.Servers {
+		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
+			return nil
+		}
+		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
+			future := edge.raft.RemoveServer(srv.ID, 0, 0)
+			if err := future.Error(); err != nil {
+				return err
+			}
+		}
+	}
+
+	future := edge.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
+	if err := future.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 type delegateNode struct {

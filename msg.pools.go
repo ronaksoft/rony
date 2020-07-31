@@ -96,6 +96,7 @@ func (p *poolRedirect) Get() *Redirect {
 }
 
 func (p *poolRedirect) Put(x *Redirect) {
+	x.LeaderHostPort = x.LeaderHostPort[:0]
 	p.pool.Put(x)
 }
 

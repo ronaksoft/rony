@@ -29,7 +29,7 @@ message Error {
 
 // Redirect
 message Redirect {
-    required string LeaderHostPort = 1;
+    repeated string LeaderHostPort = 1;
 }
 
 // ClusterMessage

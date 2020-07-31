@@ -5,7 +5,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/pools"
 	"git.ronaksoftware.com/ronak/rony/tools"
 	"go.uber.org/zap"
 	"hash/crc32"
@@ -73,11 +72,7 @@ func (ctx *DispatchCtx) SetAuthID(authID int64) {
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
 	ctx.req.RequestID = requestID
 	ctx.req.Constructor = constructor
-	if len(payload) > cap(ctx.req.Message) {
-		pools.Bytes.Put(ctx.req.Message)
-		ctx.req.Message = pools.Bytes.GetCap(len(payload))
-	}
-	ctx.req.Message = append(ctx.req.Message, payload...)
+	ctx.req.Message = append(ctx.req.Message[:0], payload...)
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
@@ -195,21 +190,7 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto rony.ProtoBufferMess
 
 func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
-	envelope.RequestID = requestID
-	envelope.Constructor = constructor
-	protoSize := proto.Size()
-	if protoSize > cap(envelope.Message) {
-		pools.Bytes.Put(envelope.Message)
-		envelope.Message = pools.Bytes.GetLen(protoSize)
-	} else {
-		envelope.Message = envelope.Message[:protoSize]
-	}
-	_, err := proto.MarshalToSizedBuffer(envelope.Message)
-	if err != nil {
-		log.Error("Error On Marshaling Message", zap.Error(err))
-		return
-	}
-
+	envelope.Fill(requestID, constructor, proto)
 	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, authID, envelope)
 	releaseMessageEnvelope(envelope)
 }
@@ -232,17 +213,7 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 
 func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
 	envelope := acquireMessageEnvelope()
-	envelope.RequestID = requestID
-	envelope.Constructor = constructor
-	protoSize := proto.Size()
-	if protoSize > cap(envelope.Message) {
-		pools.Bytes.Put(envelope.Message)
-		envelope.Message = pools.Bytes.GetLen(protoSize)
-	} else {
-		envelope.Message = envelope.Message[:protoSize]
-	}
-	_, _ = proto.MarshalToSizedBuffer(envelope.Message)
-
+	envelope.Fill(requestID, constructor, proto)
 	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), authID, envelope)
 	if err != nil {
 		log.Error("ClusterMessage Error",
