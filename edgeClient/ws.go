@@ -46,10 +46,13 @@ type Websocket struct {
 	conn        net.Conn
 	stop        bool
 	connected   bool
-	h           MessageHandler
-	pendingMtx  sync.RWMutex
-	pending     map[uint64]chan *rony.MessageEnvelope
-	nextReqID   uint64
+	connectMtx  sync.Mutex
+
+	// parameters related to handling request/responses
+	h          MessageHandler
+	pendingMtx sync.RWMutex
+	pending    map[uint64]chan *rony.MessageEnvelope
+	nextReqID  uint64
 }
 
 func SetLogLevel(level log.Level) {
@@ -122,6 +125,7 @@ func (c *Websocket) connect() {
 		urlPrefix = "wss://"
 	}
 ConnectLoop:
+	log.Debug("Connect", zap.String("H", c.hostPort))
 	c.createDialer(c.dialTimeout)
 	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPort))
 	if err != nil {
@@ -145,7 +149,7 @@ func (c *Websocket) waitUntilConnect() {
 		if c.connected {
 			break
 		}
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(time.Millisecond)
 	}
 }
 
@@ -193,11 +197,15 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 }
 
 func (c *Websocket) handler(e *rony.MessageEnvelope) {
+	if e.RequestID == 0 {
+		c.h(e.Clone())
+		return
+	}
+
 	c.pendingMtx.Lock()
 	h := c.pending[e.RequestID]
 	delete(c.pending, e.RequestID)
 	c.pendingMtx.Unlock()
-
 	if h != nil {
 		h <- e.Clone()
 	} else {
@@ -207,6 +215,8 @@ func (c *Websocket) handler(e *rony.MessageEnvelope) {
 
 func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 	b := pools.Bytes.GetLen(req.Size())
+	defer pools.Bytes.Put(b)
+
 	_, err := req.MarshalToSizedBuffer(b)
 	if err != nil {
 		return err
@@ -214,14 +224,15 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 
 	t := pools.AcquireTimer(requestTimeout)
 	defer pools.ReleaseTimer(t)
+
 SendLoop:
 	resChan := make(chan *rony.MessageEnvelope, 1)
 	c.pendingMtx.Lock()
 	c.pending[req.RequestID] = resChan
 	c.pendingMtx.Unlock()
+
 	c.waitUntilConnect()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
-	pools.Bytes.Put(b)
 	if err != nil {
 		c.pendingMtx.Lock()
 		delete(c.pending, req.RequestID)
@@ -236,10 +247,12 @@ SendLoop:
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
 			_ = x.Unmarshal(e.Message)
+			c.connectMtx.Lock()
 			if c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
 				c.reconnect()
 			}
+			c.connectMtx.Unlock()
 			goto SendLoop
 		}
 		e.CopyTo(res)
@@ -247,6 +260,7 @@ SendLoop:
 		c.pendingMtx.Lock()
 		delete(c.pending, req.RequestID)
 		c.pendingMtx.Unlock()
+		log.Warn("Timeout", zap.String("H", c.hostPort), zap.Uint64("ReqID", req.RequestID))
 		return ErrTimeout
 	}
 	return err

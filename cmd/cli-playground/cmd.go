@@ -204,18 +204,20 @@ var BenchCmd = &cobra.Command{
 			return
 		}
 		var (
-			dd  int64
-			cnt int64
+			dd   int64
+			cnt  int64
+			gcnt int64
 		)
 		waitGroup := pools.AcquireWaitGroup()
 		for i := 0; i < 100; i++ {
 			waitGroup.Add(1)
-			go func() {
+			go func(idx int) {
 				defer waitGroup.Done()
 				ec := edgeClient.NewWebsocket(edgeClient.Config{
 					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
-						// cmd.Print(m.Constructor)
+						cmd.Println(m.Constructor, m.RequestID, idx)
+						atomic.AddInt64(&gcnt, 1)
 					},
 				})
 				c := pb.NewSampleClient(ec)
@@ -228,17 +230,17 @@ var BenchCmd = &cobra.Command{
 					_, err := c.Echo(req)
 					pb.PoolEchoRequest.Put(req)
 					if err != nil {
-						cmd.Println("Error:", err)
-						return
+						cmd.Println("Error:", idx, i, err)
+						continue
 					}
 					d := time.Now().Sub(startTime)
-					atomic.AddInt64(&dd, int64(d))
 					atomic.AddInt64(&cnt, 1)
+					atomic.AddInt64(&dd, int64(d))
 				}
-			}()
+			}(i)
 		}
 		waitGroup.Wait()
-		cmd.Println("Avg Response:", time.Duration(dd/cnt), cnt)
+		cmd.Println("Avg Response:", time.Duration(dd/cnt), cnt, gcnt)
 	},
 }
 

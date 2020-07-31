@@ -8,7 +8,6 @@ import (
 	rony "git.ronaksoftware.com/ronak/rony"
 	edge "git.ronaksoftware.com/ronak/rony/edge"
 	edgeClient "git.ronaksoftware.com/ronak/rony/edgeClient"
-	pools "git.ronaksoftware.com/ronak/rony/pools"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 )
@@ -129,11 +128,7 @@ func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	b := pools.Bytes.GetLen(req.Size())
-	req.MarshalToSizedBuffer(b)
-	out.RequestID = c.c.GetRequestID()
-	out.Constructor = C_Func1
-	out.Message = append(out.Message[:0], b...)
+	out.Fill(c.c.GetRequestID(), C_Func1, req)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -156,11 +151,7 @@ func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	b := pools.Bytes.GetLen(req.Size())
-	req.MarshalToSizedBuffer(b)
-	out.RequestID = c.c.GetRequestID()
-	out.Constructor = C_Func2
-	out.Message = append(out.Message[:0], b...)
+	out.Fill(c.c.GetRequestID(), C_Func2, req)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -183,11 +174,7 @@ func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	b := pools.Bytes.GetLen(req.Size())
-	req.MarshalToSizedBuffer(b)
-	out.RequestID = c.c.GetRequestID()
-	out.Constructor = C_Echo
-	out.Message = append(out.Message[:0], b...)
+	out.Fill(c.c.GetRequestID(), C_Echo, req)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -210,11 +197,7 @@ func (c *SampleClient) Ask(req *AskRequest) (*AskResponse, error) {
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	b := pools.Bytes.GetLen(req.Size())
-	req.MarshalToSizedBuffer(b)
-	out.RequestID = c.c.GetRequestID()
-	out.Constructor = C_Ask
-	out.Message = append(out.Message[:0], b...)
+	out.Fill(c.c.GetRequestID(), C_Ask, req)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err

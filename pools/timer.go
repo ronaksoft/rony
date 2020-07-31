@@ -38,15 +38,15 @@ func ReleaseTimer(t *time.Timer) {
 		default:
 		}
 	}
-
 	timerPool.Put(t)
 }
 
 func ResetTimer(t *time.Timer, period time.Duration) {
-	if !t.Reset(period) {
+	if !t.Stop() {
 		select {
 		case <-t.C:
 		default:
 		}
 	}
+	t.Reset(period)
 }

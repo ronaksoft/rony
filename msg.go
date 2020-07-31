@@ -35,7 +35,7 @@ func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 }
 
 func (m *MessageEnvelope) Clone() *MessageEnvelope {
-	c := PoolMessageEnvelope.Get()
+	c := &MessageEnvelope{}
 	c.Constructor = m.Constructor
 	c.RequestID = m.RequestID
 	c.Message = append(c.Message[:0], m.Message...)
