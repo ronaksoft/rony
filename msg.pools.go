@@ -36,27 +36,6 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 
 var PoolMessageEnvelope = poolMessageEnvelope{}
 
-const C_UpdateEnvelope int64 = 2373884514
-
-type poolUpdateEnvelope struct {
-	pool sync.Pool
-}
-
-func (p *poolUpdateEnvelope) Get() *UpdateEnvelope {
-	x, ok := p.pool.Get().(*UpdateEnvelope)
-	if !ok {
-		return &UpdateEnvelope{}
-	}
-	return x
-}
-
-func (p *poolUpdateEnvelope) Put(x *UpdateEnvelope) {
-	x.Update = x.Update[:0]
-	p.pool.Put(x)
-}
-
-var PoolUpdateEnvelope = poolUpdateEnvelope{}
-
 const C_MessageContainer int64 = 1972016308
 
 type poolMessageContainer struct {
@@ -101,6 +80,26 @@ func (p *poolError) Put(x *Error) {
 }
 
 var PoolError = poolError{}
+
+const C_Redirect int64 = 981138557
+
+type poolRedirect struct {
+	pool sync.Pool
+}
+
+func (p *poolRedirect) Get() *Redirect {
+	x, ok := p.pool.Get().(*Redirect)
+	if !ok {
+		return &Redirect{}
+	}
+	return x
+}
+
+func (p *poolRedirect) Put(x *Redirect) {
+	p.pool.Put(x)
+}
+
+var PoolRedirect = poolRedirect{}
 
 const C_ClusterMessage int64 = 1078766375
 
@@ -172,9 +171,9 @@ var PoolEdgeNode = poolEdgeNode{}
 
 func init() {
 	ConstructorNames[535232465] = "MessageEnvelope"
-	ConstructorNames[2373884514] = "UpdateEnvelope"
 	ConstructorNames[1972016308] = "MessageContainer"
 	ConstructorNames[2619118453] = "Error"
+	ConstructorNames[981138557] = "Redirect"
 	ConstructorNames[1078766375] = "ClusterMessage"
 	ConstructorNames[2919813429] = "RaftCommand"
 	ConstructorNames[999040174] = "EdgeNode"

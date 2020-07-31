@@ -38,10 +38,6 @@ func (t testDispatcher) OnClose(conn gateway.Conn) {
 
 }
 
-func (t testDispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
-	atomic.AddInt32(&receivedUpdates, 1)
-}
-
 func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		b := pools.Bytes.GetLen(envelope.Size())

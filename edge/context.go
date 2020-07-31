@@ -255,28 +255,3 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 	}
 	releaseMessageEnvelope(envelope)
 }
-
-func (ctx *RequestCtx) PushUpdate(authID int64, updateID int64, constructor, ts int64, proto rony.ProtoBufferMessage) {
-	envelope := acquireUpdateEnvelope()
-	envelope.Timestamp = ts
-	envelope.UpdateID = updateID
-	if updateID != 0 {
-		envelope.UCount = 1
-	}
-	envelope.Constructor = constructor
-	protoSize := proto.Size()
-	if protoSize > cap(envelope.Update) {
-		pools.Bytes.Put(envelope.Update)
-		envelope.Update = pools.Bytes.GetLen(protoSize)
-	} else {
-		envelope.Update = envelope.Update[:protoSize]
-	}
-	_, err := proto.MarshalToSizedBuffer(envelope.Update)
-	if err != nil {
-		log.Error("Error On Marshaling Update", zap.Error(err))
-		return
-	}
-
-	ctx.dispatchCtx.edge.dispatcher.OnUpdate(ctx.dispatchCtx, authID, envelope)
-	releaseUpdateEnvelope(envelope)
-}

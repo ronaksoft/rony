@@ -18,10 +18,6 @@ func (d dispatcher) OnClose(conn gateway.Conn) {
 
 }
 
-func (d dispatcher) OnUpdate(ctx *edge.DispatchCtx, authID int64, envelope *rony.UpdateEnvelope) {
-
-}
-
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		protoBytes := pools.Bytes.GetLen(envelope.Size())

@@ -34,26 +34,6 @@ func releaseMessageEnvelope(x *rony.MessageEnvelope) {
 	messageEnvelopePool.Put(x)
 }
 
-// UpdateEnvelope Pool
-var updateEnvelopePool sync.Pool
-
-func acquireUpdateEnvelope() *rony.UpdateEnvelope {
-	v := updateEnvelopePool.Get()
-	if v == nil {
-		return &rony.UpdateEnvelope{}
-	}
-	return v.(*rony.UpdateEnvelope)
-}
-
-func releaseUpdateEnvelope(x *rony.UpdateEnvelope) {
-	x.Update = x.Update[:0]
-	x.UpdateID = 0
-	x.UCount = 0
-	x.Timestamp = 0
-	x.Constructor = 0
-	updateEnvelopePool.Put(x)
-}
-
 var clusterMessagePool sync.Pool
 
 func acquireClusterMessage() *rony.ClusterMessage {

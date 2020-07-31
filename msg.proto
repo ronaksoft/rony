@@ -9,14 +9,6 @@ message MessageEnvelope {
     optional bytes Message = 4;
 }
 
-// UpdateEnvelope
-message UpdateEnvelope {
-    required int64 Constructor = 1;
-    required bytes Update = 2;
-    required int32 UCount = 3;
-    required int64 UpdateID = 4;
-    required int64 Timestamp = 5;
-}
 
 // MessageContainer
 // This type of message will be used to send multi messages inside a single container message
@@ -33,6 +25,11 @@ message Error {
     repeated string EnglishItems = 4;
     optional string LocalTemplate = 5;
     repeated string LocalItems = 6;
+}
+
+// Redirect
+message Redirect {
+    required string LeaderHostPort = 1;
 }
 
 // ClusterMessage

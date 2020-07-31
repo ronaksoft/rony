@@ -57,38 +57,3 @@ func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMes
 	m.Message = append(m.Message[:0], b...)
 	pools.Bytes.Put(b)
 }
-
-func (m *UpdateEnvelope) Clone() *UpdateEnvelope {
-	c := &UpdateEnvelope{
-		Constructor: m.Constructor,
-		UCount:      m.UCount,
-		UpdateID:    m.UpdateID,
-		Timestamp:   m.Timestamp,
-	}
-	c.Update = make([]byte, len(m.Update))
-	copy(c.Update, m.Update)
-	return c
-}
-
-func (m *UpdateEnvelope) CopyTo(u *UpdateEnvelope) {
-	u.Constructor = m.Constructor
-	u.UCount = m.UCount
-	u.UpdateID = m.UpdateID
-	u.Timestamp = m.Timestamp
-	if len(m.Update) > cap(u.Update) {
-		pools.Bytes.Put(u.Update)
-		u.Update = pools.Bytes.GetLen(len(m.Update))
-	} else {
-		u.Update = u.Update[:len(m.Update)]
-	}
-	copy(u.Update, m.Update)
-}
-
-func (m *UpdateEnvelope) Fill(updateID int64, constructor int64, p ProtoBufferMessage) {
-	m.UpdateID = updateID
-	m.Constructor = constructor
-	b := pools.Bytes.GetLen(p.Size())
-	_, _ = p.MarshalToSizedBuffer(b)
-	m.Update = append(m.Update[:0], b...)
-	pools.Bytes.Put(b)
-}
