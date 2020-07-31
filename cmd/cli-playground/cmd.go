@@ -54,7 +54,6 @@ var BatchStartCmd = &cobra.Command{
 			gossipPort++
 			raftBootstrap = false
 		}
-
 	},
 }
 
@@ -170,12 +169,9 @@ var EchoCmd = &cobra.Command{
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
 
-	SendRequest:
 		res, err := c.Echo(req)
 		switch err {
 		case nil:
-		case edgeClient.ErrLeaderRedirect:
-			goto SendRequest
 		default:
 			cmd.Println("Error:", err)
 			return
@@ -207,16 +203,19 @@ var BenchCmd = &cobra.Command{
 			fmt.Println("Invalid Gateway Addr", gatewayAddr)
 			return
 		}
-		var dd int64
+		var (
+			dd  int64
+			cnt int64
+		)
 		waitGroup := pools.AcquireWaitGroup()
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			waitGroup.Add(1)
 			go func() {
 				defer waitGroup.Done()
 				ec := edgeClient.NewWebsocket(edgeClient.Config{
-					HostPort: fmt.Sprintf("ws://127.0.0.1:%s", parts[1]),
+					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
-						cmd.Print(m)
+						// cmd.Print(m.Constructor)
 					},
 				})
 				c := pb.NewSampleClient(ec)
@@ -234,11 +233,12 @@ var BenchCmd = &cobra.Command{
 					}
 					d := time.Now().Sub(startTime)
 					atomic.AddInt64(&dd, int64(d))
+					atomic.AddInt64(&cnt, 1)
 				}
 			}()
 		}
 		waitGroup.Wait()
-		cmd.Println(time.Duration(dd / 100000))
+		cmd.Println("Avg Response:", time.Duration(dd/cnt), cnt)
 	},
 }
 

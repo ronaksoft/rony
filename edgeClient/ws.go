@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,6 +24,10 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+const (
+	requestTimeout = 5 * time.Second
+)
 
 type MessageHandler func(m *rony.MessageEnvelope)
 type Config struct {
@@ -40,9 +45,11 @@ type Websocket struct {
 	dialer      ws.Dialer
 	conn        net.Conn
 	stop        bool
+	connected   bool
 	h           MessageHandler
 	pendingMtx  sync.RWMutex
 	pending     map[uint64]chan *rony.MessageEnvelope
+	nextReqID   uint64
 }
 
 func SetLogLevel(level log.Level) {
@@ -50,7 +57,9 @@ func SetLogLevel(level log.Level) {
 }
 
 func NewWebsocket(config Config) Client {
-	c := Websocket{}
+	c := Websocket{
+		nextReqID: tools.RandomUint64(),
+	}
 	c.hostPort = config.HostPort
 	c.h = config.Handler
 	if config.DialTimeout == 0 {
@@ -63,8 +72,13 @@ func NewWebsocket(config Config) Client {
 	c.dialTimeout = config.DialTimeout
 	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
 
+	// start the connection
 	c.connect()
 	return &c
+}
+
+func (c *Websocket) GetRequestID() uint64 {
+	return atomic.AddUint64(&c.nextReqID, 1)
 }
 
 func (c *Websocket) createDialer(timeout time.Duration) {
@@ -103,12 +117,12 @@ func (c *Websocket) createDialer(timeout time.Duration) {
 }
 
 func (c *Websocket) connect() {
-ConnectLoop:
-	c.createDialer(c.dialTimeout)
 	urlPrefix := "ws://"
 	if c.secure {
 		urlPrefix = "wss://"
 	}
+ConnectLoop:
+	c.createDialer(c.dialTimeout)
 	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPort))
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
@@ -116,8 +130,23 @@ ConnectLoop:
 		goto ConnectLoop
 	}
 	c.conn = conn
+	c.connected = true
 	go c.receiver()
 	return
+}
+
+func (c *Websocket) reconnect() {
+	c.connected = false
+	_ = c.conn.SetReadDeadline(time.Now())
+}
+
+func (c *Websocket) waitUntilConnect() {
+	for !c.stop {
+		if c.connected {
+			break
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
 }
 
 func (c *Websocket) receiver() {
@@ -150,7 +179,6 @@ func (c *Websocket) receiver() {
 }
 
 func (c *Websocket) extractor(e *rony.MessageEnvelope) {
-
 	switch e.Constructor {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
@@ -158,10 +186,12 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 		for idx := range x.Envelopes {
 			c.handler(x.Envelopes[idx])
 		}
+		rony.PoolMessageContainer.Put(x)
 	default:
 		c.handler(e)
 	}
 }
+
 func (c *Websocket) handler(e *rony.MessageEnvelope) {
 	c.pendingMtx.Lock()
 	h := c.pending[e.RequestID]
@@ -182,10 +212,14 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 		return err
 	}
 
+	t := pools.AcquireTimer(requestTimeout)
+	defer pools.ReleaseTimer(t)
+SendLoop:
 	resChan := make(chan *rony.MessageEnvelope, 1)
 	c.pendingMtx.Lock()
 	c.pending[req.RequestID] = resChan
 	c.pendingMtx.Unlock()
+	c.waitUntilConnect()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
 	pools.Bytes.Put(b)
 	if err != nil {
@@ -194,6 +228,7 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 		c.pendingMtx.Unlock()
 		return err
 	}
+	pools.ResetTimer(t, requestTimeout)
 
 	select {
 	case e := <-resChan:
@@ -201,12 +236,14 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
 			_ = x.Unmarshal(e.Message)
-			c.hostPort = x.LeaderHostPort[0]
-			_ = c.conn.SetReadDeadline(time.Now())
-			return ErrLeaderRedirect
+			if c.hostPort != x.LeaderHostPort[0] {
+				c.hostPort = x.LeaderHostPort[0]
+				c.reconnect()
+			}
+			goto SendLoop
 		}
 		e.CopyTo(res)
-	case <-time.After(time.Second * 5):
+	case <-t.C:
 		c.pendingMtx.Lock()
 		delete(c.pending, req.RequestID)
 		c.pendingMtx.Unlock()
@@ -216,6 +253,9 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 }
 
 func (c *Websocket) Close() error {
+	// by setting the stop flag, we are making sure no reconnection will happen
 	c.stop = true
-	return c.conn.Close()
+
+	// by setting the read deadline we make the receiver() routine stops
+	return c.conn.SetReadDeadline(time.Now())
 }

@@ -37,7 +37,6 @@ func (g *GenRony) Generate(file *generator.FileDescriptor) {
 		g.g.AddImport("git.ronaksoftware.com/ronak/rony/edge")
 		g.g.AddImport("git.ronaksoftware.com/ronak/rony/edgeClient")
 		g.g.AddImport("git.ronaksoftware.com/ronak/rony/pools")
-		g.g.AddImport("git.ronaksoftware.com/ronak/rony/tools")
 		if *file.Package != "rony" {
 			g.g.AddImport("git.ronaksoftware.com/ronak/rony")
 		}
@@ -145,7 +144,7 @@ func (g *GenRony) Generate(file *generator.FileDescriptor) {
 			g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
 			g.g.P("b := pools.Bytes.GetLen(req.Size())")
 			g.g.P("req.MarshalToSizedBuffer(b)")
-			g.g.P("out.RequestID = tools.RandomUint64()")
+			g.g.P("out.RequestID = c.c.GetRequestID()")
 			g.g.P("out.Constructor = C_", m.Name)
 			g.g.P("out.Message = append(out.Message[:0], b...)")
 			g.g.P("err := c.c.Send(out, in)")
