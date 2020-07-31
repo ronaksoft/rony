@@ -9,6 +9,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/pools"
 	"git.ronaksoftware.com/ronak/rony/tools"
+	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
@@ -30,14 +31,31 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		StartCmd, EchoCmd, BenchCmd,
+		BatchStartCmd, StartCmd, EchoCmd, BenchCmd, ListCmd, Members,
 	)
 
 	RootCmd.PersistentFlags().String(FlagServerID, "Node", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
-	RootCmd.PersistentFlags().Int(FlagGossipPort, 801, "")
+	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
+	RootCmd.PersistentFlags().Int("n", 5, "")
+}
 
+var BatchStartCmd = &cobra.Command{
+	Use: "batch_start",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
+		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
+		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
+		n, _ := cmd.Flags().GetInt("n")
+		for i := 0; i < n; i++ {
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, raftBootstrap)
+			gossipPort++
+			raftBootstrap = false
+		}
+
+	},
 }
 
 var StartCmd = &cobra.Command{
@@ -70,7 +88,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		}
 
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
-		h := pb.NewSampleServer(&Handlers{})
+		h := pb.NewSampleServer(&SampleServer{})
 		h.Register(Edges[serverID])
 		err := Edges[serverID].RunCluster()
 		if err != nil {
@@ -79,7 +97,45 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 			return
 		}
 		Edges[serverID].RunGateway()
+		for _, e := range Edges {
+			if e.GetServerID() != serverID {
+				err = Edges[serverID].JoinCluster(e.Stats().Address)
+				if err != nil {
+					fmt.Println("Error On Join", err)
+				}
+				break
+			}
+
+		}
 	}
+}
+
+var ListCmd = &cobra.Command{
+	Use: "list",
+	Run: func(cmd *cobra.Command, args []string) {
+		listFunc()
+	},
+}
+
+func listFunc() {
+	var rows []string
+	rows = append(rows,
+		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Membership Score | Gateway ",
+		"------- | ----------- | ------ | ------ | -------- | ------- | ------",
+	)
+
+	for id, s := range Edges {
+		edgeStats := s.Stats()
+		rows = append(rows,
+			fmt.Sprintf("%s | %d | %d | %s | %d | %d | %s(%s)", id,
+				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
+				edgeStats.Members, edgeStats.MembershipScore,
+				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
+			),
+		)
+	}
+
+	fmt.Println(columnize.SimpleFormat(rows))
 }
 
 var EchoCmd = &cobra.Command{
@@ -94,31 +150,33 @@ var EchoCmd = &cobra.Command{
 			fmt.Println("Invalid Args")
 			return
 		}
-		gatewayAddr := e1.Stats().GatewayAddr
-		if len(gatewayAddr) == 0 {
-			fmt.Println("No Gateway Addr", gatewayAddr)
-			return
-		}
-		parts := strings.Split(gatewayAddr[0], ":")
-		if len(parts) != 2 {
-			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			fmt.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
 		ec := edgeClient.NewWebsocket(edgeClient.Config{
-			HostPort: fmt.Sprintf("ws://127.0.0.1:%s", parts[1]),
+			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
 			},
+			Secure: false,
 		})
+		defer ec.Close()
 		c := pb.NewSampleClient(ec)
-
 		req := pb.PoolEchoRequest.Get()
 		defer pb.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
+
+	SendRequest:
 		res, err := c.Echo(req)
-		if err != nil {
+		switch err {
+		case nil:
+		case edgeClient.ErrLeaderRedirect:
+			goto SendRequest
+		default:
 			cmd.Println("Error:", err)
 			return
 		}
@@ -181,5 +239,35 @@ var BenchCmd = &cobra.Command{
 		}
 		waitGroup.Wait()
 		cmd.Println(time.Duration(dd / 100000))
+	},
+}
+
+var Members = &cobra.Command{
+	Use: "members",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			fmt.Println("Needs ServerID, e.g. echo First.01")
+			return
+		}
+		e1 := Edges[args[0]]
+		if e1 == nil {
+			fmt.Println("Invalid Args")
+			return
+		}
+
+		var rows []string
+		rows = append(rows,
+			"ServerID | ReplicaSet   | Raft State |  Raft Port | Gateway ",
+			"------- | ----------- | ------ |  -------- | ------- ",
+		)
+
+		for _, m := range e1.ClusterMembers() {
+			rows = append(rows,
+				fmt.Sprintf("%s | %d | %s | %d | %v",
+					m.ServerID, m.ReplicaSet, m.RaftState.String(), m.RaftPort, m.GatewayAddr,
+				),
+			)
+		}
+		cmd.Println(columnize.SimpleFormat(rows))
 	},
 }

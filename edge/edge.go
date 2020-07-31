@@ -59,7 +59,6 @@ type Server struct {
 	// General
 	serverID        []byte
 	replicaSet      uint64
-	shardSet        uint64
 	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
@@ -100,6 +99,9 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 		raftBootstrap: false,
 		rateLimitChan: make(chan struct{}, clusterMessageRateLimit),
 		gossipPort:    7946,
+		cluster: Cluster{
+			byServerID: make(map[string]*ClusterMember, 100),
+		},
 	}
 
 	for _, opt := range opts {
@@ -202,13 +204,23 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	if readOnly {
 		_, ok := edge.readonlyHandlers[in.Constructor]
 		if !ok {
-			if leaderID := edge.raft.Leader(); leaderID != "" {
+			leaderID := edge.cluster.leaderID
+			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
+				ce.Write(
+					zap.String("LeaderID", leaderID),
+					zap.String("State", edge.raft.State().String()),
+				)
+			}
+			if leaderID != "" {
 				requestCtx.PushMessage(
 					rony.C_Redirect,
 					&rony.Redirect{
-						LeaderHostPort: edge.cluster.GetByID(string(leaderID)).GatewayAddr,
+						LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
+						ServerID:       leaderID,
 					},
 				)
+			} else {
+				requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 			}
 			return
 		}
@@ -371,7 +383,7 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
-	raftConfig.LogLevel = "WARN"
+	// raftConfig.LogLevel = "DEBUG"
 	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
 	raftConfig.LocalID = raft.ServerID(edge.serverID)

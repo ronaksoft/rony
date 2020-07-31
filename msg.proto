@@ -30,6 +30,7 @@ message Error {
 // Redirect
 message Redirect {
     repeated string LeaderHostPort = 1;
+    required string ServerID = 2;
 }
 
 // ClusterMessage

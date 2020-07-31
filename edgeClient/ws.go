@@ -30,9 +30,11 @@ type Config struct {
 	IdleTime    time.Duration
 	DialTimeout time.Duration
 	Handler     MessageHandler
+	Secure      bool
 }
 type Websocket struct {
 	hostPort    string
+	secure      bool
 	idleTimeout time.Duration
 	dialTimeout time.Duration
 	dialer      ws.Dialer
@@ -40,7 +42,7 @@ type Websocket struct {
 	stop        bool
 	h           MessageHandler
 	pendingMtx  sync.RWMutex
-	pending     map[uint64]MessageHandler
+	pending     map[uint64]chan *rony.MessageEnvelope
 }
 
 func SetLogLevel(level log.Level) {
@@ -59,7 +61,7 @@ func NewWebsocket(config Config) Client {
 	}
 	c.idleTimeout = config.IdleTime
 	c.dialTimeout = config.DialTimeout
-	c.pending = make(map[uint64]MessageHandler, 100)
+	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
 
 	c.connect()
 	return &c
@@ -103,7 +105,11 @@ func (c *Websocket) createDialer(timeout time.Duration) {
 func (c *Websocket) connect() {
 ConnectLoop:
 	c.createDialer(c.dialTimeout)
-	conn, _, _, err := c.dialer.Dial(context.Background(), c.hostPort)
+	urlPrefix := "ws://"
+	if c.secure {
+		urlPrefix = "wss://"
+	}
+	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPort))
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
 		time.Sleep(time.Duration(tools.RandomInt64(2000))*time.Millisecond + time.Second)
@@ -144,31 +150,28 @@ func (c *Websocket) receiver() {
 }
 
 func (c *Websocket) extractor(e *rony.MessageEnvelope) {
+
 	switch e.Constructor {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
 		_ = x.Unmarshal(e.Message)
 		for idx := range x.Envelopes {
-			c.pendingMtx.Lock()
-			h := c.pending[x.Envelopes[idx].RequestID]
-			delete(c.pending, x.Envelopes[idx].RequestID)
-			c.pendingMtx.Unlock()
-			if h != nil {
-				h(x.Envelopes[idx])
-			} else {
-				c.h(x.Envelopes[idx].Clone())
-			}
+			c.handler(x.Envelopes[idx])
 		}
 	default:
-		c.pendingMtx.Lock()
-		h := c.pending[e.RequestID]
-		delete(c.pending, e.RequestID)
-		c.pendingMtx.Unlock()
-		if h != nil {
-			h(e)
-		} else {
-			c.h(e.Clone())
-		}
+		c.handler(e)
+	}
+}
+func (c *Websocket) handler(e *rony.MessageEnvelope) {
+	c.pendingMtx.Lock()
+	h := c.pending[e.RequestID]
+	delete(c.pending, e.RequestID)
+	c.pendingMtx.Unlock()
+
+	if h != nil {
+		h <- e.Clone()
+	} else {
+		c.h(e.Clone())
 	}
 }
 
@@ -178,13 +181,10 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 	if err != nil {
 		return err
 	}
-	waitGroup := pools.AcquireWaitGroup()
-	waitGroup.Add(1)
+
+	resChan := make(chan *rony.MessageEnvelope, 1)
 	c.pendingMtx.Lock()
-	c.pending[req.RequestID] = func(m *rony.MessageEnvelope) {
-		m.CopyTo(res)
-		waitGroup.Done()
-	}
+	c.pending[req.RequestID] = resChan
 	c.pendingMtx.Unlock()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
 	pools.Bytes.Put(b)
@@ -192,10 +192,26 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 		c.pendingMtx.Lock()
 		delete(c.pending, req.RequestID)
 		c.pendingMtx.Unlock()
-		waitGroup.Done()
+		return err
 	}
-	waitGroup.Wait()
-	pools.ReleaseWaitGroup(waitGroup)
+
+	select {
+	case e := <-resChan:
+		switch e.Constructor {
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(e.Message)
+			c.hostPort = x.LeaderHostPort[0]
+			_ = c.conn.SetReadDeadline(time.Now())
+			return ErrLeaderRedirect
+		}
+		e.CopyTo(res)
+	case <-time.After(time.Second * 5):
+		c.pendingMtx.Lock()
+		delete(c.pending, req.RequestID)
+		c.pendingMtx.Unlock()
+		return ErrTimeout
+	}
 	return err
 }
 

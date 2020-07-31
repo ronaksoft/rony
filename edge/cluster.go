@@ -57,7 +57,6 @@ func (edge *Server) updateCluster(timeout time.Duration) error {
 type ClusterMember struct {
 	ServerID    string
 	ReplicaSet  uint64
-	ShardSet    uint64
 	GatewayAddr []string
 	Addr        net.IP
 	Port        uint16
@@ -92,9 +91,8 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 // Cluster
 type Cluster struct {
 	sync.RWMutex
-	byServerID   map[string]*ClusterMember
-	byReplicaSet map[uint64][]*ClusterMember
-	byShardSet   map[uint64][]*ClusterMember
+	byServerID map[string]*ClusterMember
+	leaderID   string
 }
 
 func (c *Cluster) GetByID(id string) *ClusterMember {
@@ -102,6 +100,10 @@ func (c *Cluster) GetByID(id string) *ClusterMember {
 	defer c.RUnlock()
 
 	return c.byServerID[id]
+}
+
+func (c *Cluster) LeaderID() string {
+	return c.leaderID
 }
 
 func (c *Cluster) AddMember(m *ClusterMember) {
@@ -115,31 +117,10 @@ func (c *Cluster) AddMember(m *ClusterMember) {
 		return
 	}
 
-	if c.byReplicaSet == nil {
-		c.byReplicaSet = make(map[uint64][]*ClusterMember)
-		c.byShardSet = make(map[uint64][]*ClusterMember)
-		c.byServerID = make(map[string]*ClusterMember)
-		c.byServerID[m.ServerID] = m
-		c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
-		return
+	if m.RaftState == rony.RaftState_Leader {
+		c.leaderID = m.ServerID
 	}
-
 	c.byServerID[m.ServerID] = m
-	for idx := range c.byReplicaSet[m.ReplicaSet] {
-		if c.byReplicaSet[m.ReplicaSet][idx].ServerID == m.ServerID {
-			c.byReplicaSet[m.ReplicaSet][idx] = m
-			return
-		}
-	}
-	c.byReplicaSet[m.ReplicaSet] = append(c.byReplicaSet[m.ReplicaSet], m)
-
-	for idx := range c.byShardSet[m.ShardSet] {
-		if c.byShardSet[m.ShardSet][idx].ServerID == m.ServerID {
-			c.byShardSet[m.ShardSet][idx] = m
-			return
-		}
-	}
-	c.byShardSet[m.ShardSet] = append(c.byShardSet[m.ShardSet], m)
 }
 
 func (c *Cluster) RemoveMember(m *ClusterMember) {
@@ -152,20 +133,11 @@ func (c *Cluster) RemoveMember(m *ClusterMember) {
 	if len(m.ServerID) == 0 {
 		return
 	}
+	if m.ServerID == c.leaderID {
+		c.leaderID = ""
+	}
 
-	if c.byReplicaSet == nil {
-		c.byReplicaSet = make(map[uint64][]*ClusterMember)
-		c.byServerID = make(map[string]*ClusterMember)
-		return
-	}
 	delete(c.byServerID, m.ServerID)
-	for idx := range c.byReplicaSet[m.ReplicaSet] {
-		if c.byReplicaSet[m.ReplicaSet][idx].ServerID == m.ServerID {
-			c.byReplicaSet[m.ReplicaSet][idx] = c.byReplicaSet[m.ReplicaSet][len(c.byReplicaSet[m.ReplicaSet])-1]
-			c.byReplicaSet[m.ReplicaSet] = c.byReplicaSet[m.ReplicaSet][:len(c.byReplicaSet[m.ReplicaSet])-1]
-			return
-		}
-	}
 }
 
 func (c *Cluster) Members() []*ClusterMember {
@@ -191,7 +163,11 @@ func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
 }
 
 func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
-	d.edge.cluster.RemoveMember(convertMember(n))
+	cm := convertMember(n)
+	d.edge.cluster.RemoveMember(cm)
+	if cm.ReplicaSet == d.edge.replicaSet {
+		_ = leaveRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+	}
 }
 
 func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
@@ -232,6 +208,31 @@ func joinRaft(edge *Server, nodeID, addr string) error {
 	}
 	return nil
 }
+func leaveRaft(edge *Server, nodeID, addr string) error {
+	if !edge.raftEnabled {
+		return rony.ErrRaftNotSet
+	}
+	if edge.raft.State() != raft.Leader {
+		return rony.ErrNotRaftLeader
+	}
+	futureConfig := edge.raft.GetConfiguration()
+	if err := futureConfig.Error(); err != nil {
+		return err
+	}
+	raftConf := futureConfig.Configuration()
+	for _, srv := range raftConf.Servers {
+		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
+			return nil
+		}
+		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
+			future := edge.raft.RemoveServer(srv.ID, 0, 0)
+			if err := future.Error(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 type delegateNode struct {
 	edge *Server
@@ -241,7 +242,6 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
 		ServerID:    d.edge.serverID,
 		ReplicaSet:  d.edge.replicaSet,
-		ShardSet:    d.edge.shardSet,
 		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
 		RaftState:   rony.RaftState_None,
