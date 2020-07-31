@@ -39,7 +39,6 @@ func (g *GenRony) Generate(file *generator.FileDescriptor) {
 		if *file.Package != "rony" {
 			g.g.AddImport("git.ronaksoftware.com/ronak/rony")
 		}
-
 	}
 
 	// Generate Server

@@ -42,10 +42,11 @@ func (m *MessageEnvelope) Clone() *MessageEnvelope {
 	return c
 }
 
-func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) {
+func (m *MessageEnvelope) CopyTo(e *MessageEnvelope) *MessageEnvelope {
 	e.Constructor = m.Constructor
 	e.RequestID = m.RequestID
 	e.Message = append(e.Message[:0], m.Message...)
+	return e
 }
 
 func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMessage) {
@@ -60,11 +61,11 @@ func (m *MessageEnvelope) Fill(reqID uint64, constructor int64, p ProtoBufferMes
 func (m *RaftCommand) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	m.Sender = append(m.Sender[:0], senderID...)
 	m.AuthID = authID
-	e.CopyTo(m.Envelope)
+	m.Envelope = e.CopyTo(m.Envelope)
 }
 
 func (m *ClusterMessage) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	m.Sender = append(m.Sender[:0], senderID...)
 	m.AuthID = authID
-	e.CopyTo(m.Envelope)
+	m.Envelope = e.CopyTo(m.Envelope)
 }
