@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package packageName;
+
+message Message1 {
+    required int64 Param1 = 1;
+    required string Param2 = 2;
+}
+
+message Message2 {
+    optional fixed32 Param1 = 1;
+    optional bytes P2 = 2;
+    repeated int32 P3 = 3;
+}
