@@ -24,21 +24,6 @@ import (
 
 const (
 	_ byte = iota
-	carrierMessage
-	carrierCluster
-	carrierUpdate
-)
-
-type carrier struct {
-	ServerID        []byte
-	AuthID          int64
-	MessageEnvelope *rony.MessageEnvelope
-	UpdateEnvelope  *rony.UpdateEnvelope
-	kind            byte
-}
-
-const (
-	_ byte = iota
 	gatewayMessage
 	clusterMessage
 )

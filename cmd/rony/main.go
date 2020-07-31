@@ -100,6 +100,7 @@ func generate() {
 
 	command.Write(command.GeneratePlugin(req, &rpc.Generator{}, ".rony.go"))
 }
+
 // func generate(input io.Reader, output io.Writer, fileSuffix string) error {
 // 	g := generator.New()
 // 	data, err := ioutil.ReadAll(input)

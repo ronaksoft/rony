@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/gateway"
@@ -18,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/trace"
 	"time"
 )
 
@@ -263,6 +265,9 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+	_, task := trace.NewTask(context.Background(), "Handle Gateway Message")
+	defer task.End()
+
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
 	err := edge.dispatcher.Prepare(dispatchCtx, data, kvs...)
 	if err != nil {
