@@ -11,7 +11,9 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
+	"os"
 	"path/filepath"
+	"runtime/trace"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -73,7 +75,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
 			edge.WithTcpGateway(tcpGateway.Config{
-				Concurrency:   1000,
+				Concurrency:   5000,
 				MaxIdleTime:   0,
 				ListenAddress: "0.0.0.0:0",
 			}),
@@ -207,8 +209,20 @@ var BenchCmd = &cobra.Command{
 			cnt  int64
 			gcnt int64
 		)
+
+		f, err := os.Create("rony-bench.trace")
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		err = trace.Start(f)
+		if err != nil {
+			cmd.Println("Error On TraceStart", err)
+		}
+		defer trace.Stop()
+
 		waitGroup := pools.AcquireWaitGroup()
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 1000; i++ {
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()

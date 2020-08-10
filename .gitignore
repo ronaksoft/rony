@@ -4,3 +4,4 @@ _*
 *.pprof
 *.out
 *.test
+*.trace
