@@ -31,10 +31,7 @@ type filer interface {
 type wrapConn struct {
 	net.Conn
 	io.Reader
-	buf            *bytes.Buffer
-	clientIP       string
-	clientType     string
-	clientDetected bool
+	buf *bytes.Buffer
 }
 
 func newWrapConn(c net.Conn) *wrapConn {

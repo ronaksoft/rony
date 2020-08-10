@@ -48,8 +48,6 @@ github.com/gobwas/pool/pbytes
 ## explicit
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
-# github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e
-## explicit
 # github.com/gogo/protobuf v1.3.1
 ## explicit
 github.com/gogo/protobuf/gogoproto
@@ -141,7 +139,6 @@ github.com/miekg/dns
 ## explicit
 github.com/nyaruka/phonenumbers
 # github.com/pkg/errors v0.8.1
-## explicit
 github.com/pkg/errors
 # github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942
 ## explicit
@@ -149,10 +146,6 @@ github.com/pkg/term/termios
 # github.com/ryanuber/columnize v2.1.0+incompatible
 ## explicit
 github.com/ryanuber/columnize
-# github.com/scylladb/gocqlx v1.5.0
-## explicit
-# github.com/scylladb/gocqlx/v2 v2.1.0
-## explicit
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 ## explicit
 github.com/sean-/seed
@@ -205,6 +198,8 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
+# golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+## explicit
 # golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix

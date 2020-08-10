@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -80,6 +79,7 @@ func New(config Config) (*Gateway, error) {
 		waitGroupReaders:   &sync.WaitGroup{},
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
+		conns:              make(map[uint64]*WebsocketConn, 100000),
 	}
 
 	tcpConfig := tcplisten.Config{
@@ -174,7 +174,14 @@ func (g *Gateway) Run() {
 			MaxRequestBodySize: g.maxBodySize,
 		}
 		for {
-			err := server.Serve(g.listener)
+			conn, err := g.listener.Accept()
+			if err != nil {
+				// log.Warn("Error On Accept", zap.Error(err))
+				continue
+			}
+
+			wc := newWrapConn(conn)
+			err = server.ServeConn(wc)
 			if err != nil {
 				if nErr, ok := err.(net.Error); ok {
 					if !nErr.Temporary() {
@@ -226,27 +233,30 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	req.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	req.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
 	req.Response.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-	if !req.Request.Header.IsPost() {
+	if req.Request.Header.IsOptions() {
 		req.SetStatusCode(http.StatusOK)
 		return
 	}
 
 	var (
-		kvs = make([]gateway.KeyValue, 0, 4)
+		kvs            = make([]gateway.KeyValue, 0, 4)
+		clientIP       string
+		clientType     string
+		clientDetected bool
 	)
-	wc := newWrapConn(req.Conn())
+
 	req.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.ByteToStr(key) {
 		case "Cf-Connecting-Ip":
-			wc.clientIP = string(value)
-			wc.clientDetected = true
+			clientIP = string(value)
+			clientDetected = true
 		case "X-Forwarded-For", "X-Real-Ip", "Forwarded":
-			if !wc.clientDetected {
-				wc.clientIP = string(value)
-				wc.clientDetected = true
+			if clientDetected {
+				clientIP = string(value)
+				clientDetected = true
 			}
 		case "X-Client-Type":
-			wc.clientType = string(value)
+			clientType = string(value)
 		default:
 			kvs = append(kvs, gateway.KeyValue{
 				Key:   string(key),
@@ -254,40 +264,43 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			})
 		}
 	})
-	if !wc.clientDetected {
-		wc.clientIP = string(req.RemoteIP().To4())
+	if !clientDetected {
+		clientIP = string(req.RemoteIP().To4())
 	}
 
 	if req.Request.Header.ConnectionUpgrade() {
+		wc := req.Conn().(*wrapConn)
+		wc.ReadyForUpgrade()
 		req.HijackSetNoResponse(true)
 		req.Hijack(func(c net.Conn) {
-			g.connectionAcceptor(wc)
+			g.waitGroupAcceptors.Add(1)
+			g.connectionAcceptor(wc, clientIP, clientType)
 		})
 		return
 	}
 
 	req.SetConnectionClose()
 	conn := acquireHttpConn(g, req)
-	conn.ClientIP = append(conn.ClientIP[:0], tools.StrToByte(wc.clientIP)...)
-	conn.ClientType = append(conn.ClientType[:0], tools.StrToByte(wc.clientType)...)
+	conn.ClientIP = append(conn.ClientIP[:0], tools.StrToByte(clientIP)...)
+	conn.ClientType = append(conn.ClientType[:0], tools.StrToByte(clientType)...)
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody(), kvs...)
 	releaseHttpConn(conn)
 }
 
-func (g *Gateway) connectionAcceptor(wc *wrapConn) {
+func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string) {
 	defer g.waitGroupAcceptors.Done()
 	if atomic.LoadInt32(&g.stop) == 1 {
 		return
 	}
-	if _, err := g.upgradeHandler.Upgrade(wc); err != nil {
+	if _, err := g.upgradeHandler.Upgrade(c); err != nil {
 		if ce := log.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
 			ce.Write(
-				zap.String("IP", wc.clientIP),
-				zap.String("ClientType", wc.clientType),
+				zap.String("IP", clientIP),
+				zap.String("ClientType", clientType),
 				zap.Error(err),
 			)
 		}
-		_ = wc.Close()
+		_ = c.Close()
 		return
 	}
 
@@ -295,12 +308,8 @@ func (g *Gateway) connectionAcceptor(wc *wrapConn) {
 		wsConn *WebsocketConn
 		err    error
 	)
-	if wc.clientDetected {
-		wsConn = g.addConnection(wc, wc.clientIP, wc.clientType)
-	} else {
-		wsConn = g.addConnection(wc, strings.Split(wc.RemoteAddr().String(), ":")[0], wc.clientType)
-	}
-	wsConn.desc, err = netpoll.Handle(wc,
+	wsConn = g.addConnection(c, clientIP, clientType)
+	wsConn.desc, err = netpoll.Handle(c,
 		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
 	)
 

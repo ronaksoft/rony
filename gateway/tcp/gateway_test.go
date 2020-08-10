@@ -8,6 +8,7 @@ import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 	"testing"
 	"time"
@@ -67,7 +68,16 @@ func TestWebsocketConn(t *testing.T) {
 		log.Warn("Error On Send Websocket Message", zap.Error(err))
 	}
 	_ = c.Close()
+	time.Sleep(time.Second)
 }
 func TestHttpConn(t *testing.T) {
-	// fasthttp.Do()
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	res := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(res)
+	req.SetHost("127.0.0.1")
+	err := fasthttp.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

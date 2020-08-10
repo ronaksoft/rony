@@ -401,7 +401,6 @@ func (u Upgrader) Upgrade(conn io.ReadWriter) (hs Handshake, err error) {
 	if err != nil {
 		return
 	}
-
 	// Parse request line data like HTTP version, uri and method.
 	req, err := httpParseRequestLine(rl)
 	if err != nil {
