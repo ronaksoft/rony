@@ -12,8 +12,6 @@ import "time"
 */
 
 const (
-	flushDebounceTime   = 10 * time.Millisecond
-	flushDebounceMax    = 3
 	defaultReadTimout   = 5 * time.Second
 	defaultWriteTimeout = 5 * time.Second
 	defaultConnIdleTime = 5 * time.Minute

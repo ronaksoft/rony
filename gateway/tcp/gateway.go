@@ -28,12 +28,21 @@ import (
    Copyright Ronak Software Group 2018
 */
 
+type Protocol int
+
+const (
+	Http Protocol = 1 << iota
+	Websocket
+	Auto = Http | Websocket
+)
+
 // Config
 type Config struct {
 	Concurrency   int
 	ListenAddress string
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
+	Protocol      Protocol
 }
 
 // Gateway
@@ -43,16 +52,17 @@ type Gateway struct {
 	gateway.CloseHandler
 
 	// Internals
-	listenOn    string
-	listener    net.Listener
-	addrs       []string
-	concurrency int
-	maxBodySize int
+	transportMode Protocol
+	listenOn      string
+	listener      net.Listener
+	addrs         []string
+	concurrency   int
+	maxBodySize   int
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
 	maxIdleTime        int64
-	conns              map[uint64]*WebsocketConn
+	conns              map[uint64]*websocketConn
 	connsMtx           sync.RWMutex
 	connsTotal         int32
 	connsLastID        uint64
@@ -79,7 +89,8 @@ func New(config Config) (*Gateway, error) {
 		waitGroupReaders:   &sync.WaitGroup{},
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
-		conns:              make(map[uint64]*WebsocketConn, 100000),
+		conns:              make(map[uint64]*websocketConn, 100000),
+		transportMode:      Auto,
 	}
 
 	tcpConfig := tcplisten.Config{
@@ -96,6 +107,9 @@ func New(config Config) (*Gateway, error) {
 
 	if config.MaxIdleTime != 0 {
 		g.maxIdleTime = int64(config.MaxIdleTime)
+	}
+	if config.Protocol != 0 {
+		g.transportMode = config.Protocol
 	}
 
 	// initialize websocket upgrade handler
@@ -269,6 +283,11 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	}
 
 	if req.Request.Header.ConnectionUpgrade() {
+		if g.transportMode&Websocket == 0 {
+			req.SetConnectionClose()
+			req.SetStatusCode(http.StatusNotAcceptable)
+			return
+		}
 		wc := req.Conn().(*wrapConn)
 		wc.ReadyForUpgrade()
 		req.HijackSetNoResponse(true)
@@ -280,9 +299,13 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	}
 
 	req.SetConnectionClose()
+	if g.transportMode&Http == 0 {
+		req.SetStatusCode(http.StatusNotAcceptable)
+		return
+	}
 	conn := acquireHttpConn(g, req)
-	conn.ClientIP = append(conn.ClientIP[:0], tools.StrToByte(clientIP)...)
-	conn.ClientType = append(conn.ClientType[:0], tools.StrToByte(clientType)...)
+	conn.SetClientIP(tools.StrToByte(clientIP))
+	conn.SetClientType(tools.StrToByte(clientType))
 	g.ConnectHandler(conn)
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody(), kvs...)
 	g.CloseHandler(conn)
@@ -307,53 +330,47 @@ func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string) {
 	}
 
 	var (
-		wsConn *WebsocketConn
-		err    error
+		err error
 	)
-	wsConn = g.addConnection(c, clientIP, clientType)
+	wsConn := g.addConnection(c, clientIP, clientType)
 	wsConn.desc, err = netpoll.Handle(c,
 		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
 	)
 
 	if err != nil {
 		log.Warn("Error On NetPoll Description", zap.Error(err))
-		g.removeConnection(wsConn.ConnID)
+		g.removeConnection(wsConn.connID)
 		return
 	}
 	err = g.poller.Start(wsConn.desc, wsConn.startEvent)
 	if err != nil {
 		log.Warn("Error On NetPoll Start", zap.Error(err))
-		g.removeConnection(wsConn.ConnID)
+		g.removeConnection(wsConn.connID)
 		return
 	}
 }
 
-func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *WebsocketConn {
+func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *websocketConn {
 	// Increment total connection counter and connection ID
 	totalConns := atomic.AddInt32(&g.connsTotal, 1)
 	connID := atomic.AddUint64(&g.connsLastID, 1)
-	wsConn := WebsocketConn{
-		ClientIP:     clientIP,
-		ConnID:       connID,
-		conn:         conn,
-		gateway:      g,
-		lastActivity: tools.TimeUnix(),
-		buf:          tools.NewLinkedList(),
-	}
+	wsConn := acquireWebsocketConn(g, connID, conn, nil)
+	wsConn.SetClientIP(tools.StrToByte(clientIP))
+
 	g.connsMtx.Lock()
-	g.conns[connID] = &wsConn
+	g.conns[connID] = wsConn
 	g.connsMtx.Unlock()
 	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", connID),
 			zap.String("Client", clientType),
-			zap.String("IP", clientIP),
+			zap.String("IP", wsConn.GetClientIP()),
 			zap.Int32("Total", totalConns),
 		)
 	}
-	g.ConnectHandler(&wsConn)
+	g.ConnectHandler(wsConn)
 	g.connGC.monitorConnection(connID)
-	return &wsConn
+	return wsConn
 }
 
 func (g *Gateway) removeConnection(wcID uint64) {
@@ -377,6 +394,8 @@ func (g *Gateway) removeConnection(wcID uint64) {
 		wsConn.closed = true
 	}
 	wsConn.Unlock()
+	releaseWebsocketConn(wsConn)
+
 	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", wcID),
@@ -385,7 +404,7 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	}
 }
 
-func (g *Gateway) getConnection(connID uint64) *WebsocketConn {
+func (g *Gateway) getConnection(connID uint64) *websocketConn {
 	g.connsMtx.RLock()
 	wsConn, ok := g.conns[connID]
 	g.connsMtx.RUnlock()
@@ -395,7 +414,7 @@ func (g *Gateway) getConnection(connID uint64) *WebsocketConn {
 	return nil
 }
 
-func (g *Gateway) readPump(wc *WebsocketConn) {
+func (g *Gateway) readPump(wc *websocketConn) {
 	defer g.waitGroupReaders.Done()
 	var (
 		err error
@@ -408,12 +427,12 @@ func (g *Gateway) readPump(wc *WebsocketConn) {
 	if err != nil {
 		if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
 			ce.Write(
-				zap.Int64("AuthID", wc.AuthID),
+				zap.Int64("AuthID", wc.authID),
 				zap.Error(err),
 			)
 		}
 		// remove the connection from the list
-		wc.gateway.removeConnection(wc.ConnID)
+		wc.gateway.removeConnection(wc.connID)
 		return
 	}
 	atomic.AddUint64(&g.cntReads, 1)
@@ -433,7 +452,7 @@ func (g *Gateway) readPump(wc *WebsocketConn) {
 			g.MessageHandler(wc, 0, ms[idx].Payload)
 		case ws.OpClose:
 			// remove the connection from the list
-			wc.gateway.removeConnection(wc.ConnID)
+			wc.gateway.removeConnection(wc.connID)
 		default:
 			log.Warn("Unknown OpCode")
 		}
@@ -441,7 +460,7 @@ func (g *Gateway) readPump(wc *WebsocketConn) {
 	}
 }
 
-func (g *Gateway) writePump(wr writeRequest) {
+func (g *Gateway) writePump(wr *writeRequest) {
 	defer g.waitGroupWriters.Done()
 
 	if wr.wc.closed {
@@ -449,20 +468,17 @@ func (g *Gateway) writePump(wr writeRequest) {
 	}
 
 	switch wr.opCode {
-	case ws.OpBinary:
-		// Try to write to the wire in WEBSOCKET_WRITE_SHORT_WAIT time
+	case ws.OpBinary, ws.OpText:
 		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, ws.OpBinary, wr.payload)
+		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
 		if err != nil {
 			if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
-				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.ConnID))
+				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
-			g.removeConnection(wr.wc.ConnID)
+			g.removeConnection(wr.wc.connID)
 		} else {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}
-		// Put the bytes into the pool to be reused again
-		pools.Bytes.Put(wr.payload)
 	}
 
 }

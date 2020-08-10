@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	"git.ronaksoftware.com/ronak/rony/internal/logger"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -135,10 +135,9 @@ func runClient(wg *sync.WaitGroup, m int) {
 }
 
 func runServer() gateway.Gateway {
-	gw, err := websocketGateway.New(websocketGateway.Config{
-		NewConnectionWorkers: 1,
-		MaxConcurrency:       1000,
-		ListenAddress:        ":8080",
+	gw, err := tcpGateway.New(tcpGateway.Config{
+		Concurrency:   1000,
+		ListenAddress: ":8080",
 	})
 
 	if err != nil {

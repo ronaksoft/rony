@@ -44,7 +44,7 @@ func init() {
 // }
 
 func BenchmarkWebsocketConn(b *testing.B) {
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 	b.SetParallelism(10)
 	var err error
 	gw, err = tcpGateway.New(tcpGateway.Config{

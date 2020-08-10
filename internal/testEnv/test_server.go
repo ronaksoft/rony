@@ -5,8 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	httpGateway "git.ronaksoftware.com/ronak/rony/gateway/http"
-	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"go.uber.org/zap"
@@ -59,11 +58,11 @@ func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
 func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		edge.WithWebsocketGateway(websocketGateway.Config{
-			NewConnectionWorkers: 1,
-			MaxConcurrency:       10,
-			MaxIdleTime:          0,
-			ListenAddress:        fmt.Sprintf(":%d", clientPort),
+		edge.WithTcpGateway(tcpGateway.Config{
+			Protocol:      tcpGateway.Websocket,
+			Concurrency:   10,
+			MaxIdleTime:   0,
+			ListenAddress: fmt.Sprintf(":%d", clientPort),
 		}),
 	)
 	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
@@ -73,7 +72,8 @@ func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.O
 
 func InitEdgeServerWithHttp(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		edge.WithHttpGateway(httpGateway.Config{
+		edge.WithTcpGateway(tcpGateway.Config{
+			Protocol:      tcpGateway.Http,
 			Concurrency:   1 << 20,
 			ListenAddress: fmt.Sprintf("127.0.0.1:%d", clientPort),
 			MaxBodySize:   1 << 22,

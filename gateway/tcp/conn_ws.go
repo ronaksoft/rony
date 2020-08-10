@@ -5,7 +5,6 @@ package tcpGateway
 import (
 	"encoding/binary"
 	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
@@ -26,12 +25,12 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-// WebsocketConn
-type WebsocketConn struct {
+// websocketConn
+type websocketConn struct {
 	sync.Mutex
-	ConnID   uint64
-	AuthID   int64
-	ClientIP string
+	connID   uint64
+	authID   int64
+	clientIP []byte
 
 	// Internals
 	buf          *tools.LinkedList
@@ -42,27 +41,31 @@ type WebsocketConn struct {
 	closed       bool
 }
 
-func (wc *WebsocketConn) GetAuthID() int64 {
-	return wc.AuthID
+func (wc *websocketConn) GetAuthID() int64 {
+	return wc.authID
 }
 
-func (wc *WebsocketConn) SetAuthID(authID int64) {
-	wc.AuthID = authID
+func (wc *websocketConn) SetAuthID(authID int64) {
+	wc.authID = authID
 }
 
-func (wc *WebsocketConn) GetConnID() uint64 {
-	return wc.ConnID
+func (wc *websocketConn) GetConnID() uint64 {
+	return wc.connID
 }
 
-func (wc *WebsocketConn) GetClientIP() string {
-	return net.IP(wc.ClientIP).String()
+func (wc *websocketConn) GetClientIP() string {
+	return net.IP(wc.clientIP).String()
 }
 
-func (wc *WebsocketConn) Push(m *rony.MessageEnvelope) {
+func (wc *websocketConn) SetClientIP(ip []byte) {
+	wc.clientIP = append(wc.clientIP[:0], ip...)
+}
+
+func (wc *websocketConn) Push(m *rony.MessageEnvelope) {
 	wc.buf.Append(m)
 }
 
-func (wc *WebsocketConn) Pop() *rony.MessageEnvelope {
+func (wc *websocketConn) Pop() *rony.MessageEnvelope {
 	v := wc.buf.PickHeadData()
 	if v != nil {
 		return v.(*rony.MessageEnvelope)
@@ -70,7 +73,7 @@ func (wc *WebsocketConn) Pop() *rony.MessageEnvelope {
 	return nil
 }
 
-func (wc *WebsocketConn) startEvent(event netpoll.Event) {
+func (wc *websocketConn) startEvent(event netpoll.Event) {
 	if atomic.LoadInt32(&wc.gateway.stop) == 1 {
 		return
 	}
@@ -79,47 +82,46 @@ func (wc *WebsocketConn) startEvent(event netpoll.Event) {
 		wc.gateway.waitGroupReaders.Add(1)
 		wc.gateway.readPump(wc)
 	}
-
 }
 
 // SendBinary
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
-// You MUST NOT re-use the underlying array of payload, otherwise you might get unexpected results.
-func (wc *WebsocketConn) SendBinary(streamID int64, payload []byte) error {
+func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 	if wc.closed {
 		return ErrWriteToClosedConn
 	}
 	wc.gateway.waitGroupWriters.Add(1)
-	p := pools.Bytes.GetLen(len(payload))
-	copy(p, payload)
-	wc.gateway.writePump(writeRequest{
-		wc:      wc,
-		payload: p,
-		opCode:  ws.OpBinary,
-	})
+
+	wr := acquireWriteRequest(wc, ws.OpBinary)
+	wr.CopyPayload(payload)
+	wc.gateway.writePump(wr)
+	releaseWriteRequest(wr)
 	return nil
 }
 
-func (wc *WebsocketConn) Disconnect() {
-	wc.gateway.removeConnection(wc.ConnID)
+func (wc *websocketConn) Disconnect() {
+	wc.gateway.removeConnection(wc.connID)
 }
 
-func (wc *WebsocketConn) Persistent() bool {
+func (wc *websocketConn) Persistent() bool {
 	return true
 }
 
 type writeRequest struct {
-	wc      *WebsocketConn
+	wc      *websocketConn
 	opCode  ws.OpCode
 	payload []byte
 }
 
+func (wr *writeRequest) CopyPayload(p []byte) {
+	wr.payload = append(wr.payload[:0], p...)
+}
+
 type websocketConnGC struct {
-	bg      *bigcache.BigCache
-	gw      *Gateway
-	inChan  chan uint64
-	timeNow int64
+	bg     *bigcache.BigCache
+	gw     *Gateway
+	inChan chan uint64
 }
 
 func newWebsocketConnGC(gw *Gateway) *websocketConnGC {
@@ -136,6 +138,7 @@ func newWebsocketConnGC(gw *Gateway) *websocketConnGC {
 	bgConf.MaxEntriesInWindow = 100000
 	gc.bg, _ = bigcache.NewBigCache(bgConf)
 
+	// background job for receiving connIDs
 	go func() {
 		b := make([]byte, 8)
 		for connID := range gc.inChan {
@@ -144,12 +147,6 @@ func newWebsocketConnGC(gw *Gateway) *websocketConnGC {
 		}
 	}()
 
-	go func() {
-		for {
-			gc.timeNow = time.Now().Unix()
-			time.Sleep(time.Second)
-		}
-	}()
 	return gc
 }
 
@@ -158,7 +155,7 @@ func (gc *websocketConnGC) onRemove(key string, entry []byte, reason bigcache.Re
 	case bigcache.Expired:
 		connID := binary.BigEndian.Uint64(entry)
 		if wsConn := gc.gw.getConnection(connID); wsConn != nil {
-			if gc.timeNow-wsConn.lastActivity > gc.gw.maxIdleTime {
+			if tools.TimeUnix()-wsConn.lastActivity > gc.gw.maxIdleTime {
 				gc.gw.removeConnection(connID)
 			} else {
 				gc.monitorConnection(connID)
