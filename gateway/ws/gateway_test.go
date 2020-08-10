@@ -5,6 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
 	"git.ronaksoftware.com/ronak/rony/gateway/ws/util"
+	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
@@ -108,6 +109,7 @@ func TestGateway(t *testing.T) {
 }
 
 func BenchmarkGatewaySerial(b *testing.B) {
+	log.SetLevel(log.InfoLevel)
 	var err error
 	gw, err = websocketGateway.New(websocketGateway.Config{
 		MaxIdleTime:          time.Second * 3,
@@ -156,6 +158,7 @@ func BenchmarkGatewaySerial(b *testing.B) {
 }
 
 func BenchmarkGatewayParallel(b *testing.B) {
+	log.SetLevel(log.InfoLevel)
 	b.SetParallelism(10)
 	var err error
 	gw, err = websocketGateway.New(websocketGateway.Config{

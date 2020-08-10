@@ -19,6 +19,7 @@ const (
 	Undefined Protocol = ""
 	Websocket Protocol = "websocket"
 	HTTP      Protocol = "http"
+	TCP       Protocol = "tcp"
 )
 
 type Conn interface {

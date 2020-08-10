@@ -55,7 +55,7 @@ func (wc *WebsocketConn) GetConnID() uint64 {
 }
 
 func (wc *WebsocketConn) GetClientIP() string {
-	return wc.ClientIP
+	return net.IP(wc.ClientIP).String()
 }
 
 func (wc *WebsocketConn) Push(m *rony.MessageEnvelope) {

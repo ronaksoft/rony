@@ -5,7 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/edgeClient"
-	websocketGateway "git.ronaksoftware.com/ronak/rony/gateway/ws"
+	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
@@ -72,11 +72,10 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
-			edge.WithWebsocketGateway(websocketGateway.Config{
-				NewConnectionWorkers: 10,
-				MaxConcurrency:       1000,
-				MaxIdleTime:          0,
-				ListenAddress:        "0.0.0.0:0",
+			edge.WithTcpGateway(tcpGateway.Config{
+				Concurrency:   1000,
+				MaxIdleTime:   0,
+				ListenAddress: "0.0.0.0:0",
 			}),
 			edge.WithDataPath(filepath.Join("./_hdd", serverID)),
 			edge.WithGossipPort(port),

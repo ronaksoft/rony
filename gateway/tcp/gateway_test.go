@@ -6,10 +6,11 @@ import (
 	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	wsutil "git.ronaksoftware.com/ronak/rony/gateway/tcp/util"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
-	"github.com/valyala/fasthttp"
-	"go.uber.org/zap"
+	"net"
 	"testing"
 	"time"
 )
@@ -23,61 +24,80 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var g *tcpGateway.Gateway
+var gw *tcpGateway.Gateway
 
 func init() {
-	log.InitLogger(log.Config{
-		Level: log.DebugLevel,
-	})
-
-	g = tcpGateway.MustNew(tcpGateway.Config{
-		Concurrency:   10,
-		ListenAddress: ":80",
-		MaxBodySize:   100,
-		MaxIdleTime:   30 * time.Second,
-	})
-	g.MessageHandler = func(c gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
-		log.Debug("Received Message",
-			zap.Uint64("ConnID", c.GetConnID()),
-			zap.Bool("Persistent", c.Persistent()),
-			zap.String("IP", c.GetClientIP()),
-		)
-	}
-	g.ConnectHandler = func(c gateway.Conn) {
-		log.Debug("Connection Opened",
-			zap.Uint64("ConnID", c.GetConnID()),
-			zap.Bool("Persistent", c.Persistent()),
-		)
-	}
-	g.CloseHandler = func(c gateway.Conn) {
-		log.Debug("Connection Closed",
-			zap.Uint64("ConnID", c.GetConnID()),
-			zap.Bool("Persistent", c.Persistent()),
-		)
-	}
-	g.Run()
+	testEnv.Init()
 }
 
-func TestWebsocketConn(t *testing.T) {
-	c, _, _, err := ws.Dial(context.Background(), "ws://localhost")
+// func TestWebsocketConn(t *testing.T) {
+//
+// }
+//
+// func TestHttpConn(t *testing.T) {
+//
+// }
+//
+// func BenchmarkHttpConn(b *testing.B) {
+// 	log.SetLevel(log.InfoLevel)
+//
+// }
+
+func BenchmarkWebsocketConn(b *testing.B) {
+	log.SetLevel(log.InfoLevel)
+	b.SetParallelism(10)
+	var err error
+	gw, err = tcpGateway.New(tcpGateway.Config{
+		Concurrency:   1000,
+		ListenAddress: ":82",
+		MaxBodySize:   0,
+		MaxIdleTime:   time.Second * 30,
+	})
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
-	err = wsutil.WriteMessage(c, ws.StateClientSide, ws.OpBinary, tools.StrToByte(tools.RandomDigit(10)))
-	if err != nil {
-		log.Warn("Error On Send Websocket Message", zap.Error(err))
+
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
 	}
-	_ = c.Close()
+	gw.Run()
 	time.Sleep(time.Second)
-}
-func TestHttpConn(t *testing.T) {
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-	res := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(res)
-	req.SetHost("127.0.0.1")
-	err := fasthttp.Do(req, res)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	sendMessage := []byte(tools.RandomID(128))
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		var (
+			m    []wsutil.Message
+			err  error
+			conn net.Conn
+		)
+		for try := 0; try < 5; try++ {
+			conn, _, _, err = ws.Dial(context.Background(), "ws://localhost:82")
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			b.Fatal(err)
+		}
+		defer conn.Close()
+		for pb.Next() {
+			err = wsutil.WriteMessage(conn, ws.StateClientSide, ws.OpBinary, sendMessage)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+			m, err = wsutil.ReadMessage(conn, ws.StateClientSide, m)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			for idx := range m {
+				pools.Bytes.Put(m[idx].Payload)
+			}
+			m = m[:0]
+		}
+	})
+	b.StopTimer()
 }

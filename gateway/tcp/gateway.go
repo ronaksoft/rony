@@ -83,7 +83,7 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	tcpConfig := tcplisten.Config{
-		ReusePort:   false,
+		ReusePort:   true,
 		FastOpen:    true,
 		DeferAccept: true,
 		Backlog:     2048,
@@ -283,7 +283,9 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	conn := acquireHttpConn(g, req)
 	conn.ClientIP = append(conn.ClientIP[:0], tools.StrToByte(clientIP)...)
 	conn.ClientType = append(conn.ClientType[:0], tools.StrToByte(clientType)...)
+	g.ConnectHandler(conn)
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody(), kvs...)
+	g.CloseHandler(conn)
 	releaseHttpConn(conn)
 }
 
