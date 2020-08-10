@@ -155,6 +155,14 @@ func New(config Config) (*Gateway, error) {
 	return g, nil
 }
 
+func MustNew(config Config) *Gateway {
+	g, err := New(config)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
 // Run
 func (g *Gateway) Run() {
 	go func() {
