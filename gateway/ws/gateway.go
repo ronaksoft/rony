@@ -271,6 +271,16 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	}
 }
 
+func (g *Gateway) getConnection(connID uint64) *Conn {
+	g.connsMtx.RLock()
+	wsConn, ok := g.conns[connID]
+	g.connsMtx.RUnlock()
+	if ok {
+		return wsConn
+	}
+	return nil
+}
+
 func (g *Gateway) readPump(wc *Conn) {
 	defer g.waitGroupReaders.Done()
 	var (
@@ -383,17 +393,6 @@ func (g *Gateway) Shutdown() {
 // Addr return the address which gateway is listen on
 func (g *Gateway) Addr() []string {
 	return g.addrs
-}
-
-// GetConnection
-func (g *Gateway) GetConnection(connID uint64) *Conn {
-	g.connsMtx.RLock()
-	wsConn, ok := g.conns[connID]
-	g.connsMtx.RUnlock()
-	if ok {
-		return wsConn
-	}
-	return nil
 }
 
 // TotalConnections

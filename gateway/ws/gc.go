@@ -58,7 +58,7 @@ func (gc *connGC) onRemove(key string, entry []byte, reason bigcache.RemoveReaso
 	switch reason {
 	case bigcache.Expired:
 		connID := binary.BigEndian.Uint64(entry)
-		if wsConn := gc.gw.GetConnection(connID); wsConn != nil {
+		if wsConn := gc.gw.getConnection(connID); wsConn != nil {
 			if gc.timeNow-wsConn.lastActivity > gc.gw.maxIdleTime {
 				gc.gw.removeConnection(connID)
 			} else {

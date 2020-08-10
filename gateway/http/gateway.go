@@ -43,19 +43,22 @@ func New(config Config) (*Gateway, error) {
 	var (
 		err error
 	)
-	g := new(Gateway)
-	g.listenOn = config.ListenAddress
-	g.concurrency = config.Concurrency
-	g.maxBodySize = config.MaxBodySize
-	g.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
-		fmt.Println("Request Received")
+	g := &Gateway{
+		listenOn:    config.ListenAddress,
+		concurrency: config.Concurrency,
+		maxBodySize: config.MaxBodySize,
+		MessageHandler: func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+			fmt.Println("Request Received but no handler is set")
+		},
 	}
+
 	tcpConfig := tcplisten.Config{
 		ReusePort:   false,
 		FastOpen:    true,
 		DeferAccept: true,
 		Backlog:     2048,
 	}
+
 	g.listener, err = tcpConfig.NewListener("tcp4", g.listenOn)
 	if err != nil {
 		return nil, err

@@ -8,8 +8,6 @@ import (
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
-	"time"
-
 	"io"
 	"net"
 	"sync"
@@ -75,7 +73,7 @@ func (wc *Conn) startEvent(event netpoll.Event) {
 		return
 	}
 	if event&netpoll.EventRead != 0 {
-		wc.lastActivity = time.Now().Unix()
+		wc.lastActivity = tools.TimeUnix()
 		// TODO:: rate limit this
 		wc.gateway.waitGroupReaders.Add(1)
 		wc.gateway.readPump(wc)
