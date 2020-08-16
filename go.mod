@@ -11,7 +11,7 @@ require (
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.3
-	github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e
+	github.com/gocql/gocql v0.0.0-20200815110948-5378c8f664e9
 	github.com/golang/protobuf v1.4.1
 	github.com/google/btree v1.0.0
 	github.com/hashicorp/go-hclog v0.9.1

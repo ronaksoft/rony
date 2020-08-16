@@ -20,13 +20,6 @@ var (
 	ConstructorNames = map[int64]string{}
 )
 
-// ProtoBufferMessage
-type ProtoBufferMessage interface {
-	Size() int
-	MarshalToSizedBuffer([]byte) (int, error)
-	Unmarshal([]byte) error
-}
-
 func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 	errMessage := PoolError.Get()
 	errMessage.Code = &errCode

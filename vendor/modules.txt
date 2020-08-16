@@ -48,7 +48,7 @@ github.com/gobwas/pool/pbytes
 ## explicit
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
-# github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e
+# github.com/gocql/gocql v0.0.0-20200815110948-5378c8f664e9
 ## explicit
 github.com/gocql/gocql
 github.com/gocql/gocql/internal/lru
