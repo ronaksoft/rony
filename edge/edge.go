@@ -6,13 +6,14 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"io/ioutil"
 	"net"
 	"os"
@@ -132,8 +133,9 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 		if edge.raft.State() == raft.Leader {
 			raftCmd := acquireRaftCommand()
 			raftCmd.Fill(edge.serverID, dispatchCtx.authID, dispatchCtx.req)
-			raftCmdBytes := pools.Bytes.GetLen(raftCmd.Size())
-			_, err = raftCmd.MarshalToSizedBuffer(raftCmdBytes)
+			mo := proto.MarshalOptions{}
+			raftCmdBytes := pools.Bytes.GetCap(mo.Size(raftCmd))
+			raftCmdBytes, err = mo.MarshalAppend(raftCmdBytes, raftCmd)
 			if err != nil {
 				return
 			}
@@ -153,10 +155,10 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 }
 func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error) {
 	waitGroup := acquireWaitGroup()
-	switch dispatchCtx.req.Constructor {
+	switch dispatchCtx.req.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := &rony.MessageContainer{}
-		err = x.Unmarshal(dispatchCtx.req.Message)
+		err = proto.Unmarshal(dispatchCtx.req.Message, x)
 		if err != nil {
 			return
 		}
@@ -194,13 +196,13 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
 		startTime = time.Now()
 		ce.Write(
-			zap.String("Constructor", edge.getConstructorName(in.Constructor)),
-			zap.Uint64("RequestID", in.RequestID),
+			zap.String("Constructor", edge.getConstructorName(in.GetConstructor())),
+			zap.Uint64("RequestID", in.GetRequestID()),
 			zap.Int64("AuthID", dispatchCtx.authID),
 		)
 	}
 	if readOnly {
-		_, ok := edge.readonlyHandlers[in.Constructor]
+		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
 			leaderID := edge.cluster.leaderID
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
@@ -214,7 +216,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 					rony.C_Redirect,
 					&rony.Redirect{
 						LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
-						ServerID:       leaderID,
+						ServerID:       &leaderID,
 					},
 				)
 			} else {
@@ -223,7 +225,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 			return
 		}
 	}
-	handlers, ok := edge.handlers[in.Constructor]
+	handlers, ok := edge.handlers[in.GetConstructor()]
 	if !ok {
 		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
 		return
@@ -258,7 +260,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 
 	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 		ce.Write(
-			zap.Uint64("RequestID", in.RequestID),
+			zap.Uint64("RequestID", in.GetRequestID()),
 			zap.Int64("AuthID", dispatchCtx.authID),
 			zap.Duration("T", time.Now().Sub(startTime)),
 		)
@@ -297,7 +299,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 }
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
-	rony.ErrorMessage(envelope, dispatchCtx.req.RequestID, code, item)
+	rony.ErrorMessage(envelope, dispatchCtx.req.GetRequestID(), code, item)
 	edge.dispatcher.OnMessage(dispatchCtx, dispatchCtx.authID, envelope)
 	releaseMessageEnvelope(envelope)
 }

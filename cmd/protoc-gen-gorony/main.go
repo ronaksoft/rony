@@ -1,19 +1,25 @@
 package main
 
 import (
-	"github.com/gogo/protobuf/vanity"
-	"github.com/gogo/protobuf/vanity/command"
+	"fmt"
+	"google.golang.org/protobuf/compiler/protogen"
 )
 
 func main() {
-	req := command.Read()
-	files := req.GetProtoFile()
-	files = vanity.FilterFiles(files, vanity.NotGoogleProtobufDescriptorProto)
-
-	vanity.ForEachFile(files, vanity.TurnOnMarshalerAll)
-	vanity.ForEachFile(files, vanity.TurnOnSizerAll)
-	vanity.ForEachFile(files, vanity.TurnOnUnmarshalerAll)
-
-	command.Write(command.GeneratePlugin(req, &GenRony{}, ".rony.go"))
+	pgo := protogen.Options{
+		ParamFunc:         nil,
+		ImportRewriteFunc: nil,
+	}
+	pgo.Run(func(plugin *protogen.Plugin) error {
+		for _, f := range plugin.Files {
+			g1 := plugin.NewGeneratedFile(fmt.Sprintf("%s.pools.go", f.GeneratedFilenamePrefix), f.GoImportPath)
+			GenPools(f, g1)
+			if len(f.Services) > 0 {
+				g2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.rony.go", f.GeneratedFilenamePrefix), f.GoImportPath)
+				GenRPC(f, g2)
+			}
+		}
+		return nil
+	})
 	return
 }

@@ -4,7 +4,6 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
-      <excludeFolder url="file://$MODULE_DIR$/_playground" />
       <excludeFolder url="file://$MODULE_DIR$/cmd/cli-playground/_hdd" />
     </content>
     <orderEntry type="inheritedJdk" />

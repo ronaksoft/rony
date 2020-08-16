@@ -5,6 +5,7 @@ import (
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
+	"google.golang.org/protobuf/proto"
 	"path/filepath"
 	"testing"
 	"time"
@@ -77,7 +78,8 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 	}
 	e := &rony.MessageEnvelope{}
 	e.Fill(100, pb.C_Echo, &req)
-	reqBytes, _ := e.Marshal()
+
+	reqBytes, _ := proto.Marshal(e)
 	for i := 0; i < b.N; i++ {
 		edgeServer.HandleGatewayMessage(&conn, 0, reqBytes)
 	}

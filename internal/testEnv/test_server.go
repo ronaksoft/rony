@@ -7,8 +7,9 @@ import (
 	"git.ronaksoftware.com/ronak/rony/gateway"
 	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"sync/atomic"
 )
 
@@ -39,8 +40,12 @@ func (t testDispatcher) OnClose(conn gateway.Conn) {
 
 func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
-		b := pools.Bytes.GetLen(envelope.Size())
-		_, _ = envelope.MarshalToSizedBuffer(b)
+		mo := proto.MarshalOptions{
+			UseCachedSize: true,
+		}
+
+		b := pools.Bytes.GetCap(mo.Size(envelope))
+		b, _ = mo.MarshalAppend(b, envelope)
 		err := ctx.Conn().SendBinary(ctx.StreamID(), b)
 		if err != nil {
 			log.Warn("Error On SendBinary", zap.Error(err))

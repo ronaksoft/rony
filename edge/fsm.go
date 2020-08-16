@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"git.ronaksoftware.com/ronak/rony"
 	"github.com/hashicorp/raft"
+	"google.golang.org/protobuf/proto"
 	"io"
 )
 
@@ -23,7 +24,7 @@ type raftFSM struct {
 
 func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := acquireRaftCommand()
-	err := raftCmd.Unmarshal(raftLog.Data)
+	err := proto.Unmarshal(raftLog.Data, raftCmd)
 	if err != nil {
 		return err
 	}
@@ -34,8 +35,8 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 		return rony.ErrRaftExecuteOnLeader
 	}
 
-	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.AuthID, raftCmd.Sender)
-	dispatchCtx.FillEnvelope(raftCmd.Envelope.RequestID, raftCmd.Envelope.Constructor, raftCmd.Envelope.Message)
+	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.GetAuthID(), raftCmd.Sender)
+	dispatchCtx.FillEnvelope(raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message)
 
 	err = fsm.edge.execute(dispatchCtx, false)
 	fsm.edge.dispatcher.Done(dispatchCtx)

@@ -48,34 +48,13 @@ github.com/gobwas/pool/pbytes
 ## explicit
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
-# github.com/gogo/protobuf v1.3.1
+# github.com/gocql/gocql v0.0.0-20200624222514-34081eda590e
 ## explicit
-github.com/gogo/protobuf/gogoproto
-github.com/gogo/protobuf/plugin/compare
-github.com/gogo/protobuf/plugin/defaultcheck
-github.com/gogo/protobuf/plugin/description
-github.com/gogo/protobuf/plugin/embedcheck
-github.com/gogo/protobuf/plugin/enumstringer
-github.com/gogo/protobuf/plugin/equal
-github.com/gogo/protobuf/plugin/face
-github.com/gogo/protobuf/plugin/gostring
-github.com/gogo/protobuf/plugin/marshalto
-github.com/gogo/protobuf/plugin/oneofcheck
-github.com/gogo/protobuf/plugin/populate
-github.com/gogo/protobuf/plugin/size
-github.com/gogo/protobuf/plugin/stringer
-github.com/gogo/protobuf/plugin/testgen
-github.com/gogo/protobuf/plugin/union
-github.com/gogo/protobuf/plugin/unmarshal
-github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/protoc-gen-gogo/descriptor
-github.com/gogo/protobuf/protoc-gen-gogo/generator
-github.com/gogo/protobuf/protoc-gen-gogo/generator/internal/remap
-github.com/gogo/protobuf/protoc-gen-gogo/grpc
-github.com/gogo/protobuf/protoc-gen-gogo/plugin
-github.com/gogo/protobuf/vanity
-github.com/gogo/protobuf/vanity/command
-# github.com/golang/protobuf v1.3.4
+github.com/gocql/gocql
+github.com/gocql/gocql/internal/lru
+github.com/gocql/gocql/internal/murmur
+github.com/gocql/gocql/internal/streams
+# github.com/golang/protobuf v1.4.1
 ## explicit
 github.com/golang/protobuf/proto
 # github.com/golang/snappy v0.0.1
@@ -83,8 +62,8 @@ github.com/golang/snappy
 # github.com/google/btree v1.0.0
 ## explicit
 github.com/google/btree
-# github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1
-github.com/gopherjs/gopherjs/js
+# github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed
+github.com/hailocab/go-hostpool
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-hclog v0.9.1
@@ -112,8 +91,6 @@ github.com/hashicorp/golang-lru/simplelru
 github.com/hashicorp/raft
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/jtolds/gls v4.20.0+incompatible
-github.com/jtolds/gls
 # github.com/klauspost/compress v1.10.7
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
@@ -146,18 +123,14 @@ github.com/pkg/term/termios
 # github.com/ryanuber/columnize v2.1.0+incompatible
 ## explicit
 github.com/ryanuber/columnize
+# github.com/scylladb/go-reflectx v1.0.1
+github.com/scylladb/go-reflectx
+# github.com/scylladb/gocqlx/v2 v2.1.0
+## explicit
+github.com/scylladb/gocqlx/v2
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 ## explicit
 github.com/sean-/seed
-# github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d
-github.com/smartystreets/assertions
-github.com/smartystreets/assertions/internal/go-render/render
-github.com/smartystreets/assertions/internal/oglematchers
-# github.com/smartystreets/goconvey v1.6.4
-## explicit
-github.com/smartystreets/goconvey/convey
-github.com/smartystreets/goconvey/convey/gotest
-github.com/smartystreets/goconvey/convey/reporting
 # github.com/spf13/cobra v1.0.0
 ## explicit
 github.com/spf13/cobra
@@ -198,9 +171,41 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-## explicit
 # golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# google.golang.org/protobuf v1.25.0
+## explicit
+google.golang.org/protobuf/compiler/protogen
+google.golang.org/protobuf/encoding/prototext
+google.golang.org/protobuf/encoding/protowire
+google.golang.org/protobuf/internal/descfmt
+google.golang.org/protobuf/internal/descopts
+google.golang.org/protobuf/internal/detrand
+google.golang.org/protobuf/internal/encoding/defval
+google.golang.org/protobuf/internal/encoding/messageset
+google.golang.org/protobuf/internal/encoding/tag
+google.golang.org/protobuf/internal/encoding/text
+google.golang.org/protobuf/internal/errors
+google.golang.org/protobuf/internal/fieldsort
+google.golang.org/protobuf/internal/filedesc
+google.golang.org/protobuf/internal/filetype
+google.golang.org/protobuf/internal/flags
+google.golang.org/protobuf/internal/genid
+google.golang.org/protobuf/internal/impl
+google.golang.org/protobuf/internal/mapsort
+google.golang.org/protobuf/internal/pragma
+google.golang.org/protobuf/internal/set
+google.golang.org/protobuf/internal/strs
+google.golang.org/protobuf/internal/version
+google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protodesc
+google.golang.org/protobuf/reflect/protoreflect
+google.golang.org/protobuf/reflect/protoregistry
+google.golang.org/protobuf/runtime/protoiface
+google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/descriptorpb
+google.golang.org/protobuf/types/pluginpb
+# gopkg.in/inf.v0 v0.9.1
+gopkg.in/inf.v0

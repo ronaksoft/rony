@@ -2,7 +2,7 @@ package wsutil
 
 import (
 	"bytes"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"github.com/gobwas/ws"
 	"io"
 	"io/ioutil"

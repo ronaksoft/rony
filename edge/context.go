@@ -7,6 +7,7 @@ import (
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"hash/crc32"
 	"reflect"
 	"sync"
@@ -41,7 +42,10 @@ type DispatchCtx struct {
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		edge: edge,
-		req:  &rony.MessageEnvelope{},
+		req: &rony.MessageEnvelope{
+			Constructor: new(int64),
+			RequestID:   new(uint64),
+		},
 	}
 }
 
@@ -70,13 +74,13 @@ func (ctx *DispatchCtx) SetAuthID(authID int64) {
 }
 
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
-	ctx.req.RequestID = requestID
-	ctx.req.Constructor = constructor
+	*ctx.req.RequestID = requestID
+	*ctx.req.Constructor = constructor
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
-	return ctx.req.Unmarshal(data)
+	return proto.Unmarshal(data, ctx.req)
 }
 
 // RequestCtx
@@ -124,7 +128,7 @@ func (ctx *RequestCtx) AuthID() int64 {
 }
 
 func (ctx *RequestCtx) ReqID() uint64 {
-	return ctx.dispatchCtx.req.RequestID
+	return ctx.dispatchCtx.req.GetRequestID()
 }
 
 func (ctx *RequestCtx) StopExecution() {
@@ -184,11 +188,11 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 	return false
 }
 
-func (ctx *RequestCtx) PushMessage(constructor int64, proto rony.ProtoBufferMessage) {
+func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 	ctx.PushCustomMessage(ctx.AuthID(), ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
+func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constructor int64, proto proto.Message) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, authID, envelope)
@@ -201,17 +205,17 @@ func (ctx *RequestCtx) PushError(code, item string) {
 
 func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems []string, localTxt string, localItems []string) {
 	ctx.PushMessage(rony.C_Error, &rony.Error{
-		Code:            code,
-		Items:           item,
+		Code:            &code,
+		Items:           &item,
 		EnglishItems:    enItems,
-		EnglishTemplate: enTxt,
-		LocalTemplate:   localTxt,
+		EnglishTemplate: &enTxt,
+		LocalTemplate:   &localTxt,
 		LocalItems:      localItems,
 	})
 	ctx.stop = true
 }
 
-func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto rony.ProtoBufferMessage) {
+func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto proto.Message) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), authID, envelope)
@@ -219,8 +223,8 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, request
 		log.Error("ClusterMessage Error",
 			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),
 			zap.Int64("AuthID", authID),
-			zap.Uint64("RequestID", envelope.RequestID),
-			zap.String("C", ctx.dispatchCtx.edge.getConstructorName(envelope.Constructor)),
+			zap.Uint64("RequestID", envelope.GetRequestID()),
+			zap.String("C", ctx.dispatchCtx.edge.getConstructorName(envelope.GetConstructor())),
 			zap.Error(err),
 		)
 	}

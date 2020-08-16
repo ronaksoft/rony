@@ -6,9 +6,9 @@ import (
 	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
 	wsutil "git.ronaksoftware.com/ronak/rony/gateway/tcp/util"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"github.com/gobwas/ws"
 	"net"
 	"testing"
@@ -44,7 +44,7 @@ func init() {
 // }
 
 func BenchmarkWebsocketConn(b *testing.B) {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	b.SetParallelism(10)
 	var err error
 	gw, err = tcpGateway.New(tcpGateway.Config{

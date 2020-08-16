@@ -5,10 +5,11 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
 	"git.ronaksoftware.com/ronak/rony/internal/memberlist"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"github.com/hashicorp/raft"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"net"
 	"sync"
 	"time"
@@ -30,7 +31,7 @@ func (edge *Server) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.MessageEnvelope) error {
+func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.MessageEnvelope) (err error) {
 	m := edge.cluster.GetByID(tools.ByteToStr(serverID))
 	if m == nil {
 		return rony.ErrNotFound
@@ -38,8 +39,10 @@ func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.Me
 
 	clusterMessage := acquireClusterMessage()
 	clusterMessage.Fill(edge.serverID, authID, envelope)
-	b := pools.Bytes.GetLen(clusterMessage.Size())
-	_, err := clusterMessage.MarshalToSizedBuffer(b)
+
+	mo := proto.MarshalOptions{}
+	b := pools.Bytes.GetCap(mo.Size(clusterMessage))
+	b, err = mo.MarshalAppend(b, clusterMessage)
 	if err != nil {
 		return err
 	}
@@ -66,8 +69,8 @@ type ClusterMember struct {
 }
 
 func convertMember(sm *memberlist.Node) *ClusterMember {
-	edgeNode := rony.EdgeNode{}
-	err := edgeNode.Unmarshal(sm.Meta)
+	edgeNode := &rony.EdgeNode{}
+	err := proto.Unmarshal(sm.Meta, edgeNode)
 	if err != nil {
 		log.Warn("Error On ConvertMember",
 			zap.Error(err),
@@ -78,10 +81,10 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 
 	return &ClusterMember{
 		ServerID:    tools.ByteToStr(edgeNode.ServerID),
-		ReplicaSet:  edgeNode.ReplicaSet,
+		ReplicaSet:  edgeNode.GetReplicaSet(),
 		GatewayAddr: edgeNode.GatewayAddr,
-		RaftPort:    int(edgeNode.RaftPort),
-		RaftState:   edgeNode.RaftState,
+		RaftPort:    int(edgeNode.GetRaftPort()),
+		RaftState:   edgeNode.GetRaftState(),
 		Addr:        sm.Addr,
 		Port:        sm.Port,
 		node:        sm,
@@ -239,18 +242,20 @@ type delegateNode struct {
 }
 
 func (d delegateNode) NodeMeta(limit int) []byte {
+	raftPort := new(uint32)
+	*raftPort = uint32(d.edge.raftPort)
 	n := rony.EdgeNode{
 		ServerID:    d.edge.serverID,
-		ReplicaSet:  d.edge.replicaSet,
-		RaftPort:    uint32(d.edge.raftPort),
+		ReplicaSet:  &d.edge.replicaSet,
+		RaftPort:    raftPort,
 		GatewayAddr: d.edge.gateway.Addr(),
-		RaftState:   rony.RaftState_None,
+		RaftState:   rony.RaftState_None.Enum(),
 	}
 	if d.edge.raftEnabled {
-		n.RaftState = rony.RaftState(d.edge.raft.State() + 1)
+		n.RaftState = rony.RaftState(d.edge.raft.State() + 1).Enum()
 	}
 
-	b, _ := n.Marshal()
+	b, _ := proto.Marshal(&n)
 	if len(b) > limit {
 		log.Warn("Too Large Meta")
 		return nil
@@ -267,9 +272,9 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	}
 
 	cm := acquireClusterMessage()
-	_ = cm.Unmarshal(data)
-	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.AuthID, cm.Sender)
-	dispatchCtx.FillEnvelope(cm.Envelope.RequestID, cm.Envelope.Constructor, cm.Envelope.Message)
+	_ = proto.Unmarshal(data, cm)
+	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.GetAuthID(), cm.Sender)
+	dispatchCtx.FillEnvelope(cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message)
 	releaseClusterMessage(cm)
 
 	d.edge.rateLimitChan <- struct{}{}

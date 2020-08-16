@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"git.ronaksoftware.com/ronak/rony"
 	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
 	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoftware.com/ronak/rony/pools"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -173,7 +174,8 @@ func (c *Websocket) receiver() {
 			switch ms[idx].OpCode {
 			case ws.OpBinary, ws.OpText:
 				e := rony.PoolMessageEnvelope.Get()
-				_ = e.Unmarshal(ms[idx].Payload)
+				uo := proto.UnmarshalOptions{}
+				_ = uo.Unmarshal(ms[idx].Payload, e)
 				c.extractor(e)
 				rony.PoolMessageEnvelope.Put(e)
 			default:
@@ -183,10 +185,11 @@ func (c *Websocket) receiver() {
 }
 
 func (c *Websocket) extractor(e *rony.MessageEnvelope) {
-	switch e.Constructor {
+	switch e.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
-		_ = x.Unmarshal(e.Message)
+		uo := proto.UnmarshalOptions{}
+		_ = uo.Unmarshal(e.Message, x)
 		for idx := range x.Envelopes {
 			c.handler(x.Envelopes[idx])
 		}
@@ -197,14 +200,14 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 }
 
 func (c *Websocket) handler(e *rony.MessageEnvelope) {
-	if e.RequestID == 0 {
+	if e.GetRequestID() == 0 {
 		c.h(e.Clone())
 		return
 	}
 
 	c.pendingMtx.Lock()
-	h := c.pending[e.RequestID]
-	delete(c.pending, e.RequestID)
+	h := c.pending[e.GetRequestID()]
+	delete(c.pending, e.GetRequestID())
 	c.pendingMtx.Unlock()
 	if h != nil {
 		h <- e.Clone()
@@ -213,11 +216,12 @@ func (c *Websocket) handler(e *rony.MessageEnvelope) {
 	}
 }
 
-func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
-	b := pools.Bytes.GetLen(req.Size())
+func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
+	mo := proto.MarshalOptions{}
+	b := pools.Bytes.GetCap(mo.Size(req))
 	defer pools.Bytes.Put(b)
 
-	_, err := req.MarshalToSizedBuffer(b)
+	b, err = mo.MarshalAppend(b, req)
 	if err != nil {
 		return err
 	}
@@ -228,14 +232,14 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) error {
 SendLoop:
 	resChan := make(chan *rony.MessageEnvelope, 1)
 	c.pendingMtx.Lock()
-	c.pending[req.RequestID] = resChan
+	c.pending[req.GetRequestID()] = resChan
 	c.pendingMtx.Unlock()
 
 	c.waitUntilConnect()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
 	if err != nil {
 		c.pendingMtx.Lock()
-		delete(c.pending, req.RequestID)
+		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()
 		return err
 	}
@@ -243,10 +247,10 @@ SendLoop:
 
 	select {
 	case e := <-resChan:
-		switch e.Constructor {
+		switch e.GetConstructor() {
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
-			_ = x.Unmarshal(e.Message)
+			_ = proto.Unmarshal(e.Message, x)
 			c.connectMtx.Lock()
 			if c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
@@ -258,9 +262,9 @@ SendLoop:
 		res = e.CopyTo(res)
 	case <-t.C:
 		c.pendingMtx.Lock()
-		delete(c.pending, req.RequestID)
+		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()
-		log.Warn("Timeout", zap.String("H", c.hostPort), zap.Uint64("ReqID", req.RequestID))
+		log.Warn("Timeout", zap.String("H", c.hostPort), zap.Uint64("ReqID", req.GetRequestID()))
 		return ErrTimeout
 	}
 	return err

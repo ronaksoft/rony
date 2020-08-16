@@ -5,7 +5,8 @@ import (
 	"git.ronaksoftware.com/ronak/rony"
 	"git.ronaksoftware.com/ronak/rony/edge"
 	"git.ronaksoftware.com/ronak/rony/gateway"
-	"git.ronaksoftware.com/ronak/rony/internal/pools"
+	"git.ronaksoftware.com/ronak/rony/pools"
+	"google.golang.org/protobuf/proto"
 )
 
 type dispatcher struct{}
@@ -20,8 +21,11 @@ func (d dispatcher) OnClose(conn gateway.Conn) {
 
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
-		protoBytes := pools.Bytes.GetLen(envelope.Size())
-		_, _ = envelope.MarshalToSizedBuffer(protoBytes)
+		mo := proto.MarshalOptions{
+			UseCachedSize: true,
+		}
+		protoBytes := pools.Bytes.GetCap(mo.Size(envelope))
+		protoBytes, _ = mo.MarshalAppend(protoBytes, envelope)
 		err := ctx.Conn().SendBinary(ctx.StreamID(), protoBytes)
 		if err != nil {
 			fmt.Println("Error On SendBinary", err)
