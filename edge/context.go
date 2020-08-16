@@ -80,7 +80,10 @@ func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payloa
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
-	return proto.Unmarshal(data, ctx.req)
+	uo := proto.UnmarshalOptions{
+		Merge: true,
+	}
+	return uo.Unmarshal(data, ctx.req)
 }
 
 // RequestCtx

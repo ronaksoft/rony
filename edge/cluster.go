@@ -70,7 +70,7 @@ type ClusterMember struct {
 
 func convertMember(sm *memberlist.Node) *ClusterMember {
 	edgeNode := &rony.EdgeNode{}
-	err := proto.Unmarshal(sm.Meta, edgeNode)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(sm.Meta, edgeNode)
 	if err != nil {
 		log.Warn("Error On ConvertMember",
 			zap.Error(err),
@@ -272,7 +272,7 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	}
 
 	cm := acquireClusterMessage()
-	_ = proto.Unmarshal(data, cm)
+	_ = proto.UnmarshalOptions{Merge: true}.Unmarshal(data, cm)
 	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.GetAuthID(), cm.Sender)
 	dispatchCtx.FillEnvelope(cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message)
 	releaseClusterMessage(cm)

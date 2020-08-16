@@ -38,22 +38,49 @@ func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 
 func (x *MessageEnvelope) Clone() *MessageEnvelope {
 	c := PoolMessageEnvelope.Get()
-	c.Constructor = x.Constructor
-	c.RequestID = x.RequestID
+	if x.Constructor != nil {
+		if c.Constructor == nil {
+			c.Constructor = new(int64)
+		}
+		*c.Constructor = *x.Constructor
+	}
+
+	if x.RequestID != nil {
+		if c.RequestID == nil {
+			c.RequestID = new(uint64)
+		}
+		*c.RequestID = *x.RequestID
+	}
 	c.Message = append(c.Message[:0], x.Message...)
 	return c
 }
 
 func (x *MessageEnvelope) CopyTo(e *MessageEnvelope) *MessageEnvelope {
-	e.Constructor = x.Constructor
-	e.RequestID = x.RequestID
+	if x.RequestID != nil {
+		if e.RequestID == nil {
+			e.RequestID = new(uint64)
+		}
+		*e.RequestID = *x.RequestID
+	}
+	if x.Constructor != nil {
+		if e.Constructor == nil {
+			e.Constructor = new(int64)
+		}
+		*e.Constructor = *x.Constructor
+	}
 	e.Message = append(e.Message[:0], x.Message...)
 	return e
 }
 
 func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message) {
-	x.RequestID = &reqID
-	x.Constructor = &constructor
+	if x.RequestID == nil {
+		x.RequestID = new(uint64)
+	}
+	*x.RequestID = reqID
+	if x.Constructor == nil {
+		x.Constructor = new(int64)
+	}
+	*x.Constructor = constructor
 
 	mo := proto.MarshalOptions{
 		UseCachedSize: true,
@@ -66,12 +93,17 @@ func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message)
 
 func (x *RaftCommand) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	x.AuthID = &authID
+	if x.AuthID == nil {
+		x.AuthID = new(int64)
+	}
+	*x.AuthID = authID
 	x.Envelope = e.CopyTo(x.Envelope)
 }
 
 func (x *ClusterMessage) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	x.AuthID = &authID
+	if x.AuthID == nil {
+		x.AuthID = new(int64)
+	}
 	x.Envelope = e.CopyTo(x.Envelope)
 }

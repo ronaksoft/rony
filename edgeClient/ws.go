@@ -188,7 +188,9 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 	switch e.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
-		uo := proto.UnmarshalOptions{}
+		uo := proto.UnmarshalOptions{
+			Merge: true,
+		}
 		_ = uo.Unmarshal(e.Message, x)
 		for idx := range x.Envelopes {
 			c.handler(x.Envelopes[idx])
@@ -250,7 +252,10 @@ SendLoop:
 		switch e.GetConstructor() {
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
-			_ = proto.Unmarshal(e.Message, x)
+			uo := proto.UnmarshalOptions{
+				Merge: true,
+			}
+			_ = uo.Unmarshal(e.Message, x)
 			c.connectMtx.Lock()
 			if c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
