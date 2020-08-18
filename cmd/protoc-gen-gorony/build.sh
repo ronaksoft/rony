@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-protoc  -I=./testdata  --gopool_out=./testdata ./testdata/*.proto
+protoc  -I=./testdata  --gorony_out=./testdata ./testdata/*.proto
