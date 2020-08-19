@@ -18,6 +18,7 @@ const (
 	WHITE_SPACE
 
 	literal_beg
+	TEXT
 	IDENT // names, variables
 	literal_end
 
@@ -26,6 +27,9 @@ const (
 	COMMA   // ,
 	LPAREN  // (
 	RPAREN  // )
+	LDELIM  // {{
+	RDELIM  // }}
+
 	operator_end
 
 	keyword_beg
