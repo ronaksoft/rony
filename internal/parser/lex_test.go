@@ -18,7 +18,7 @@ var input = `
 {{ @model cql }}
 {{ @tab ((x1, x2), x3) }}
 {{ @view (x3, x1, x2) }}
-{{ @counter x1 }}
+{{ @cnt x1 }}
 `
 
 func TestLexer(t *testing.T) {
@@ -30,5 +30,4 @@ func TestLexer(t *testing.T) {
 		}
 		fmt.Println(i.String())
 	}
-
 }

@@ -50,11 +50,11 @@ func (t NodeType) Type() NodeType {
 
 const (
 	NodeList NodeType = iota // a list of Nodes
+	NodeText
 	NodeModel
 	NodeTable
 	NodeView
-	NodePartitionKey
-	NodeClusteringKey
+	NodeCounter
 )
 
 // Nodes.
@@ -106,16 +106,44 @@ func (l *ListNode) Copy() Node {
 	return l.CopyList()
 }
 
-// ModelNode holds plain text.
+// TextNode holds plain text.
+type TextNode struct {
+	NodeType
+	Pos
+	tr   *Tree
+	Text string // The text; may span newlines.
+}
+
+func (t *Tree) newText(pos Pos, text string) *TextNode {
+	return &TextNode{tr: t, NodeType: NodeText, Pos: pos, Text: text}
+}
+
+func (t *TextNode) String() string {
+	return fmt.Sprintf(textFormat, t.Text)
+}
+
+func (t *TextNode) writeTo(sb *strings.Builder) {
+	sb.WriteString(t.String())
+}
+
+func (t *TextNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *TextNode) Copy() Node {
+	return &TextNode{tr: t.tr, NodeType: NodeText, Pos: t.Pos, Text: t.Text}
+}
+
+// ModelNode holds model
 type ModelNode struct {
 	NodeType
 	Pos
 	tr   *Tree
-	Text []byte // The text; may span newlines.
+	Text string // The text; may span newlines.
 }
 
 func (t *Tree) newModel(pos Pos, text string) *ModelNode {
-	return &ModelNode{tr: t, NodeType: NodeModel, Pos: pos, Text: []byte(text)}
+	return &ModelNode{tr: t, NodeType: NodeModel, Pos: pos, Text: text}
 }
 
 func (t *ModelNode) String() string {
@@ -131,64 +159,91 @@ func (t *ModelNode) tree() *Tree {
 }
 
 func (t *ModelNode) Copy() Node {
-	return &ModelNode{tr: t.tr, NodeType: NodeModel, Pos: t.Pos, Text: append([]byte{}, t.Text...)}
+	return &ModelNode{tr: t.tr, NodeType: NodeModel, Pos: t.Pos, Text: t.Text}
 }
 
+// TableNode holds table
 type TableNode struct {
 	NodeType
 	Pos
 	tr             *Tree
-	PrimaryKeys    []*PartitionKeyNode
-	ClusteringKeys []*ClusteringKeyNode
+	PartitionKeys  []string
+	ClusteringKeys []string
 }
 
-type PartitionKeyNode struct {
+func (t *Tree) newTable(pos Pos, pks, cks []string) *TableNode {
+	return &TableNode{tr: t, NodeType: NodeTable, Pos: pos, PartitionKeys: pks, ClusteringKeys: cks}
+}
+
+func (t *TableNode) String() string {
+	return fmt.Sprintf("PKs: %v, CKs: %v", t.PartitionKeys, t.ClusteringKeys)
+}
+
+func (t *TableNode) writeTo(sb *strings.Builder) {
+	sb.WriteString(t.String())
+}
+
+func (t *TableNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *TableNode) Copy() Node {
+	return &TableNode{tr: t.tr, NodeType: NodeTable, Pos: t.Pos, PartitionKeys: t.PartitionKeys, ClusteringKeys: t.ClusteringKeys}
+}
+
+// ViewNode holds view
+type ViewNode struct {
+	NodeType
+	Pos
+	tr             *Tree
+	PartitionKeys  []string
+	ClusteringKeys []string
+}
+
+func (t *Tree) newView(pos Pos, pks, cks []string) *ViewNode {
+	return &ViewNode{tr: t, NodeType: NodeView, Pos: pos, PartitionKeys: pks, ClusteringKeys: cks}
+}
+
+func (t *ViewNode) String() string {
+	return fmt.Sprintf("PKs: %v, CKs: %v", t.PartitionKeys, t.ClusteringKeys)
+}
+
+func (t *ViewNode) writeTo(sb *strings.Builder) {
+	sb.WriteString(t.String())
+}
+
+func (t *ViewNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *ViewNode) Copy() Node {
+	return &ViewNode{tr: t.tr, NodeType: NodeView, Pos: t.Pos, PartitionKeys: t.PartitionKeys, ClusteringKeys: t.ClusteringKeys}
+}
+
+// CounterNode holds model
+type CounterNode struct {
 	NodeType
 	Pos
 	tr   *Tree
-	Name []byte
+	Text string // The text; may span newlines.
 }
 
-type ClusteringKeyNode struct {
-	NodeType
-	Pos
-	tr   *Tree
-	Name []byte
+func (t *Tree) newCounter(pos Pos, text string) *CounterNode {
+	return &CounterNode{tr: t, NodeType: NodeCounter, Pos: pos, Text: text}
 }
 
-// // AssignNode holds a list of variable names, possibly with chained field
-// // accesses. The dollar sign is part of the (first) name.
-// type VariableNode struct {
-// 	NodeType
-// 	Pos
-// 	tr    *Tree
-// 	Ident []string // Variable name and fields in lexical order.
-// }
-//
-// func (t *Tree) newVariable(pos Pos, ident string) *VariableNode {
-// 	return &VariableNode{tr: t, NodeType: NodeVariable, Pos: pos, Ident: strings.Split(ident, ".")}
-// }
-//
-// func (v *VariableNode) String() string {
-// 	var sb strings.Builder
-// 	v.writeTo(&sb)
-// 	return sb.String()
-// }
-//
-// func (v *VariableNode) writeTo(sb *strings.Builder) {
-// 	for i, id := range v.Ident {
-// 		if i > 0 {
-// 			sb.WriteByte('.')
-// 		}
-// 		sb.WriteString(id)
-// 	}
-// }
-//
-// func (v *VariableNode) tree() *Tree {
-// 	return v.tr
-// }
-//
-// func (v *VariableNode) Copy() Node {
-// 	return &VariableNode{tr: v.tr, NodeType: NodeVariable, Pos: v.Pos, Ident: append([]string{}, v.Ident...)}
-// }
-//
+func (t *CounterNode) String() string {
+	return fmt.Sprintf(textFormat, t.Text)
+}
+
+func (t *CounterNode) writeTo(sb *strings.Builder) {
+	sb.WriteString(t.String())
+}
+
+func (t *CounterNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *CounterNode) Copy() Node {
+	return &CounterNode{tr: t.tr, NodeType: NodeCounter, Pos: t.Pos, Text: t.Text}
+}
