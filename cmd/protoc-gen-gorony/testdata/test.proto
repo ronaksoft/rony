@@ -14,9 +14,9 @@ message Message2 {
     repeated int32 P3 = 3;
 }
 
-// @model
-// @tab (ID, ShardKey)
-// @mv (ShardKey, ID)
+// {{@model cql}}
+// {{@tab (ID, ShardKey)}}
+// {{@view (ShardKey, ID)}}
 message Model1 {
     int32 ID = 1;
     int32 ShardKey = 2;
@@ -25,9 +25,9 @@ message Model1 {
     uint64 P5 = 5;
 }
 
-// @model
-// @tab ((ID, ShardKey), P1)
-// @mv (P1, ShardKey, ID)
+// {{@model cql}}
+// {{@tab ((ID, ShardKey), P1)}}
+// {{@view (P1, ShardKey, ID)}}
 message Model2 {
     int32 ID = 1;
     int32 ShardKey = 2;

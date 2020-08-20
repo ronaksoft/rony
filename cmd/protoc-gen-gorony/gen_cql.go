@@ -1,8 +1,10 @@
 package main
 
 import (
+	parse "git.ronaksoftware.com/ronak/rony/internal/parser"
 	"github.com/scylladb/go-reflectx"
 	"google.golang.org/protobuf/compiler/protogen"
+	"strings"
 )
 
 /*
@@ -33,18 +35,42 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 
 	g.P("// Tables")
 	g.P("const (")
+
 	fields := map[string]struct{}{}
-	// for _, m := range file.Messages {
-	// 	// if isModel(m) {
-	// 	// 	for _, f := range m.Fields {
-	// 	// 		fields[string(f.Desc.Name())] = struct{}{}
-	// 	// 	}
-	// 	// 	g.P("Table", m.Desc.Name(), "= \"t_", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), "\"")
-	// 	// 	// for _, mv := range getMVs(m) {
-	// 	// 	// 	g.P("View", m.Desc.Name(), "= \"mv_", reflectx.CamelToSnakeASCII(string(m.Desc.Name())),"_by_",  ,"\"")
-	// 	// 	// }
-	// 	// }
-	// }
+	for _, m := range file.Messages {
+		t, err := parse.Parse(string(m.Desc.Name()), string(m.Comments.Leading))
+		if err != nil {
+			panic(err)
+		}
+		for _, n := range t.Root.Nodes {
+			switch n.Type() {
+			case parse.NodeTable:
+				nn := n.(*parse.TableNode)
+				for _, k := range nn.PartitionKeys {
+					fields[k] = struct{}{}
+				}
+				for _, k := range nn.ClusteringKeys {
+					fields[k] = struct{}{}
+				}
+				g.P("Table", m.Desc.Name(), "= \"t_", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), "\"")
+			case parse.NodeView:
+				nn := n.(*parse.ViewNode)
+				sb := strings.Builder{}
+				for idx, k := range nn.PartitionKeys {
+					fields[k] = struct{}{}
+					if idx != 0 {
+						sb.WriteString("_")
+					}
+					sb.WriteString(reflectx.CamelToSnakeASCII(k))
+				}
+				for _, k := range nn.ClusteringKeys {
+					fields[k] = struct{}{}
+				}
+
+				g.P("View", m.Desc.Name(), "= \"mv_", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), "_by_", sb.String(), "\"")
+			}
+		}
+	}
 	g.P(")")
 	g.P()
 

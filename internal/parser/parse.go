@@ -302,6 +302,7 @@ func (t *Tree) view(pos Pos) (n Node) {
 		pks = t.idents()
 		cks = t.idents()
 	default:
+		t.backup()
 		ks := t.idents()
 		switch len(ks) {
 		case 0:
