@@ -11,7 +11,6 @@ package parse
 import (
 	"fmt"
 	"runtime"
-	"strings"
 )
 
 // Tree is the representation of a single parsed template.
@@ -188,28 +187,6 @@ func (t *Tree) Parse(text string) (tree *Tree, err error) {
 	t.parse()
 	t.stopParse()
 	return t, nil
-}
-
-// IsEmptyTree reports whether this tree (node) is empty of everything but space.
-func IsEmptyTree(n Node) bool {
-	switch n := n.(type) {
-	case nil:
-		return true
-	case *ListNode:
-		for _, node := range n.Nodes {
-			if !IsEmptyTree(node) {
-				return false
-			}
-		}
-		return true
-	case *TableNode:
-	case *ViewNode:
-	case *ModelNode:
-		return len(strings.TrimSpace(n.Text)) == 0
-	default:
-		panic("unknown node: " + n.String())
-	}
-	return false
 }
 
 // parse is the top-level parser for a template, essentially the same
