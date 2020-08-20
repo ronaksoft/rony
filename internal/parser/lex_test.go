@@ -1,4 +1,4 @@
-package parser
+package parse
 
 import (
 	"fmt"
@@ -15,16 +15,17 @@ import (
 */
 
 var input = `
-{{@model}}
-{{@tab ((x1, x2), x3)}}
-{{@view (x3, x1, x2)}}
+{{ @model cql }}
+{{ @tab ((x1, x2), x3) }}
+{{ @view (x3, x1, x2) }}
+{{ @counter x1 }}
 `
 
 func TestLexer(t *testing.T) {
-	l := lex("lex1", input, "", "")
+	l := lex("lex1", input)
 	for {
 		i := l.nextItem()
-		if i.typ == ERROR {
+		if i.tok == ERROR {
 			break
 		}
 		fmt.Println(i.String())

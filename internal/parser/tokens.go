@@ -1,4 +1,4 @@
-package parser
+package parse
 
 /*
    Creation Time: 2020 - Aug - 17
@@ -14,8 +14,8 @@ type token int
 
 const (
 	ERROR token = iota
-	EOF
-	WHITE_SPACE
+	EOF         // End of File
+	SPACE       // White Space
 
 	literal_beg
 	TEXT
@@ -25,10 +25,10 @@ const (
 	operator_beg
 	AT_SIGN // @
 	COMMA   // ,
-	LPAREN  // (
-	RPAREN  // )
-	LDELIM  // {{
-	RDELIM  // }}
+	L_PAREN // (
+	R_PAREN // )
+	L_DELIM // {{
+	R_DELIM // }}
 
 	operator_end
 
@@ -37,7 +37,6 @@ const (
 	TABLE
 	VIEW
 	COUNTER
-	ATOMIC_COUNTER
 	keyword_end
 )
 
