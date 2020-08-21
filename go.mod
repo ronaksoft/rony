@@ -30,6 +30,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible
+	github.com/scylladb/go-reflectx v1.0.1
 	github.com/scylladb/gocqlx/v2 v2.1.0
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 	github.com/spf13/cobra v1.0.0

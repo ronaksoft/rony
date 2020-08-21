@@ -273,6 +273,9 @@ func (t *Tree) table(pos Pos) (n Node) {
 		pks = t.idents()
 		cks = t.idents()
 	default:
+		// put back to buffer, since we did not pick '('
+		t.backup()
+
 		ks := t.idents()
 		switch len(ks) {
 		case 0:
@@ -302,7 +305,9 @@ func (t *Tree) view(pos Pos) (n Node) {
 		pks = t.idents()
 		cks = t.idents()
 	default:
+		// put back to buffer, since we did not pick '('
 		t.backup()
+
 		ks := t.idents()
 		switch len(ks) {
 		case 0:

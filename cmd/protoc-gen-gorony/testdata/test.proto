@@ -29,7 +29,7 @@ message Model1 {
 // {{@tab ((ID, ShardKey), P1)}}
 // {{@view (P1, ShardKey, ID)}}
 message Model2 {
-    int32 ID = 1;
+    int64 ID = 1;
     int32 ShardKey = 2;
     string P1 = 3;
     repeated string P2 = 4;

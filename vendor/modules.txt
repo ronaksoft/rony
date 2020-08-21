@@ -124,6 +124,7 @@ github.com/pkg/term/termios
 ## explicit
 github.com/ryanuber/columnize
 # github.com/scylladb/go-reflectx v1.0.1
+## explicit
 github.com/scylladb/go-reflectx
 # github.com/scylladb/gocqlx/v2 v2.1.0
 ## explicit

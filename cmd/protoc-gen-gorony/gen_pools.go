@@ -42,7 +42,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P("", "")
 		g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
-		// for _, ft := range mt.Fields {
+		// for _, ft := range mt.FieldNames {
 		// 	ftName := ft.Desc.Name()
 		// 	if ft.Desc.Cardinality() == protoreflect.Repeated || ft.Desc.Kind() == protoreflect.BytesKind {
 		// 		g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
