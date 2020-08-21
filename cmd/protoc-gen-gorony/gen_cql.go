@@ -4,6 +4,7 @@ import (
 	"fmt"
 	parse "git.ronaksoftware.com/ronak/rony/internal/parser"
 	"github.com/scylladb/go-reflectx"
+	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"strings"
@@ -17,6 +18,8 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+var _ = qb.ASC
 
 var _Models = map[string]*model{}
 var _Fields = map[string]struct{}{}
