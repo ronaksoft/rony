@@ -2,7 +2,7 @@ package tools
 
 import (
 	"fmt"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	log "git.ronaksoft.com/ronak/rony/internal/logger"
 	"github.com/nyaruka/phonenumbers"
 	"go.uber.org/zap"
 	"reflect"

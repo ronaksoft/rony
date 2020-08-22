@@ -2,9 +2,9 @@ package pb
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/edge"
-	"git.ronaksoftware.com/ronak/rony/edgeClient"
+	"git.ronaksoft.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony/edge"
+	"git.ronaksoft.com/ronak/rony/edgeClient"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	parse "git.ronaksoftware.com/ronak/rony/internal/parser"
+	parse "git.ronaksoft.com/ronak/rony/internal/parser"
 	"github.com/scylladb/go-reflectx"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -119,9 +119,9 @@ func fillModel(m *protogen.Message) {
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
-	// g.P("\"git.ronaksoftware.com/ronak/rony\"")
-	g.P("\"git.ronaksoftware.com/ronak/rony/pools\"")
-	g.P("\"git.ronaksoftware.com/ronak/rony/repo/cql\"")
+	// g.P("\"git.ronaksoft.com/ronak/rony\"")
+	g.P("\"git.ronaksoft.com/ronak/rony/pools\"")
+	g.P("\"git.ronaksoft.com/ronak/rony/repo/cql\"")
 	g.P("\"github.com/scylladb/gocqlx/v2\"")
 	g.P("\"github.com/scylladb/gocqlx/v2/qb\"")
 	g.P("\"google.golang.org/protobuf/proto\"")

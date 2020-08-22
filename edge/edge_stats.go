@@ -2,7 +2,7 @@ package edge
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony/gateway"
+	"git.ronaksoft.com/ronak/rony/gateway"
 )
 
 /*

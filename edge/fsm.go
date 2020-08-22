@@ -2,7 +2,7 @@ package edge
 
 import (
 	"bytes"
-	"git.ronaksoftware.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony"
 	"github.com/hashicorp/raft"
 	"google.golang.org/protobuf/proto"
 	"io"

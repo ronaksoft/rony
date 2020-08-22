@@ -19,12 +19,12 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
 	if len(file.Services) > 0 {
-		g.P("\"git.ronaksoftware.com/ronak/rony/edge\"")
-		g.P("\"git.ronaksoftware.com/ronak/rony/edgeClient\"")
+		g.P("\"git.ronaksoft.com/ronak/rony/edge\"")
+		g.P("\"git.ronaksoft.com/ronak/rony/edgeClient\"")
 		g.P("\"google.golang.org/protobuf/proto\"")
 		g.P("\"fmt\"")
 		if file.GoPackageName != "rony" {
-			g.P("\"git.ronaksoftware.com/ronak/rony\"")
+			g.P("\"git.ronaksoft.com/ronak/rony\"")
 		}
 	}
 	g.P(")")

@@ -1,8 +1,8 @@
 package packageName
 
 import (
-	"git.ronaksoftware.com/ronak/rony/pools"
-	"git.ronaksoftware.com/ronak/rony/repo/cql"
+	"git.ronaksoft.com/ronak/rony/pools"
+	"git.ronaksoft.com/ronak/rony/repo/cql"
 	"github.com/scylladb/gocqlx/v2"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/proto"

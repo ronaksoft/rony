@@ -1,9 +1,9 @@
 package edge
 
 import (
-	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/gateway"
-	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
+	"git.ronaksoft.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony/gateway"
+	tcpGateway "git.ronaksoft.com/ronak/rony/gateway/tcp"
 )
 
 /*

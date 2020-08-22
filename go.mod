@@ -1,4 +1,4 @@
-module git.ronaksoftware.com/ronak/rony
+module git.ronaksoft.com/ronak/rony
 
 go 1.14
 

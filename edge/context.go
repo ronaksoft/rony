@@ -2,10 +2,10 @@ package edge
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/gateway"
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
-	"git.ronaksoftware.com/ronak/rony/internal/tools"
+	"git.ronaksoft.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony/gateway"
+	log "git.ronaksoft.com/ronak/rony/internal/logger"
+	"git.ronaksoft.com/ronak/rony/internal/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"hash/crc32"

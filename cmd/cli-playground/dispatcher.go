@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/edge"
-	"git.ronaksoftware.com/ronak/rony/gateway"
-	"git.ronaksoftware.com/ronak/rony/pools"
+	"git.ronaksoft.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony/edge"
+	"git.ronaksoft.com/ronak/rony/gateway"
+	"git.ronaksoft.com/ronak/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
 

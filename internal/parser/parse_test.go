@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 		case NodeText:
 			t.Log(idx, ": ", "Text", []byte(n.String()))
 		default:
-			t.Log(idx, ": ",  n.String())
+			t.Log(idx, ": ", n.String())
 
 		}
 

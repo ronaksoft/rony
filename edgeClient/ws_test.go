@@ -1,13 +1,13 @@
 package edgeClient_test
 
 import (
-	"git.ronaksoftware.com/ronak/rony"
-	"git.ronaksoftware.com/ronak/rony/edge"
-	"git.ronaksoftware.com/ronak/rony/edgeClient"
-	"git.ronaksoftware.com/ronak/rony/gateway"
-	tcpGateway "git.ronaksoftware.com/ronak/rony/gateway/tcp"
-	"git.ronaksoftware.com/ronak/rony/internal/testEnv"
-	"git.ronaksoftware.com/ronak/rony/internal/testEnv/pb"
+	"git.ronaksoft.com/ronak/rony"
+	"git.ronaksoft.com/ronak/rony/edge"
+	"git.ronaksoft.com/ronak/rony/edgeClient"
+	"git.ronaksoft.com/ronak/rony/gateway"
+	tcpGateway "git.ronaksoft.com/ronak/rony/gateway/tcp"
+	"git.ronaksoft.com/ronak/rony/internal/testEnv"
+	"git.ronaksoft.com/ronak/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
 	"testing"
 )

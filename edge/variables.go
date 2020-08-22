@@ -1,7 +1,7 @@
 package edge
 
 import (
-	log "git.ronaksoftware.com/ronak/rony/internal/logger"
+	log "git.ronaksoft.com/ronak/rony/internal/logger"
 	"time"
 )
 
