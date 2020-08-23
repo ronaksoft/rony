@@ -31,7 +31,8 @@ type model struct {
 	ViewNames  []string
 	Views      []PrimaryKey
 	FieldNames []string
-	Fields     map[string]string
+	FieldsCql  map[string]string
+	FieldsGo   map[string]string
 }
 
 type PrimaryKey struct {
@@ -39,7 +40,7 @@ type PrimaryKey struct {
 	CKs []string
 }
 
-func kind(k protoreflect.Kind) string {
+func kindCql(k protoreflect.Kind) string {
 	switch k {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 		return "int"
@@ -51,20 +52,44 @@ func kind(k protoreflect.Kind) string {
 		return "float"
 	case protoreflect.BytesKind, protoreflect.StringKind:
 		return "blob"
+	case protoreflect.BoolKind:
+		return "boolean"
 	}
-	panic(fmt.Sprintf("unsupported kind: %v", k.String()))
+	panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
+}
+
+func kindGo(k protoreflect.Kind) string {
+	switch k {
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
+		return "int32"
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "uint32"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
+		return "int64"
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64"
+	case protoreflect.DoubleKind:
+		return "float64"
+	case protoreflect.FloatKind:
+		return "float32"
+	case protoreflect.StringKind:
+		return "string"
+	case protoreflect.BytesKind:
+		return "[]byte"
+	case protoreflect.BoolKind:
+		return "bool"
+	}
+	panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
 }
 
 func fillModel(m *protogen.Message) {
 	var (
 		isModel = false
 		mm      = model{
-			Fields: make(map[string]string),
+			FieldsCql: make(map[string]string),
+			FieldsGo:  make(map[string]string),
 		}
 	)
-	for _, f := range m.Fields {
-		mm.Fields[f.GoName] = kind(f.Desc.Kind())
-	}
 
 	t, err := parse.Parse(string(m.Desc.Name()), string(m.Comments.Leading))
 	if err != nil {
@@ -111,12 +136,17 @@ func fillModel(m *protogen.Message) {
 		mm.FieldNames = append(mm.FieldNames, f)
 	}
 	if isModel {
+		for _, f := range m.Fields {
+			mm.FieldsCql[f.GoName] = kindCql(f.Desc.Kind())
+			mm.FieldsGo[f.GoName] = kindGo(f.Desc.Kind())
+		}
 		mm.Name = string(m.Desc.Name())
 		_Models[mm.Name] = &mm
 	}
 }
 
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
+
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
 	// g.P("\"git.ronaksoft.com/ronak/rony\"")
@@ -133,10 +163,6 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("colVersion = \"ver\"")
 	g.P(")")
 	g.P()
-
-	for _, m := range file.Messages {
-		fillModel(m)
-	}
 
 	genTableDefs(file, g)
 	genColumnDefs(file, g)
@@ -183,7 +209,7 @@ func genCqls(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("_", mm.Name, "CqlCreateTable = `")
 		g.P("CREATE TABLE IF NOT EXISTS ", mm.TableName, " (")
 		for _, fn := range mm.FieldNames {
-			g.P(fmt.Sprintf("%s \t %s,", reflectx.CamelToSnakeASCII(fn), mm.Fields[fn]))
+			g.P(fmt.Sprintf("%s \t %s,", reflectx.CamelToSnakeASCII(fn), mm.FieldsCql[fn]))
 		}
 		g.P("data \t blob,")
 		pksb := strings.Builder{}
@@ -223,44 +249,96 @@ func genFuncsFactories(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
-		g.P("return qb.Insert(Table", mm.Name, ").")
-		sb := strings.Builder{}
-		for _, f := range mm.FieldNames {
-			sb.WriteString("Col")
-			sb.WriteString(f)
-			sb.WriteString(", ")
-		}
-		sb.WriteString("colData")
-		g.P("Columns(", sb.String(), ").")
-		g.P("Query(cql.Session())")
-		g.P("})")
-
-		g.P("func ", mm.Name, "Insert (x *", mm.Name, ") (err error) {")
-		g.P("q := _", mm.Name, "InsertFactory.GetQuery()")
-		g.P("defer _", mm.Name, "InsertFactory.Put(q)")
-		g.P()
-		g.P("mo := proto.MarshalOptions{UseCachedSize: true}")
-		g.P("data := pools.Bytes.GetCap(mo.Size(x))")
-		g.P("defer pools.Bytes.Put(data)")
-		g.P()
-		g.P("data, err = mo.MarshalAppend(data, x)")
-		g.P("if err != nil {")
-		g.P("return err")
-		g.P("}")
-		g.P()
-
-		sb = strings.Builder{}
-		for _, f := range mm.FieldNames {
-			sb.WriteString("x.")
-			sb.WriteString(f)
-			sb.WriteString(", ")
-		}
-		sb.WriteString("data")
-		g.P("q.Bind(", sb.String(), ")")
-		g.P("err = cql.Exec(q)")
-		g.P("return err")
-		g.P("}")
+		insert(mm, g)
+		get(mm, g)
 	}
 
+}
+func insert(mm *model, g *protogen.GeneratedFile) {
+	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
+	g.P("return qb.Insert(Table", mm.Name, ").")
+	sb := strings.Builder{}
+	for _, f := range mm.FieldNames {
+		sb.WriteString("Col")
+		sb.WriteString(f)
+		sb.WriteString(", ")
+	}
+	sb.WriteString("colData")
+	g.P("Columns(", sb.String(), ").")
+	g.P("Query(cql.Session())")
+	g.P("})")
+
+	g.P("func ", mm.Name, "Insert (x *", mm.Name, ") (err error) {")
+	g.P("q := _", mm.Name, "InsertFactory.GetQuery()")
+	g.P("defer _", mm.Name, "InsertFactory.Put(q)")
+	g.P()
+	g.P("mo := proto.MarshalOptions{UseCachedSize: true}")
+	g.P("data := pools.Bytes.GetCap(mo.Size(x))")
+	g.P("defer pools.Bytes.Put(data)")
+	g.P()
+	g.P("data, err = mo.MarshalAppend(data, x)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}")
+	g.P()
+
+	sb = strings.Builder{}
+	for _, f := range mm.FieldNames {
+		sb.WriteString("x.")
+		sb.WriteString(f)
+		sb.WriteString(", ")
+	}
+	sb.WriteString("data")
+	g.P("q.Bind(", sb.String(), ")")
+	g.P("err = cql.Exec(q)")
+	g.P("return err")
+	g.P("}")
+}
+func get(mm *model, g *protogen.GeneratedFile) {
+	g.P("var _", mm.Name, "GetFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
+	g.P("return qb.Select(Table", mm.Name, ").")
+	g.P("Columns(colData).")
+	sb := strings.Builder{}
+	for idx, f := range mm.FieldNames {
+		if idx != 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString("qb.Eq(Col")
+		sb.WriteString(f)
+		sb.WriteString(")")
+	}
+	g.P("Where(", sb.String(), ").")
+	g.P("Query(cql.Session())")
+	g.P("})")
+
+	sb = strings.Builder{}
+	sb2 := strings.Builder{}
+	for idx, f := range mm.FieldNames {
+		if idx != 0 {
+			sb.WriteString(", ")
+			sb2.WriteString(", ")
+		}
+		sb.WriteString(reflectx.CamelToSnakeASCII(f))
+		sb2.WriteString(reflectx.CamelToSnakeASCII(f))
+		sb.WriteRune(' ')
+		sb.WriteString(mm.FieldsGo[f])
+	}
+	g.P("func ", mm.Name, "Get (", sb.String(), ") (m *", mm.Name, ", err error) {")
+	g.P("q := _", mm.Name, "GetFactory.GetQuery()")
+	g.P("defer _", mm.Name, "GetFactory.Put(q)")
+	g.P()
+	g.P("data := pools.Bytes.GetCap(512)")
+	g.P("defer pools.Bytes.Put(data)")
+	g.P()
+	g.P("q.Bind(", sb2.String(), ")")
+	g.P("err = cql.Scan(q, data)")
+	g.P("if err != nil {")
+	g.P("return")
+	g.P("}")
+	g.P()
+	g.P("err = proto.UnmarshalOptions{Merge: true}.Unmarshal(data, m)")
+	g.P("return m, err")
+
+	g.P("}")
+	g.P()
 }

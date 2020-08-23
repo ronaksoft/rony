@@ -18,8 +18,14 @@ func main() {
 				g2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.rony.go", f.GeneratedFilenamePrefix), f.GoImportPath)
 				GenRPC(f, g2)
 			}
-			// g3 := plugin.NewGeneratedFile(fmt.Sprintf("%s.cql.go", f.GeneratedFilenamePrefix), f.GoImportPath)
-			// GenCql(f, g3)
+
+			for _, m := range f.Messages {
+				fillModel(m)
+			}
+			if len(_Models) > 0 {
+				g3 := plugin.NewGeneratedFile(fmt.Sprintf("%s.cql.go", f.GeneratedFilenamePrefix), f.GoImportPath)
+				GenCql(f, g3)
+			}
 		}
 		return nil
 	})
