@@ -5,7 +5,7 @@ import (
 	"git.ronaksoft.com/ronak/rony"
 	"git.ronaksoft.com/ronak/rony/gateway"
 	log "git.ronaksoft.com/ronak/rony/internal/logger"
-	"git.ronaksoft.com/ronak/rony/internal/tools"
+	"git.ronaksoft.com/ronak/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"hash/crc32"

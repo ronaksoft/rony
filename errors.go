@@ -43,7 +43,6 @@ const (
 // Errors
 var (
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
-	ErrGatewayNotInitialized     = errors.New("there is no gateway defined")
 	ErrNotFound                  = errors.New("not found")
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftNotSet                = errors.New("raft not set")

@@ -146,7 +146,6 @@ func fillModel(m *protogen.Message) {
 }
 
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
-
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
 	// g.P("\"git.ronaksoft.com/ronak/rony\"")

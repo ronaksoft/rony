@@ -1,4 +1,4 @@
-package testdata
+package tools
 
 import (
 	"crypto/rand"
@@ -18,14 +18,13 @@ import (
 )
 
 /*
-   Creation Time: 2019 - Aug - 28
+   Creation Time: 2020 - Aug - 25
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
    Auditor: Ehsan N. Moosa (E2)
-   Copyright Ronak Software Group 2018
+   Copyright Ronak Software Group 2020
 */
-
 
 // helper function to create a cert template with a serial number and other required fields
 func CertTemplate() (*x509.Certificate, error) {

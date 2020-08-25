@@ -2,7 +2,7 @@ package tcpGateway
 
 import (
 	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/internal/tools"
+	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
 )
