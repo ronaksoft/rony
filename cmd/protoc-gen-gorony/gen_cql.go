@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	parse "git.ronaksoft.com/ronak/rony/internal/parser"
-	"github.com/scylladb/go-reflectx"
+	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -26,10 +26,9 @@ var _Fields = map[string]struct{}{}
 
 type model struct {
 	Name       string
-	TableName  string
 	Table      PrimaryKey
-	ViewNames  []string
 	Views      []PrimaryKey
+	ViewParams []string
 	FieldNames []string
 	FieldsCql  map[string]string
 	FieldsGo   map[string]string
@@ -108,7 +107,6 @@ func fillModel(m *protogen.Message) {
 			isModel = true
 		case parse.NodeTable:
 			pk := PrimaryKey{}
-			mm.TableName = fmt.Sprintf("t_%s", reflectx.CamelToSnakeASCII(string(m.Desc.Name())))
 			nn := n.(*parse.TableNode)
 			for _, k := range nn.PartitionKeys {
 				fields[k] = struct{}{}
@@ -125,16 +123,12 @@ func fillModel(m *protogen.Message) {
 			pk := PrimaryKey{}
 			nn := n.(*parse.ViewNode)
 			sb := strings.Builder{}
-			for idx, k := range nn.PartitionKeys {
+			for _, k := range nn.PartitionKeys {
 				fields[k] = struct{}{}
 				pk.PKs = append(pk.PKs, k)
-				if idx != 0 {
-					sb.WriteString("_")
-				}
-				sb.WriteString(reflectx.CamelToSnakeASCII(k))
+				sb.WriteString(k)
 			}
-			mm.ViewNames = append(mm.ViewNames, fmt.Sprintf("mv_%s_by_%s", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), sb.String()))
-
+			mm.ViewParams = append(mm.ViewParams, sb.String())
 			for _, k := range nn.ClusteringKeys {
 				kWithoutSign := strings.TrimLeft(k, "-")
 				fields[kWithoutSign] = struct{}{}
@@ -189,9 +183,9 @@ func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		g.P("Table", m.Desc.Name(), "= \"t_", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), "\"")
-		for _, v := range mm.ViewNames {
-			g.P("View", m.Desc.Name(), "= \"", v, "\"")
+		g.P("Table", m.Desc.Name(), "= \"", tools.CamelToSnakeASCII(string(m.Desc.Name())), "\"")
+		for _, v := range mm.ViewParams {
+			g.P("View", m.Desc.Name(), "By", v, "= \"", fmt.Sprintf("%s_by_%s", tools.CamelToSnakeASCII(string(m.Desc.Name())), tools.CamelToSnakeASCII(v)), "\"")
 		}
 	}
 	g.P(")")
@@ -201,7 +195,7 @@ func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Columns")
 	g.P("const (")
 	for f := range _Fields {
-		g.P("Col", f, " = \"", reflectx.CamelToSnakeASCII(f), "\"")
+		g.P("Col", f, " = \"", tools.CamelToSnakeASCII(f), "\"")
 	}
 	g.P(")")
 	g.P()
@@ -215,32 +209,32 @@ func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 			continue
 		}
 		g.P("_", mm.Name, "CqlCreateTable = `")
-		g.P("CREATE TABLE IF NOT EXISTS ", mm.TableName, " (")
+		g.P("CREATE TABLE IF NOT EXISTS ", tools.CamelToSnakeASCII(mm.Name), " (")
 		for _, fn := range mm.FieldNames {
-			g.P(fmt.Sprintf("%s \t %s,", reflectx.CamelToSnakeASCII(fn), mm.FieldsCql[fn]))
+			g.P(fmt.Sprintf("%s \t %s,", tools.CamelToSnakeASCII(fn), mm.FieldsCql[fn]))
 		}
 		g.P("data \t blob,")
 		pksb := strings.Builder{}
 		pksb.WriteRune('(')
 		switch {
 		case len(mm.Table.PKs)+len(mm.Table.CKs) == 1:
-			pksb.WriteString(reflectx.CamelToSnakeASCII(mm.Table.PKs[0]))
+			pksb.WriteString(tools.CamelToSnakeASCII(mm.Table.PKs[0]))
 		case len(mm.Table.PKs) == 1:
-			pksb.WriteString(reflectx.CamelToSnakeASCII(mm.Table.PKs[0]))
+			pksb.WriteString(tools.CamelToSnakeASCII(mm.Table.PKs[0]))
 		default:
 			pksb.WriteRune('(')
 			for idx, pk := range mm.Table.PKs {
 				if idx != 0 {
 					pksb.WriteString(", ")
 				}
-				pksb.WriteString(reflectx.CamelToSnakeASCII(pk))
+				pksb.WriteString(tools.CamelToSnakeASCII(pk))
 			}
 			pksb.WriteRune(')')
 
 		}
 		for _, ck := range mm.Table.CKs {
 			pksb.WriteString(", ")
-			pksb.WriteString(reflectx.CamelToSnakeASCII(ck))
+			pksb.WriteString(tools.CamelToSnakeASCII(ck))
 		}
 		pksb.WriteRune(')')
 
@@ -251,9 +245,9 @@ func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 				orders.WriteString(", ")
 			}
 			if strings.HasPrefix(k, "-") {
-				orders.WriteString(fmt.Sprintf("%s DESC", reflectx.CamelToSnakeASCII(kWithoutSign)))
+				orders.WriteString(fmt.Sprintf("%s DESC", tools.CamelToSnakeASCII(kWithoutSign)))
 			} else {
-				orders.WriteString(fmt.Sprintf("%s ASC", reflectx.CamelToSnakeASCII(kWithoutSign)))
+				orders.WriteString(fmt.Sprintf("%s ASC", tools.CamelToSnakeASCII(kWithoutSign)))
 			}
 		}
 		g.P("PRIMARY KEY ", pksb.String())
@@ -337,8 +331,8 @@ func get(mm *model, g *protogen.GeneratedFile) {
 			sb.WriteString(", ")
 			sb2.WriteString(", ")
 		}
-		sb.WriteString(reflectx.CamelToSnakeASCII(f))
-		sb2.WriteString(reflectx.CamelToSnakeASCII(f))
+		sb.WriteString(tools.CamelToSnakeASCII(f))
+		sb2.WriteString(tools.CamelToSnakeASCII(f))
 		sb.WriteRune(' ')
 		sb.WriteString(mm.FieldsGo[f])
 	}

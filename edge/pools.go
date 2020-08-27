@@ -16,7 +16,6 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-// MessageEnvelope Pool
 var messageEnvelopePool sync.Pool
 
 func acquireMessageEnvelope() *rony.MessageEnvelope {
