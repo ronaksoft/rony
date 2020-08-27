@@ -21,10 +21,10 @@ import (
 
 var _ = qb.ASC
 
-var _Models = map[string]*model{}
+var _Models = map[string]*Model{}
 var _Fields = map[string]struct{}{}
 
-type model struct {
+type Model struct {
 	Name       string
 	Table      PrimaryKey
 	Views      []PrimaryKey
@@ -38,6 +38,13 @@ type PrimaryKey struct {
 	PKs    []string
 	CKs    []string
 	Orders []string
+}
+
+func (pk *PrimaryKey) Keys() []string {
+	keys := make([]string, 0, len(pk.PKs)+len(pk.CKs))
+	keys = append(keys, pk.PKs...)
+	keys = append(keys, pk.CKs...)
+	return keys
 }
 
 // kindCql converts the proto buffer type to cql types
@@ -90,7 +97,7 @@ func kindGo(k protoreflect.Kind) string {
 func fillModel(m *protogen.Message) {
 	var (
 		isModel = false
-		mm      = model{
+		mm      = Model{
 			FieldsCql: make(map[string]string),
 			FieldsGo:  make(map[string]string),
 		}
@@ -172,7 +179,7 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 
 	genTableDefs(file, g)
 	genColumnDefs(file, g)
-	genCreateTableCql(file, g)
+	genInitCqlQueries(file, g)
 	genFuncsFactories(file, g)
 }
 func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
@@ -183,9 +190,9 @@ func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		g.P("Table", m.Desc.Name(), "= \"", tools.CamelToSnakeASCII(string(m.Desc.Name())), "\"")
+		g.P("Table", m.Desc.Name(), "= \"", tools.ToSnake(string(m.Desc.Name())), "\"")
 		for _, v := range mm.ViewParams {
-			g.P("View", m.Desc.Name(), "By", v, "= \"", fmt.Sprintf("%s_by_%s", tools.CamelToSnakeASCII(string(m.Desc.Name())), tools.CamelToSnakeASCII(v)), "\"")
+			g.P("View", m.Desc.Name(), "By", v, "= \"", fmt.Sprintf("%s_by_%s", tools.ToSnake(string(m.Desc.Name())), tools.ToSnake(v)), "\"")
 		}
 	}
 	g.P(")")
@@ -195,46 +202,45 @@ func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Columns")
 	g.P("const (")
 	for f := range _Fields {
-		g.P("Col", f, " = \"", tools.CamelToSnakeASCII(f), "\"")
+		g.P("Col", f, " = \"", tools.ToSnake(f), "\"")
 	}
 	g.P(")")
 	g.P()
 }
-func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
-	g.P("// CQLs Create")
-	g.P("const (")
+func genInitCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
+	g.P("func init() {")
 	for _, m := range file.Messages {
 		mm := _Models[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
-		g.P("_", mm.Name, "CqlCreateTable = `")
-		g.P("CREATE TABLE IF NOT EXISTS ", tools.CamelToSnakeASCII(mm.Name), " (")
+		g.P("cql.AddCqlQuery(`")
+		g.P("CREATE TABLE IF NOT EXISTS ", tools.ToSnake(mm.Name), " (")
 		for _, fn := range mm.FieldNames {
-			g.P(fmt.Sprintf("%s \t %s,", tools.CamelToSnakeASCII(fn), mm.FieldsCql[fn]))
+			g.P(fmt.Sprintf("%s \t %s,", tools.ToSnake(fn), mm.FieldsCql[fn]))
 		}
 		g.P("data \t blob,")
 		pksb := strings.Builder{}
 		pksb.WriteRune('(')
 		switch {
 		case len(mm.Table.PKs)+len(mm.Table.CKs) == 1:
-			pksb.WriteString(tools.CamelToSnakeASCII(mm.Table.PKs[0]))
+			pksb.WriteString(tools.ToSnake(mm.Table.PKs[0]))
 		case len(mm.Table.PKs) == 1:
-			pksb.WriteString(tools.CamelToSnakeASCII(mm.Table.PKs[0]))
+			pksb.WriteString(tools.ToSnake(mm.Table.PKs[0]))
 		default:
 			pksb.WriteRune('(')
 			for idx, pk := range mm.Table.PKs {
 				if idx != 0 {
 					pksb.WriteString(", ")
 				}
-				pksb.WriteString(tools.CamelToSnakeASCII(pk))
+				pksb.WriteString(tools.ToSnake(pk))
 			}
 			pksb.WriteRune(')')
 
 		}
 		for _, ck := range mm.Table.CKs {
 			pksb.WriteString(", ")
-			pksb.WriteString(tools.CamelToSnakeASCII(ck))
+			pksb.WriteString(tools.ToSnake(ck))
 		}
 		pksb.WriteRune(')')
 
@@ -245,58 +251,63 @@ func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 				orders.WriteString(", ")
 			}
 			if strings.HasPrefix(k, "-") {
-				orders.WriteString(fmt.Sprintf("%s DESC", tools.CamelToSnakeASCII(kWithoutSign)))
+				orders.WriteString(fmt.Sprintf("%s DESC", tools.ToSnake(kWithoutSign)))
 			} else {
-				orders.WriteString(fmt.Sprintf("%s ASC", tools.CamelToSnakeASCII(kWithoutSign)))
+				orders.WriteString(fmt.Sprintf("%s ASC", tools.ToSnake(kWithoutSign)))
 			}
 		}
 		g.P("PRIMARY KEY ", pksb.String())
-		g.P(") WITH CLUSTERING ORDER BY (", orders.String(), ");")
-		g.P("`")
+		if len(mm.Table.Orders) > 0 {
+			g.P(") WITH CLUSTERING ORDER BY (", orders.String(), ");")
+		} else {
+			g.P(");")
+		}
+		g.P("`)")
 
 		// Create Materialized Views
 		for idx, v := range mm.Views {
-			g.P("_", mm.Name, mm.ViewParams[idx], "CqlCreateMaterializedView = `")
-			g.P("CREATE MATERIALIZED VIEW ",
-				fmt.Sprintf("%s_by_%s", tools.CamelToSnakeASCII(string(m.Desc.Name())), tools.CamelToSnakeASCII(mm.ViewParams[idx])),
+			g.P("cql.AddCqlQuery(`")
+			g.P("CREATE MATERIALIZED VIEW IF NOT EXISTS ",
+				fmt.Sprintf("%s_by_%s", tools.ToSnake(string(m.Desc.Name())), tools.ToSnake(mm.ViewParams[idx])),
 				" AS ",
 			)
 			g.P("SELECT *")
-			g.P("FROM ", tools.CamelToSnakeASCII(mm.Name))
+			g.P("FROM ", tools.ToSnake(mm.Name))
 			pksb := strings.Builder{}
 			pksb.WriteRune('(')
 			switch {
 			case len(v.PKs)+len(v.CKs) == 1:
-				g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[0]), " IS NOT null")
-				pksb.WriteString(tools.CamelToSnakeASCII(v.PKs[0]))
+				g.P("WHERE ", tools.ToSnake(v.PKs[0]), " IS NOT null")
+				pksb.WriteString(tools.ToSnake(v.PKs[0]))
 			case len(v.PKs) == 1:
-				g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[0]), " IS NOT null")
-				pksb.WriteString(tools.CamelToSnakeASCII(v.PKs[0]))
+				g.P("WHERE ", tools.ToSnake(v.PKs[0]), " IS NOT null")
+				pksb.WriteString(tools.ToSnake(v.PKs[0]))
 			default:
 				pksb.WriteRune('(')
 				for idx, pk := range v.PKs {
 					if idx != 0 {
-						g.P("AND ", tools.CamelToSnakeASCII(v.PKs[idx]), " IS NOT null")
+						g.P("AND ", tools.ToSnake(v.PKs[idx]), " IS NOT null")
 						pksb.WriteString(", ")
 					} else {
-						g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[idx]), " IS NOT null")
+						g.P("WHERE ", tools.ToSnake(v.PKs[idx]), " IS NOT null")
 					}
-					pksb.WriteString(tools.CamelToSnakeASCII(pk))
+					pksb.WriteString(tools.ToSnake(pk))
 				}
 				pksb.WriteRune(')')
 
 			}
 			for _, ck := range v.CKs {
-				g.P("AND ", tools.CamelToSnakeASCII(ck), " IS NOT null")
+				g.P("AND ", tools.ToSnake(ck), " IS NOT null")
 				pksb.WriteString(", ")
-				pksb.WriteString(tools.CamelToSnakeASCII(ck))
+				pksb.WriteString(tools.ToSnake(ck))
 			}
 			pksb.WriteRune(')')
 			g.P("PRIMARY KEY ", pksb.String())
-			g.P("`")
+			g.P("`)")
 		}
 	}
-	g.P(")")
+	g.P("}")
+
 }
 func genFuncsFactories(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
@@ -306,10 +317,11 @@ func genFuncsFactories(file *protogen.File, g *protogen.GeneratedFile) {
 		}
 		insert(mm, g)
 		get(mm, g)
+		listBy(mm, g)
 	}
 
 }
-func insert(mm *model, g *protogen.GeneratedFile) {
+func insert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Insert(Table", mm.Name, ").")
 	sb := strings.Builder{}
@@ -349,54 +361,100 @@ func insert(mm *model, g *protogen.GeneratedFile) {
 	g.P("return err")
 	g.P("}")
 }
-func get(mm *model, g *protogen.GeneratedFile) {
+func get(mm *Model, g *protogen.GeneratedFile) {
+	// Generate Factory
 	g.P("var _", mm.Name, "GetFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Select(Table", mm.Name, ").")
 	g.P("Columns(colData).")
-	sb := strings.Builder{}
-	for idx, f := range mm.FieldNames {
+	where := strings.Builder{}
+	args := strings.Builder{}
+	bind := strings.Builder{}
+	for idx, f := range mm.Table.Keys() {
 		if idx != 0 {
-			sb.WriteString(", ")
+			where.WriteString(", ")
+			args.WriteString(", ")
+			bind.WriteString(", ")
 		}
-		sb.WriteString("qb.Eq(Col")
-		sb.WriteString(f)
-		sb.WriteString(")")
+		args.WriteString(fmt.Sprintf("%s %s", tools.ToLowerCamel(f), mm.FieldsGo[f]))
+		where.WriteString(fmt.Sprintf("qb.Eq(Col%s)", f))
+		bind.WriteString(tools.ToLowerCamel(f))
 	}
-	g.P("Where(", sb.String(), ").")
+	g.P("Where(", where.String(), ").")
 	g.P("Query(cql.Session())")
 	g.P("})")
+	g.P()
 
-	sb = strings.Builder{}
-	sb2 := strings.Builder{}
-	for idx, f := range mm.FieldNames {
-		if idx != 0 {
-			sb.WriteString(", ")
-			sb2.WriteString(", ")
-		}
-		sb.WriteString(tools.CamelToSnakeASCII(f))
-		sb2.WriteString(tools.CamelToSnakeASCII(f))
-		sb.WriteRune(' ')
-		sb.WriteString(mm.FieldsGo[f])
-	}
-	g.P("func ", mm.Name, "Get (", sb.String(), ") (m *", mm.Name, ", err error) {")
+	// Generate Func
+	g.P("func ", mm.Name, "Get (", args.String(), ", x *", mm.Name, ") (*", mm.Name, ", error) {")
+	g.P("if x == nil {")
+	g.P("x = &", mm.Name, "{}")
+	g.P("}")
 	g.P("q := _", mm.Name, "GetFactory.GetQuery()")
 	g.P("defer _", mm.Name, "GetFactory.Put(q)")
 	g.P()
-	g.P("data := pools.Bytes.GetCap(512)")
-	g.P("defer pools.Bytes.Put(data)")
+	g.P("b := pools.Bytes.GetCap(512)")
+	g.P("defer pools.Bytes.Put(b)")
 	g.P()
-	g.P("q.Bind(", sb2.String(), ")")
-	g.P("err = cql.Scan(q, data)")
+	g.P("q.Bind(", bind.String(), ")")
+	g.P("err := cql.Scan(q, &b)")
 	g.P("if err != nil {")
-	g.P("return")
+	g.P("return x, err")
 	g.P("}")
 	g.P()
-	g.P("err = proto.UnmarshalOptions{Merge: true}.Unmarshal(data, m)")
-	g.P("return m, err")
+	g.P("err = proto.UnmarshalOptions{}.Unmarshal(b, x)")
+	g.P("return x, err")
 
 	g.P("}")
 	g.P()
 }
-func listBy(mm *model, g *protogen.GeneratedFile) {
+func listBy(mm *Model, g *protogen.GeneratedFile) {
+	for idx, v := range mm.ViewParams {
+		// Generate Factory
+		g.P("var _", mm.Name, "ListBy", v, "Factory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
+		g.P("return qb.Select(View", mm.Name, "By", v, ").")
+		g.P("Columns(colData).")
+		where := strings.Builder{}
+		args := strings.Builder{}
+		bind := strings.Builder{}
+		for idx, f := range mm.Views[idx].PKs {
+			if idx != 0 {
+				bind.WriteString(", ")
+				where.WriteString(", ")
+				args.WriteString(", ")
+			}
+			args.WriteString(fmt.Sprintf("%s %s", tools.ToLowerCamel(f), mm.FieldsGo[f]))
+			where.WriteString(fmt.Sprintf("qb.Eq(Col%s)", f))
+			bind.WriteString(tools.ToLowerCamel(f))
+		}
+		g.P("Where(", where.String(), ").")
+		g.P("Query(cql.Session())")
+		g.P("})")
+		g.P()
 
+		// Generate Function
+		g.P("func ", mm.Name, "ListBy", v, " (", args.String(), ", limit int, f func(x *", mm.Name, ") bool) error {")
+		g.P("q := _", mm.Name, "ListBy", v, "Factory.GetQuery()")
+		g.P("defer _", mm.Name, "ListBy", v, "Factory.Put(q)")
+		g.P()
+		g.P("b := pools.Bytes.GetCap(512)")
+		g.P("defer pools.Bytes.Put(b)")
+		g.P()
+		g.P("q.Bind(", bind.String(), ")")
+		g.P("iter := q.Iter()")
+		g.P("for iter.Scan(&b) {")
+		g.P("x := Pool", mm.Name, ".Get()")
+		g.P("err := proto.Unmarshal(b, x)")
+		g.P("if err != nil {")
+		g.P("Pool", mm.Name, ".Put(x)")
+		g.P("return err")
+		g.P("}")
+		g.P("if limit--; limit <= 0 || !f(x) {")
+		g.P("Pool", mm.Name, ".Put(x)")
+		g.P("break")
+		g.P("}")
+		g.P("Pool", mm.Name, ".Put(x)")
+		g.P("}")
+		g.P("return nil")
+		g.P("}")
+	}
 }
