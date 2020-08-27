@@ -1,12 +1,18 @@
-// Copyright (C) 2019 ScyllaDB
-// Use of this source code is governed by a ALv2-style
-// license that can be found in the LICENSE file.
 
 package tools
 
 import (
 	"strings"
 )
+
+/*
+   Creation Time: 2020 - Apr - 09
+   Created by:  (ehsan)
+   Maintainers:
+      1.  Ehsan N. Moosa (E2)
+   Auditor: Ehsan N. Moosa (E2)
+   Copyright Ronak Software Group 2020
+*/
 
 var uppercaseAcronym = map[string]string{
 	"ID":   "id",

@@ -403,7 +403,6 @@ func get(mm *Model, g *protogen.GeneratedFile) {
 	g.P()
 	g.P("err = proto.UnmarshalOptions{}.Unmarshal(b, x)")
 	g.P("return x, err")
-
 	g.P("}")
 	g.P()
 }

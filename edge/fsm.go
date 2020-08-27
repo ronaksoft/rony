@@ -14,7 +14,7 @@ import (
    Maintainers:
       1.  Ehsan N. Moosa (E2)
    Auditor: Ehsan N. Moosa (E2)
-   Copyright Ronak Software Group 2018
+   Copyright Ronak Software Group 2020
 */
 
 // raftFSM is the finite state machine which will be used when Raft is enabled.
