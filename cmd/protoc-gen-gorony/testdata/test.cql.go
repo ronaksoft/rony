@@ -36,7 +36,7 @@ id 	 int,
 shard_key 	 int,
 data 	 blob,
 PRIMARY KEY (id, shard_key)
-)
+) WITH CLUSTERING ORDER BY (shard_key ASC);
 `
 	_Model2CqlCreateTable = `
 CREATE TABLE IF NOT EXISTS t_model2 (
@@ -45,7 +45,7 @@ p1 	 blob,
 id 	 bigint,
 data 	 blob,
 PRIMARY KEY ((id, shard_key), p1)
-)
+) WITH CLUSTERING ORDER BY (p1 DESC);
 `
 )
 

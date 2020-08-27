@@ -30,9 +30,12 @@ BenchmarkServerWithWebsocket-16            46514             25138 ns/op        
 ---
 ### Easy Setup for advanced scenarios
 ```go
+package main 
+import "git.ronaksoft.com/ronak/rony"
+
 func main() {
     server := rony.NewEdgeServer(serverID, &dispatcher{},
-    	rony.WithWebsocketGateway(websocketGateway.Config{
+    	rony.WithTcpGateway(tcpGateway.Config{
     		NewConnectionWorkers: 10,
     		MaxConcurrency:       1000,
     		MaxIdleTime:          0,
@@ -65,20 +68,13 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 
 ### Code Generators
 You must install the following protoc plugins which generate the appropriate codes
-> 1. protoc-gen-gopool
+> 1. protoc-gen-gorony
 ```
-Generates pools for each message
-```
-> 2. protoc-gen-gorony
-``` 
-Generates Server/Client template codes for boilerplate APIs on the server side, and stubs
-on the clients.
-```
-> 3. protoc-gen-gomodel-scylla
-```
- 
-```
+This is a protoc pluging which could generate codes based on the protobuf. In addition to
+protobuffer syntax there are directive commands available which let the user generate more
+customized code. 
 
+```
 ---
 ## Summary
 
@@ -88,9 +84,10 @@ against other platforms for common scenarios and will be cited.
 
 ### TODOs
 - [ ] Model Descriptor implementation for:
-    1. Scylla/Aerospike
-    2. MongoDB/Redis
-    3. Aggregate/Event/LiftBridge
+    1. Scylla
+    2. MongoDB
+    3. Redis
+    4. Aerospike
 - [ ] Middleware support for server side rpc handlers
 - [ ] Update documentation
 - [ ] Improve test coverage

@@ -36,8 +36,9 @@ type model struct {
 }
 
 type PrimaryKey struct {
-	PKs []string
-	CKs []string
+	PKs    []string
+	CKs    []string
+	Orders []string
 }
 
 func kindCql(k protoreflect.Kind) string {
@@ -101,32 +102,39 @@ func fillModel(m *protogen.Message) {
 		case parse.NodeModel:
 			isModel = true
 		case parse.NodeTable:
+			pk := PrimaryKey{}
 			mm.TableName = fmt.Sprintf("t_%s", reflectx.CamelToSnakeASCII(string(m.Desc.Name())))
 			nn := n.(*parse.TableNode)
 			for _, k := range nn.PartitionKeys {
 				fields[k] = struct{}{}
-				mm.Table.PKs = append(mm.Table.PKs, k)
-
+				pk.PKs = append(pk.PKs, k)
 			}
 			for _, k := range nn.ClusteringKeys {
-				fields[k] = struct{}{}
-				mm.Table.CKs = append(mm.Table.CKs, k)
+				kWithoutSign := strings.TrimLeft(k, "-")
+				fields[kWithoutSign] = struct{}{}
+				pk.Orders = append(pk.Orders, k)
+				pk.CKs = append(pk.CKs, kWithoutSign)
 			}
+			mm.Table = pk
 		case parse.NodeView:
 			pk := PrimaryKey{}
 			nn := n.(*parse.ViewNode)
 			sb := strings.Builder{}
 			for idx, k := range nn.PartitionKeys {
 				fields[k] = struct{}{}
+				pk.PKs = append(pk.PKs, k)
 				if idx != 0 {
 					sb.WriteString("_")
 				}
 				sb.WriteString(reflectx.CamelToSnakeASCII(k))
 			}
 			mm.ViewNames = append(mm.ViewNames, fmt.Sprintf("mv_%s_by_%s", reflectx.CamelToSnakeASCII(string(m.Desc.Name())), sb.String()))
+
 			for _, k := range nn.ClusteringKeys {
-				fields[k] = struct{}{}
-				pk.CKs = append(pk.CKs, k)
+				kWithoutSign := strings.TrimLeft(k, "-")
+				fields[kWithoutSign] = struct{}{}
+				pk.Orders = append(pk.Orders, k)
+				pk.CKs = append(pk.CKs, kWithoutSign)
 			}
 			mm.Views = append(mm.Views, pk)
 		}
@@ -165,9 +173,8 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 
 	genTableDefs(file, g)
 	genColumnDefs(file, g)
-	genCqls(file, g)
+	genCreateTableCql(file, g)
 	genFuncsFactories(file, g)
-
 }
 
 func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
@@ -197,7 +204,7 @@ func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P()
 }
 
-func genCqls(file *protogen.File, g *protogen.GeneratedFile) {
+func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// CQLs Create")
 	g.P("const (")
 	for _, m := range file.Messages {
@@ -235,13 +242,24 @@ func genCqls(file *protogen.File, g *protogen.GeneratedFile) {
 		}
 		pksb.WriteRune(')')
 
+		orders := strings.Builder{}
+		for idx, k := range mm.Table.Orders {
+			kWithoutSign := strings.TrimLeft(k, "-")
+			if idx > 0 {
+				orders.WriteString(", ")
+			}
+			if strings.HasPrefix(k, "-") {
+				orders.WriteString(fmt.Sprintf("%s DESC", reflectx.CamelToSnakeASCII(kWithoutSign)))
+			} else {
+				orders.WriteString(fmt.Sprintf("%s ASC", reflectx.CamelToSnakeASCII(kWithoutSign)))
+			}
+		}
 		g.P("PRIMARY KEY ", pksb.String())
-		g.P(")")
+		g.P(") WITH CLUSTERING ORDER BY (", orders.String(), ");")
 		g.P("`")
 	}
 	g.P(")")
 }
-
 func genFuncsFactories(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
 		mm := _Models[string(m.Desc.Name())]
@@ -341,3 +359,4 @@ func get(mm *model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 }
+func listBy(mm *model, g *protogen.GeneratedFile) {}

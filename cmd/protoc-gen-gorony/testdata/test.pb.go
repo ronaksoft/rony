@@ -226,7 +226,7 @@ func (x *Model1) GetP5() uint64 {
 }
 
 // {{@model cql}}
-// {{@tab ((ID, ShardKey), P1)}}
+// {{@tab ((ID, ShardKey), -P1)}}
 // {{@view (P1, ShardKey, ID)}}
 type Model2 struct {
 	state         protoimpl.MessageState

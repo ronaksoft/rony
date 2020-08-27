@@ -26,7 +26,7 @@ message Model1 {
 }
 
 // {{@model cql}}
-// {{@tab ((ID, ShardKey), P1)}}
+// {{@tab ((ID, ShardKey), -P1)}}
 // {{@view (P1, ShardKey, ID)}}
 message Model2 {
     int64 ID = 1;
