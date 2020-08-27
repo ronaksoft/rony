@@ -253,6 +253,48 @@ func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("PRIMARY KEY ", pksb.String())
 		g.P(") WITH CLUSTERING ORDER BY (", orders.String(), ");")
 		g.P("`")
+
+		// Create Materialized Views
+		for idx, v := range mm.Views {
+			g.P("_", mm.Name, mm.ViewParams[idx], "CqlCreateMaterializedView = `")
+			g.P("CREATE MATERIALIZED VIEW ",
+				fmt.Sprintf("%s_by_%s", tools.CamelToSnakeASCII(string(m.Desc.Name())), tools.CamelToSnakeASCII(mm.ViewParams[idx])),
+				" AS ",
+			)
+			g.P("SELECT *")
+			g.P("FROM ", tools.CamelToSnakeASCII(mm.Name))
+			pksb := strings.Builder{}
+			pksb.WriteRune('(')
+			switch {
+			case len(v.PKs)+len(v.CKs) == 1:
+				g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[0]), " IS NOT null")
+				pksb.WriteString(tools.CamelToSnakeASCII(v.PKs[0]))
+			case len(v.PKs) == 1:
+				g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[0]), " IS NOT null")
+				pksb.WriteString(tools.CamelToSnakeASCII(v.PKs[0]))
+			default:
+				pksb.WriteRune('(')
+				for idx, pk := range v.PKs {
+					if idx != 0 {
+						g.P("AND ", tools.CamelToSnakeASCII(v.PKs[idx]), " IS NOT null")
+						pksb.WriteString(", ")
+					} else {
+						g.P("WHERE ", tools.CamelToSnakeASCII(v.PKs[idx]), " IS NOT null")
+					}
+					pksb.WriteString(tools.CamelToSnakeASCII(pk))
+				}
+				pksb.WriteRune(')')
+
+			}
+			for _, ck := range v.CKs {
+				g.P("AND ", tools.CamelToSnakeASCII(ck), " IS NOT null")
+				pksb.WriteString(", ")
+				pksb.WriteString(tools.CamelToSnakeASCII(ck))
+			}
+			pksb.WriteRune(')')
+			g.P("PRIMARY KEY ", pksb.String())
+			g.P("`")
+		}
 	}
 	g.P(")")
 }
