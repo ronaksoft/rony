@@ -22,8 +22,8 @@ var (
 
 func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 	errMessage := PoolError.Get()
-	errMessage.Code = &errCode
-	errMessage.Items = &errItem
+	errMessage.Code = errCode
+	errMessage.Items = errItem
 	out.Fill(reqID, C_Error, errMessage)
 	PoolError.Put(errMessage)
 	return
@@ -31,50 +31,22 @@ func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 
 func (x *MessageEnvelope) Clone() *MessageEnvelope {
 	c := PoolMessageEnvelope.Get()
-	if x.Constructor != nil {
-		if c.Constructor == nil {
-			c.Constructor = new(int64)
-		}
-		*c.Constructor = *x.Constructor
-	}
-
-	if x.RequestID != nil {
-		if c.RequestID == nil {
-			c.RequestID = new(uint64)
-		}
-		*c.RequestID = *x.RequestID
-	}
+	c.Constructor = x.Constructor
+	c.RequestID = x.RequestID
 	c.Message = append(c.Message[:0], x.Message...)
 	return c
 }
 
 func (x *MessageEnvelope) CopyTo(e *MessageEnvelope) *MessageEnvelope {
-	if x.RequestID != nil {
-		if e.RequestID == nil {
-			e.RequestID = new(uint64)
-		}
-		*e.RequestID = *x.RequestID
-	}
-	if x.Constructor != nil {
-		if e.Constructor == nil {
-			e.Constructor = new(int64)
-		}
-		*e.Constructor = *x.Constructor
-	}
+	e.RequestID = x.RequestID
+	e.Constructor = x.Constructor
 	e.Message = append(e.Message[:0], x.Message...)
 	return e
 }
 
 func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message) {
-	if x.RequestID == nil {
-		x.RequestID = new(uint64)
-	}
-	*x.RequestID = reqID
-	if x.Constructor == nil {
-		x.Constructor = new(int64)
-	}
-	*x.Constructor = constructor
-
+	x.RequestID = reqID
+	x.Constructor = constructor
 	mo := proto.MarshalOptions{
 		UseCachedSize: true,
 	}
@@ -86,17 +58,12 @@ func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message)
 
 func (x *RaftCommand) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	if x.AuthID == nil {
-		x.AuthID = new(int64)
-	}
-	*x.AuthID = authID
+	x.AuthID = authID
 	x.Envelope = e.CopyTo(x.Envelope)
 }
 
 func (x *ClusterMessage) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	if x.AuthID == nil {
-		x.AuthID = new(int64)
-	}
+	x.AuthID = authID
 	x.Envelope = e.CopyTo(x.Envelope)
 }

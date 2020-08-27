@@ -1,6 +1,7 @@
 package pb
 
 import (
+	"git.ronaksoft.com/ronak/rony/registry"
 	"sync"
 )
 
@@ -19,6 +20,7 @@ func (p *poolReq1) Get() *Req1 {
 }
 
 func (p *poolReq1) Put(x *Req1) {
+	x.Item1 = 0
 	p.pool.Put(x)
 }
 
@@ -39,6 +41,7 @@ func (p *poolReq2) Get() *Req2 {
 }
 
 func (p *poolReq2) Put(x *Req2) {
+	x.Item1 = ""
 	p.pool.Put(x)
 }
 
@@ -59,6 +62,7 @@ func (p *poolRes1) Get() *Res1 {
 }
 
 func (p *poolRes1) Put(x *Res1) {
+	x.Item1 = 0
 	p.pool.Put(x)
 }
 
@@ -79,6 +83,7 @@ func (p *poolRes2) Get() *Res2 {
 }
 
 func (p *poolRes2) Put(x *Res2) {
+	x.Item1 = ""
 	p.pool.Put(x)
 }
 
@@ -99,6 +104,9 @@ func (p *poolEchoRequest) Get() *EchoRequest {
 }
 
 func (p *poolEchoRequest) Put(x *EchoRequest) {
+	x.Int = 0
+	x.Bool = false
+	x.Timestamp = 0
 	p.pool.Put(x)
 }
 
@@ -119,6 +127,11 @@ func (p *poolEchoResponse) Get() *EchoResponse {
 }
 
 func (p *poolEchoResponse) Put(x *EchoResponse) {
+	x.Int = 0
+	x.Bool = false
+	x.Timestamp = 0
+	x.Delay = 0
+	x.ServerID = ""
 	p.pool.Put(x)
 }
 
@@ -139,6 +152,7 @@ func (p *poolAskRequest) Get() *AskRequest {
 }
 
 func (p *poolAskRequest) Put(x *AskRequest) {
+	x.ServerID = ""
 	p.pool.Put(x)
 }
 
@@ -159,18 +173,20 @@ func (p *poolAskResponse) Get() *AskResponse {
 }
 
 func (p *poolAskResponse) Put(x *AskResponse) {
+	x.Coordinator = ""
+	x.Responder = ""
 	p.pool.Put(x)
 }
 
 var PoolAskResponse = poolAskResponse{}
 
 func init() {
-	ConstructorNames[1772509555] = "Req1"
-	ConstructorNames[4038002889] = "Req2"
-	ConstructorNames[1536179185] = "Res1"
-	ConstructorNames[3264834123] = "Res2"
-	ConstructorNames[1904100324] = "EchoRequest"
-	ConstructorNames[4192619139] = "EchoResponse"
-	ConstructorNames[3206229608] = "AskRequest"
-	ConstructorNames[489087205] = "AskResponse"
+	registry.RegisterConstructor(1772509555, "Req1")
+	registry.RegisterConstructor(4038002889, "Req2")
+	registry.RegisterConstructor(1536179185, "Res1")
+	registry.RegisterConstructor(3264834123, "Res2")
+	registry.RegisterConstructor(1904100324, "EchoRequest")
+	registry.RegisterConstructor(4192619139, "EchoResponse")
+	registry.RegisterConstructor(3206229608, "AskRequest")
+	registry.RegisterConstructor(489087205, "AskResponse")
 }

@@ -42,10 +42,7 @@ type DispatchCtx struct {
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		edge: edge,
-		req: &rony.MessageEnvelope{
-			Constructor: new(int64),
-			RequestID:   new(uint64),
-		},
+		req:  &rony.MessageEnvelope{},
 	}
 }
 
@@ -74,8 +71,8 @@ func (ctx *DispatchCtx) SetAuthID(authID int64) {
 }
 
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
-	*ctx.req.RequestID = requestID
-	*ctx.req.Constructor = constructor
+	ctx.req.RequestID = requestID
+	ctx.req.Constructor = constructor
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
 }
 
@@ -208,11 +205,11 @@ func (ctx *RequestCtx) PushError(code, item string) {
 
 func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems []string, localTxt string, localItems []string) {
 	ctx.PushMessage(rony.C_Error, &rony.Error{
-		Code:            &code,
-		Items:           &item,
+		Code:            code,
+		Items:           item,
 		EnglishItems:    enItems,
-		EnglishTemplate: &enTxt,
-		LocalTemplate:   &localTxt,
+		EnglishTemplate: enTxt,
+		LocalTemplate:   localTxt,
 		LocalItems:      localItems,
 	})
 	ctx.stop = true

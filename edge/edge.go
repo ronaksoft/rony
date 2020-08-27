@@ -219,7 +219,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 					rony.C_Redirect,
 					&rony.Redirect{
 						LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
-						ServerID:       &leaderID,
+						ServerID:       leaderID,
 					},
 				)
 			} else {

@@ -41,6 +41,7 @@ type PrimaryKey struct {
 	Orders []string
 }
 
+// kindCql converts the proto buffer type to cql types
 func kindCql(k protoreflect.Kind) string {
 	switch k {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
@@ -56,9 +57,11 @@ func kindCql(k protoreflect.Kind) string {
 	case protoreflect.BoolKind:
 		return "boolean"
 	}
-	panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
+	return "unsupported"
+	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
 }
 
+// kindGo converts proto buffer types to golang types
 func kindGo(k protoreflect.Kind) string {
 	switch k {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
@@ -80,9 +83,11 @@ func kindGo(k protoreflect.Kind) string {
 	case protoreflect.BoolKind:
 		return "bool"
 	}
-	panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
+	return "unsupported"
+	// panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
 }
 
+// fillModel fills the in global _Models with parsed data
 func fillModel(m *protogen.Message) {
 	var (
 		isModel = false
@@ -176,7 +181,6 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	genCreateTableCql(file, g)
 	genFuncsFactories(file, g)
 }
-
 func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Tables")
 	g.P("const (")
@@ -193,7 +197,6 @@ func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-
 func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Columns")
 	g.P("const (")
@@ -203,7 +206,6 @@ func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-
 func genCreateTableCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// CQLs Create")
 	g.P("const (")
@@ -359,4 +361,6 @@ func get(mm *model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 }
-func listBy(mm *model, g *protogen.GeneratedFile) {}
+func listBy(mm *model, g *protogen.GeneratedFile) {
+
+}

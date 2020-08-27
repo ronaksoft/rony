@@ -242,17 +242,15 @@ type delegateNode struct {
 }
 
 func (d delegateNode) NodeMeta(limit int) []byte {
-	raftPort := new(uint32)
-	*raftPort = uint32(d.edge.raftPort)
 	n := rony.EdgeNode{
 		ServerID:    d.edge.serverID,
-		ReplicaSet:  &d.edge.replicaSet,
-		RaftPort:    raftPort,
+		ReplicaSet:  d.edge.replicaSet,
+		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
-		RaftState:   rony.RaftState_None.Enum(),
+		RaftState:   *rony.RaftState_None.Enum(),
 	}
 	if d.edge.raftEnabled {
-		n.RaftState = rony.RaftState(d.edge.raft.State() + 1).Enum()
+		n.RaftState = *rony.RaftState(d.edge.raft.State() + 1).Enum()
 	}
 
 	b, _ := proto.Marshal(&n)

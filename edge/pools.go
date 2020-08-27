@@ -29,8 +29,8 @@ func acquireMessageEnvelope() *rony.MessageEnvelope {
 
 func releaseMessageEnvelope(x *rony.MessageEnvelope) {
 	x.Message = x.Message[:0]
-	*x.Constructor = 0
-	*x.RequestID = 0
+	x.Constructor = 0
+	x.RequestID = 0
 	messageEnvelopePool.Put(x)
 }
 
@@ -47,11 +47,11 @@ func acquireClusterMessage() *rony.ClusterMessage {
 }
 
 func releaseClusterMessage(x *rony.ClusterMessage) {
-	*x.AuthID = 0
+	x.AuthID = 0
 	x.Sender = x.Sender[:0]
-	*x.Envelope.Constructor = 0
+	x.Envelope.Constructor = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
-	*x.Envelope.RequestID = 0
+	x.Envelope.RequestID = 0
 	clusterMessagePool.Put(x)
 }
 
@@ -69,10 +69,10 @@ func acquireRaftCommand() *rony.RaftCommand {
 
 func releaseRaftCommand(x *rony.RaftCommand) {
 	x.Sender = x.Sender[:0]
-	*x.AuthID = 0
+	x.AuthID = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
-	*x.Envelope.RequestID = 0
-	*x.Envelope.Constructor = 0
+	x.Envelope.RequestID = 0
+	x.Envelope.Constructor = 0
 	raftCommandPool.Put(x)
 }
 

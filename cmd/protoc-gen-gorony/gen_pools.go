@@ -21,6 +21,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
 	g.P("\"sync\"")
+	g.P("\"git.ronaksoft.com/ronak/rony/registry\"")
 	g.P(")")
 	initFunc := strings.Builder{}
 	initFunc.WriteString("func init() {\n")
@@ -29,7 +30,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		mtName := mt.Desc.Name()
 		constructor := crc32.ChecksumIEEE([]byte(mtName))
 		g.P(fmt.Sprintf("const C_%s int64 = %d", mtName, constructor))
-		initFunc.WriteString(fmt.Sprintf("ConstructorNames[%d] = \"%s\"\n", constructor, mtName))
+		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, mtName))
 		g.P(fmt.Sprintf("type pool%s struct{", mtName))
 		g.P("pool sync.Pool")
 		g.P("}")
@@ -42,14 +43,25 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P("", "")
 		g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
-		// for _, ft := range mt.FieldNames {
-		// 	ftName := ft.Desc.Name()
-		// 	if ft.Desc.Cardinality() == protoreflect.Repeated || ft.Desc.Kind() == protoreflect.BytesKind {
-		// 		g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-		// 	} else if ft.Desc.Cardinality() == protoreflect.Optional {
-		// 		g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
-		// 	}
-		// }
+		for _, ft := range mt.Fields {
+			ftName := ft.Desc.Name()
+			switch ft.Desc.Cardinality() {
+			case protoreflect.Repeated:
+				g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+			default:
+				switch ft.Desc.Kind() {
+				case protoreflect.BytesKind:
+					g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+				case protoreflect.MessageKind:
+					g.P(fmt.Sprintf("if x.%s != nil {", ftName))
+					g.P(fmt.Sprintf("*x.%s = %s{}", ftName, ft.Desc.Message().Name()))
+					g.P("}")
+				default:
+					g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
+
+				}
+			}
+		}
 		g.P("p.pool.Put(x)")
 		g.P("}")
 		g.P("")

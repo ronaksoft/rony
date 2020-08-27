@@ -1,6 +1,7 @@
 package cql
 
 import (
+	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v2"
 	"strings"
@@ -19,7 +20,14 @@ var (
 	_Session gocqlx.Session
 )
 
-func Init(config Config) {
+func MustInit(config Config) {
+	err := Init(config)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Init(config Config) error {
 	scyllaCluster := gocql.NewCluster(strings.Split(config.Host, ",")...)
 	retryPolicy := &gocql.ExponentialBackoffRetryPolicy{
 		NumRetries: config.Retries,
@@ -44,7 +52,7 @@ func Init(config Config) {
 	scyllaCluster.PageSize = config.PageSize
 	scyllaCluster.WriteCoalesceWaitTime = config.WriteCoalesceWaitTime
 	if len(config.Keyspace) == 0 {
-		panic("keyspace is not set")
+		return fmt.Errorf("keyspace is not set")
 	}
 	scyllaCluster.QueryObserver = config.QueryObserver
 	scyllaCluster.Keyspace = config.Keyspace
@@ -53,9 +61,10 @@ func Init(config Config) {
 	scyllaCluster.CQLVersion = config.CqlVersion
 	session, err := scyllaCluster.CreateSession()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_Session = gocqlx.NewSession(session)
+	return nil
 }
 
 func Session() gocqlx.Session {

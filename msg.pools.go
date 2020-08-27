@@ -1,6 +1,7 @@
 package rony
 
 import (
+	"git.ronaksoft.com/ronak/rony/registry"
 	"sync"
 )
 
@@ -19,6 +20,9 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 }
 
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
+	x.Constructor = 0
+	x.RequestID = 0
+	x.Message = x.Message[:0]
 	p.pool.Put(x)
 }
 
@@ -39,6 +43,8 @@ func (p *poolMessageContainer) Get() *MessageContainer {
 }
 
 func (p *poolMessageContainer) Put(x *MessageContainer) {
+	x.Length = 0
+	x.Envelopes = x.Envelopes[:0]
 	p.pool.Put(x)
 }
 
@@ -59,6 +65,12 @@ func (p *poolError) Get() *Error {
 }
 
 func (p *poolError) Put(x *Error) {
+	x.Code = ""
+	x.Items = ""
+	x.EnglishTemplate = ""
+	x.EnglishItems = x.EnglishItems[:0]
+	x.LocalTemplate = ""
+	x.LocalItems = x.LocalItems[:0]
 	p.pool.Put(x)
 }
 
@@ -79,6 +91,8 @@ func (p *poolRedirect) Get() *Redirect {
 }
 
 func (p *poolRedirect) Put(x *Redirect) {
+	x.LeaderHostPort = x.LeaderHostPort[:0]
+	x.ServerID = ""
 	p.pool.Put(x)
 }
 
@@ -99,6 +113,11 @@ func (p *poolClusterMessage) Get() *ClusterMessage {
 }
 
 func (p *poolClusterMessage) Put(x *ClusterMessage) {
+	x.Sender = x.Sender[:0]
+	x.AuthID = 0
+	if x.Envelope != nil {
+		*x.Envelope = MessageEnvelope{}
+	}
 	p.pool.Put(x)
 }
 
@@ -119,6 +138,11 @@ func (p *poolRaftCommand) Get() *RaftCommand {
 }
 
 func (p *poolRaftCommand) Put(x *RaftCommand) {
+	x.Sender = x.Sender[:0]
+	x.AuthID = 0
+	if x.Envelope != nil {
+		*x.Envelope = MessageEnvelope{}
+	}
 	p.pool.Put(x)
 }
 
@@ -139,17 +163,23 @@ func (p *poolEdgeNode) Get() *EdgeNode {
 }
 
 func (p *poolEdgeNode) Put(x *EdgeNode) {
+	x.ServerID = x.ServerID[:0]
+	x.ReplicaSet = 0
+	x.ShardSet = 0
+	x.RaftPort = 0
+	x.RaftState = 0
+	x.GatewayAddr = x.GatewayAddr[:0]
 	p.pool.Put(x)
 }
 
 var PoolEdgeNode = poolEdgeNode{}
 
 func init() {
-	ConstructorNames[535232465] = "MessageEnvelope"
-	ConstructorNames[1972016308] = "MessageContainer"
-	ConstructorNames[2619118453] = "Error"
-	ConstructorNames[981138557] = "Redirect"
-	ConstructorNames[1078766375] = "ClusterMessage"
-	ConstructorNames[2919813429] = "RaftCommand"
-	ConstructorNames[999040174] = "EdgeNode"
+	registry.RegisterConstructor(535232465, "MessageEnvelope")
+	registry.RegisterConstructor(1972016308, "MessageContainer")
+	registry.RegisterConstructor(2619118453, "Error")
+	registry.RegisterConstructor(981138557, "Redirect")
+	registry.RegisterConstructor(1078766375, "ClusterMessage")
+	registry.RegisterConstructor(2919813429, "RaftCommand")
+	registry.RegisterConstructor(999040174, "EdgeNode")
 }
