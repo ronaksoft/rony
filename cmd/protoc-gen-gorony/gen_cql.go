@@ -177,12 +177,12 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 
-	genTableDefs(file, g)
-	genColumnDefs(file, g)
-	genInitCqlQueries(file, g)
-	genFuncsFactories(file, g)
+	constTables(file, g)
+	constColumns(file, g)
+	initCqlQueries(file, g)
+	funcsAndFactories(file, g)
 }
-func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
+func constTables(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Tables")
 	g.P("const (")
 	for _, m := range file.Messages {
@@ -198,7 +198,7 @@ func genTableDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
+func constColumns(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Columns")
 	g.P("const (")
 	for f := range _Fields {
@@ -207,7 +207,7 @@ func genColumnDefs(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-func genInitCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
+func initCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("func init() {")
 	for _, m := range file.Messages {
 		mm := _Models[string(m.Desc.Name())]
@@ -309,19 +309,19 @@ func genInitCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("}")
 
 }
-func genFuncsFactories(file *protogen.File, g *protogen.GeneratedFile) {
+func funcsAndFactories(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
 		mm := _Models[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
-		insert(mm, g)
-		get(mm, g)
-		listBy(mm, g)
+		funcInsert(mm, g)
+		funcGet(mm, g)
+		funcListBy(mm, g)
 	}
 
 }
-func insert(mm *Model, g *protogen.GeneratedFile) {
+func funcInsert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Insert(Table", mm.Name, ").")
 	sb := strings.Builder{}
@@ -361,7 +361,7 @@ func insert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("return err")
 	g.P("}")
 }
-func get(mm *Model, g *protogen.GeneratedFile) {
+func funcGet(mm *Model, g *protogen.GeneratedFile) {
 	// Generate Factory
 	g.P("var _", mm.Name, "GetFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Select(Table", mm.Name, ").")
@@ -406,7 +406,7 @@ func get(mm *Model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 }
-func listBy(mm *Model, g *protogen.GeneratedFile) {
+func funcListBy(mm *Model, g *protogen.GeneratedFile) {
 	for idx, v := range mm.ViewParams {
 		// Generate Factory
 		g.P("var _", mm.Name, "ListBy", v, "Factory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
