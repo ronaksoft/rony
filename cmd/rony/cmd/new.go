@@ -4,7 +4,11 @@ import (
 	"context"
 	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/gobuffalo/genny"
+	"github.com/markbates/pkger"
 	"github.com/spf13/cobra"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 /*
@@ -18,7 +22,8 @@ import (
 
 func init() {
 	tools.SetFlags(newCmd,
-		tools.StringFlag("projectPath", "", "the project path in go.mod"),
+		tools.StringFlag("projectPath", "", "the root path of the project"),
+		tools.StringFlag("goPackage", "", "the full path of go package in go.mod file"),
 	)
 	RootCmd.AddCommand(newCmd)
 }
@@ -32,8 +37,16 @@ var newCmd = &cobra.Command{
 			r = genny.DryRunner(context.Background())
 		}
 
+		projectPath, _ := cmd.Flags().GetString("projectPath")
+		goPackage, _ := cmd.Flags().GetString("goPackage")
+
+		g := genny.New()
+		createFolders(g, projectPath)
+		goModuleInit(g, projectPath, goPackage)
+		copyFiles(g, projectPath)
+
 		// Create a Runner with the Generator customized by command's arguments
-		err := r.With(gen(cmd))
+		err := r.With(g)
 		if err != nil {
 			return err
 		}
@@ -41,15 +54,29 @@ var newCmd = &cobra.Command{
 	},
 }
 
-func gen(cmd *cobra.Command) *genny.Generator {
-	projectPath, _ := cmd.Flags().GetString("projectPath")
-	projectName, _ := cmd.Flags().GetString("projectName")
-
-	g := genny.New()
-	createFolders(g, projectName)
-	goModuleInit(g, projectPath)
-	return g
+func createFolders(g *genny.Generator, projectPath string) {
+	cmd := exec.Command("mkdir", "-p", filepath.Join(projectPath, "models"))
+	cmd.Env = os.Environ()
+	g.Command(cmd)
 }
-func createFolders(g *genny.Generator, projectPath string) {}
-func goModuleInit(g *genny.Generator, projectPath string)  {}
-func copyFiles(g *genny.Generator)                         {}
+func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
+	cmd := exec.Command("go", "mod", "init", goPackage)
+	cmd.Env = os.Environ()
+	cmd.Dir = projectPath
+	g.Command(cmd)
+}
+
+func copyFiles(g *genny.Generator, projectPath string) {
+	f, err := pkger.Open("git.ronaksoft.com/ronak/rony:/internal/templates/main.go")
+	if err != nil {
+		panic(err)
+	}
+	g.File(genny.NewFile(filepath.Join(projectPath, "main.go"), f))
+	_ = f.Close()
+	f, err = pkger.Open("git.ronaksoft.com/ronak/rony:/internal/templates/server.go")
+	if err != nil {
+		panic(err)
+	}
+	g.File(genny.NewFile(filepath.Join(projectPath, "server.go"), f))
+	_ = f.Close()
+}
