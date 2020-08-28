@@ -319,7 +319,6 @@ func funcsAndFactories(file *protogen.File, g *protogen.GeneratedFile) {
 		funcGet(mm, g)
 		funcListBy(mm, g)
 	}
-
 }
 func funcInsert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")

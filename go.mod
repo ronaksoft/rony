@@ -9,6 +9,10 @@ require (
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/getsentry/sentry-go v0.6.1
+	github.com/gobuffalo/envy v1.9.0 // indirect
+	github.com/gobuffalo/genny v0.6.0
+	github.com/gobuffalo/here v0.6.2 // indirect
+	github.com/gobuffalo/packr/v2 v2.8.0 // indirect
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.3
 	github.com/gocql/gocql v0.0.0-20200815110948-5378c8f664e9
@@ -22,21 +26,28 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/raft v1.1.2
+	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
+	github.com/markbates/pkger v0.17.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/miekg/dns v1.0.14
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
+	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/scylladb/gocqlx/v2 v2.1.0
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
+	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/valyala/fasthttp v1.15.1
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
+	golang.org/x/sys v0.0.0-20200828081204-131dc92a58d5 // indirect
+	golang.org/x/tools v0.0.0-20200828013309-97019fc2e64b // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0
 )
