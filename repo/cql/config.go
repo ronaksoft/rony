@@ -42,7 +42,7 @@ var (
 		Concurrency:           5,
 		Timeout:               600 * time.Millisecond,
 		ConnectTimeout:        600 * time.Millisecond,
-		Retries:               10,
+		Retries:               100,
 		RetryMinBackOff:       100 * time.Millisecond,
 		RetryMaxBackOff:       time.Second,
 		ReconnectInterval:     10 * time.Second,

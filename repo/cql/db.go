@@ -29,13 +29,11 @@ func MustInit(config Config) {
 
 func Init(config Config) error {
 	scyllaCluster := gocql.NewCluster(strings.Split(config.Host, ",")...)
-	retryPolicy := &gocql.ExponentialBackoffRetryPolicy{
+	scyllaCluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{
 		NumRetries: config.Retries,
 		Min:        config.RetryMinBackOff,
 		Max:        config.RetryMaxBackOff,
 	}
-
-	scyllaCluster.RetryPolicy = retryPolicy
 	scyllaCluster.ConnectTimeout = config.ConnectTimeout
 	scyllaCluster.Timeout = config.Timeout
 	scyllaCluster.ReconnectInterval = config.ReconnectInterval
