@@ -20,9 +20,7 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 }
 
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
-	x.Constructor = 0
-	x.RequestID = 0
-	x.Message = x.Message[:0]
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -43,8 +41,7 @@ func (p *poolMessageContainer) Get() *MessageContainer {
 }
 
 func (p *poolMessageContainer) Put(x *MessageContainer) {
-	x.Length = 0
-	x.Envelopes = x.Envelopes[:0]
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -65,12 +62,7 @@ func (p *poolError) Get() *Error {
 }
 
 func (p *poolError) Put(x *Error) {
-	x.Code = ""
-	x.Items = ""
-	x.EnglishTemplate = ""
-	x.EnglishItems = x.EnglishItems[:0]
-	x.LocalTemplate = ""
-	x.LocalItems = x.LocalItems[:0]
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -91,8 +83,7 @@ func (p *poolRedirect) Get() *Redirect {
 }
 
 func (p *poolRedirect) Put(x *Redirect) {
-	x.LeaderHostPort = x.LeaderHostPort[:0]
-	x.ServerID = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -113,11 +104,7 @@ func (p *poolClusterMessage) Get() *ClusterMessage {
 }
 
 func (p *poolClusterMessage) Put(x *ClusterMessage) {
-	x.Sender = x.Sender[:0]
-	x.AuthID = 0
-	if x.Envelope != nil {
-		*x.Envelope = MessageEnvelope{}
-	}
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -138,11 +125,7 @@ func (p *poolRaftCommand) Get() *RaftCommand {
 }
 
 func (p *poolRaftCommand) Put(x *RaftCommand) {
-	x.Sender = x.Sender[:0]
-	x.AuthID = 0
-	if x.Envelope != nil {
-		*x.Envelope = MessageEnvelope{}
-	}
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -163,12 +146,7 @@ func (p *poolEdgeNode) Get() *EdgeNode {
 }
 
 func (p *poolEdgeNode) Put(x *EdgeNode) {
-	x.ServerID = x.ServerID[:0]
-	x.ReplicaSet = 0
-	x.ShardSet = 0
-	x.RaftPort = 0
-	x.RaftState = 0
-	x.GatewayAddr = x.GatewayAddr[:0]
+	x.Reset()
 	p.pool.Put(x)
 }
 

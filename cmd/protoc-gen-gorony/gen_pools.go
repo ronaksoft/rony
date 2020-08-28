@@ -43,25 +43,26 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P("", "")
 		g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
-		for _, ft := range mt.Fields {
-			ftName := ft.Desc.Name()
-			switch ft.Desc.Cardinality() {
-			case protoreflect.Repeated:
-				g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-			default:
-				switch ft.Desc.Kind() {
-				case protoreflect.BytesKind:
-					g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-				case protoreflect.MessageKind:
-					g.P(fmt.Sprintf("if x.%s != nil {", ftName))
-					g.P(fmt.Sprintf("*x.%s = %s{}", ftName, ft.Desc.Message().Name()))
-					g.P("}")
-				default:
-					g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
-
-				}
-			}
-		}
+		g.P("x.Reset()")
+		// for _, ft := range mt.Fields {
+		// 	ftName := ft.Desc.Name()
+		// 	switch ft.Desc.Cardinality() {
+		// 	case protoreflect.Repeated:
+		// 		g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+		// 	default:
+		// 		switch ft.Desc.Kind() {
+		// 		case protoreflect.BytesKind:
+		// 			g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+		// 		case protoreflect.MessageKind:
+		// 			g.P(fmt.Sprintf("if x.%s != nil {", ftName))
+		// 			g.P(fmt.Sprintf("*x.%s = %s{}", ftName, ft.Desc.Message().Name()))
+		// 			g.P("}")
+		// 		default:
+		// 			g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
+		//
+		// 		}
+		// 	}
+		// }
 		g.P("p.pool.Put(x)")
 		g.P("}")
 		g.P("")

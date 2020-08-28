@@ -20,7 +20,7 @@ func (p *poolReq1) Get() *Req1 {
 }
 
 func (p *poolReq1) Put(x *Req1) {
-	x.Item1 = 0
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -41,7 +41,7 @@ func (p *poolReq2) Get() *Req2 {
 }
 
 func (p *poolReq2) Put(x *Req2) {
-	x.Item1 = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -62,7 +62,7 @@ func (p *poolRes1) Get() *Res1 {
 }
 
 func (p *poolRes1) Put(x *Res1) {
-	x.Item1 = 0
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -83,7 +83,7 @@ func (p *poolRes2) Get() *Res2 {
 }
 
 func (p *poolRes2) Put(x *Res2) {
-	x.Item1 = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -104,9 +104,7 @@ func (p *poolEchoRequest) Get() *EchoRequest {
 }
 
 func (p *poolEchoRequest) Put(x *EchoRequest) {
-	x.Int = 0
-	x.Bool = false
-	x.Timestamp = 0
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -127,11 +125,7 @@ func (p *poolEchoResponse) Get() *EchoResponse {
 }
 
 func (p *poolEchoResponse) Put(x *EchoResponse) {
-	x.Int = 0
-	x.Bool = false
-	x.Timestamp = 0
-	x.Delay = 0
-	x.ServerID = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -152,7 +146,7 @@ func (p *poolAskRequest) Get() *AskRequest {
 }
 
 func (p *poolAskRequest) Put(x *AskRequest) {
-	x.ServerID = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 
@@ -173,8 +167,7 @@ func (p *poolAskResponse) Get() *AskResponse {
 }
 
 func (p *poolAskResponse) Put(x *AskResponse) {
-	x.Coordinator = ""
-	x.Responder = ""
+	x.Reset()
 	p.pool.Put(x)
 }
 

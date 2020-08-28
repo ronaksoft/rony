@@ -16,7 +16,6 @@ import (
 var TinyBytes = New(4, 128)
 var Bytes = New(32, 64*(1<<10))
 
-
 const (
 	bitSize       = 32 << (^uint(0) >> 63)
 	maxintHeadBit = 1 << (bitSize - 2)
@@ -55,7 +54,7 @@ func (p *Pool) Get(n, c int) []byte {
 		v := pool.Get()
 		if v != nil {
 			bts := v.([]byte)
-			bts = bts[:size]
+			bts = bts[:n]
 			return bts
 		} else {
 			return make([]byte, n, size)
@@ -84,7 +83,6 @@ func (p *Pool) GetCap(c int) []byte {
 func (p *Pool) GetLen(n int) []byte {
 	return p.Get(n, n)
 }
-
 
 // logarithmicRange iterates from ceiled to power of two min to max,
 // calling cb on each iteration.

@@ -17,8 +17,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-
-
 func TestPoolGet(t *testing.T) {
 	for _, test := range []struct {
 		min      int

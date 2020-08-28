@@ -80,7 +80,9 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 	e.Fill(100, pb.C_Echo, &req)
 
 	reqBytes, _ := proto.Marshal(e)
-	for i := 0; i < b.N; i++ {
-		edgeServer.HandleGatewayMessage(&conn, 0, reqBytes)
-	}
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			edgeServer.HandleGatewayMessage(&conn, 0, reqBytes)
+		}
+	})
 }
