@@ -64,6 +64,7 @@ var protoBuildCmd = &cobra.Command{
 		return r.Run()
 	},
 }
+
 func compileProto(g *genny.Generator, importPath, protoPath, outPath string) {
 	// protoc  -I=./testdata  --go_out=./testdata ./testdata/*.proto
 	// protoc  -I=./testdata  --gorony_out=./testdata ./testdata/*.proto
