@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"git.ronaksoft.com/ronak/rony/tools"
-	"github.com/gobuffalo/genny"
+	"github.com/gobuffalo/genny/v2"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -21,16 +21,24 @@ import (
 */
 
 func init() {
-	tools.SetFlags(protoCmd,
+	tools.SetFlags(protoBuildCmd,
 		tools.StringFlag("protoPath", "", "the dir path of the proto files"),
 		tools.StringFlag("importPath", "", "the dir path of the import proto files"),
 		tools.StringFlag("outPath", "", "the dir path of the go files generated from proto files"),
 	)
 	RootCmd.AddCommand(protoCmd)
+	protoCmd.AddCommand(protoBuildCmd)
 }
 
 var protoCmd = &cobra.Command{
 	Use: "proto",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+}
+
+var protoBuildCmd = &cobra.Command{
+	Use: "build",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dryRun, _ := cmd.Flags().GetBool("dryRun")
 		r := genny.WetRunner(context.Background())
@@ -56,7 +64,6 @@ var protoCmd = &cobra.Command{
 		return r.Run()
 	},
 }
-
 func compileProto(g *genny.Generator, importPath, protoPath, outPath string) {
 	// protoc  -I=./testdata  --go_out=./testdata ./testdata/*.proto
 	// protoc  -I=./testdata  --gorony_out=./testdata ./testdata/*.proto

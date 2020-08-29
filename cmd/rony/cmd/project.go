@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"git.ronaksoft.com/ronak/rony/tools"
-	"github.com/gobuffalo/genny"
+	"github.com/gobuffalo/genny/v2"
 	"github.com/markbates/pkger"
 	"github.com/spf13/cobra"
 	"os"
@@ -21,11 +21,17 @@ import (
 */
 
 func init() {
+	workingDir, _ := os.Getwd()
 	tools.SetFlags(newCmd,
-		tools.StringFlag("projectPath", "", "the root path of the project"),
-		tools.StringFlag("goPackage", "", "the full path of go package in go.mod file"),
+		tools.StringFlag("projectPath", workingDir, "the root path of the project"),
+		tools.StringFlag("goPackage", "main", "the full path of go package in go.mod file"),
 	)
-	RootCmd.AddCommand(newCmd)
+	RootCmd.AddCommand(projectCmd)
+	projectCmd.AddCommand(newCmd)
+}
+
+var projectCmd = &cobra.Command{
+	Use: "project",
 }
 
 var newCmd = &cobra.Command{
@@ -55,7 +61,23 @@ var newCmd = &cobra.Command{
 }
 
 func createFolders(g *genny.Generator, projectPath string) {
-	cmd := exec.Command("mkdir", "-p", filepath.Join(projectPath, "models"))
+	cmd := exec.Command("rm", "-r", "*")
+	cmd.Env = os.Environ()
+	g.Command(cmd)
+
+	cmd = exec.Command("mkdir", "-p", filepath.Join(projectPath, "model"))
+	cmd.Env = os.Environ()
+	g.Command(cmd)
+
+	cmd = exec.Command("mkdir", "-p", filepath.Join(projectPath, "service"))
+	cmd.Env = os.Environ()
+	g.Command(cmd)
+
+	cmd = exec.Command("mkdir", "-p", filepath.Join(projectPath, "pkg/client"))
+	cmd.Env = os.Environ()
+	g.Command(cmd)
+
+	cmd = exec.Command("mkdir", "-p", filepath.Join(projectPath, "cmd/cli"))
 	cmd.Env = os.Environ()
 	g.Command(cmd)
 }
@@ -65,7 +87,6 @@ func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
 	cmd.Dir = projectPath
 	g.Command(cmd)
 }
-
 func copyFiles(g *genny.Generator, projectPath string) {
 	f, err := pkger.Open("git.ronaksoft.com/ronak/rony:/internal/templates/main.go")
 	if err != nil {

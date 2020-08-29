@@ -9,10 +9,8 @@ require (
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/getsentry/sentry-go v0.6.1
-	github.com/gobuffalo/envy v1.9.0 // indirect
-	github.com/gobuffalo/genny v0.6.0
+	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
-	github.com/gobuffalo/packr/v2 v2.8.0 // indirect
 	github.com/gobwas/pool v0.2.0
 	github.com/gobwas/ws v1.0.3
 	github.com/gocql/gocql v0.0.0-20200815110948-5378c8f664e9
@@ -26,7 +24,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/raft v1.1.2
-	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -35,7 +32,6 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/scylladb/gocqlx/v2 v2.1.0
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
