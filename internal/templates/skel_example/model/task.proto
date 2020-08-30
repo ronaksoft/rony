@@ -1,0 +1,18 @@
+syntax = "proto3";
+package model;
+option go_package = "./model";
+
+// Task
+// {{@model cql}}
+// {{@tab (ID, -DueDate)}}
+// {{@view (ProjectID, ID)}}
+// {{@view (UserID, ID)}}
+message Task {
+    int64 ID = 1;
+    int64 ProjectID = 2;
+    string Title = 3;
+    string Desc = 4;
+    repeated string ToDos = 5;
+    int64 DueDate = 6;
+    int64 UserID = 7;
+}
