@@ -1,6 +1,7 @@
 package main
 
 import (
+    "<%= goPackage() %>/service"
 	"git.ronaksoft.com/ronak/rony"
 	"git.ronaksoft.com/ronak/rony/edge"
 	"git.ronaksoft.com/ronak/rony/gateway"
@@ -18,6 +19,10 @@ type Server struct {
 func NewServer(serverID string, opts ...edge.Option) *Server {
 	s := &Server{}
 	s.e = edge.NewServer(serverID, s, opts...)
+
+	// Register the task service to the server
+	service.NewTaskServer(&service.Task{}).Register(s.e)
+
 	return s
 }
 

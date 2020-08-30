@@ -318,6 +318,7 @@ func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
 		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
 	}
 }
+
 func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
@@ -341,6 +342,7 @@ func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
 		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
 	}
 }
+
 func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
@@ -364,6 +366,7 @@ func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
 		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
 	}
 }
+
 func (c *SampleClient) Ask(req *AskRequest) (*AskResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)

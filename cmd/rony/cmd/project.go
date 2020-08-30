@@ -66,6 +66,7 @@ var newCmd = &cobra.Command{
 		g := genny.New()
 		setupSkeleton(g, projectPath, goPackage, withExample)
 		goModuleInit(g, projectPath, goPackage)
+		goModuleTidy(g, projectPath)
 		gofmt(g, projectPath)
 
 		// Create a Runner with the Generator customized by command's arguments
@@ -87,7 +88,7 @@ func setupSkeleton(g *genny.Generator, projectPath, goPackage string, withExampl
 		pathPrefix += "_example"
 	}
 	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
-		realPath := strings.TrimPrefix(path, pathPrefix)
+		realPath := strings.TrimSuffix(strings.TrimPrefix(path, pathPrefix), ".tpl")
 		if info.IsDir() {
 			g.File(genny.NewDir(filepath.Join(projectPath, realPath), os.ModeDir|0744))
 		} else {
@@ -117,7 +118,9 @@ func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
 	cmd.Env = os.Environ()
 	cmd.Dir = projectPath
 	g.Command(cmd)
-	cmd = exec.Command("go", "mod", "tidy")
+}
+func goModuleTidy(g *genny.Generator, projectPath string) {
+	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Env = os.Environ()
 	cmd.Dir = projectPath
 	g.Command(cmd)
@@ -144,6 +147,7 @@ var buildProtoCmd = &cobra.Command{
 		g := genny.New()
 		compileProto(g, projectPath)
 		gofmt(g, projectPath)
+		goModuleTidy(g, projectPath)
 
 		// Create a Runner with the Generator customized by command's arguments
 		err := r.With(g)
@@ -159,7 +163,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 	folders := []string{"service", "model"}
 	for _, f := range folders {
 		_ = filepath.Walk(filepath.Join(projectPath, f), func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
+			if info == nil || info.IsDir() {
 				return nil
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
@@ -177,7 +181,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 				cmd2 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
-					fmt.Sprintf("--gorony_out=paths=source_relative:%s", projectPathAbs),
+					fmt.Sprintf("--gorony_out=paths=source_relative,plugin=server:%s", projectPathAbs),
 					fmt.Sprintf(path),
 				)
 				cmd2.Env = os.Environ()
