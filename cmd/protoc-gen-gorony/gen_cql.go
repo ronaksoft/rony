@@ -171,14 +171,7 @@ func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 
-	g.P("const (")
-	g.P("colData = \"data\"")
-	g.P("colVersion = \"ver\"")
-	g.P(")")
-	g.P()
-
 	constTables(file, g)
-	constColumns(file, g)
 	initCqlQueries(file, g)
 	funcsAndFactories(file, g)
 }
@@ -198,15 +191,7 @@ func constTables(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-func constColumns(file *protogen.File, g *protogen.GeneratedFile) {
-	g.P("// Columns")
-	g.P("const (")
-	for f := range _Fields {
-		g.P("Col", f, " = \"", tools.ToSnake(f), "\"")
-	}
-	g.P(")")
-	g.P()
-}
+
 func initCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("func init() {")
 	for _, m := range file.Messages {
@@ -323,17 +308,18 @@ func funcsAndFactories(file *protogen.File, g *protogen.GeneratedFile) {
 func funcInsert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Insert(Table", mm.Name, ").")
-	sb := strings.Builder{}
+	columns := strings.Builder{}
+	binds := strings.Builder{}
 	for _, f := range mm.FieldNames {
-		sb.WriteString("Col")
-		sb.WriteString(f)
-		sb.WriteString(", ")
+		columns.WriteString(fmt.Sprintf("%q, ", tools.ToSnake(f)))
+		binds.WriteString(fmt.Sprintf("x.%s, ", f))
 	}
-	sb.WriteString("colData")
-	g.P("Columns(", sb.String(), ").")
+	columns.WriteString("\"data\"")
+	binds.WriteString("b")
+
+	g.P("Columns(", columns.String(), ").")
 	g.P("Query(cql.Session())")
 	g.P("})")
-
 	g.P("func ", mm.Name, "Insert (x *", mm.Name, ") (err error) {")
 	g.P("q := _", mm.Name, "InsertFactory.GetQuery()")
 	g.P("defer _", mm.Name, "InsertFactory.Put(q)")
@@ -347,15 +333,7 @@ func funcInsert(mm *Model, g *protogen.GeneratedFile) {
 	g.P("return err")
 	g.P("}")
 	g.P()
-
-	sb = strings.Builder{}
-	for _, f := range mm.FieldNames {
-		sb.WriteString("x.")
-		sb.WriteString(f)
-		sb.WriteString(", ")
-	}
-	sb.WriteString("b")
-	g.P("q.Bind(", sb.String(), ")")
+	g.P("q.Bind(", binds.String(), ")")
 	g.P("err = cql.Exec(q)")
 	g.P("return err")
 	g.P("}")
@@ -364,7 +342,7 @@ func funcGet(mm *Model, g *protogen.GeneratedFile) {
 	// Generate Factory
 	g.P("var _", mm.Name, "GetFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Select(Table", mm.Name, ").")
-	g.P("Columns(colData).")
+	g.P("Columns(\"data\").")
 	where := strings.Builder{}
 	args := strings.Builder{}
 	bind := strings.Builder{}
@@ -375,7 +353,7 @@ func funcGet(mm *Model, g *protogen.GeneratedFile) {
 			bind.WriteString(", ")
 		}
 		args.WriteString(fmt.Sprintf("%s %s", tools.ToLowerCamel(f), mm.FieldsGo[f]))
-		where.WriteString(fmt.Sprintf("qb.Eq(Col%s)", f))
+		where.WriteString(fmt.Sprintf("qb.Eq(%q)", tools.ToSnake(f)))
 		bind.WriteString(tools.ToLowerCamel(f))
 	}
 	g.P("Where(", where.String(), ").")
@@ -410,7 +388,7 @@ func funcListBy(mm *Model, g *protogen.GeneratedFile) {
 		// Generate Factory
 		g.P("var _", mm.Name, "ListBy", v, "Factory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 		g.P("return qb.Select(View", mm.Name, "By", v, ").")
-		g.P("Columns(colData).")
+		g.P("Columns(\"data\").")
 		where := strings.Builder{}
 		args := strings.Builder{}
 		bind := strings.Builder{}
@@ -421,7 +399,7 @@ func funcListBy(mm *Model, g *protogen.GeneratedFile) {
 				args.WriteString(", ")
 			}
 			args.WriteString(fmt.Sprintf("%s %s", tools.ToLowerCamel(f), mm.FieldsGo[f]))
-			where.WriteString(fmt.Sprintf("qb.Eq(Col%s)", f))
+			where.WriteString(fmt.Sprintf("qb.Eq(%q)", tools.ToSnake(f)))
 			bind.WriteString(tools.ToLowerCamel(f))
 		}
 		g.P("Where(", where.String(), ").")
