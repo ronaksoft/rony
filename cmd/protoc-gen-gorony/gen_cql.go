@@ -168,16 +168,11 @@ func kindGo(k protoreflect.Kind) string {
 }
 
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
-	g.P("package ", file.GoPackageName)
-	g.P("import (")
-	// g.P("\"git.ronaksoft.com/ronak/rony\"")
-	g.P("\"git.ronaksoft.com/ronak/rony/pools\"")
-	g.P("\"git.ronaksoft.com/ronak/rony/repo/cql\"")
-	g.P("\"github.com/scylladb/gocqlx/v2\"")
-	g.P("\"github.com/scylladb/gocqlx/v2/qb\"")
-	g.P("\"google.golang.org/protobuf/proto\"")
-	g.P(")")
-	g.P()
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "git.ronaksoft.com/ronak/rony/pools"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "git.ronaksoft.com/ronak/rony/repo/cql"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/gocqlx"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/qb"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 
 	constTables(file, g)
 	initCqlQueries(file, g)
@@ -353,7 +348,7 @@ func funcGet(mm *Model, g *protogen.GeneratedFile) {
 	where := strings.Builder{}
 	args := strings.Builder{}
 	bind := strings.Builder{}
-	for idx, f := range mm.Table.Keys() {
+	for idx, f := range mm.Table.PKs {
 		if idx != 0 {
 			where.WriteString(", ")
 			args.WriteString(", ")
@@ -415,7 +410,7 @@ func funcListBy(mm *Model, g *protogen.GeneratedFile) {
 		g.P()
 
 		// Generate Function
-		g.P("func ", mm.Name, "ListBy", v, " (", args.String(), ", limit int, f func(x *", mm.Name, ") bool) error {")
+		g.P("func ", mm.Name, "ListBy", v, " (", args.String(), ", limit int32, f func(x *", mm.Name, ") bool) error {")
 		g.P("q := _", mm.Name, "ListBy", v, "Factory.GetQuery()")
 		g.P("defer _", mm.Name, "ListBy", v, "Factory.Put(q)")
 		g.P()

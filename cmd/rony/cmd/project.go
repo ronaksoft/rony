@@ -66,6 +66,7 @@ var newCmd = &cobra.Command{
 		g := genny.New()
 		setupSkeleton(g, projectPath, goPackage, withExample)
 		goModuleInit(g, projectPath, goPackage)
+		gofmt(g, projectPath)
 
 		// Create a Runner with the Generator customized by command's arguments
 		err := r.With(g)
@@ -121,6 +122,13 @@ func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
 	cmd.Dir = projectPath
 	g.Command(cmd)
 }
+func gofmt(g *genny.Generator, projectPath string) {
+	cmd := exec.Command("go", "fmt", "./...")
+	cmd.Env = os.Environ()
+	cmd.Dir = projectPath
+
+	g.Command(cmd)
+}
 
 var buildProtoCmd = &cobra.Command{
 	Use: "build-proto",
@@ -135,6 +143,7 @@ var buildProtoCmd = &cobra.Command{
 
 		g := genny.New()
 		compileProto(g, projectPath)
+		gofmt(g, projectPath)
 
 		// Create a Runner with the Generator customized by command's arguments
 		err := r.With(g)
@@ -158,7 +167,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 				cmd1 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
-					fmt.Sprintf("--go_out=%s", projectPathAbs),
+					fmt.Sprintf("--go_out=paths=source_relative:%s", projectPathAbs),
 					fmt.Sprintf(path),
 				)
 				cmd1.Env = os.Environ()
@@ -168,7 +177,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 				cmd2 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
-					fmt.Sprintf("--gorony_out=%s", projectPathAbs),
+					fmt.Sprintf("--gorony_out=paths=source_relative:%s", projectPathAbs),
 					fmt.Sprintf(path),
 				)
 				cmd2.Env = os.Environ()

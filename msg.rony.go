@@ -1,8 +1,8 @@
 package rony
 
 import (
-	"git.ronaksoft.com/ronak/rony/registry"
-	"sync"
+	registry "git.ronaksoft.com/ronak/rony/registry"
+	sync "sync"
 )
 
 const C_MessageEnvelope int64 = 535232465
