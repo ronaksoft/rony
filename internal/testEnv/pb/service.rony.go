@@ -1,11 +1,11 @@
 package pb
 
 import (
-	"fmt"
-	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/edge"
-	"git.ronaksoft.com/ronak/rony/edgeClient"
-	"google.golang.org/protobuf/proto"
+	fmt "fmt"
+	rony "git.ronaksoft.com/ronak/rony"
+	edge "git.ronaksoft.com/ronak/rony/edge"
+	edgeClient "git.ronaksoft.com/ronak/rony/edgeClient"
+	proto "google.golang.org/protobuf/proto"
 )
 
 const C_Func1 int64 = 272094254

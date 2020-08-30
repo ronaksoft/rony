@@ -12,6 +12,7 @@ func main() {
 	}
 	pgo.Run(func(plugin *protogen.Plugin) error {
 		for _, f := range plugin.Files {
+			resetModels()
 			g1 := plugin.NewGeneratedFile(fmt.Sprintf("%s.pools.go", f.GeneratedFilenamePrefix), f.GoImportPath)
 			GenPools(f, g1)
 			if len(f.Services) > 0 {
@@ -22,7 +23,7 @@ func main() {
 			for _, m := range f.Messages {
 				fillModel(m)
 			}
-			if len(_Models) > 0 {
+			if len(getModels()) > 0 {
 				g3 := plugin.NewGeneratedFile(fmt.Sprintf("%s.cql.go", f.GeneratedFilenamePrefix), f.GoImportPath)
 				GenCql(f, g3)
 			}

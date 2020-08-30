@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/gobuffalo/genny/v2"
+	"github.com/gobuffalo/plush/v4"
 	"github.com/markbates/pkger"
 	"github.com/spf13/cobra"
 	"os"
@@ -63,7 +64,7 @@ var newCmd = &cobra.Command{
 		withExample, _ := cmd.Flags().GetBool("withExample")
 
 		g := genny.New()
-		setupSkeleton(g, projectPath, withExample)
+		setupSkeleton(g, projectPath, goPackage, withExample)
 		goModuleInit(g, projectPath, goPackage)
 
 		// Create a Runner with the Generator customized by command's arguments
@@ -75,7 +76,7 @@ var newCmd = &cobra.Command{
 	},
 }
 
-func setupSkeleton(g *genny.Generator, projectPath string, withExample bool) {
+func setupSkeleton(g *genny.Generator, projectPath, goPackage string, withExample bool) {
 	cmd := exec.Command("mkdir", "-p", projectPath)
 	cmd.Env = os.Environ()
 	g.Command(cmd)
@@ -93,7 +94,15 @@ func setupSkeleton(g *genny.Generator, projectPath string, withExample bool) {
 			if err != nil {
 				return err
 			}
-			g.File(genny.NewFile(filepath.Join(projectPath, realPath), f))
+			tCtx := plush.NewContext()
+			tCtx.Set("goPackage", func() string {
+				return goPackage
+			})
+			s, err := plush.RenderR(f, tCtx)
+			if err != nil {
+				return err
+			}
+			g.File(genny.NewFileS(filepath.Join(projectPath, realPath), s))
 			_ = f.Close()
 		}
 		return nil

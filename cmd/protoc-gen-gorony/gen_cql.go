@@ -47,50 +47,8 @@ func (pk *PrimaryKey) Keys() []string {
 	return keys
 }
 
-// kindCql converts the proto buffer type to cql types
-func kindCql(k protoreflect.Kind) string {
-	switch k {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "int"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "bigint"
-	case protoreflect.DoubleKind:
-		return "double"
-	case protoreflect.FloatKind:
-		return "float"
-	case protoreflect.BytesKind, protoreflect.StringKind:
-		return "blob"
-	case protoreflect.BoolKind:
-		return "boolean"
-	}
-	return "unsupported"
-	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
-}
-
-// kindGo converts proto buffer types to golang types
-func kindGo(k protoreflect.Kind) string {
-	switch k {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
-		return "int32"
-	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "uint32"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
-		return "int64"
-	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "uint64"
-	case protoreflect.DoubleKind:
-		return "float64"
-	case protoreflect.FloatKind:
-		return "float32"
-	case protoreflect.StringKind:
-		return "string"
-	case protoreflect.BytesKind:
-		return "[]byte"
-	case protoreflect.BoolKind:
-		return "bool"
-	}
-	return "unsupported"
-	// panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
+func resetModels() {
+	_Models = map[string]*Model{}
 }
 
 // fillModel fills the in global _Models with parsed data
@@ -159,6 +117,56 @@ func fillModel(m *protogen.Message) {
 	}
 }
 
+func getModels() map[string]*Model {
+	return _Models
+}
+
+// kindCql converts the proto buffer type to cql types
+func kindCql(k protoreflect.Kind) string {
+	switch k {
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "int"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "bigint"
+	case protoreflect.DoubleKind:
+		return "double"
+	case protoreflect.FloatKind:
+		return "float"
+	case protoreflect.BytesKind, protoreflect.StringKind:
+		return "blob"
+	case protoreflect.BoolKind:
+		return "boolean"
+	}
+	return "unsupported"
+	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
+}
+
+// kindGo converts proto buffer types to golang types
+func kindGo(k protoreflect.Kind) string {
+	switch k {
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
+		return "int32"
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "uint32"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
+		return "int64"
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64"
+	case protoreflect.DoubleKind:
+		return "float64"
+	case protoreflect.FloatKind:
+		return "float32"
+	case protoreflect.StringKind:
+		return "string"
+	case protoreflect.BytesKind:
+		return "[]byte"
+	case protoreflect.BoolKind:
+		return "bool"
+	}
+	return "unsupported"
+	// panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
+}
+
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("package ", file.GoPackageName)
 	g.P("import (")
@@ -191,7 +199,6 @@ func constTables(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P(")")
 	g.P()
 }
-
 func initCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("func init() {")
 	for _, m := range file.Messages {

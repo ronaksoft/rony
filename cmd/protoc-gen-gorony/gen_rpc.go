@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"hash/crc32"
 )
 
@@ -15,19 +17,40 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+func descName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
+	if string(desc.FullName().Parent()) == string(file.GoPackageName) {
+		return "", string(desc.Name())
+	} else {
+		fd, ok := desc.ParentFile().Options().(*descriptorpb.FileOptions)
+		if ok {
+			g.QualifiedGoIdent(protogen.GoImportPath(fd.GetGoPackage()).Ident(string(desc.Name())))
+		}
+		return string(desc.ParentFile().Package()), string(desc.Name())
+	}
+}
+
 func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("package ", file.GoPackageName)
-	g.P("import (")
 	if len(file.Services) > 0 {
-		g.P("\"git.ronaksoft.com/ronak/rony/edge\"")
-		g.P("\"git.ronaksoft.com/ronak/rony/edgeClient\"")
-		g.P("\"google.golang.org/protobuf/proto\"")
-		g.P("\"fmt\"")
+		g.QualifiedGoIdent(protogen.GoIdent{
+			GoName:       "",
+			GoImportPath: "git.ronaksoft.com/ronak/rony/edge",
+		})
+		g.QualifiedGoIdent(protogen.GoIdent{
+			GoName:       "",
+			GoImportPath: "google.golang.org/protobuf/proto",
+		})
+		g.QualifiedGoIdent(protogen.GoIdent{
+			GoName:       "",
+			GoImportPath: "fmt",
+		})
 		if file.GoPackageName != "rony" {
-			g.P("\"git.ronaksoft.com/ronak/rony\"")
+			g.QualifiedGoIdent(protogen.GoIdent{
+				GoName:       "MessageEnvelope",
+				GoImportPath: "git.ronaksoft.com/ronak/rony",
+			})
 		}
 	}
-	g.P(")")
 
 	// Generate Server
 	for _, s := range file.Services {
@@ -38,11 +61,17 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P()
 		g.P("type I", s.Desc.Name(), " interface {")
 		for _, m := range s.Methods {
-			// inputType := strings.Split(string(m.Desc.Input().FullName()), ".")[2]
-			// outputType := strings.Split(string(m.Desc.Output().FullName()), ".")[2]
-			inputType := m.Desc.Input().Name()
-			outputType := m.Desc.Output().Name()
-			g.P(m.Desc.Name(), "(ctx *edge.RequestCtx, req *", inputType, ", res *", outputType, ")")
+			inputPkg, inputType := descName(file, g, m.Desc.Input())
+			outputPkg, outputType := descName(file, g, m.Desc.Output())
+			inputName := inputType
+			if inputPkg != "" {
+				inputName = fmt.Sprintf("%s.%s", inputPkg, inputType)
+			}
+			outputName := outputType
+			if outputPkg != "" {
+				outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
+			}
+			g.P(m.Desc.Name(), "(ctx *edge.RequestCtx, req *", inputName, ", res *", outputName, ")")
 		}
 		g.P("}")
 		g.P()
@@ -65,13 +94,25 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P()
 		for _, m := range s.Methods {
-			inputType := m.Desc.Input().Name()
-			outputType := m.Desc.Output().Name()
+			inputPkg, inputType := descName(file, g, m.Desc.Input())
+			outputPkg, outputType := descName(file, g, m.Desc.Output())
+
 			g.P("func (sw *", s.Desc.Name(), "Wrapper) ", m.Desc.Name(), "Wrapper (ctx *edge.RequestCtx, in *rony.MessageEnvelope) {")
-			g.P("req := Pool", inputType, ".Get()")
-			g.P("defer Pool", inputType, ".Put(req)")
-			g.P("res := Pool", outputType, ".Get()")
-			g.P("defer Pool", outputType, ".Put(res)")
+			if inputPkg == "" {
+				g.P("req := Pool", inputType, ".Get()")
+				g.P("defer Pool", inputType, ".Put(req)")
+			} else {
+				g.P("req := ", inputPkg, ".Pool", inputType, ".Get()")
+				g.P("defer ", inputPkg, ".Pool", inputType, ".Put(req)")
+			}
+			if outputPkg == "" {
+				g.P("res := Pool", outputType, ".Get()")
+				g.P("defer Pool", outputType, ".Put(res)")
+			} else {
+				g.P("res := ", outputPkg, ".Pool", outputType, ".Get()")
+				g.P("defer ", outputPkg, ".Pool", outputType, ".Put(res)")
+			}
+
 			g.P("err := proto.Unmarshal(in.Message, req)")
 			g.P("if err != nil {")
 			g.P("ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)")
@@ -80,7 +121,12 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 			g.P()
 			g.P("sw.h.", m.Desc.Name(), "(ctx, req, res)")
 			g.P("if !ctx.Stopped() {")
-			g.P("ctx.PushMessage(C_", outputType, ", res)")
+			if outputPkg == "" {
+				g.P("ctx.PushMessage(C_", outputType, ", res)")
+			} else {
+				g.P("ctx.PushMessage(", outputPkg, ".C_", outputType, ", res)")
+			}
+
 			g.P("}")
 			g.P("}")
 			g.P()
@@ -88,6 +134,10 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	}
 
 	// Generate Client
+	g.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "Client",
+		GoImportPath: "git.ronaksoft.com/ronak/rony/edgeClient",
+	})
 	for _, s := range file.Services {
 		g.P("type ", s.Desc.Name(), "Client struct {")
 		g.P("c edgeClient.Client")
@@ -100,10 +150,18 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 
 		for _, m := range s.Methods {
-			inputType := m.Desc.Input().Name()
-			outputType := m.Desc.Output().Name()
+			inputPkg, inputType := descName(file, g, m.Desc.Input())
+			outputPkg, outputType := descName(file, g, m.Desc.Output())
+			inputName := inputType
+			if inputPkg != "" {
+				inputName = fmt.Sprintf("%s.%s", inputPkg, inputType)
+			}
+			outputName := outputType
+			if outputPkg != "" {
+				outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
+			}
 			// constructor := crc32.ChecksumIEEE([]byte(*m.Name))
-			g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputType, ") (*", outputType, ", error) {")
+			g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputName, ") (*", outputName, ", error) {")
 			g.P("out := rony.PoolMessageEnvelope.Get()")
 			g.P("defer rony.PoolMessageEnvelope.Put(out)")
 			g.P("in := rony.PoolMessageEnvelope.Get()")
@@ -114,8 +172,14 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 			g.P("return nil, err")
 			g.P("}")
 			g.P("switch in.GetConstructor() {")
-			g.P("case C_", outputType, ":")
-			g.P("x := &", outputType, "{}")
+			if outputPkg != "" {
+				g.P("case ", outputPkg, ".C_", outputType, ":")
+				g.P("x := &", outputPkg, ".", outputType, "{}")
+			} else {
+				g.P("case C_", outputType, ":")
+				g.P("x := &", outputType, "{}")
+			}
+
 			g.P("_ = proto.Unmarshal(in.Message, x)")
 			g.P("return x, nil")
 			g.P("case rony.C_Error:")

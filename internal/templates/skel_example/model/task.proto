@@ -1,6 +1,6 @@
 syntax = "proto3";
 package model;
-option go_package = "./model";
+option go_package = "<%= goPackage() %>/model";
 
 // Task
 // {{@model cql}}
