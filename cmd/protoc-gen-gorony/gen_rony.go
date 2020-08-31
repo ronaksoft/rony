@@ -321,26 +321,46 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P("", "")
 		g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
-		g.P("x.Reset()")
-		// for _, ft := range mt.Fields {
-		// 	ftName := ft.Desc.Name()
-		// 	switch ft.Desc.Cardinality() {
-		// 	case protoreflect.Repeated:
-		// 		g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-		// 	default:
-		// 		switch ft.Desc.Kind() {
-		// 		case protoreflect.BytesKind:
-		// 			g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-		// 		case protoreflect.MessageKind:
-		// 			g.P(fmt.Sprintf("if x.%s != nil {", ftName))
-		// 			g.P(fmt.Sprintf("*x.%s = %s{}", ftName, ft.Desc.Message().Name()))
-		// 			g.P("}")
-		// 		default:
-		// 			g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
-		//
-		// 		}
-		// 	}
-		// }
+		for _, ft := range mt.Fields {
+			ftName := ft.Desc.Name()
+			ftPkg, _ := descName(file, g, ft.Desc.Message())
+			switch ft.Desc.Cardinality() {
+			case protoreflect.Repeated:
+				switch ft.Desc.Kind() {
+				case protoreflect.MessageKind:
+					g.P("for idx := range x.", ftName, "{")
+					g.P(fmt.Sprintf("if x.%s[idx] != nil {", ftName))
+					if ftPkg != "" {
+						g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
+					} else {
+						g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
+					}
+					g.P("x.", ftName, " = nil")
+					g.P("}")
+					g.P("}")
+				}
+				g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+			default:
+				switch ft.Desc.Kind() {
+				case protoreflect.BytesKind:
+					g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+				case protoreflect.MessageKind:
+					// If it is message we check if is nil then we leave it
+					// If it is from same package use Pool
+					g.P(fmt.Sprintf("if x.%s != nil {", ftName))
+					if ftPkg != "" {
+						g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
+					} else {
+						g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
+					}
+					g.P("x.", ftName, " = nil")
+					g.P("}")
+				default:
+					g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
+
+				}
+			}
+		}
 		g.P("p.pool.Put(x)")
 		g.P("}")
 		g.P("")
@@ -410,7 +430,6 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P()
 		g.P("func (sw *", s.Desc.Name(), "Wrapper) Register (e *edge.Server) {")
-
 		for _, m := range s.Methods {
 			g.P("e.AddHandler(C_", m.Desc.Name(), ", sw.", m.Desc.Name(), "Wrapper)")
 		}
@@ -436,7 +455,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 				g.P("defer ", outputPkg, ".Pool", outputType, ".Put(res)")
 			}
 
-			g.P("err := proto.Unmarshal(in.Message, req)")
+			g.P("err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)")
 			g.P("if err != nil {")
 			g.P("ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)")
 			g.P("return")

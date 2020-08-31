@@ -6,12 +6,15 @@ option go_package = ".;packageName";
 message Message1 {
     int64 Param1 = 1;
     string Param2 = 2;
+    Message2 M2 = 3;
+    repeated Message2 M2S = 4;
 }
 
 message Message2 {
     fixed32 Param1 = 1;
     bytes P2 = 2;
     repeated int32 P3 = 3;
+    Message1 M1 = 4;
 }
 
 // {{@model cql}}

@@ -25,7 +25,7 @@ func (p *poolReq1) Get() *Req1 {
 }
 
 func (p *poolReq1) Put(x *Req1) {
-	x.Reset()
+	x.Item1 = 0
 	p.pool.Put(x)
 }
 
@@ -46,7 +46,7 @@ func (p *poolReq2) Get() *Req2 {
 }
 
 func (p *poolReq2) Put(x *Req2) {
-	x.Reset()
+	x.Item1 = ""
 	p.pool.Put(x)
 }
 
@@ -67,7 +67,7 @@ func (p *poolRes1) Get() *Res1 {
 }
 
 func (p *poolRes1) Put(x *Res1) {
-	x.Reset()
+	x.Item1 = 0
 	p.pool.Put(x)
 }
 
@@ -88,7 +88,7 @@ func (p *poolRes2) Get() *Res2 {
 }
 
 func (p *poolRes2) Put(x *Res2) {
-	x.Reset()
+	x.Item1 = ""
 	p.pool.Put(x)
 }
 
@@ -109,7 +109,9 @@ func (p *poolEchoRequest) Get() *EchoRequest {
 }
 
 func (p *poolEchoRequest) Put(x *EchoRequest) {
-	x.Reset()
+	x.Int = 0
+	x.Bool = false
+	x.Timestamp = 0
 	p.pool.Put(x)
 }
 
@@ -130,7 +132,11 @@ func (p *poolEchoResponse) Get() *EchoResponse {
 }
 
 func (p *poolEchoResponse) Put(x *EchoResponse) {
-	x.Reset()
+	x.Int = 0
+	x.Bool = false
+	x.Timestamp = 0
+	x.Delay = 0
+	x.ServerID = ""
 	p.pool.Put(x)
 }
 
@@ -151,7 +157,7 @@ func (p *poolAskRequest) Get() *AskRequest {
 }
 
 func (p *poolAskRequest) Put(x *AskRequest) {
-	x.Reset()
+	x.ServerID = ""
 	p.pool.Put(x)
 }
 
@@ -172,7 +178,8 @@ func (p *poolAskResponse) Get() *AskResponse {
 }
 
 func (p *poolAskResponse) Put(x *AskResponse) {
-	x.Reset()
+	x.Coordinator = ""
+	x.Responder = ""
 	p.pool.Put(x)
 }
 
@@ -223,7 +230,7 @@ func (sw *SampleWrapper) Func1Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnve
 	defer PoolReq1.Put(req)
 	res := PoolRes1.Get()
 	defer PoolRes1.Put(res)
-	err := proto.Unmarshal(in.Message, req)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
@@ -240,7 +247,7 @@ func (sw *SampleWrapper) Func2Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnve
 	defer PoolReq2.Put(req)
 	res := PoolRes2.Get()
 	defer PoolRes2.Put(res)
-	err := proto.Unmarshal(in.Message, req)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
@@ -257,7 +264,7 @@ func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
 	defer PoolEchoResponse.Put(res)
-	err := proto.Unmarshal(in.Message, req)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
@@ -274,7 +281,7 @@ func (sw *SampleWrapper) AskWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	defer PoolAskRequest.Put(req)
 	res := PoolAskResponse.Get()
 	defer PoolAskResponse.Put(res)
-	err := proto.Unmarshal(in.Message, req)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return

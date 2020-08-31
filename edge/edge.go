@@ -115,11 +115,11 @@ func (edge *Server) GetServerID() string {
 }
 
 func (edge *Server) AddHandler(constructor int64, handler ...Handler) {
-	edge.handlers[constructor] = handler
+	edge.handlers[constructor] = append(edge.handlers[constructor], handler...)
 }
 
 func (edge *Server) AddBeforeHandler(constructor int64, handlers ...Handler) {
-
+	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
 }
 
 func (edge *Server) AddReadOnlyHandler(constructor int64, handler ...Handler) {

@@ -168,6 +168,9 @@ func kindGo(k protoreflect.Kind) string {
 
 // deskName returns the package and ident name
 func descName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
+	if desc == nil {
+		return "", ""
+	}
 	if string(desc.FullName().Parent()) == string(file.GoPackageName) {
 		return "", string(desc.Name())
 	} else {
