@@ -47,10 +47,10 @@ func main() {
 			if len(f.Services) > 0 {
 				// Generate RPCs
 				GenRPC(f, g1)
-				if _, ok := plugins["server"]; ok {
-					g2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.go", f.GeneratedFilenamePrefix), f.GoImportPath)
-					GenServer(f, g2)
-				}
+				// if _, ok := plugins["server"]; ok {
+				// 	g2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.go", f.GeneratedFilenamePrefix), f.GoImportPath)
+				// 	GenServer(f, g2)
+				// }
 			}
 
 		}

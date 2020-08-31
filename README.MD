@@ -88,7 +88,7 @@ against other platforms for common scenarios and will be cited.
     2. MongoDB
     3. Redis
     4. Aerospike
-- [ ] Middleware support for server side rpc handlers
+- [x] Middleware support for server side rpc handlers
 - [ ] Update documentation
 - [ ] Improve test coverage
 - [ ] Support Actor model for communication between nodes 

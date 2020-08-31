@@ -259,10 +259,7 @@ SendLoop:
 		switch e.GetConstructor() {
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
-			uo := proto.UnmarshalOptions{
-				Merge: true,
-			}
-			_ = uo.Unmarshal(e.Message, x)
+			_ = proto.UnmarshalOptions{Merge: true}.Unmarshal(e.Message, x)
 			c.connectMtx.Lock()
 			if c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
