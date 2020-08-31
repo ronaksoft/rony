@@ -196,6 +196,45 @@ func init() {
 	registry.RegisterConstructor(489087205, "AskResponse")
 }
 
+func (x *Req1) DeepCopy(z *Req1) {
+	z.Item1 = x.Item1
+}
+
+func (x *Req2) DeepCopy(z *Req2) {
+	z.Item1 = x.Item1
+}
+
+func (x *Res1) DeepCopy(z *Res1) {
+	z.Item1 = x.Item1
+}
+
+func (x *Res2) DeepCopy(z *Res2) {
+	z.Item1 = x.Item1
+}
+
+func (x *EchoRequest) DeepCopy(z *EchoRequest) {
+	z.Int = x.Int
+	z.Bool = x.Bool
+	z.Timestamp = x.Timestamp
+}
+
+func (x *EchoResponse) DeepCopy(z *EchoResponse) {
+	z.Int = x.Int
+	z.Bool = x.Bool
+	z.Timestamp = x.Timestamp
+	z.Delay = x.Delay
+	z.ServerID = x.ServerID
+}
+
+func (x *AskRequest) DeepCopy(z *AskRequest) {
+	z.ServerID = x.ServerID
+}
+
+func (x *AskResponse) DeepCopy(z *AskResponse) {
+	z.Coordinator = x.Coordinator
+	z.Responder = x.Responder
+}
+
 const C_Func1 int64 = 272094254
 const C_Func2 int64 = 2302576020
 const C_Echo int64 = 3073810188
@@ -302,6 +341,7 @@ func NewSampleClient(ec edgeClient.Client) *SampleClient {
 		c: ec,
 	}
 }
+
 func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)

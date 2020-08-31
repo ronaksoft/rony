@@ -370,6 +370,59 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 	initFunc.WriteString("}")
 	g.P("")
 	g.P(initFunc.String())
+	g.P()
+}
+
+// GenDeepCopy generates codes which deep copy a message
+func GenDeepCopy(file *protogen.File, g *protogen.GeneratedFile) {
+	for _, mt := range file.Messages {
+		mtName := mt.Desc.Name()
+		g.P("func (x *", mtName, ") DeepCopy(z *", mtName, ") {")
+		for _, ft := range mt.Fields {
+			ftName := ft.Desc.Name()
+			ftPkg, ftType := descName(file, g, ft.Desc.Message())
+			switch ft.Desc.Cardinality() {
+			case protoreflect.Repeated:
+				switch ft.Desc.Kind() {
+				case protoreflect.MessageKind:
+					g.P("for idx := range x.", ftName, "{")
+					g.P(fmt.Sprintf("if x.%s[idx] != nil {", ftName))
+					if ftPkg == "" {
+						g.P("xx := Pool", ftType, ".Get()")
+					} else {
+						g.P("xx := ", ftPkg, ".Pool", ftType, ".Get()")
+					}
+					g.P("x.", ftName, "[idx].DeepCopy(xx)")
+					g.P("z.", ftName, " = append(z.", ftName, ", xx)")
+					g.P("}")
+					g.P("}")
+				default:
+					g.P("z.", ftName, " = append(z.", ftName, "[:0], x.", ftName, "...)")
+				}
+			default:
+				switch ft.Desc.Kind() {
+				case protoreflect.BytesKind:
+					g.P("z.", ftName, " = append(z.", ftName, "[:0], x.", ftName, "...)")
+				case protoreflect.MessageKind:
+					// If it is message we check if is nil then we leave it
+					// If it is from same package use Pool
+					g.P(fmt.Sprintf("if x.%s != nil {", ftName))
+					if ftPkg == "" {
+						g.P("z.", ftName, " = Pool", ftType, ".Get()")
+					} else {
+						g.P("z.", ftName, " = ", ftPkg, ".Pool", ftType, ".Get()")
+					}
+					g.P("x.", ftName, ".DeepCopy(z.", ftName, ")")
+					g.P("}")
+				default:
+					g.P(fmt.Sprintf("z.%s = x.%s", ftName, ftName))
+
+				}
+			}
+		}
+		g.P("}")
+		g.P()
+	}
 }
 
 // GenRPC generates the server and client interfaces if any proto service has been defined
@@ -490,7 +543,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("c: ec,")
 		g.P("}")
 		g.P("}")
-
+		g.P()
 		for _, m := range s.Methods {
 			inputPkg, inputType := descName(file, g, m.Desc.Input())
 			outputPkg, outputType := descName(file, g, m.Desc.Output())

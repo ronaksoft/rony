@@ -39,6 +39,7 @@ func main() {
 			// Generate Pools
 			g1 := plugin.NewGeneratedFile(fmt.Sprintf("%s.rony.go", f.GeneratedFilenamePrefix), f.GoImportPath)
 			GenPools(f, g1)
+			GenDeepCopy(f, g1)
 			if len(getModels()) > 0 {
 				// Generate Model's repo functionality
 				GenCql(f, g1)

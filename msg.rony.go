@@ -191,3 +191,61 @@ func init() {
 	registry.RegisterConstructor(2919813429, "RaftCommand")
 	registry.RegisterConstructor(999040174, "EdgeNode")
 }
+
+func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
+	z.Constructor = x.Constructor
+	z.RequestID = x.RequestID
+	z.Message = append(z.Message[:0], x.Message...)
+}
+
+func (x *MessageContainer) DeepCopy(z *MessageContainer) {
+	z.Length = x.Length
+	for idx := range x.Envelopes {
+		if x.Envelopes[idx] != nil {
+			xx := PoolMessageEnvelope.Get()
+			x.Envelopes[idx].DeepCopy(xx)
+			z.Envelopes = append(z.Envelopes, xx)
+		}
+	}
+}
+
+func (x *Error) DeepCopy(z *Error) {
+	z.Code = x.Code
+	z.Items = x.Items
+	z.EnglishTemplate = x.EnglishTemplate
+	z.EnglishItems = append(z.EnglishItems[:0], x.EnglishItems...)
+	z.LocalTemplate = x.LocalTemplate
+	z.LocalItems = append(z.LocalItems[:0], x.LocalItems...)
+}
+
+func (x *Redirect) DeepCopy(z *Redirect) {
+	z.LeaderHostPort = append(z.LeaderHostPort[:0], x.LeaderHostPort...)
+	z.ServerID = x.ServerID
+}
+
+func (x *ClusterMessage) DeepCopy(z *ClusterMessage) {
+	z.Sender = append(z.Sender[:0], x.Sender...)
+	z.AuthID = x.AuthID
+	if x.Envelope != nil {
+		z.Envelope = PoolMessageEnvelope.Get()
+		x.Envelope.DeepCopy(z.Envelope)
+	}
+}
+
+func (x *RaftCommand) DeepCopy(z *RaftCommand) {
+	z.Sender = append(z.Sender[:0], x.Sender...)
+	z.AuthID = x.AuthID
+	if x.Envelope != nil {
+		z.Envelope = PoolMessageEnvelope.Get()
+		x.Envelope.DeepCopy(z.Envelope)
+	}
+}
+
+func (x *EdgeNode) DeepCopy(z *EdgeNode) {
+	z.ServerID = append(z.ServerID[:0], x.ServerID...)
+	z.ReplicaSet = x.ReplicaSet
+	z.ShardSet = x.ShardSet
+	z.RaftPort = x.RaftPort
+	z.RaftState = x.RaftState
+	z.GatewayAddr = append(z.GatewayAddr[:0], x.GatewayAddr...)
+}

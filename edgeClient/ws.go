@@ -264,7 +264,7 @@ SendLoop:
 			c.connectMtx.Unlock()
 			goto SendLoop
 		}
-		res = e.CopyTo(res)
+		e.DeepCopy(res)
 	case <-t.C:
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
