@@ -1,14 +1,17 @@
 package edgeClient_test
 
 import (
+	"fmt"
 	"git.ronaksoft.com/ronak/rony"
 	"git.ronaksoft.com/ronak/rony/edge"
 	"git.ronaksoft.com/ronak/rony/edgeClient"
 	"git.ronaksoft.com/ronak/rony/gateway"
 	tcpGateway "git.ronaksoft.com/ronak/rony/gateway/tcp"
+	log "git.ronaksoft.com/ronak/rony/internal/logger"
 	"git.ronaksoft.com/ronak/rony/internal/testEnv"
 	"git.ronaksoft.com/ronak/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
+	"sync"
 	"testing"
 )
 
@@ -38,11 +41,11 @@ func (s server) Done(ctx *edge.DispatchCtx) {
 }
 
 func (s server) OnOpen(conn gateway.Conn) {
-
+	fmt.Println("Connected")
 }
 
 func (s server) OnClose(conn gateway.Conn) {
-
+	fmt.Println("Disconnected")
 }
 
 func (s server) Func1(ctx *edge.RequestCtx, req *pb.Req1, res *pb.Res1) {
@@ -62,6 +65,7 @@ func (s server) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskRespons
 }
 
 func newTestServer() *server {
+	log.SetLevel(log.WarnLevel)
 	s := &server{}
 	s.e = edge.NewServer("Test.01", s,
 		edge.WithTcpGateway(
@@ -91,9 +95,19 @@ func TestClient_Connect(t *testing.T) {
 	c := pb.NewSampleClient(edgeClient.NewWebsocket(edgeClient.Config{
 		HostPort: "127.0.0.1:8081",
 	}))
-	res, err := c.Func1(&pb.Req1{Item1: 123})
-	if err != nil {
-		panic(err)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res, err := c.Func1(&pb.Req1{Item1: 123})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			t.Log(res)
+		}()
 	}
-	t.Log(res)
+	wg.Wait()
+
 }

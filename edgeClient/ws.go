@@ -27,7 +27,8 @@ import (
 */
 
 const (
-	requestTimeout = 5 * time.Second
+	requestTimeout = 3 * time.Second
+	requestRetry   = 5
 )
 
 type MessageHandler func(m *rony.MessageEnvelope)
@@ -219,7 +220,11 @@ func (c *Websocket) handler(e *rony.MessageEnvelope) {
 }
 
 func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
-	mo := proto.MarshalOptions{}
+	return c.SendWithRetry(req, res, requestRetry, requestTimeout)
+}
+
+func (c *Websocket) SendWithRetry(req, res *rony.MessageEnvelope, retry int, timeout time.Duration) (err error) {
+	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(req))
 	defer pools.Bytes.Put(b)
 
@@ -228,24 +233,26 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
 		return err
 	}
 
-	t := pools.AcquireTimer(requestTimeout)
+	t := pools.AcquireTimer(timeout)
 	defer pools.ReleaseTimer(t)
 
 SendLoop:
+	if retry--; retry < 0 {
+		return
+	}
+	c.waitUntilConnect()
 	resChan := make(chan *rony.MessageEnvelope, 1)
 	c.pendingMtx.Lock()
 	c.pending[req.GetRequestID()] = resChan
 	c.pendingMtx.Unlock()
-
-	c.waitUntilConnect()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
 	if err != nil {
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()
-		return err
+		goto SendLoop
 	}
-	pools.ResetTimer(t, requestTimeout)
+	pools.ResetTimer(t, timeout)
 
 	select {
 	case e := <-resChan:
@@ -262,6 +269,7 @@ SendLoop:
 				c.reconnect()
 			}
 			c.connectMtx.Unlock()
+			err = ErrLeaderRedirect
 			goto SendLoop
 		}
 		e.DeepCopy(res)
@@ -269,10 +277,10 @@ SendLoop:
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()
-		log.Warn("Timeout", zap.String("H", c.hostPort), zap.Uint64("ReqID", req.GetRequestID()))
-		return ErrTimeout
+		err = ErrTimeout
+		goto SendLoop
 	}
-	return err
+	return
 }
 
 func (c *Websocket) Close() error {
