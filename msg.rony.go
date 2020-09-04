@@ -22,6 +22,7 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 	x.Constructor = 0
 	x.RequestID = 0
+	x.Auth = x.Auth[:0]
 	x.Message = x.Message[:0]
 	p.pool.Put(x)
 }
@@ -195,6 +196,7 @@ func init() {
 func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	z.Constructor = x.Constructor
 	z.RequestID = x.RequestID
+	z.Auth = append(z.Auth[:0], x.Auth...)
 	z.Message = append(z.Message[:0], x.Message...)
 }
 
