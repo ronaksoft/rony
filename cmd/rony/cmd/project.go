@@ -32,7 +32,6 @@ func init() {
 	tools.SetFlags(newCmd,
 		tools.StringFlag("projectPath", workingDir, "the root path of the project"),
 		tools.StringFlag("goPackage", "main", "the full path of go package in go.mod file"),
-		tools.BoolFlag("withExample", false, "use an example project instead of empty project"),
 	)
 	tools.SetFlags(buildProtoCmd,
 		tools.StringFlag("projectPath", workingDir, "the root path of the project"),
@@ -61,10 +60,9 @@ var newCmd = &cobra.Command{
 
 		projectPath, _ := cmd.Flags().GetString("projectPath")
 		goPackage, _ := cmd.Flags().GetString("goPackage")
-		withExample, _ := cmd.Flags().GetBool("withExample")
 
 		g := genny.New()
-		setupSkeleton(g, projectPath, goPackage, withExample)
+		setupSkeleton(g, projectPath, goPackage)
 		goModuleInit(g, projectPath, goPackage)
 		goModuleTidy(g, projectPath)
 		gofmt(g, projectPath)
@@ -78,15 +76,12 @@ var newCmd = &cobra.Command{
 	},
 }
 
-func setupSkeleton(g *genny.Generator, projectPath, goPackage string, withExample bool) {
+func setupSkeleton(g *genny.Generator, projectPath, goPackage string) {
 	cmd := exec.Command("mkdir", "-p", projectPath)
 	cmd.Env = os.Environ()
 	g.Command(cmd)
 
 	pathPrefix := skeletonPath + "/skel"
-	if withExample {
-		pathPrefix += "_example"
-	}
 	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
 		realPath := strings.TrimSuffix(strings.TrimPrefix(path, pathPrefix), ".tpl")
 		if info.IsDir() {
