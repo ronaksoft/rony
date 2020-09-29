@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"git.ronaksoft.com/ronak/rony/tools"
+	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
@@ -20,8 +20,8 @@ import (
 
 // GenCql generates the repo functions for messages which are identified as model with {{@model cql}}
 func GenCql(file *protogen.File, g *protogen.GeneratedFile) {
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "git.ronaksoft.com/ronak/rony/pools"})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "git.ronaksoft.com/ronak/rony/repo/cql"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/cql"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/qb"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
@@ -298,7 +298,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 	})
 	g.QualifiedGoIdent(protogen.GoIdent{
 		GoName:       "",
-		GoImportPath: "git.ronaksoft.com/ronak/rony/registry",
+		GoImportPath: "github.com/ronaksoft/rony/registry",
 	})
 
 	initFunc := strings.Builder{}
@@ -430,7 +430,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	if len(file.Services) > 0 {
 		g.QualifiedGoIdent(protogen.GoIdent{
 			GoName:       "",
-			GoImportPath: "git.ronaksoft.com/ronak/rony/edge",
+			GoImportPath: "github.com/ronaksoft/rony/edge",
 		})
 		g.QualifiedGoIdent(protogen.GoIdent{
 			GoName:       "",
@@ -443,7 +443,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		if file.GoPackageName != "rony" {
 			g.QualifiedGoIdent(protogen.GoIdent{
 				GoName:       "MessageEnvelope",
-				GoImportPath: "git.ronaksoft.com/ronak/rony",
+				GoImportPath: "github.com/ronaksoft/rony",
 			})
 		}
 	}
@@ -531,7 +531,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	// Generate Client
 	g.QualifiedGoIdent(protogen.GoIdent{
 		GoName:       "Client",
-		GoImportPath: "git.ronaksoft.com/ronak/rony/edgeClient",
+		GoImportPath: "github.com/ronaksoft/rony/edgeClient",
 	})
 	for _, s := range file.Services {
 		g.P("type ", s.Desc.Name(), "Client struct {")
@@ -596,7 +596,7 @@ func GenServer(file *protogen.File, g *protogen.GeneratedFile) {
 
 	g.QualifiedGoIdent(protogen.GoIdent{
 		GoName:       "",
-		GoImportPath: "git.ronaksoft.com/ronak/rony/edge",
+		GoImportPath: "github.com/ronaksoft/rony/edge",
 	})
 
 	// Generate Server

@@ -1,10 +1,10 @@
 package edge_test
 
 import (
-	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/edge"
-	"git.ronaksoft.com/ronak/rony/internal/testEnv"
-	"git.ronaksoft.com/ronak/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/internal/testEnv"
+	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
 	"path/filepath"
 	"testing"

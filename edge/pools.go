@@ -1,9 +1,9 @@
 package edge
 
 import (
-	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/gateway"
-	"git.ronaksoft.com/ronak/rony/pools"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/pools"
 	"sync"
 )
 

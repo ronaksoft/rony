@@ -1,7 +1,7 @@
 package rony
 
 import (
-	registry "git.ronaksoft.com/ronak/rony/registry"
+	registry "github.com/ronaksoft/rony/registry"
 	sync "sync"
 )
 

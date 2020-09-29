@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/gobuffalo/genny/v2"
 	"github.com/gobuffalo/plush/v4"
 	"github.com/markbates/pkger"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -24,7 +24,7 @@ import (
 */
 
 const (
-	skeletonPath = "git.ronaksoft.com/ronak/rony:/internal/templates"
+	skeletonPath = "github.com/ronaksoft/rony:/internal/templates"
 )
 
 func init() {

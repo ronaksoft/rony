@@ -1,9 +1,9 @@
 package packageName
 
 import (
-	pools "git.ronaksoft.com/ronak/rony/pools"
-	registry "git.ronaksoft.com/ronak/rony/registry"
-	cql "git.ronaksoft.com/ronak/rony/repo/cql"
+	pools "github.com/ronaksoft/rony/pools"
+	registry "github.com/ronaksoft/rony/registry"
+	cql "github.com/ronaksoft/rony/repo/cql"
 	gocqlx "github.com/scylladb/gocqlx/v2"
 	qb "github.com/scylladb/gocqlx/v2/qb"
 	proto "google.golang.org/protobuf/proto"

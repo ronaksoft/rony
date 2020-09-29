@@ -1,7 +1,7 @@
 package rony
 
 import (
-	"git.ronaksoft.com/ronak/rony/pools"
+	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
 

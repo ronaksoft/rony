@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"git.ronaksoft.com/ronak/rony"
+	"github.com/ronaksoft/rony"
 )
 
 /*

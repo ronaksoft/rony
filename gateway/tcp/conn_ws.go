@@ -4,11 +4,11 @@ package tcpGateway
 
 import (
 	"encoding/binary"
-	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/tools"
 	"time"
 
 	"net"

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"git.ronaksoft.com/ronak/rony/tools"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
 )
 

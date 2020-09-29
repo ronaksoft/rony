@@ -1,7 +1,7 @@
 package rony
 
 import (
-	"git.ronaksoft.com/ronak/rony/tools"
+	"github.com/ronaksoft/rony/tools"
 	"hash/crc64"
 	"reflect"
 )

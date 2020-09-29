@@ -31,7 +31,7 @@ BenchmarkServerWithWebsocket-16            46514             25138 ns/op        
 ### Easy Setup for advanced scenarios
 ```go
 package main 
-import "git.ronaksoft.com/ronak/rony"
+import "github.com/ronaksoft/rony"
 
 func main() {
     server := rony.NewEdgeServer(serverID, &dispatcher{},

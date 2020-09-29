@@ -1,6 +1,6 @@
 package testEnv
 
-import "git.ronaksoft.com/ronak/rony"
+import "github.com/ronaksoft/rony"
 
 /*
    Creation Time: 2020 - Apr - 10

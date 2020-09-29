@@ -2,8 +2,8 @@ package tools
 
 import (
 	"fmt"
-	log "git.ronaksoft.com/ronak/rony/internal/logger"
 	"github.com/nyaruka/phonenumbers"
+	log "github.com/ronaksoft/rony/internal/logger"
 	"go.uber.org/zap"
 	"regexp"
 	"strings"

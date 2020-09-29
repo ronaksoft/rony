@@ -2,13 +2,13 @@ package tcpGateway
 
 import (
 	"fmt"
-	"git.ronaksoft.com/ronak/rony/gateway"
-	wsutil "git.ronaksoft.com/ronak/rony/gateway/tcp/util"
-	log "git.ronaksoft.com/ronak/rony/internal/logger"
-	"git.ronaksoft.com/ronak/rony/pools"
-	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/ronaksoft/rony/gateway"
+	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
+	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"go.uber.org/zap"

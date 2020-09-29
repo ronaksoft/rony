@@ -2,12 +2,12 @@ package testEnv
 
 import (
 	"fmt"
-	"git.ronaksoft.com/ronak/rony"
-	"git.ronaksoft.com/ronak/rony/edge"
-	"git.ronaksoft.com/ronak/rony/gateway"
-	tcpGateway "git.ronaksoft.com/ronak/rony/gateway/tcp"
-	log "git.ronaksoft.com/ronak/rony/internal/logger"
-	"git.ronaksoft.com/ronak/rony/pools"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/gateway"
+	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
+	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"sync/atomic"

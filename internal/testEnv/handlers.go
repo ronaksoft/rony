@@ -1,8 +1,8 @@
 package testEnv
 
 import (
-	"git.ronaksoft.com/ronak/rony/edge"
-	"git.ronaksoft.com/ronak/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/internal/testEnv/pb"
 )
 
 /*

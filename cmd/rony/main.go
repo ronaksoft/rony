@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.ronaksoft.com/ronak/rony/cmd/rony/cmd"
+	"github.com/ronaksoft/rony/cmd/rony/cmd"
 )
 
 func main() {

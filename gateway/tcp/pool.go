@@ -1,9 +1,9 @@
 package tcpGateway
 
 import (
-	"git.ronaksoft.com/ronak/rony/tools"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
 	"sync"

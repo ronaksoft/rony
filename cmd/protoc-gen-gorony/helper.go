@@ -1,7 +1,7 @@
 package main
 
 import (
-	parse "git.ronaksoft.com/ronak/rony/internal/parser"
+	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"

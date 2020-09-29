@@ -2,10 +2,10 @@ package pb
 
 import (
 	fmt "fmt"
-	rony "git.ronaksoft.com/ronak/rony"
-	edge "git.ronaksoft.com/ronak/rony/edge"
-	edgeClient "git.ronaksoft.com/ronak/rony/edgeClient"
-	registry "git.ronaksoft.com/ronak/rony/registry"
+	rony "github.com/ronaksoft/rony"
+	edge "github.com/ronaksoft/rony/edge"
+	edgeClient "github.com/ronaksoft/rony/edgeClient"
+	registry "github.com/ronaksoft/rony/registry"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
