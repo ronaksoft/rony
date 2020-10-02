@@ -421,6 +421,7 @@ func (g *Gateway) readPump(wc *websocketConn) {
 		ms  []wsutil.Message
 	)
 
+	waitGroup := pools.AcquireWaitGroup()
 	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 	ms = ms[:0]
 	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
@@ -449,7 +450,11 @@ func (g *Gateway) readPump(wc *websocketConn) {
 				log.Warn("Error On Write OpPing", zap.Error(err))
 			}
 		case ws.OpBinary:
-			g.MessageHandler(wc, 0, ms[idx].Payload)
+			waitGroup.Add(1)
+			go func() {
+				g.MessageHandler(wc, 0, ms[idx].Payload)
+				waitGroup.Done()
+			}()
 		case ws.OpClose:
 			// remove the connection from the list
 			wc.gateway.removeConnection(wc.connID)
@@ -458,6 +463,8 @@ func (g *Gateway) readPump(wc *websocketConn) {
 		}
 		pools.Bytes.Put(ms[idx].Payload)
 	}
+	waitGroup.Wait()
+	pools.ReleaseWaitGroup(waitGroup)
 }
 
 func (g *Gateway) writePump(wr *writeRequest) {
