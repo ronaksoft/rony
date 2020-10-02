@@ -56,11 +56,14 @@ func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, s
 }
 
 func (g *Gateway) CloseConn(connID uint64) {
-	g.CloseConn(connID)
 	g.connsMtx.Lock()
+	c := g.conns[connID]
 	delete(g.conns, connID)
 	g.connsMtx.Unlock()
-	atomic.AddInt32(&g.connsTotal, -1)
+	if c != nil {
+		g.CloseHandler(c)
+		atomic.AddInt32(&g.connsTotal, -1)
+	}
 }
 
 func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte, kvs ...gateway.KeyValue) {
