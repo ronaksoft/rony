@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
+	"sync/atomic"
 )
 
 /*
@@ -39,11 +40,11 @@ func (c *httpConn) Pop() *rony.MessageEnvelope {
 }
 
 func (c *httpConn) GetAuthID() int64 {
-	return c.authID
+	return atomic.LoadInt64(&c.authID)
 }
 
 func (c *httpConn) SetAuthID(authID int64) {
-	c.authID = authID
+	atomic.StoreInt64(&c.authID, authID)
 }
 
 func (c *httpConn) GetConnID() uint64 {

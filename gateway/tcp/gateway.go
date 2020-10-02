@@ -414,11 +414,10 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 	return nil
 }
 
-func (g *Gateway) readPump(wc *websocketConn) {
+func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 	defer g.waitGroupReaders.Done()
 	var (
 		err error
-		ms  []wsutil.Message
 	)
 
 	waitGroup := pools.AcquireWaitGroup()

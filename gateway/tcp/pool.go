@@ -3,6 +3,7 @@ package tcpGateway
 import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
@@ -93,4 +94,18 @@ func releaseWebsocketConn(wc *websocketConn) {
 	wc.authID = 0
 	wc.closed = false
 	websocketConnPool.Put(wc)
+}
+
+var websocketMessagePool sync.Pool
+
+func acquireWebsocketMessage() []wsutil.Message {
+	x, ok := websocketMessagePool.Get().([]wsutil.Message)
+	if !ok {
+		return make([]wsutil.Message, 0, 8)
+	}
+	return x
+}
+
+func releaseWebsocketMessage(x []wsutil.Message) {
+	websocketMessagePool.Put(x)
 }

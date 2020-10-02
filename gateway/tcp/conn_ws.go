@@ -42,15 +42,15 @@ type websocketConn struct {
 }
 
 func (wc *websocketConn) GetAuthID() int64 {
-	return wc.authID
+	return atomic.LoadInt64(&wc.authID)
 }
 
 func (wc *websocketConn) SetAuthID(authID int64) {
-	wc.authID = authID
+	atomic.StoreInt64(&wc.authID, authID)
 }
 
 func (wc *websocketConn) GetConnID() uint64 {
-	return wc.connID
+	return atomic.LoadUint64(&wc.connID)
 }
 
 func (wc *websocketConn) GetClientIP() string {
@@ -80,7 +80,10 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 	if event&netpoll.EventRead != 0 {
 		wc.lastActivity = tools.TimeUnix()
 		wc.gateway.waitGroupReaders.Add(1)
-		wc.gateway.readPump(wc)
+
+		ms := acquireWebsocketMessage()
+		wc.gateway.readPump(wc, ms)
+		releaseWebsocketMessage(ms)
 	}
 }
 
