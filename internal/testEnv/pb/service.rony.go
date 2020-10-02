@@ -251,10 +251,11 @@ type SampleWrapper struct {
 	h ISample
 }
 
-func NewSampleServer(h ISample) *SampleWrapper {
-	return &SampleWrapper{
+func RegisterSample(h ISample, e *edge.Server) {
+	w := SampleWrapper{
 		h: h,
 	}
+	w.Register(e)
 }
 
 func (sw *SampleWrapper) Register(e *edge.Server) {

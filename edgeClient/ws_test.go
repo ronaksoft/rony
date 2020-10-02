@@ -78,8 +78,7 @@ func newTestServer() *server {
 			},
 		),
 	)
-	w := pb.NewSampleServer(s)
-	w.Register(s.e)
+	pb.RegisterSample(s, s.e)
 
 	return s
 }
@@ -91,7 +90,6 @@ func TestClient_Connect(t *testing.T) {
 		_ = s.e.RunCluster()
 	}()
 
-	pb.NewSampleServer(&server{})
 	c := pb.NewSampleClient(edgeClient.NewWebsocket(edgeClient.Config{
 		HostPort: "127.0.0.1:8081",
 	}))

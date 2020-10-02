@@ -64,8 +64,7 @@ func initRaftWithWebsocket() {
 
 func BenchmarkStandaloneSerial(b *testing.B) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
-	sampleServer := pb.NewSampleServer(testEnv.Handlers{})
-	sampleServer.Register(edgeServer)
+	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
 
 	b.ResetTimer()
 	b.ReportAllocs()

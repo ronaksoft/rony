@@ -17,9 +17,8 @@ type Protocol string
 
 const (
 	Undefined Protocol = ""
-	Websocket Protocol = "websocket"
-	HTTP      Protocol = "http"
 	TCP       Protocol = "tcp"
+	Dummy     Protocol = "dummy"
 )
 
 type Conn interface {
@@ -29,7 +28,7 @@ type Conn interface {
 	Push(m *rony.MessageEnvelope)
 	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
-	SetAuthID(int64)
+	SetAuthID(authID int64)
 	Persistent() bool
 }
 

@@ -1,0 +1,87 @@
+package dummyGateway
+
+import (
+	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/tools"
+	"sync"
+	"sync/atomic"
+)
+
+/*
+   Creation Time: 2020 - Oct - 02
+   Created by:  (ehsan)
+   Maintainers:
+      1.  Ehsan N. Moosa (E2)
+   Auditor: Ehsan N. Moosa (E2)
+   Copyright Ronak Software Group 2020
+*/
+
+type Config struct {
+	Exposer func(gw *Gateway)
+}
+
+type Gateway struct {
+	gateway.ConnectHandler
+	gateway.MessageHandler
+	gateway.CloseHandler
+
+	conns      map[uint64]*Conn
+	connsMtx   sync.RWMutex
+	connsTotal int32
+}
+
+func New(config Config) (*Gateway, error) {
+	g := &Gateway{
+		conns: make(map[uint64]*Conn, 32),
+	}
+
+	// Call the exposer make caller have access to this gateway object
+	config.Exposer(g)
+
+	return g, nil
+}
+
+func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, streamID int64, data []byte)) {
+	dConn := &Conn{
+		id:        connID,
+		buf:       tools.NewLinkedList(),
+		onMessage: onReceiveMessage,
+	}
+	g.connsMtx.Lock()
+	g.conns[connID] = dConn
+	g.connsMtx.Unlock()
+	g.ConnectHandler(dConn)
+	atomic.AddInt32(&g.connsTotal, 1)
+	return
+}
+
+func (g *Gateway) CloseConn(connID uint64) {
+	g.CloseConn(connID)
+	g.connsMtx.Lock()
+	delete(g.conns, connID)
+	g.connsMtx.Unlock()
+	atomic.AddInt32(&g.connsTotal, -1)
+}
+
+func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+	g.connsMtx.RLock()
+	conn := g.conns[connID]
+	g.connsMtx.RUnlock()
+	if conn == nil {
+		return
+	}
+
+	g.MessageHandler(conn, streamID, data, kvs...)
+}
+
+func (g *Gateway) Run() {
+	// Do nothing
+}
+
+func (g *Gateway) Shutdown() {
+	// Do nothing
+}
+
+func (g *Gateway) Addr() []string {
+	return []string{"TEST"}
+}

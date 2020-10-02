@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
+	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 )
 
@@ -73,6 +74,26 @@ func WithTcpGateway(config tcpGateway.Config) Option {
 		gatewayTcp.CloseHandler = edge.onClose
 		edge.gatewayProtocol = gateway.TCP
 		edge.gateway = gatewayTcp
+		return
+	}
+}
+
+// WithTestGateway set the gateway to a dummy gateway which is useful for writing tests.
+// Only one gateway could be set and if you set another gateway it panics on runtime.
+func WithTestGateway(config dummyGateway.Config) Option {
+	return func(edge *Server) {
+		if edge.gatewayProtocol != gateway.Undefined {
+			panic(rony.ErrGatewayAlreadyInitialized)
+		}
+		gatewayDummy, err := dummyGateway.New(config)
+		if err != nil {
+			panic(err)
+		}
+		gatewayDummy.MessageHandler = edge.HandleGatewayMessage
+		gatewayDummy.ConnectHandler = edge.onConnect
+		gatewayDummy.CloseHandler = edge.onClose
+		edge.gatewayProtocol = gateway.Dummy
+		edge.gateway = gatewayDummy
 		return
 	}
 }
