@@ -328,16 +328,16 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 			case protoreflect.Repeated:
 				switch ft.Desc.Kind() {
 				case protoreflect.MessageKind:
-					g.P("for idx := range x.", ftName, "{")
-					g.P(fmt.Sprintf("if x.%s[idx] != nil {", ftName))
-					if ftPkg != "" {
-						g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
-					} else {
-						g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
-					}
-					g.P("x.", ftName, " = nil")
-					g.P("}")
-					g.P("}")
+					// g.P("for idx := range x.", ftName, "{")
+					// g.P(fmt.Sprintf("if x.%s[idx] != nil {", ftName))
+					// if ftPkg != "" {
+					// 	g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
+					// } else {
+					// 	g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, "[idx])")
+					// }
+					// g.P("x.", ftName, " = nil")
+					// g.P("}")
+					// g.P("}")
 				}
 				g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
 			default:
