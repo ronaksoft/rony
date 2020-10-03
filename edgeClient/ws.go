@@ -38,6 +38,7 @@ type Config struct {
 	DialTimeout time.Duration
 	Handler     MessageHandler
 	Secure      bool
+	ForceConnect bool
 }
 type Websocket struct {
 	hostPort    string
@@ -78,7 +79,11 @@ func NewWebsocket(config Config) Client {
 	c.pending = make(map[uint64]chan *rony.MessageEnvelope, 100)
 
 	// start the connection
-	c.connect()
+	if config.ForceConnect {
+		c.connect()
+	} else {
+		go c.connect()
+	}
 	return &c
 }
 
