@@ -47,9 +47,11 @@ var (
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftNotSet                = errors.New("raft not set")
 	ErrRaftExecuteOnLeader       = errors.New("raft execute on leader")
+	ErrRetriesExceeded           = wrapError("maximum retries exceeded")
 )
 
-// Wrap is used to wrap an internal error
-func Wrap(txt string, err error) error {
-	return errors.New(fmt.Sprintf("%s: %v", txt, err))
+func wrapError(txt string) func(err error) error {
+	return func(err error) error {
+		return errors.New(fmt.Sprintf("%s: %v", txt, err))
+	}
 }

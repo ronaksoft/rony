@@ -45,12 +45,6 @@ func (p *poolMessageContainer) Get() *MessageContainer {
 
 func (p *poolMessageContainer) Put(x *MessageContainer) {
 	x.Length = 0
-	for idx := range x.Envelopes {
-		if x.Envelopes[idx] != nil {
-			PoolMessageEnvelope.Put(x.Envelopes[idx])
-			x.Envelopes = nil
-		}
-	}
 	x.Envelopes = x.Envelopes[:0]
 	p.pool.Put(x)
 }
