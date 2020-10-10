@@ -29,6 +29,8 @@ import (
 const (
 	requestTimeout = 3 * time.Second
 	requestRetry   = 5
+	dialTimeout    = 3 * time.Second
+	idleTimeout    = time.Minute
 )
 
 type MessageHandler func(m *rony.MessageEnvelope)
@@ -73,10 +75,10 @@ func SetLogLevel(level log.Level) {
 
 func NewWebsocket(config Config) *Websocket {
 	if config.DialTimeout == 0 {
-		config.DialTimeout = time.Second * 3
+		config.DialTimeout = dialTimeout
 	}
 	if config.IdleTimeout == 0 {
-		config.IdleTimeout = time.Minute
+		config.IdleTimeout = idleTimeout
 	}
 	if config.RequestMaxRetry == 0 {
 		config.RequestMaxRetry = requestRetry
