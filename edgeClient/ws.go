@@ -239,7 +239,9 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 
 func (c *Websocket) handler(e *rony.MessageEnvelope) {
 	if e.GetRequestID() == 0 {
-		c.h(e.Clone())
+		if c.h != nil {
+			c.h(e.Clone())
+		}
 		return
 	}
 
