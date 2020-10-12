@@ -451,7 +451,7 @@ func (edge *Server) startRaft(notifyChan chan bool) (err error) {
 
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() {
-	edge.gateway.Run()
+	edge.gateway.Start()
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster
