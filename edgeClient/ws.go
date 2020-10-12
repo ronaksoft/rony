@@ -69,9 +69,6 @@ type Websocket struct {
 	nextReqID  uint64
 }
 
-func SetLogLevel(level log.Level) {
-	log.SetLevel(level)
-}
 
 func NewWebsocket(config Config) *Websocket {
 	if config.DialTimeout == 0 {
@@ -89,7 +86,6 @@ func NewWebsocket(config Config) *Websocket {
 	if config.ContextTimeout == 0 {
 		config.ContextTimeout = requestRetry * requestTimeout
 	}
-
 	c := Websocket{
 		nextReqID:      tools.RandomUint64(),
 		idleTimeout:    config.IdleTimeout,
@@ -260,6 +256,11 @@ func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.contextTimeout)
 	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
 	cancelFunc()
+	return
+}
+
+func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope) (err error) {
+	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
 	return
 }
 
