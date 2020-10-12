@@ -85,10 +85,11 @@ func newTestServer() *server {
 func TestClient_Connect(t *testing.T) {
 	testEnv.Init()
 	s := newTestServer()
-	go func() {
-		s.e.RunGateway()
-		_ = s.e.RunCluster()
-	}()
+	s.e.StartGateway()
+	err := s.e.StartCluster()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c := pb.NewSampleClient(edgeClient.NewWebsocket(edgeClient.Config{
 		HostPort: "127.0.0.1:8081",

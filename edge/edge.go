@@ -110,25 +110,37 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 	return edgeServer
 }
 
+// GetServerID return this server id, which MUST be unique in the cluster otherwise
+// the behaviour is unknown.
 func (edge *Server) GetServerID() string {
 	return string(edge.serverID)
 }
 
-func (edge *Server) AddHandler(constructor int64, handler ...Handler) {
-	edge.handlers[constructor] = append(edge.handlers[constructor], handler...)
+// SetHandlers set the handlers for the constructor. 'leaderOnly' is applicable ONLY if the cluster is run
+// with Raft support. If cluster is a Raft enabled cluster, then by setting 'leaderOnly' to TRUE, requests sent
+// to a follower server will return redirect error to the client. For standalone servers 'leaderOnly' does not
+// affect.
+func (edge *Server) SetHandlers(constructor int64, leaderOnly bool, handlers ...Handler) {
+	if !leaderOnly {
+		edge.readonlyHandlers[constructor] = struct{}{}
+	}
+	edge.handlers[constructor] = handlers
 }
 
-func (edge *Server) AddBeforeHandler(constructor int64, handlers ...Handler) {
+// AppendHandlers appends the handlers for the constructor in order. So handlers[n] will be called before
+// handlers[n+1].
+func (edge *Server) AppendHandlers(constructor int64, handlers ...Handler) {
+	edge.handlers[constructor] = append(edge.handlers[constructor], handlers...)
+}
+
+// PrependHandlers prepends the handlers for the constructor in order.
+func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
 	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
 }
 
-func (edge *Server) AddReadOnlyHandler(constructor int64, handler ...Handler) {
-	edge.readonlyHandlers[constructor] = struct{}{}
-	edge.AddHandler(constructor, handler...)
-}
-
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
-	readyOnly := false
+	// If server is standalone then we are the leader anyway
+	isLeader := true
 	if edge.raftEnabled {
 		if edge.raft.State() == raft.Leader {
 			raftCmd := acquireRaftCommand()
@@ -147,13 +159,13 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 				return
 			}
 		} else {
-			readyOnly = true
+			isLeader = false
 		}
 	}
-	err = edge.execute(dispatchCtx, readyOnly)
+	err = edge.execute(dispatchCtx, isLeader)
 	return err
 }
-func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error) {
+func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error) {
 	waitGroup := acquireWaitGroup()
 	switch dispatchCtx.req.GetConstructor() {
 	case rony.C_MessageContainer:
@@ -171,7 +183,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *RequestCtx, idx int) {
-				edge.executeFunc(dispatchCtx, ctx, x.Envelopes[idx], readyOnly)
+				edge.executeFunc(dispatchCtx, ctx, x.Envelopes[idx], isLeader)
 				nextChan <- struct{}{}
 				waitGroup.Done()
 				releaseRequestCtx(ctx)
@@ -184,14 +196,14 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, readyOnly bool) (err error
 		}
 	default:
 		ctx := acquireRequestCtx(dispatchCtx, false)
-		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req, readyOnly)
+		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req, isLeader)
 		releaseRequestCtx(ctx)
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
 	return nil
 }
-func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope, readOnly bool) {
+func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
 	defer edge.recoverPanic(requestCtx, in)
 
 	var startTime time.Time
@@ -204,17 +216,18 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 			zap.Int64("AuthID", dispatchCtx.authID),
 		)
 	}
-	if readOnly {
+	if !isLeader {
 		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
-			leaderID := edge.cluster.leaderID
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
 				ce.Write(
-					zap.String("LeaderID", leaderID),
+					zap.String("LeaderID", edge.cluster.leaderID),
 					zap.String("State", edge.raft.State().String()),
 				)
 			}
-			if leaderID != "" {
+			if leaderID := edge.cluster.leaderID; leaderID == "" {
+				requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
+			} else {
 				requestCtx.PushMessage(
 					rony.C_Redirect,
 					&rony.Redirect{
@@ -222,12 +235,11 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 						ServerID:       leaderID,
 					},
 				)
-			} else {
-				requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 			}
 			return
 		}
 	}
+
 	handlers, ok := edge.handlers[in.GetConstructor()]
 	if !ok {
 		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
@@ -313,8 +325,8 @@ func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
 
-// RunCluster runs the gossip and raft if it is set
-func (edge *Server) RunCluster() (err error) {
+// StartCluster is non-blocking function which runs the gossip and raft if it is set
+func (edge *Server) StartCluster() (err error) {
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
@@ -322,32 +334,39 @@ func (edge *Server) RunCluster() (err error) {
 
 	notifyChan := make(chan bool, 1)
 	if edge.raftEnabled {
-		err = edge.runRaft(notifyChan)
+		err = edge.startRaft(notifyChan)
 		if err != nil {
 			return
 		}
 	}
 
-	if edge.gatewayProtocol != gateway.Undefined {
-		err = edge.runGossip()
-		if err != nil {
-			return
-		}
+	// If we have not set gateway then we don't run Gossip protocol.
+	// FixMe:: decouple gossip and gateway
+	if edge.gatewayProtocol == gateway.Undefined {
+		return
 	}
 
+	err = edge.startGossip()
+	if err != nil {
+		return
+	}
 	go func() {
 		for range notifyChan {
 			err := tools.Try(10, time.Millisecond, func() error {
 				return edge.updateCluster(gossipUpdateTimeout)
 			})
 			if err != nil {
-				log.Warn("Error On Update Cluster", zap.Error(err))
+				log.Warn("Rony got error on updating the cluster",
+					zap.Error(err),
+					zap.ByteString("ID", edge.serverID),
+				)
 			}
 		}
 	}()
+
 	return
 }
-func (edge *Server) runGossip() error {
+func (edge *Server) startGossip() error {
 	dirPath := filepath.Join(edge.dataPath, "gossip")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
 
@@ -366,7 +385,7 @@ func (edge *Server) runGossip() error {
 
 	return edge.updateCluster(gossipUpdateTimeout)
 }
-func (edge *Server) runRaft(notifyChan chan bool) (err error) {
+func (edge *Server) startRaft(notifyChan chan bool) (err error) {
 	// Initialize LogStore for Raft
 	dirPath := filepath.Join(edge.dataPath, "raft")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
@@ -434,15 +453,18 @@ func (edge *Server) runRaft(notifyChan chan bool) (err error) {
 	return nil
 }
 
-// RunGateway runs the gateway then we can accept clients requests
-func (edge *Server) RunGateway() {
+// StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
+func (edge *Server) StartGateway() {
 	edge.gateway.Run()
 }
 
-// JoinCluster joins this node to one or more cluster members
-func (edge *Server) JoinCluster(addr ...string) error {
-	_, err := edge.gossip.Join(addr)
-	return err
+// JoinCluster is used to take an existing Cluster and attempt to join a cluster
+// by contacting all the given hosts and performing a state sync.
+// This returns the number of hosts successfully contacted and an error if
+// none could be reached. If an error is returned, the node did not successfully
+// join the cluster.
+func (edge *Server) JoinCluster(addr ...string) (int, error) {
+	return edge.gossip.Join(addr)
 }
 
 // Shutdown gracefully shutdown the services

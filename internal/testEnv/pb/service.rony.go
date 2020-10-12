@@ -259,10 +259,10 @@ func RegisterSample(h ISample, e *edge.Server) {
 }
 
 func (sw *SampleWrapper) Register(e *edge.Server) {
-	e.AddHandler(C_Func1, sw.Func1Wrapper)
-	e.AddHandler(C_Func2, sw.Func2Wrapper)
-	e.AddHandler(C_Echo, sw.EchoWrapper)
-	e.AddHandler(C_Ask, sw.AskWrapper)
+	e.SetHandlers(C_Func1, true, sw.Func1Wrapper)
+	e.SetHandlers(C_Func2, true, sw.Func2Wrapper)
+	e.SetHandlers(C_Echo, true, sw.EchoWrapper)
+	e.SetHandlers(C_Ask, true, sw.AskWrapper)
 }
 
 func (sw *SampleWrapper) Func1Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {

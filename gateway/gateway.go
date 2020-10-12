@@ -33,6 +33,7 @@ type Conn interface {
 }
 
 type Gateway interface {
+	Start()
 	Run()
 	Shutdown()
 	Addr() []string

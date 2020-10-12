@@ -177,36 +177,39 @@ func MustNew(config Config) *Gateway {
 	return g
 }
 
-// Run
-func (g *Gateway) Run() {
-	go func() {
-		server := fasthttp.Server{
-			Name:               "Rony TCP Gateway",
-			Concurrency:        g.concurrency,
-			Handler:            g.requestHandler,
-			KeepHijackedConns:  true,
-			MaxRequestBodySize: g.maxBodySize,
-		}
-		for {
-			conn, err := g.listener.Accept()
-			if err != nil {
-				// log.Warn("Error On Accept", zap.Error(err))
-				continue
-			}
+// Start is non-blocking and call the Run function in background
+func (g *Gateway) Start() {
+	go g.Run()
+}
 
-			wc := newWrapConn(conn)
-			err = server.ServeConn(wc)
-			if err != nil {
-				if nErr, ok := err.(net.Error); ok {
-					if !nErr.Temporary() {
-						return
-					}
-				} else {
+// Run is blocking and runs the server endless loop until a non-temporary error happens
+func (g *Gateway) Run() {
+	server := fasthttp.Server{
+		Name:               "Rony TCP Gateway",
+		Concurrency:        g.concurrency,
+		Handler:            g.requestHandler,
+		KeepHijackedConns:  true,
+		MaxRequestBodySize: g.maxBodySize,
+	}
+	for {
+		conn, err := g.listener.Accept()
+		if err != nil {
+			// log.Warn("Error On Accept", zap.Error(err))
+			continue
+		}
+
+		wc := newWrapConn(conn)
+		err = server.ServeConn(wc)
+		if err != nil {
+			if nErr, ok := err.(net.Error); ok {
+				if !nErr.Temporary() {
 					return
 				}
+			} else {
+				return
 			}
 		}
-	}()
+	}
 }
 
 // Shutdown

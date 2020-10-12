@@ -472,7 +472,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P()
 		g.P("func (sw *", s.Desc.Name(), "Wrapper) Register (e *edge.Server) {")
 		for _, m := range s.Methods {
-			g.P("e.AddHandler(C_", m.Desc.Name(), ", sw.", m.Desc.Name(), "Wrapper)")
+			g.P("e.SetHandlers(C_", m.Desc.Name(), ", true, sw.", m.Desc.Name(), "Wrapper)")
 		}
 		g.P("}")
 		g.P()

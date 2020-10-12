@@ -69,7 +69,6 @@ type Websocket struct {
 	nextReqID  uint64
 }
 
-
 func NewWebsocket(config Config) *Websocket {
 	if config.DialTimeout == 0 {
 		config.DialTimeout = dialTimeout

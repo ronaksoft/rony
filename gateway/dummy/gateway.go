@@ -77,6 +77,10 @@ func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte, kvs ...
 	g.MessageHandler(conn, streamID, data, kvs...)
 }
 
+func (g *Gateway) Start() {
+	// Do nothing
+}
+
 func (g *Gateway) Run() {
 	// Do nothing
 }
