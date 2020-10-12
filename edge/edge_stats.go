@@ -33,8 +33,11 @@ func (edge *Server) Stats() *Stats {
 		Members:         len(edge.gossip.Members()),
 		MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
-		GatewayAddr:     edge.gateway.Addr(),
 		ReplicaSet:      edge.replicaSet,
+	}
+
+	if edge.gateway != nil {
+		s.GatewayAddr = edge.gateway.Addr()
 	}
 
 	if edge.raftEnabled {

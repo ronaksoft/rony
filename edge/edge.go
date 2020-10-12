@@ -330,6 +330,8 @@ func (edge *Server) StartCluster() (err error) {
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
+		zap.Bool("Raft", edge.raftEnabled),
+		zap.Int("GossipPort", edge.gossipPort),
 	)
 
 	notifyChan := make(chan bool, 1)
@@ -338,12 +340,6 @@ func (edge *Server) StartCluster() (err error) {
 		if err != nil {
 			return
 		}
-	}
-
-	// If we have not set gateway then we don't run Gossip protocol.
-	// FixMe:: decouple gossip and gateway
-	if edge.gatewayProtocol == gateway.Undefined {
-		return
 	}
 
 	err = edge.startGossip()
