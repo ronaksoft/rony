@@ -22,7 +22,7 @@ func Init() {
 		return
 	}
 
-	log.InitLogger(log.Config{
+	log.Init(log.Config{
 		Level:       log.DebugLevel,
 		DirPath:     "",
 		Filename:    "",

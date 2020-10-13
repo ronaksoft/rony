@@ -68,7 +68,7 @@ func newZapLogger(core zapcore.Core, skip int) *zapLogger {
 	return l
 }
 
-func InitLogger(config Config) Logger {
+func Init(config Config) Logger {
 	atomicLevel = zap.NewAtomicLevelAt(config.Level)
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		TimeKey:        "ts",

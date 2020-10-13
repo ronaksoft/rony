@@ -22,5 +22,5 @@ const (
 )
 
 func init() {
-	log.InitLogger(log.DefaultConfig)
+	log.Init(log.DefaultConfig)
 }

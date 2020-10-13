@@ -36,7 +36,7 @@ var (
 
 func main() {
 	fmt.Println("RUN...")
-	log.InitLogger(log.DefaultConfig)
+	log.Init(log.DefaultConfig)
 	log.SetLevel(log.InfoLevel)
 	n := 5000
 	m := 10

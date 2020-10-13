@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 )
 
@@ -290,6 +291,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			zap.Uint64("ConnID", ctx.ConnID()),
 			zap.Int64("AuthID", ctx.AuthID()),
 			zap.Any("Error", r),
+			zap.ByteString("Stack", debug.Stack()),
 		)
 		ctx.PushError(rony.ErrCodeInternal, rony.ErrItemServer)
 	}
