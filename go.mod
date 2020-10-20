@@ -12,7 +12,7 @@ require (
 	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
 	github.com/gobuffalo/plush/v4 v4.0.0
-	github.com/gobwas/pool v0.2.0
+	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
 	github.com/gocql/gocql v0.0.0-20200815110948-5378c8f664e9
 	github.com/golang/protobuf v1.4.1
