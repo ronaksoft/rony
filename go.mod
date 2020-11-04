@@ -25,7 +25,7 @@ require (
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.0
 	github.com/nyaruka/phonenumbers v1.0.54
-	github.com/ryanuber/columnize v2.1.0+incompatible
+	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/scylladb/gocqlx/v2 v2.2.0
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.1.1
