@@ -39,6 +39,8 @@ func releaseHttpConn(c *httpConn) {
 	c.clientIP = c.clientIP[:0]
 	c.clientType = c.clientType[:0]
 	c.authID = 0
+	c.userID = 0
+	c.authKey = c.authKey[:0]
 	c.buf.Reset()
 	httpConnPool.Put(c)
 }
@@ -92,6 +94,8 @@ func releaseWebsocketConn(wc *websocketConn) {
 	wc.buf.Reset()
 	wc.conn = nil
 	wc.authID = 0
+	wc.userID = 0
+	wc.authKey = wc.authKey[:0]
 	wc.closed = false
 	websocketConnPool.Put(wc)
 }

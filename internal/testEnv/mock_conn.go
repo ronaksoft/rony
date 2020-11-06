@@ -13,6 +13,22 @@ import "github.com/ronaksoft/rony"
 
 type MockGatewayConn struct{}
 
+func (m MockGatewayConn) GetUserID() int64 {
+	return 0
+}
+
+func (m MockGatewayConn) GetAuthKey(buf []byte) []byte {
+	return nil
+}
+
+func (m MockGatewayConn) SetAuthKey(key []byte) {
+	return
+}
+
+func (m MockGatewayConn) SetUserID(userID int64) {
+	return
+}
+
 func (m MockGatewayConn) GetAuthID() int64 {
 	return 0
 }

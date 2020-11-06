@@ -21,17 +21,24 @@ const (
 	Dummy     Protocol = "dummy"
 )
 
+// Conn defines the Connection interface
 type Conn interface {
 	GetAuthID() int64
+	GetUserID() int64
+	GetAuthKey(buf []byte) []byte
 	GetConnID() uint64
 	GetClientIP() string
 	Push(m *rony.MessageEnvelope)
 	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
 	SetAuthID(authID int64)
+	SetAuthKey(key []byte)
+	SetUserID(userID int64)
 	Persistent() bool
 }
 
+// Gateway defines the gateway interface where clients could connect
+// and communicate with the edge server
 type Gateway interface {
 	Start()
 	Run()

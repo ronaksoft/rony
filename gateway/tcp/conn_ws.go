@@ -30,6 +30,8 @@ type websocketConn struct {
 	sync.Mutex
 	connID   uint64
 	authID   int64
+	userID   int64
+	authKey  []byte
 	clientIP []byte
 
 	// Internals
@@ -39,6 +41,26 @@ type websocketConn struct {
 	conn         net.Conn
 	desc         *netpoll.Desc
 	closed       bool
+}
+
+func (wc *websocketConn) GetUserID() int64 {
+	return atomic.LoadInt64(&wc.userID)
+}
+
+func (wc *websocketConn) GetAuthKey(buf []byte) []byte {
+	if len(buf) == 0 {
+		buf = make([]byte, 0, len(wc.authKey))
+	}
+	buf = append(buf[:0], wc.authKey...)
+	return buf
+}
+
+func (wc *websocketConn) SetAuthKey(key []byte) {
+	wc.authKey = append(wc.authKey[:0], key...)
+}
+
+func (wc *websocketConn) SetUserID(userID int64) {
+	atomic.StoreInt64(&wc.userID, userID)
 }
 
 func (wc *websocketConn) GetAuthID() int64 {
