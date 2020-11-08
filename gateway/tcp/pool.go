@@ -38,9 +38,9 @@ func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 func releaseHttpConn(c *httpConn) {
 	c.clientIP = c.clientIP[:0]
 	c.clientType = c.clientType[:0]
-	c.authID = 0
-	c.userID = 0
-	c.authKey = c.authKey[:0]
+	for k := range c.kv {
+		delete(c.kv, k)
+	}
 	c.buf.Reset()
 	httpConnPool.Put(c)
 }
@@ -93,9 +93,9 @@ func releaseWebsocketConn(wc *websocketConn) {
 	wc.clientIP = wc.clientIP[:0]
 	wc.buf.Reset()
 	wc.conn = nil
-	wc.authID = 0
-	wc.userID = 0
-	wc.authKey = wc.authKey[:0]
+	for k := range wc.kv {
+		delete(wc.kv, k)
+	}
 	wc.closed = false
 	websocketConnPool.Put(wc)
 }

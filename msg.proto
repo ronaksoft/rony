@@ -34,17 +34,22 @@ message Redirect {
     string ServerID = 2;
 }
 
+message KeyValue {
+    string Key = 1;
+    string Value = 2;
+}
+
 // ClusterMessage
 message ClusterMessage {
     bytes Sender = 1;
-    int64 AuthID = 2;
+    repeated KeyValue Store = 2;
     MessageEnvelope Envelope = 3;
 }
 
 // RaftCommand
 message RaftCommand {
     bytes Sender = 1;
-    int64 AuthID = 2;
+    repeated KeyValue Store = 2;
     MessageEnvelope Envelope = 3;
 }
 

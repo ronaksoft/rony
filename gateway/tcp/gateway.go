@@ -367,7 +367,7 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *web
 		ce.Write(
 			zap.Uint64("ConnID", connID),
 			zap.String("Client", clientType),
-			zap.String("IP", wsConn.GetClientIP()),
+			zap.String("IP", wsConn.ClientIP()),
 			zap.Int32("Total", totalConns),
 		)
 	}
@@ -430,7 +430,7 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 	if err != nil {
 		if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
 			ce.Write(
-				zap.Int64("AuthID", wc.authID),
+				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),
 			)
 		}

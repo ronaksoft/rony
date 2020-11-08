@@ -9,10 +9,10 @@ import (
 	"github.com/mailru/easygo/netpoll"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
+	"sync"
 	"time"
 
 	"net"
-	"sync"
 	"sync/atomic"
 )
 
@@ -29,10 +29,11 @@ import (
 type websocketConn struct {
 	sync.Mutex
 	connID   uint64
-	authID   int64
-	userID   int64
-	authKey  []byte
 	clientIP []byte
+
+	// KV Store
+	mtx sync.RWMutex
+	kv  map[string]interface{}
 
 	// Internals
 	buf          *tools.LinkedList
@@ -43,39 +44,24 @@ type websocketConn struct {
 	closed       bool
 }
 
-func (wc *websocketConn) GetUserID() int64 {
-	return atomic.LoadInt64(&wc.userID)
+func (wc *websocketConn) Get(key string) interface{} {
+	wc.mtx.RLock()
+	v := wc.kv[key]
+	wc.mtx.RUnlock()
+	return v
 }
 
-func (wc *websocketConn) GetAuthKey(buf []byte) []byte {
-	if len(buf) == 0 {
-		buf = make([]byte, 0, len(wc.authKey))
-	}
-	buf = append(buf[:0], wc.authKey...)
-	return buf
+func (wc *websocketConn) Set(key string, val interface{}) {
+	wc.mtx.Lock()
+	wc.kv[key] = val
+	wc.mtx.Unlock()
 }
 
-func (wc *websocketConn) SetAuthKey(key []byte) {
-	wc.authKey = append(wc.authKey[:0], key...)
-}
-
-func (wc *websocketConn) SetUserID(userID int64) {
-	atomic.StoreInt64(&wc.userID, userID)
-}
-
-func (wc *websocketConn) GetAuthID() int64 {
-	return atomic.LoadInt64(&wc.authID)
-}
-
-func (wc *websocketConn) SetAuthID(authID int64) {
-	atomic.StoreInt64(&wc.authID, authID)
-}
-
-func (wc *websocketConn) GetConnID() uint64 {
+func (wc *websocketConn) ConnID() uint64 {
 	return atomic.LoadUint64(&wc.connID)
 }
 
-func (wc *websocketConn) GetClientIP() string {
+func (wc *websocketConn) ClientIP() string {
 	return net.IP(wc.clientIP).String()
 }
 

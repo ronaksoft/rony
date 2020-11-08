@@ -3,6 +3,7 @@ package edge_test
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
@@ -69,7 +70,7 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetParallelism(1000)
-	conn := testEnv.MockGatewayConn{}
+	conn := dummyGateway.Conn{}
 	req := pb.EchoRequest{
 		Int:       100,
 		Bool:      false,

@@ -39,7 +39,7 @@ type GetConstructorNameFunc func(constructor int64) string
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	OnMessage(ctx *DispatchCtx, authID int64, envelope *rony.MessageEnvelope)
+	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...gateway.KeyValue)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
@@ -145,7 +145,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
 	if edge.raftEnabled {
 		if edge.raft.State() == raft.Leader {
 			raftCmd := acquireRaftCommand()
-			raftCmd.Fill(edge.serverID, dispatchCtx.authID, dispatchCtx.req)
+			raftCmd.Fill(edge.serverID, dispatchCtx.req)
 			mo := proto.MarshalOptions{}
 			raftCmdBytes := pools.Bytes.GetCap(mo.Size(raftCmd))
 			raftCmdBytes, err = mo.MarshalAppend(raftCmdBytes, raftCmd)
@@ -214,7 +214,6 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 		ce.Write(
 			zap.String("Constructor", edge.getConstructorName(in.GetConstructor())),
 			zap.Uint64("RequestID", in.GetRequestID()),
-			zap.Int64("AuthID", dispatchCtx.authID),
 		)
 	}
 	if !isLeader {
@@ -277,7 +276,6 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 		ce.Write(
 			zap.Uint64("RequestID", in.GetRequestID()),
-			zap.Int64("AuthID", dispatchCtx.authID),
 			zap.Duration("T", time.Now().Sub(startTime)),
 		)
 	}
@@ -289,7 +287,6 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		log.Error("Panic Recovered",
 			zap.ByteString("ServerID", edge.serverID),
 			zap.Uint64("ConnID", ctx.ConnID()),
-			zap.Int64("AuthID", ctx.AuthID()),
 			zap.Any("Error", r),
 			zap.ByteString("Stack", debug.Stack()),
 		)
@@ -301,7 +298,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 	// _, task := trace.NewTask(context.Background(), "Handle Gateway Message")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, 0, edge.serverID)
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID)
 	err := edge.dispatcher.Prepare(dispatchCtx, data, kvs...)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
@@ -317,7 +314,7 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
 	rony.ErrorMessage(envelope, dispatchCtx.req.GetRequestID(), code, item)
-	edge.dispatcher.OnMessage(dispatchCtx, dispatchCtx.authID, envelope)
+	edge.dispatcher.OnMessage(dispatchCtx, envelope)
 	releaseMessageEnvelope(envelope)
 }
 func (edge *Server) onConnect(conn gateway.Conn) {

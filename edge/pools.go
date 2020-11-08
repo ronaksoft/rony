@@ -3,7 +3,6 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
-	"github.com/ronaksoft/rony/pools"
 	"sync"
 )
 
@@ -46,7 +45,7 @@ func acquireClusterMessage() *rony.ClusterMessage {
 }
 
 func releaseClusterMessage(x *rony.ClusterMessage) {
-	x.AuthID = 0
+	x.Store = x.Store[:0]
 	x.Sender = x.Sender[:0]
 	x.Envelope.Constructor = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
@@ -68,7 +67,7 @@ func acquireRaftCommand() *rony.RaftCommand {
 
 func releaseRaftCommand(x *rony.RaftCommand) {
 	x.Sender = x.Sender[:0]
-	x.AuthID = 0
+	x.Store = x.Store[:0]
 	x.Envelope.Message = x.Envelope.Message[:0]
 	x.Envelope.RequestID = 0
 	x.Envelope.Constructor = 0
@@ -98,12 +97,6 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 		ctx = newRequestCtx()
 	} else {
 		ctx = v.(*RequestCtx)
-		ctx.reset()
-		// Just to make sure channel is empty, or empty it if not
-		select {
-		case <-ctx.nextChan:
-		default:
-		}
 	}
 	ctx.stop = false
 	ctx.quickReturn = quickReturn
@@ -112,12 +105,22 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 }
 
 func releaseRequestCtx(ctx *RequestCtx) {
+	// Reset the Key-Value store
+	ctx.reset()
+
+	// Just to make sure channel is empty, or empty it if not
+	select {
+	case <-ctx.nextChan:
+	default:
+	}
+
+	// Put back into the pool
 	requestCtxPool.Put(ctx)
 }
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, authID int64, serverID []byte) *DispatchCtx {
+func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverID []byte) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)
@@ -131,11 +134,6 @@ func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, authID 
 		ctx.kind = clusterMessage
 	}
 	ctx.streamID = streamID
-	ctx.authID = authID
-	if len(serverID) > cap(ctx.serverID) {
-		pools.Bytes.Put(ctx.serverID)
-		ctx.serverID = pools.Bytes.GetCap(len(serverID))
-	}
 	ctx.serverID = append(ctx.serverID[:0], serverID...)
 	return ctx
 }

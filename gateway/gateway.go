@@ -23,18 +23,14 @@ const (
 
 // Conn defines the Connection interface
 type Conn interface {
-	GetAuthID() int64
-	GetUserID() int64
-	GetAuthKey(buf []byte) []byte
-	GetConnID() uint64
-	GetClientIP() string
+	ConnID() uint64
+	ClientIP() string
 	Push(m *rony.MessageEnvelope)
 	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
-	SetAuthID(authID int64)
-	SetAuthKey(key []byte)
-	SetUserID(userID int64)
 	Persistent() bool
+	Get(key string) interface{}
+	Set(key string, val interface{})
 }
 
 // Gateway defines the gateway interface where clients could connect

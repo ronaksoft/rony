@@ -271,7 +271,7 @@ func (d delegateNode) NotifyMsg(data []byte) {
 
 	cm := acquireClusterMessage()
 	_ = proto.UnmarshalOptions{Merge: true}.Unmarshal(data, cm)
-	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.GetAuthID(), cm.Sender)
+	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.Sender)
 	dispatchCtx.FillEnvelope(cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message)
 	releaseClusterMessage(cm)
 

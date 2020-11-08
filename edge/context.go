@@ -31,7 +31,6 @@ const (
 // DispatchCtx
 type DispatchCtx struct {
 	streamID int64
-	authID   int64
 	serverID []byte
 	conn     gateway.Conn
 	req      *rony.MessageEnvelope
@@ -62,18 +61,18 @@ func (ctx *DispatchCtx) StreamID() int64 {
 	return ctx.streamID
 }
 
-func (ctx *DispatchCtx) GetAuthID() int64 {
-	return ctx.authID
-}
-
-func (ctx *DispatchCtx) SetAuthID(authID int64) {
-	ctx.authID = authID
-}
-
 func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
 	ctx.req.RequestID = requestID
 	ctx.req.Constructor = constructor
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
+}
+
+func (ctx *DispatchCtx) Get(key string) interface{} {
+	return ctx.Conn().Get(key)
+}
+
+func (ctx *DispatchCtx) Set(key string, val interface{}) {
+	ctx.Conn().Set(key, val)
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
@@ -114,17 +113,13 @@ func (ctx *RequestCtx) Return() {
 
 func (ctx *RequestCtx) ConnID() uint64 {
 	if ctx.dispatchCtx.Conn() != nil {
-		return ctx.dispatchCtx.Conn().GetConnID()
+		return ctx.dispatchCtx.Conn().ConnID()
 	}
 	return 0
 }
 
 func (ctx *RequestCtx) Conn() gateway.Conn {
 	return ctx.dispatchCtx.Conn()
-}
-
-func (ctx *RequestCtx) AuthID() int64 {
-	return ctx.dispatchCtx.authID
 }
 
 func (ctx *RequestCtx) ReqID() uint64 {
@@ -189,13 +184,13 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
-	ctx.PushCustomMessage(ctx.AuthID(), ctx.ReqID(), constructor, proto)
+	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(authID int64, requestID uint64, constructor int64, proto proto.Message) {
+func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...gateway.KeyValue) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
-	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, authID, envelope)
+	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope, kvs...)
 	releaseMessageEnvelope(envelope)
 }
 

@@ -49,14 +49,12 @@ func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message)
 	pools.Bytes.Put(b)
 }
 
-func (x *RaftCommand) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
+func (x *RaftCommand) Fill(senderID []byte, e *MessageEnvelope, kv ...*KeyValue) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	x.AuthID = authID
 	e.DeepCopy(x.Envelope)
 }
 
 func (x *ClusterMessage) Fill(senderID []byte, authID int64, e *MessageEnvelope) {
 	x.Sender = append(x.Sender[:0], senderID...)
-	x.AuthID = authID
 	e.DeepCopy(x.Envelope)
 }

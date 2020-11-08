@@ -5,7 +5,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
-	"sync/atomic"
+	"sync"
 )
 
 /*
@@ -22,11 +22,23 @@ type httpConn struct {
 	gateway    *Gateway
 	req        *fasthttp.RequestCtx
 	buf        *tools.LinkedList
-	authID     int64
-	userID     int64
-	authKey    []byte
 	clientIP   []byte
 	clientType []byte
+	mtx        sync.RWMutex
+	kv         map[string]interface{}
+}
+
+func (c *httpConn) Get(key string) interface{} {
+	c.mtx.RLock()
+	v := c.kv[key]
+	c.mtx.RUnlock()
+	return v
+}
+
+func (c *httpConn) Set(key string, val interface{}) {
+	c.mtx.Lock()
+	c.kv[key] = val
+	c.mtx.Unlock()
 }
 
 func (c *httpConn) Push(m *rony.MessageEnvelope) {
@@ -41,39 +53,11 @@ func (c *httpConn) Pop() *rony.MessageEnvelope {
 	return nil
 }
 
-func (c *httpConn) GetAuthID() int64 {
-	return atomic.LoadInt64(&c.authID)
-}
-
-func (c *httpConn) SetAuthID(authID int64) {
-	atomic.StoreInt64(&c.authID, authID)
-}
-
-func (c *httpConn) GetUserID() int64 {
-	return atomic.LoadInt64(&c.userID)
-}
-
-func (c *httpConn) SetUserID(userID int64) {
-	atomic.StoreInt64(&c.userID, userID)
-}
-
-func (c *httpConn) GetAuthKey(buf []byte) []byte {
-	if len(buf) == 0 {
-		buf = make([]byte, 0, len(c.authKey))
-	}
-	buf = append(buf[:0], c.authKey...)
-	return buf
-}
-
-func (c *httpConn) SetAuthKey(key []byte) {
-	c.authKey = append(c.authKey[:0], key...)
-}
-
-func (c *httpConn) GetConnID() uint64 {
+func (c *httpConn) ConnID() uint64 {
 	return c.req.ConnID()
 }
 
-func (c *httpConn) GetClientIP() string {
+func (c *httpConn) ClientIP() string {
 	return net.IP(c.clientIP).String()
 }
 

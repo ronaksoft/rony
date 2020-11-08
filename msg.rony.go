@@ -99,6 +99,28 @@ func (p *poolRedirect) Put(x *Redirect) {
 
 var PoolRedirect = poolRedirect{}
 
+const C_KeyValue int64 = 4276272820
+
+type poolKeyValue struct {
+	pool sync.Pool
+}
+
+func (p *poolKeyValue) Get() *KeyValue {
+	x, ok := p.pool.Get().(*KeyValue)
+	if !ok {
+		return &KeyValue{}
+	}
+	return x
+}
+
+func (p *poolKeyValue) Put(x *KeyValue) {
+	x.Key = ""
+	x.Value = ""
+	p.pool.Put(x)
+}
+
+var PoolKeyValue = poolKeyValue{}
+
 const C_ClusterMessage int64 = 1078766375
 
 type poolClusterMessage struct {
@@ -115,7 +137,7 @@ func (p *poolClusterMessage) Get() *ClusterMessage {
 
 func (p *poolClusterMessage) Put(x *ClusterMessage) {
 	x.Sender = x.Sender[:0]
-	x.AuthID = 0
+	x.Store = x.Store[:0]
 	if x.Envelope != nil {
 		PoolMessageEnvelope.Put(x.Envelope)
 		x.Envelope = nil
@@ -141,7 +163,7 @@ func (p *poolRaftCommand) Get() *RaftCommand {
 
 func (p *poolRaftCommand) Put(x *RaftCommand) {
 	x.Sender = x.Sender[:0]
-	x.AuthID = 0
+	x.Store = x.Store[:0]
 	if x.Envelope != nil {
 		PoolMessageEnvelope.Put(x.Envelope)
 		x.Envelope = nil
@@ -182,6 +204,7 @@ func init() {
 	registry.RegisterConstructor(1972016308, "MessageContainer")
 	registry.RegisterConstructor(2619118453, "Error")
 	registry.RegisterConstructor(981138557, "Redirect")
+	registry.RegisterConstructor(4276272820, "KeyValue")
 	registry.RegisterConstructor(1078766375, "ClusterMessage")
 	registry.RegisterConstructor(2919813429, "RaftCommand")
 	registry.RegisterConstructor(999040174, "EdgeNode")
@@ -219,9 +242,20 @@ func (x *Redirect) DeepCopy(z *Redirect) {
 	z.ServerID = x.ServerID
 }
 
+func (x *KeyValue) DeepCopy(z *KeyValue) {
+	z.Key = x.Key
+	z.Value = x.Value
+}
+
 func (x *ClusterMessage) DeepCopy(z *ClusterMessage) {
 	z.Sender = append(z.Sender[:0], x.Sender...)
-	z.AuthID = x.AuthID
+	for idx := range x.Store {
+		if x.Store[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Store[idx].DeepCopy(xx)
+			z.Store = append(z.Store, xx)
+		}
+	}
 	if x.Envelope != nil {
 		z.Envelope = PoolMessageEnvelope.Get()
 		x.Envelope.DeepCopy(z.Envelope)
@@ -230,7 +264,13 @@ func (x *ClusterMessage) DeepCopy(z *ClusterMessage) {
 
 func (x *RaftCommand) DeepCopy(z *RaftCommand) {
 	z.Sender = append(z.Sender[:0], x.Sender...)
-	z.AuthID = x.AuthID
+	for idx := range x.Store {
+		if x.Store[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Store[idx].DeepCopy(xx)
+			z.Store = append(z.Store, xx)
+		}
+	}
 	if x.Envelope != nil {
 		z.Envelope = PoolMessageEnvelope.Get()
 		x.Envelope.DeepCopy(z.Envelope)

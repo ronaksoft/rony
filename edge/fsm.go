@@ -35,7 +35,7 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 		return rony.ErrRaftExecuteOnLeader
 	}
 
-	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.GetAuthID(), raftCmd.Sender)
+	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.Sender)
 	dispatchCtx.FillEnvelope(raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message)
 
 	err = fsm.edge.execute(dispatchCtx, false)

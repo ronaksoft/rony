@@ -16,41 +16,25 @@ import (
 
 type Conn struct {
 	id         uint64
-	authID     int64
-	userID     int64
-	authKey    []byte
 	clientIP   string
 	persistent bool
 	buf        *tools.LinkedList
 	onMessage  func(connID uint64, streamID int64, data []byte)
 }
 
-func (c *Conn) GetUserID() int64 {
-	return c.userID
+func (c *Conn) Get(key string) interface{} {
+	return nil
 }
 
-func (c *Conn) GetAuthKey(buf []byte) []byte {
-	buf = append(buf[:0], c.authKey...)
-	return buf
+func (c *Conn) Set(key string, val interface{}) {
+	return
 }
 
-func (c *Conn) SetAuthKey(key []byte) {
-	c.authKey = append(c.authKey[:0], key...)
-}
-
-func (c *Conn) SetUserID(userID int64) {
-	c.userID = userID
-}
-
-func (c *Conn) GetAuthID() int64 {
-	return c.authID
-}
-
-func (c *Conn) GetConnID() uint64 {
+func (c *Conn) ConnID() uint64 {
 	return c.id
 }
 
-func (c *Conn) GetClientIP() string {
+func (c *Conn) ClientIP() string {
 	return c.clientIP
 }
 
@@ -69,10 +53,6 @@ func (c *Conn) Pop() *rony.MessageEnvelope {
 func (c *Conn) SendBinary(streamID int64, data []byte) error {
 	c.onMessage(c.id, streamID, data)
 	return nil
-}
-
-func (c *Conn) SetAuthID(authID int64) {
-	c.authID = authID
 }
 
 func (c *Conn) Persistent() bool {
