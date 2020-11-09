@@ -36,12 +36,22 @@ type DispatchCtx struct {
 	req      *rony.MessageEnvelope
 	edge     *Server
 	kind     byte
+	// KeyValue Store Parameters
+	mtx sync.RWMutex
+	kv  map[uint32]interface{}
 }
 
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		edge: edge,
 		req:  &rony.MessageEnvelope{},
+		kv:   make(map[uint32]interface{}, 3),
+	}
+}
+
+func (ctx *DispatchCtx) reset() {
+	for k := range ctx.kv {
+		delete(ctx.kv, k)
 	}
 }
 
@@ -67,12 +77,53 @@ func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payloa
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
 }
 
-func (ctx *DispatchCtx) Get(key string) interface{} {
-	return ctx.Conn().Get(key)
+func (ctx *DispatchCtx) Set(key string, v interface{}) {
+	ctx.mtx.Lock()
+	ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
+	ctx.mtx.Unlock()
 }
 
-func (ctx *DispatchCtx) Set(key string, val interface{}) {
-	ctx.Conn().Set(key, val)
+func (ctx *DispatchCtx) Get(key string) interface{} {
+	ctx.mtx.RLock()
+	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
+	ctx.mtx.RUnlock()
+	return v
+}
+
+func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
+	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].([]byte)
+	if ok {
+		return v
+	}
+	return defaultValue
+}
+
+func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
+	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
+	switch x := v.(type) {
+	case []byte:
+		return tools.ByteToStr(x)
+	case string:
+		return x
+	default:
+		return defaultValue
+	}
+}
+
+func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
+	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(int64)
+	if ok {
+		return v
+	}
+	return defaultValue
+}
+
+func (ctx *DispatchCtx) GetBool(key string) bool {
+	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(bool)
+	if ok {
+		return v
+	}
+	return false
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
@@ -88,20 +139,11 @@ type RequestCtx struct {
 	quickReturn bool
 	nextChan    chan struct{}
 	stop        bool
-	mtx         sync.RWMutex
-	kv          map[uint32]interface{}
 }
 
 func newRequestCtx() *RequestCtx {
 	return &RequestCtx{
 		nextChan: make(chan struct{}, 1),
-		kv:       make(map[uint32]interface{}, 3),
-	}
-}
-
-func (ctx *RequestCtx) reset() {
-	for k := range ctx.kv {
-		delete(ctx.kv, k)
 	}
 }
 
@@ -135,52 +177,29 @@ func (ctx *RequestCtx) Stopped() bool {
 }
 
 func (ctx *RequestCtx) Set(key string, v interface{}) {
-	ctx.mtx.Lock()
-	ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
-	ctx.mtx.Unlock()
+	ctx.dispatchCtx.mtx.Lock()
+	ctx.dispatchCtx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
+	ctx.dispatchCtx.mtx.Unlock()
 }
 
 func (ctx *RequestCtx) Get(key string) interface{} {
-	ctx.mtx.RLock()
-	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
-	ctx.mtx.RUnlock()
-	return v
+	return ctx.dispatchCtx.Get(key)
 }
 
 func (ctx *RequestCtx) GetBytes(key string, defaultValue []byte) []byte {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].([]byte)
-	if ok {
-		return v
-	}
-	return defaultValue
+	return ctx.dispatchCtx.GetBytes(key, defaultValue)
 }
 
 func (ctx *RequestCtx) GetString(key string, defaultValue string) string {
-	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
-	switch x := v.(type) {
-	case []byte:
-		return tools.ByteToStr(x)
-	case string:
-		return x
-	default:
-		return defaultValue
-	}
+	return ctx.dispatchCtx.GetString(key, defaultValue)
 }
 
 func (ctx *RequestCtx) GetInt64(key string, defaultValue int64) int64 {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(int64)
-	if ok {
-		return v
-	}
-	return defaultValue
+	return ctx.dispatchCtx.GetInt64(key, defaultValue)
 }
 
 func (ctx *RequestCtx) GetBool(key string) bool {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(bool)
-	if ok {
-		return v
-	}
-	return false
+	return ctx.dispatchCtx.GetBool(key)
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {

@@ -139,32 +139,33 @@ func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
 	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
 }
 
-func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error) {
+func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {
 	// If server is standalone then we are the leader anyway
-	isLeader := true
-	if edge.raftEnabled {
-		if edge.raft.State() == raft.Leader {
-			raftCmd := acquireRaftCommand()
-			raftCmd.Fill(edge.serverID, dispatchCtx.req)
-			mo := proto.MarshalOptions{}
-			raftCmdBytes := pools.Bytes.GetCap(mo.Size(raftCmd))
-			raftCmdBytes, err = mo.MarshalAppend(raftCmdBytes, raftCmd)
-			if err != nil {
-				return
-			}
-			f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
-			err = f.Error()
-			pools.Bytes.Put(raftCmdBytes)
-			releaseRaftCommand(raftCmd)
-			if err != nil {
-				return
-			}
-		} else {
-			isLeader = false
-		}
+	isLeader = true
+	if !edge.raftEnabled {
+		return
 	}
-	err = edge.execute(dispatchCtx, isLeader)
-	return err
+
+	if edge.raft.State() == raft.Leader {
+		raftCmd := acquireRaftCommand()
+		raftCmd.Fill(edge.serverID, dispatchCtx.req)
+		mo := proto.MarshalOptions{UseCachedSize: true}
+		raftCmdBytes := pools.Bytes.GetCap(mo.Size(raftCmd))
+		raftCmdBytes, err = mo.MarshalAppend(raftCmdBytes, raftCmd)
+		if err != nil {
+			return
+		}
+		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
+		err = f.Error()
+		pools.Bytes.Put(raftCmdBytes)
+		releaseRaftCommand(raftCmd)
+		if err != nil {
+			return
+		}
+	} else {
+		isLeader = false
+	}
+	return
 }
 func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error) {
 	waitGroup := acquireWaitGroup()
@@ -184,7 +185,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *RequestCtx, idx int) {
-				edge.executeFunc(dispatchCtx, ctx, x.Envelopes[idx], isLeader)
+				edge.executeFunc(ctx, x.Envelopes[idx], isLeader)
 				nextChan <- struct{}{}
 				waitGroup.Done()
 				releaseRequestCtx(ctx)
@@ -197,14 +198,14 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 		}
 	default:
 		ctx := acquireRequestCtx(dispatchCtx, false)
-		edge.executeFunc(dispatchCtx, ctx, dispatchCtx.req, isLeader)
+		edge.executeFunc(ctx, dispatchCtx.req, isLeader)
 		releaseRequestCtx(ctx)
 	}
 	waitGroup.Wait()
 	releaseWaitGroup(waitGroup)
 	return nil
 }
-func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
+func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
 	defer edge.recoverPanic(requestCtx, in)
 
 	var startTime time.Time
@@ -213,7 +214,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 		startTime = time.Now()
 		ce.Write(
 			zap.String("Constructor", edge.getConstructorName(in.GetConstructor())),
-			zap.Uint64("RequestID", in.GetRequestID()),
+			zap.Uint64("ReqID", in.GetRequestID()),
 		)
 	}
 	if !isLeader {
@@ -275,7 +276,7 @@ func (edge *Server) executeFunc(dispatchCtx *DispatchCtx, requestCtx *RequestCtx
 
 	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
 		ce.Write(
-			zap.Uint64("RequestID", in.GetRequestID()),
+			zap.Uint64("ReqID", in.GetRequestID()),
 			zap.Duration("T", time.Now().Sub(startTime)),
 		)
 	}
@@ -294,7 +295,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
-func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
 	// _, task := trace.NewTask(context.Background(), "Handle Gateway Message")
 	// defer task.End()
 
@@ -304,7 +305,11 @@ func (edge *Server) HandleGatewayMessage(conn gateway.Conn, streamID int64, data
 		releaseDispatchCtx(dispatchCtx)
 		return
 	}
-	err = edge.executePrepare(dispatchCtx)
+	err, isLeader := edge.executePrepare(dispatchCtx)
+	if err != nil {
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+	}
+	err = edge.execute(dispatchCtx, isLeader)
 	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
@@ -323,6 +328,8 @@ func (edge *Server) onConnect(conn gateway.Conn) {
 func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
+
+func (edge *Server) onClusterMessage(dispatchCtx *DispatchCtx, kvs ...*rony.KeyValue) {}
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set
 func (edge *Server) StartCluster() (err error) {

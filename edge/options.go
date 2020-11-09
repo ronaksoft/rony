@@ -69,7 +69,7 @@ func WithTcpGateway(config tcpGateway.Config) Option {
 		if err != nil {
 			panic(err)
 		}
-		gatewayTcp.MessageHandler = edge.HandleGatewayMessage
+		gatewayTcp.MessageHandler = edge.onGatewayMessage
 		gatewayTcp.ConnectHandler = edge.onConnect
 		gatewayTcp.CloseHandler = edge.onClose
 		edge.gatewayProtocol = gateway.TCP
@@ -89,7 +89,7 @@ func WithTestGateway(config dummyGateway.Config) Option {
 		if err != nil {
 			panic(err)
 		}
-		gatewayDummy.MessageHandler = edge.HandleGatewayMessage
+		gatewayDummy.MessageHandler = edge.onGatewayMessage
 		gatewayDummy.ConnectHandler = edge.onConnect
 		gatewayDummy.CloseHandler = edge.onClose
 		edge.gatewayProtocol = gateway.Dummy

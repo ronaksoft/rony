@@ -105,9 +105,6 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 }
 
 func releaseRequestCtx(ctx *RequestCtx) {
-	// Reset the Key-Value store
-	ctx.reset()
-
 	// Just to make sure channel is empty, or empty it if not
 	select {
 	case <-ctx.nextChan:
@@ -139,5 +136,8 @@ func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverI
 }
 
 func releaseDispatchCtx(ctx *DispatchCtx) {
+	// Reset the Key-Value store
+	ctx.reset()
+
 	dispatchCtxPool.Put(ctx)
 }

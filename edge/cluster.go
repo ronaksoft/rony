@@ -273,14 +273,14 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	_ = proto.UnmarshalOptions{Merge: true}.Unmarshal(data, cm)
 	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.Sender)
 	dispatchCtx.FillEnvelope(cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message)
-	releaseClusterMessage(cm)
 
 	d.edge.rateLimitChan <- struct{}{}
 	go func() {
 		// TODO:: handle error, for instance we might send back an error to the sender
-		_ = d.edge.executePrepare(dispatchCtx)
+		d.edge.onClusterMessage(dispatchCtx, cm.Store...)
 		d.edge.dispatcher.Done(dispatchCtx)
 		releaseDispatchCtx(dispatchCtx)
+		releaseClusterMessage(cm)
 		<-d.edge.rateLimitChan
 	}()
 }
