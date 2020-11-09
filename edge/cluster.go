@@ -31,14 +31,14 @@ func (edge *Server) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *Server) ClusterSend(serverID []byte, authID int64, envelope *rony.MessageEnvelope) (err error) {
+func (edge *Server) ClusterSend(serverID []byte, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) (err error) {
 	m := edge.cluster.GetByID(tools.ByteToStr(serverID))
 	if m == nil {
 		return rony.ErrNotFound
 	}
 
 	clusterMessage := acquireClusterMessage()
-	clusterMessage.Fill(edge.serverID, authID, envelope)
+	clusterMessage.Fill(edge.serverID, envelope, kvs...)
 
 	mo := proto.MarshalOptions{}
 	b := pools.Bytes.GetCap(mo.Size(clusterMessage))

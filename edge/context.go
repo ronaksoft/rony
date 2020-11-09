@@ -187,7 +187,7 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...gateway.KeyValue) {
+func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope, kvs...)
@@ -200,24 +200,23 @@ func (ctx *RequestCtx) PushError(code, item string) {
 
 func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems []string, localTxt string, localItems []string) {
 	ctx.PushMessage(rony.C_Error, &rony.Error{
-		Code:            code,
-		Items:           item,
-		EnglishItems:    enItems,
-		EnglishTemplate: enTxt,
-		LocalTemplate:   localTxt,
-		LocalItems:      localItems,
+		Code:               code,
+		Items:              item,
+		TemplateItems:      enItems,
+		Template:           enTxt,
+		LocalTemplate:      localTxt,
+		LocalTemplateItems: localItems,
 	})
 	ctx.stop = true
 }
 
-func (ctx *RequestCtx) PushClusterMessage(serverID string, authID int64, requestID uint64, constructor int64, proto proto.Message) {
+func (ctx *RequestCtx) PushClusterMessage(serverID string, requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
-	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), authID, envelope)
+	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), envelope, kvs...)
 	if err != nil {
 		log.Error("ClusterMessage Error",
 			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),
-			zap.Int64("AuthID", authID),
 			zap.Uint64("RequestID", envelope.GetRequestID()),
 			zap.String("C", ctx.dispatchCtx.edge.getConstructorName(envelope.GetConstructor())),
 			zap.Error(err),

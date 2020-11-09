@@ -68,10 +68,10 @@ func (p *poolError) Get() *Error {
 func (p *poolError) Put(x *Error) {
 	x.Code = ""
 	x.Items = ""
-	x.EnglishTemplate = ""
-	x.EnglishItems = x.EnglishItems[:0]
+	x.Template = ""
+	x.TemplateItems = x.TemplateItems[:0]
 	x.LocalTemplate = ""
-	x.LocalItems = x.LocalItems[:0]
+	x.LocalTemplateItems = x.LocalTemplateItems[:0]
 	p.pool.Put(x)
 }
 
@@ -231,10 +231,10 @@ func (x *MessageContainer) DeepCopy(z *MessageContainer) {
 func (x *Error) DeepCopy(z *Error) {
 	z.Code = x.Code
 	z.Items = x.Items
-	z.EnglishTemplate = x.EnglishTemplate
-	z.EnglishItems = append(z.EnglishItems[:0], x.EnglishItems...)
+	z.Template = x.Template
+	z.TemplateItems = append(z.TemplateItems[:0], x.TemplateItems...)
 	z.LocalTemplate = x.LocalTemplate
-	z.LocalItems = append(z.LocalItems[:0], x.LocalItems...)
+	z.LocalTemplateItems = append(z.LocalTemplateItems[:0], x.LocalTemplateItems...)
 }
 
 func (x *Redirect) DeepCopy(z *Redirect) {

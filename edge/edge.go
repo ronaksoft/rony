@@ -39,7 +39,7 @@ type GetConstructorNameFunc func(constructor int64) string
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...gateway.KeyValue)
+	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'

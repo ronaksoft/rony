@@ -22,10 +22,10 @@ message MessageContainer {
 message Error {
     string Code = 1;
     string Items = 2;
-    string EnglishTemplate = 3;
-    repeated string EnglishItems = 4;
+    string Template = 3;
+    repeated string TemplateItems = 4;
     string LocalTemplate = 5;
-    repeated string LocalItems = 6;
+    repeated string LocalTemplateItems = 6;
 }
 
 // Redirect
@@ -34,6 +34,7 @@ message Redirect {
     string ServerID = 2;
 }
 
+// KeyValue
 message KeyValue {
     string Key = 1;
     string Value = 2;

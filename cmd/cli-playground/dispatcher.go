@@ -19,7 +19,7 @@ func (d dispatcher) OnClose(conn gateway.Conn) {
 
 }
 
-func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...gateway.KeyValue) {
+func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
 	if ctx.Conn() != nil {
 		mo := proto.MarshalOptions{
 			UseCachedSize: true,

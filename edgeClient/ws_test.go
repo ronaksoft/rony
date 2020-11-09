@@ -28,7 +28,7 @@ type server struct {
 	e *edge.Server
 }
 
-func (s server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...gateway.KeyValue) {
+func (s server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
 	b, _ := proto.Marshal(envelope)
 	_ = ctx.Conn().SendBinary(ctx.StreamID(), b)
 }
