@@ -578,39 +578,6 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	}
 }
 
-// GenServer generates the server concrete struct ready to implement
-func GenServer(file *protogen.File, g *protogen.GeneratedFile) {
-	g.P("package ", file.GoPackageName)
-
-	g.QualifiedGoIdent(protogen.GoIdent{
-		GoName:       "",
-		GoImportPath: "github.com/ronaksoft/rony/edge",
-	})
-
-	// Generate Server
-	for _, s := range file.Services {
-		g.P("type ", s.Desc.Name(), " struct {")
-		g.P("}")
-		g.P()
-		for _, m := range s.Methods {
-			inputPkg, inputType := descName(file, g, m.Desc.Input())
-			outputPkg, outputType := descName(file, g, m.Desc.Output())
-			inputName := inputType
-			if inputPkg != "" {
-				inputName = fmt.Sprintf("%s.%s", inputPkg, inputType)
-			}
-			outputName := outputType
-			if outputPkg != "" {
-				outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
-			}
-			g.P("func (srv *", s.Desc.Name(), ") ", m.Desc.Name(), "(ctx *edge.RequestCtx, req *", inputName, ", res *", outputName, ") {")
-			g.P("panic (\"implement me\")")
-			g.P("}")
-			g.P()
-		}
-	}
-}
-
 func zeroValue(t protoreflect.Kind) string {
 	switch t {
 	case protoreflect.BoolKind:

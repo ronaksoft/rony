@@ -22,11 +22,11 @@ func NewServer(serverID string, opts ...edge.Option) *Server {
 }
 
 func (s *Server) Start() error {
-	err := s.e.RunCluster()
+	err := s.e.StartCluster()
 	if err != nil {
 		return err
 	}
-	s.e.RunGateway()
+	s.e.StartGateway()
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (s *Server) Shutdown(signals ...os.Signal) {
 	s.e.ShutdownWithSignal(signals...)
 }
 
-func (s *Server) OnMessage(ctx *edge.DispatchCtx, authID int64, envelope *rony.MessageEnvelope) {
+func (s *Server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs *rony.KeyValue) {
 	panic("implement me")
 }
 

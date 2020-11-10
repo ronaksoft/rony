@@ -76,58 +76,6 @@ var newCmd = &cobra.Command{
 	},
 }
 
-func setupSkeleton(g *genny.Generator, projectPath, goPackage string) {
-	cmd := exec.Command("mkdir", "-p", projectPath)
-	cmd.Env = os.Environ()
-	g.Command(cmd)
-
-	pathPrefix := skeletonPath + "/skel"
-	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
-		realPath := strings.TrimSuffix(strings.TrimPrefix(path, pathPrefix), ".tpl")
-		if info.IsDir() {
-			g.File(genny.NewDir(filepath.Join(projectPath, realPath), os.ModeDir|0744))
-		} else {
-			f, err := pkger.Open(path)
-			if err != nil {
-				return err
-			}
-			tCtx := plush.NewContext()
-			tCtx.Set("goPackage", func() string {
-				return goPackage
-			})
-			s, err := plush.RenderR(f, tCtx)
-			if err != nil {
-				return err
-			}
-			g.File(genny.NewFileS(filepath.Join(projectPath, realPath), s))
-			_ = f.Close()
-		}
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-}
-func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
-	cmd := exec.Command("go", "mod", "init", goPackage)
-	cmd.Env = os.Environ()
-	cmd.Dir = projectPath
-	g.Command(cmd)
-}
-func goModuleTidy(g *genny.Generator, projectPath string) {
-	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Env = os.Environ()
-	cmd.Dir = projectPath
-	g.Command(cmd)
-}
-func gofmt(g *genny.Generator, projectPath string) {
-	cmd := exec.Command("go", "fmt", "./...")
-	cmd.Env = os.Environ()
-	cmd.Dir = projectPath
-
-	g.Command(cmd)
-}
-
 var buildProtoCmd = &cobra.Command{
 	Use: "build-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -167,7 +115,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
 					fmt.Sprintf("--go_out=paths=source_relative:%s", projectPathAbs),
-					fmt.Sprintf(path),
+					path,
 				)
 				cmd1.Env = os.Environ()
 				cmd1.Dir = filepath.Dir(projectPathAbs)
@@ -177,7 +125,7 @@ func compileProto(g *genny.Generator, projectPath string) {
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
 					fmt.Sprintf("--gorony_out=paths=source_relative,plugin=server:%s", projectPathAbs),
-					fmt.Sprintf(path),
+					path,
 				)
 				cmd2.Env = os.Environ()
 				cmd2.Dir = filepath.Dir(projectPathAbs)
@@ -187,4 +135,59 @@ func compileProto(g *genny.Generator, projectPath string) {
 		})
 	}
 
+}
+
+func setupSkeleton(g *genny.Generator, projectPath, goPackage string) {
+	cmd := exec.Command("mkdir", "-p", projectPath)
+	cmd.Env = os.Environ()
+	g.Command(cmd)
+
+	pathPrefix := skeletonPath + "/skel"
+	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
+		realPath := strings.TrimSuffix(strings.TrimPrefix(path, pathPrefix), ".tpl")
+		if info.IsDir() {
+			g.File(genny.NewDir(filepath.Join(projectPath, realPath), os.ModeDir|0744))
+		} else {
+			f, err := pkger.Open(path)
+			if err != nil {
+				return err
+			}
+			tCtx := plush.NewContext()
+			tCtx.Set("goPackage", func() string {
+				return goPackage
+			})
+			s, err := plush.RenderR(f, tCtx)
+			if err != nil {
+				return err
+			}
+			g.File(genny.NewFileS(filepath.Join(projectPath, realPath), s))
+			_ = f.Close()
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func goModuleInit(g *genny.Generator, projectPath, goPackage string) {
+	cmd := exec.Command("go", "mod", "init", goPackage)
+	cmd.Env = os.Environ()
+	cmd.Dir = projectPath
+	g.Command(cmd)
+}
+
+func goModuleTidy(g *genny.Generator, projectPath string) {
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Env = os.Environ()
+	cmd.Dir = projectPath
+	g.Command(cmd)
+}
+
+func gofmt(g *genny.Generator, projectPath string) {
+	cmd := exec.Command("go", "fmt", "./...")
+	cmd.Env = os.Environ()
+	cmd.Dir = projectPath
+
+	g.Command(cmd)
 }

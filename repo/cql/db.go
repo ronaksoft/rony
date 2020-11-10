@@ -27,7 +27,12 @@ func MustInit(config Config) {
 	}
 }
 
-func Init(config Config) error {
+func Init(config Config) (err error) {
+	_Session, err = New(config)
+	return
+}
+
+func New(config Config) (gocqlx.Session, error) {
 	scyllaCluster := gocql.NewCluster(strings.Split(config.Host, ",")...)
 	scyllaCluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{
 		NumRetries: config.Retries,
@@ -50,7 +55,7 @@ func Init(config Config) error {
 	scyllaCluster.PageSize = config.PageSize
 	scyllaCluster.WriteCoalesceWaitTime = config.WriteCoalesceWaitTime
 	if len(config.Keyspace) == 0 {
-		return fmt.Errorf("keyspace is not set")
+		return gocqlx.Session{}, fmt.Errorf("keyspace is not set")
 	}
 	scyllaCluster.QueryObserver = config.QueryObserver
 	scyllaCluster.Keyspace = config.Keyspace
@@ -59,10 +64,9 @@ func Init(config Config) error {
 	scyllaCluster.CQLVersion = config.CqlVersion
 	session, err := scyllaCluster.CreateSession()
 	if err != nil {
-		return err
+		return gocqlx.Session{}, err
 	}
-	_Session = gocqlx.NewSession(session)
-	return nil
+	return gocqlx.NewSession(session), nil
 }
 
 func Session() gocqlx.Session {
