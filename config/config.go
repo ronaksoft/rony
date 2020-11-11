@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"strings"
+	"time"
 )
 
 /*
@@ -49,14 +50,6 @@ func SetEnvPrefix(prefix string) {
 	_Viper.AutomaticEnv()
 }
 
-// Set sets the value for the key in the override register.
-// Set is case-insensitive for a key.
-// Will be used instead of values obtained via
-// flags, config file, ENV, default, or key/value store.
-func Set(key string, val interface{}) {
-	_Viper.Set(key, val)
-}
-
 // BindCmdFlags binds a full flag set to the configuration, using each flag's long
 // name as the config key.
 func BindCmdFlags(cmd *cobra.Command) error {
@@ -75,4 +68,60 @@ func SetCmdPersistentFlags(cmd *cobra.Command, opts ...FlagOption) {
 	for _, fo := range opts {
 		fo(cmd.PersistentFlags())
 	}
+}
+
+// Set sets the value for the key in the override register.
+// Set is case-insensitive for a key.
+// Will be used instead of values obtained via
+// flags, config file, ENV, default, or key/value store.
+func Set(key string, val interface{}) {
+	_Viper.Set(key, val)
+}
+
+func GetBool(key string) bool {
+	return _Viper.GetBool(key)
+}
+
+func GetString(key string) string {
+	return _Viper.GetString(key)
+}
+
+func GetInt64(key string) int64 {
+	return _Viper.GetInt64(key)
+}
+
+func GetUint64(key string) uint64 {
+	return _Viper.GetUint64(key)
+}
+
+func GetInt32(key string) int32 {
+	return _Viper.GetInt32(key)
+}
+
+func GetUint32(key string) uint32 {
+	return _Viper.GetUint32(key)
+}
+
+func GetInt(key string) int {
+	return _Viper.GetInt(key)
+}
+
+func GetUint(key string) uint {
+	return _Viper.GetUint(key)
+}
+
+func GetIntSlice(key string) []int {
+	return _Viper.GetIntSlice(key)
+}
+
+func GetStringSlice(key string) []string {
+	return _Viper.GetStringSlice(key)
+}
+
+func GetDuration(key string) time.Duration {
+	return _Viper.GetDuration(key)
+}
+
+func GetTime(key string) time.Time {
+	return _Viper.GetTime(key)
 }
