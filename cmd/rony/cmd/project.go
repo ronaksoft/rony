@@ -6,7 +6,7 @@ import (
 	"github.com/gobuffalo/genny/v2"
 	"github.com/gobuffalo/plush/v4"
 	"github.com/markbates/pkger"
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -29,12 +29,12 @@ const (
 
 func init() {
 	workingDir, _ := os.Getwd()
-	tools.SetFlags(newCmd,
-		tools.StringFlag("projectPath", workingDir, "the root path of the project"),
-		tools.StringFlag("goPackage", "main", "the full path of go package in go.mod file"),
+	config.SetFlags(newCmd,
+		config.StringFlag("projectPath", workingDir, "the root path of the project"),
+		config.StringFlag("goPackage", "main", "the full path of go package in go.mod file"),
 	)
-	tools.SetFlags(buildProtoCmd,
-		tools.StringFlag("projectPath", workingDir, "the root path of the project"),
+	config.SetFlags(buildProtoCmd,
+		config.StringFlag("projectPath", workingDir, "the root path of the project"),
 	)
 
 	RootCmd.AddCommand(projectCmd)

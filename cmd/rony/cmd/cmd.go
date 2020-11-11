@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 )
 
@@ -15,8 +15,8 @@ import (
 */
 
 func init() {
-	tools.SetPersistentFlags(RootCmd,
-		tools.BoolFlag("dryRun", false, "if set then it is a dry run for testing purpose"),
+	config.SetPersistentFlags(RootCmd,
+		config.BoolFlag("dryRun", false, "if set then it is a dry run for testing purpose"),
 	)
 }
 

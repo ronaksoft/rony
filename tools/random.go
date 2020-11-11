@@ -106,9 +106,13 @@ func RandomInt(n int) (x int) {
 }
 
 // RandUint64 produces a pseudo-random unsigned number
-func RandomUint64() (x uint64) {
+func RandomUint64(n uint64) (x uint64) {
 	rnd := rndGen.GetRand()
-	x = rnd.Uint64()
+	if n == 0 {
+		x = rnd.Uint64()
+	} else {
+		x = rnd.Uint64() % n
+	}
 	rndGen.PutRand(rnd)
 	return
 }

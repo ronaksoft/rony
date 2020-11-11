@@ -76,7 +76,18 @@ customized code.
 
 ```
 ---
-## Summary
+## Shoulders
+Rony is made of big and popular packages. Without these great libraries building Rony was not possible.
+* [Hashicorp MemberList](https://github.com/hashicorp/memberlist)
+* [Hashicorp Raft](https://github.com/hashicorp/raft)
+* [SPF13 Cobra](https://github.com/spf13/cobra)
+* [SPF13 Viper](https://github.com/spf13/viper)
+* [Valyala FastHttp](https://github.com/valyala/fasthttp)
+* [Uber Zap](https://go.uber.org/zap)
+* [Gobwas Websocket](https://github.com/gobwas/ws)
+* [Allegro BigCache](https://github.com/allegro/bigcache)
+* [GoBuffalo Genny](https://github.com/gobuffalo/genny)
+* [GoBuffalo Plush](https://github.com/gobuffalo/plush)
 
 ### Contribution
 We need to make a clear and understandable documentation for Rony, so any help would be appreciated. We also appreciate benchmarking Rony 
