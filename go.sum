@@ -308,8 +308,8 @@ github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f h1:4+gHs0jJFJ06bfN8P
 github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f/go.mod h1:tHCZHV8b2A90ObojrEAzY0Lb03gxUxjDHr5IJyAh4ew=
 github.com/markbates/oncer v1.0.0 h1:E83IaVAHygyndzPimgUYJjbshhDTALZyXxvk9FOlQRY=
 github.com/markbates/oncer v1.0.0/go.mod h1:Z59JA581E9GP6w96jai+TGqafHPW+cPfRxz2aSZ0mcI=
-github.com/markbates/pkger v0.17.0 h1:RFfyBPufP2V6cddUyyEVSHBpaAnM1WzaMNyqomeT+iY=
-github.com/markbates/pkger v0.17.0/go.mod h1:0JoVlrol20BSywW79rN3kdFFsE5xYM+rSCQDXbLhiuI=
+github.com/markbates/pkger v0.17.1 h1:/MKEtWqtc0mZvu9OinB9UzVN9iYCwLWuyUv4Bw+PCno=
+github.com/markbates/pkger v0.17.1/go.mod h1:0JoVlrol20BSywW79rN3kdFFsE5xYM+rSCQDXbLhiuI=
 github.com/markbates/safe v1.0.1 h1:yjZkbvRM6IzKj9tlu/zMJLS0n/V351OZWRnF3QfaUxI=
 github.com/markbates/safe v1.0.1/go.mod h1:nAqgmRi7cY2nqMc92/bSEeQA+R4OheNU2T1kNSCBdG0=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
