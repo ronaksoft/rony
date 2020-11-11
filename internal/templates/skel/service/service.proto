@@ -1,0 +1,20 @@
+syntax = "proto3";
+package service ;
+option go_package = ",;service";
+
+
+// SampleService
+service SampleService {
+    rpc Func1(Request1) returns (Response1);
+}
+
+// Request1
+message Request1 {
+    int64 ID = 1;
+}
+
+// Response1
+message Response1 {
+    int64 ReqID = 1;
+    string RandomText = 2;
+}

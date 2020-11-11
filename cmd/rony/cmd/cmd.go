@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 )
 
@@ -14,11 +13,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func init() {
-	config.SetPersistentFlags(RootCmd,
-		config.BoolFlag("dryRun", false, "if set then it is a dry run for testing purpose"),
-	)
-}
+func init() {}
 
 var RootCmd = &cobra.Command{
 	Use: "rony",

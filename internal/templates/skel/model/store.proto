@@ -1,0 +1,17 @@
+syntax = "proto3";
+package model;
+option go_package = ",;model";
+
+// Store
+message Store {
+    string ID = 1;
+    string Name = 2;
+}
+
+
+// User
+message User {
+    string ID = 1;
+    string Name = 2;
+    string Username =3;
+}
