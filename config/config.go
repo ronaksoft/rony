@@ -57,15 +57,22 @@ func Set(key string, val interface{}) {
 	_Viper.Set(key, val)
 }
 
-// BindCommandFlags binds a full flag set to the configuration, using each flag's long
+// BindCmdFlags binds a full flag set to the configuration, using each flag's long
 // name as the config key.
-func BindCommandFlags(cmd *cobra.Command) error {
+func BindCmdFlags(cmd *cobra.Command) error {
 	return _Viper.BindPFlags(cmd.Flags())
 }
 
-// EnableCommandFlags sets the flags defined by FlagOption to the command 'cmd'.
-func EnableCommandFlags(cmd *cobra.Command, opts ...FlagOption) {
+// SetCmdFlags sets the flags defined by FlagOption to the command 'cmd'.
+func SetCmdFlags(cmd *cobra.Command, opts ...FlagOption) {
 	for _, fo := range opts {
 		fo(cmd.Flags())
+	}
+}
+
+// SetCmdPersistentFlags sets the persistent flags defined by FlagOption to the command 'cmd'.
+func SetCmdPersistentFlags(cmd *cobra.Command, opts ...FlagOption) {
+	for _, fo := range opts {
+		fo(cmd.PersistentFlags())
 	}
 }
