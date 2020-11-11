@@ -1,4 +1,4 @@
-package badger
+package kv
 
 import (
 	"github.com/ronaksoft/rony/tools"

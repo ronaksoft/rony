@@ -1,4 +1,4 @@
-package badger
+package kv
 
 import (
 	"time"
