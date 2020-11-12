@@ -35,7 +35,6 @@ import (
 type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
-
 // Server
 type Server struct {
 	// General
@@ -282,7 +281,7 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	// defer task.End()
 
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID)
-	err := edge.dispatcher.Prepare(dispatchCtx, data, kvs...)
+	err := edge.dispatcher.Interceptor(dispatchCtx, data, kvs...)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return

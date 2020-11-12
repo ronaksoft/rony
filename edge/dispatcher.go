@@ -25,7 +25,7 @@ type Dispatcher interface {
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	// Note that conn IS NOT nil in any circumstances.
-	Prepare(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error)
+	Interceptor(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error)
 	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
@@ -35,13 +35,10 @@ type Dispatcher interface {
 	OnClose(conn gateway.Conn)
 }
 
-
 // SimpleDispatcher is a naive implementation of Dispatcher. You only need to set OnMessageFunc with
 type SimpleDispatcher struct {
-	OnMessageFunc func (ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
+	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
 }
-
-
 
 func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
 	if s.OnMessageFunc != nil {
@@ -56,7 +53,7 @@ func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnv
 	pools.Bytes.Put(eb)
 }
 
-func (s *SimpleDispatcher) Prepare(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s *SimpleDispatcher) Interceptor(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 

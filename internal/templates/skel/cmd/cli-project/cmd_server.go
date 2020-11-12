@@ -69,7 +69,7 @@ func (s *Server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope
 	panic("implement me")
 }
 
-func (s *Server) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s *Server) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	panic("implement me")
 }
 

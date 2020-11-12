@@ -55,7 +55,7 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageE
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 

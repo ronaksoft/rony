@@ -33,7 +33,7 @@ func (s server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope,
 	_ = ctx.Conn().SendBinary(ctx.StreamID(), b)
 }
 
-func (s server) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s server) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 

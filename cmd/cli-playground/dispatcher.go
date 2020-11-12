@@ -35,7 +35,7 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 
 }
 
-func (d dispatcher) Prepare(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 
