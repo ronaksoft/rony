@@ -1,4 +1,4 @@
-package dummyGateway
+package dummy
 
 import (
 	"github.com/ronaksoft/rony"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/edgeClient"
+	"github.com/ronaksoft/rony/edgec"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"github.com/ronaksoft/rony/pools"
@@ -155,7 +155,7 @@ var EchoCmd = &cobra.Command{
 			fmt.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec := edgeClient.NewWebsocket(edgeClient.Config{
+		ec := edgec.NewWebsocket(edgec.Config{
 			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -226,7 +226,7 @@ var BenchCmd = &cobra.Command{
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()
-				ec := edgeClient.NewWebsocket(edgeClient.Config{
+				ec := edgec.NewWebsocket(edgec.Config{
 					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
 						cmd.Println(m.Constructor, m.RequestID, idx)

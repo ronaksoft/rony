@@ -1,6 +1,6 @@
 // +build !windows,!appengine
 
-package tcpGateway
+package tcp
 
 import (
 	"encoding/binary"

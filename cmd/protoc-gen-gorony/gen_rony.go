@@ -519,14 +519,14 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	// Generate Client
 	g.QualifiedGoIdent(protogen.GoIdent{
 		GoName:       "Client",
-		GoImportPath: "github.com/ronaksoft/rony/edgeClient",
+		GoImportPath: "github.com/ronaksoft/rony/edgec",
 	})
 	for _, s := range file.Services {
 		g.P("type ", s.Desc.Name(), "Client struct {")
-		g.P("c edgeClient.Client")
+		g.P("c edgec.Client")
 		g.P("}")
 		g.P()
-		g.P("func New", s.Desc.Name(), "Client (ec edgeClient.Client) *", s.Desc.Name(), "Client {")
+		g.P("func New", s.Desc.Name(), "Client (ec edgec.Client) *", s.Desc.Name(), "Client {")
 		g.P("return &", s.Desc.Name(), "Client{")
 		g.P("c: ec,")
 		g.P("}")

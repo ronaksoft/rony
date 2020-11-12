@@ -1,4 +1,4 @@
-package edgeClient
+package edgec
 
 import (
 	"fmt"

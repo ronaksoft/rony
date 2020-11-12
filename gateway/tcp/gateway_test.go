@@ -1,4 +1,4 @@
-package tcpGateway_test
+package tcp_test
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package tcpGateway
+package tcp
 
 import (
 	"bytes"

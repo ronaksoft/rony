@@ -1,10 +1,10 @@
-package edgeClient_test
+package edgec_test
 
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/edgeClient"
+	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/gateway"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	log "github.com/ronaksoft/rony/internal/logger"
@@ -91,7 +91,7 @@ func TestClient_Connect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := pb.NewSampleClient(edgeClient.NewWebsocket(edgeClient.Config{
+	c := pb.NewSampleClient(edgec.NewWebsocket(edgec.Config{
 		HostPort: "127.0.0.1:8081",
 	}))
 	wg := sync.WaitGroup{}

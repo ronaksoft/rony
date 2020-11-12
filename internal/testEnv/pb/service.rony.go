@@ -4,7 +4,7 @@ import (
 	fmt "fmt"
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
-	edgeClient "github.com/ronaksoft/rony/edgeClient"
+	edgec "github.com/ronaksoft/rony/edgec"
 	registry "github.com/ronaksoft/rony/registry"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
@@ -334,10 +334,10 @@ func (sw *SampleWrapper) AskWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 }
 
 type SampleClient struct {
-	c edgeClient.Client
+	c edgec.Client
 }
 
-func NewSampleClient(ec edgeClient.Client) *SampleClient {
+func NewSampleClient(ec edgec.Client) *SampleClient {
 	return &SampleClient{
 		c: ec,
 	}
