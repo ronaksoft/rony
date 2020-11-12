@@ -35,24 +35,6 @@ import (
 type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
 type GetConstructorNameFunc func(constructor int64) string
 
-// Dispatcher
-type Dispatcher interface {
-	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
-	// async functions, make sure to hard copy (clone) it before sending it.
-	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
-	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
-	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
-	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
-	// Note that conn IS NOT nil in any circumstances.
-	Prepare(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error)
-	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
-	// messages and updates in one go.
-	Done(ctx *DispatchCtx)
-	// This will be called when a new connection has been opened
-	OnOpen(conn gateway.Conn)
-	// This will be called when a connection is closed
-	OnClose(conn gateway.Conn)
-}
 
 // Server
 type Server struct {
