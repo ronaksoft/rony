@@ -13,6 +13,17 @@ var ClientCmd = &cobra.Command{
 			return err
 		}
 
+		// Sample code for creating a client
+		/**
+			c := service.NewSampleServiceClient(
+				edgec.NewWebsocket(
+					edgec.Config{
+						HostPort: config.GetString("server.hostport"),
+					},
+				),
+			)
+		 **/
+
 		return nil
 	},
 }
