@@ -1,6 +1,47 @@
 # RONY  **(Fast and Scalable RPC Framework)**
-
 ---
+Rony lets you create a clustered aware service easily. Basically when your write a service with
+Rony framework, you develop two interfaces one is for the client side which clients of your 
+service connect and communicate. We call it 'edge'. The other interface communicates with other 
+instances in the cluster. 
+
+In **Rony** we support two types of cluster mode at the same time. Replicated instances or sharded
+instances. In replicated cluster, the nodes in the cluster are replicas of each other. There is
+only one leader at a time. This is done by implementing **Raft** protocol under the hood. In sharded
+cluster nodes are responsible for different sets of data. This could achieve by using different
+replicaSet (i.e. any number between [1..2^31]). The logic that how data distributed between
+different replica sets depends on your own service.
+
+When we want to write a service to support sharding and replication, developers need to write
+a lot of code to manage their communication and how to write the code to handle these interactions
+between services and clients. **Rony** makes it easy. Rony internally uses Raft for consensuses  
+However, to develop your service using **Rony** framework, there are more works to initialize 
+your code comparing to other RESTful frameworks. To help you setup the skeleton even faster 
+there is an executable to makes the life easier for you.
+
+to install the Rony executable you must `go get -u github.com/ronaksoft/rony/cmd/rony` 
+
+### Getting Started
+After we have installed two executable files `protoc-gen-rony` and `rony` you are ready to create
+your project.
+
+```shell script
+mkdir sample-project
+cd ./sample-project
+rony project create --project.name github.com/ronaksoft/sample --project.name sample-project
+```
+
+After running the 'project create' command, you should go to the `service` directory and open `service.proto`
+file and write the appropriate protobuf file. You can also go to `model` directory and edit the `model.proto`
+file, but it is an advanced topic. we just delete it. After finishing our edit job we run the following 
+command from the root of our project.
+
+```shell script
+rony project gen-proto
+```
+
+The above command generates the boiler plate codes for our service.
+
 ### Features
 1. Gossip Protocol
 2. Raft
@@ -70,6 +111,8 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 You must install the following protoc plugins which generate the appropriate codes
 > 1. protoc-gen-gorony
 ```
+go get -u github.com/ronaksoft/rony/cmd/protoc-gen-rony
+
 This is a protoc pluging which could generate codes based on the protobuf. In addition to
 protobuffer syntax there are directive commands available which let the user generate more
 customized code. 
