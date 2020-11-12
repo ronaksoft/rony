@@ -19,7 +19,19 @@ However, to develop your service using **Rony** framework, there are more works 
 your code comparing to other RESTful frameworks. To help you setup the skeleton even faster 
 there is an executable to makes the life easier for you.
 
-to install the Rony executable you must `go get -u github.com/ronaksoft/rony/cmd/rony` 
+
+### Installation
+Use go get to install the Go client-and-server generator:
+
+```
+go get -u github.com/ronaksoft/rony/cmd/rony
+go get -u github.com/ronaksoft/rony/cmd/protoc-gen-rony
+```
+
+You will also need:
+* protoc, the protobuf compiler. You need version 3+.
+* github.com/golang/protobuf/protoc-gen-go, the Go protobuf generator plugin. Get this with `go get`
+ 
 
 ### Getting Started
 After we have installed two executable files `protoc-gen-rony` and `rony` you are ready to create
