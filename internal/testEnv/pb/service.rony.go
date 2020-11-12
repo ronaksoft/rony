@@ -343,12 +343,12 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 	}
 }
 
-func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
+func (c *SampleClient) Func1(req *Req1, kvs ...*rony.KeyValue) (*Res1, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_Func1, req)
+	out.Fill(c.c.GetRequestID(), C_Func1, req, kvs...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -367,12 +367,12 @@ func (c *SampleClient) Func1(req *Req1) (*Res1, error) {
 	}
 }
 
-func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
+func (c *SampleClient) Func2(req *Req2, kvs ...*rony.KeyValue) (*Res2, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_Func2, req)
+	out.Fill(c.c.GetRequestID(), C_Func2, req, kvs...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -391,12 +391,12 @@ func (c *SampleClient) Func2(req *Req2) (*Res2, error) {
 	}
 }
 
-func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
+func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_Echo, req)
+	out.Fill(c.c.GetRequestID(), C_Echo, req, kvs...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -415,12 +415,12 @@ func (c *SampleClient) Echo(req *EchoRequest) (*EchoResponse, error) {
 	}
 }
 
-func (c *SampleClient) Ask(req *AskRequest) (*AskResponse, error) {
+func (c *SampleClient) Ask(req *AskRequest, kvs ...*rony.KeyValue) (*AskResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_Ask, req)
+	out.Fill(c.c.GetRequestID(), C_Ask, req, kvs...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err

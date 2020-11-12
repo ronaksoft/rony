@@ -7,8 +7,9 @@ option go_package = ".;rony";
 message MessageEnvelope {
     int64 Constructor = 1;
     fixed64 RequestID = 2;
-    bytes Auth = 3;
     bytes Message = 4;
+    bytes Auth = 8;
+    repeated KeyValue Store = 10;
 }
 
 // MessageContainer

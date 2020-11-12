@@ -22,8 +22,9 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 	x.Constructor = 0
 	x.RequestID = 0
-	x.Auth = x.Auth[:0]
 	x.Message = x.Message[:0]
+	x.Auth = x.Auth[:0]
+	x.Store = x.Store[:0]
 	p.pool.Put(x)
 }
 
@@ -213,8 +214,15 @@ func init() {
 func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	z.Constructor = x.Constructor
 	z.RequestID = x.RequestID
-	z.Auth = append(z.Auth[:0], x.Auth...)
 	z.Message = append(z.Message[:0], x.Message...)
+	z.Auth = append(z.Auth[:0], x.Auth...)
+	for idx := range x.Store {
+		if x.Store[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Store[idx].DeepCopy(xx)
+			z.Store = append(z.Store, xx)
+		}
+	}
 }
 
 func (x *MessageContainer) DeepCopy(z *MessageContainer) {
