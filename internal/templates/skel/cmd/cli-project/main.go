@@ -18,11 +18,13 @@ func main() {
 		config.BoolFlag("replica.bootstrap", true, "if this server is the first node of the replica set"),
 	)
 
+	// Define the configs if this executable is running as a server instance
 	config.SetCmdFlags(ClientCmd,
 		config.StringFlag("server.hostport", "localhost:8080", "the host:port of the seed server"),
 	)
 
 	RootCmd.AddCommand(ServerCmd, ClientCmd)
+	_ = RootCmd.Execute()
 }
 
 var RootCmd = &cobra.Command{

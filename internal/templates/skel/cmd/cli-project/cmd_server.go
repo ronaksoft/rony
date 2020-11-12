@@ -14,11 +14,16 @@ import (
 var ServerCmd = &cobra.Command{
 	Use: "server",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		err := config.BindCmdFlags(cmd)
+		if err != nil {
+			return err
+		}
+
 		s := NewServer(
 			config.GetString("server.id"),
 			edge.WithTcpGateway(tcpGateway.Config{
 				Concurrency:   100,
-				ListenAddress: "",
+				ListenAddress: ":80",
 				MaxBodySize:   0,
 				MaxIdleTime:   time.Minute,
 				Protocol:      tcpGateway.Auto,
@@ -26,7 +31,7 @@ var ServerCmd = &cobra.Command{
 			edge.WithGossipPort(config.GetInt("gossip.port")),
 			edge.WithReplicaSet(config.GetUint64("replica.set"), config.GetInt("replica.port"), config.GetBool("replica.bootstrap")),
 		)
-		err := s.Start()
+		err = s.Start()
 		if err != nil {
 			panic(err)
 		}

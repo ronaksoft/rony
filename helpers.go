@@ -1,6 +1,7 @@
 package rony
 
 import (
+	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/tools"
 	"hash/crc64"
 	"reflect"
@@ -21,4 +22,13 @@ var (
 
 func ConstructorOf(x interface{}) int64 {
 	return int64(crc64.Checksum(tools.StrToByte(reflect.ValueOf(x).Type().Name()), crc64Table))
+}
+
+// SetLogLevel is used for debugging purpose
+// -1 : DEBUG
+// 0  : INFO
+// 1  : WARN
+// 2  : ERROR
+func SetLogLevel(l int) {
+	log.SetLevel(log.Level(l))
 }

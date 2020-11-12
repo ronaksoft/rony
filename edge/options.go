@@ -21,6 +21,9 @@ type Option func(edge *Server)
 
 // WithReplicaSet
 func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool) Option {
+	if replicaSet == 0 {
+		panic("replica-set could not be set zero")
+	}
 	return func(edge *Server) {
 		edge.raftFSM = raftFSM{edge: edge}
 		edge.replicaSet = replicaSet
