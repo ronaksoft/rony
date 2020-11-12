@@ -344,6 +344,7 @@ func (edge *Server) StartCluster() (err error) {
 	if edge.raftEnabled {
 		err = edge.startRaft(notifyChan)
 		if err != nil {
+			log.Warn("Error On Starting Raft", zap.Error(err))
 			return
 		}
 	}
@@ -380,6 +381,7 @@ func (edge *Server) startGossip() error {
 	conf.Logger = nil
 	conf.BindPort = edge.gossipPort
 	if s, err := memberlist.Create(conf); err != nil {
+		log.Warn("Error On Creating MemberList", zap.Error(err))
 		return err
 	} else {
 		edge.gossip = s
@@ -411,11 +413,33 @@ func (edge *Server) startRaft(notifyChan chan bool) (err error) {
 	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
 	raftConfig.LocalID = raft.ServerID(edge.serverID)
-	raftBind := fmt.Sprintf(":%d", edge.raftPort)
-	raftAdvertiseAddr, err := net.ResolveTCPAddr("tcp", raftBind)
+
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return err
 	}
+
+	var raftAdvertiseAddr *net.TCPAddr
+	var raftBind string
+	for _, addr := range addrs {
+		ipNet, ok := addr.(*net.IPNet)
+		if ok {
+			if ipNet.IP == nil || ipNet.IP.IsLoopback() || ipNet.IP.To4() == nil {
+				continue
+			}
+			raftBind = fmt.Sprintf("%s:%d", ipNet.IP.String(), edge.raftPort)
+			raftAdvertiseAddr, err = net.ResolveTCPAddr("tcp", raftBind)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	log.Info("Raft",
+		zap.String("Bind", raftBind),
+		zap.String("Advertise", raftAdvertiseAddr.String()),
+	)
 
 	raftTransport, err := raft.NewTCPTransport(raftBind, raftAdvertiseAddr, 3, 10*time.Second, os.Stdout)
 	if err != nil {
