@@ -84,7 +84,7 @@ func (p *Pool) GetLen(n int) []byte {
 	return p.Get(n, n)
 }
 
-// logarithmicRange iterates from ceiled to power of two min to max,
+// logarithmicRange iterates from ceil to power of two min to max,
 // calling cb on each iteration.
 func logarithmicRange(min, max int, cb func(int)) {
 	if min == 0 {

@@ -19,7 +19,6 @@ import (
 */
 
 const (
-	bufSize       = 1 << 14 // 16KB
 	DIGITS        = "0123456789"
 	ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )

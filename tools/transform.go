@@ -158,7 +158,7 @@ func ToScreamingDelimited(s string, delimiter uint8, ignore uint8, screaming boo
 			}
 		}
 
-		if (v == ' ' || v == '_' || v == '-') && uint8(v) != ignore {
+		if (v == ' ' || v == '_' || v == '-') && v != ignore {
 			// replace space/underscore/hyphen with delimiter
 			n.WriteByte(delimiter)
 		} else {

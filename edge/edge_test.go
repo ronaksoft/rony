@@ -23,7 +23,6 @@ import (
 
 var (
 	raftServers map[string]*edge.Server
-	raftLeader  *edge.Server
 )
 
 func initRaftWithWebsocket() {
@@ -56,7 +55,6 @@ func initRaftWithWebsocket() {
 	time.Sleep(time.Second)
 	for _, id := range ids {
 		if raftServers[id].Stats().RaftState == "Leader" {
-			raftLeader = raftServers[id]
 			return
 		}
 	}
