@@ -19,8 +19,7 @@ for pkg in ${packages}; do
   if [[ ${skipTest} = false ]]; then
     x=$(go test -mod=vendor -v "$pkg");
     # shellcheck disable=SC2181
-    if ! x; then
-      curl https://notifier.nstd.me/log/Git%20-%20River%20Test%20Error/"${x}"
+    if [ ! "${x}" ]; then
       echo "\033[0m${x}";
       exit 1
     fi
