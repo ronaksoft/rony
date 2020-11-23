@@ -83,7 +83,7 @@ func NewWebsocket(config Config) *Websocket {
 		config.RequestTimeout = requestTimeout
 	}
 	if config.ContextTimeout == 0 {
-		config.ContextTimeout = requestRetry * requestTimeout
+		config.ContextTimeout = config.RequestTimeout * time.Duration(config.RequestMaxRetry)
 	}
 	c := Websocket{
 		nextReqID:      tools.RandomUint64(0),
