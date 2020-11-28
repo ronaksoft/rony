@@ -60,6 +60,7 @@ func (edge *Server) updateCluster(timeout time.Duration) error {
 type ClusterMember struct {
 	ServerID    string
 	ReplicaSet  uint64
+	ShardRange  [2]uint32
 	GatewayAddr []string
 	Addr        net.IP
 	Port        uint16
@@ -165,14 +166,6 @@ func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
 	}
 }
 
-func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
-	cm := convertMember(n)
-	d.edge.cluster.RemoveMember(cm)
-	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = leaveRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
-	}
-}
-
 func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
@@ -211,6 +204,15 @@ func joinRaft(edge *Server, nodeID, addr string) error {
 	}
 	return nil
 }
+
+func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
+	cm := convertMember(n)
+	d.edge.cluster.RemoveMember(cm)
+	if cm.ReplicaSet == d.edge.replicaSet {
+		_ = leaveRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+	}
+}
+
 func leaveRaft(edge *Server, nodeID, addr string) error {
 	if !edge.raftEnabled {
 		return rony.ErrRaftNotSet
@@ -243,8 +245,9 @@ type delegateNode struct {
 
 func (d delegateNode) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
-		ServerID:    d.edge.serverID,
-		ReplicaSet:  d.edge.replicaSet,
+		ServerID:   d.edge.serverID,
+		ReplicaSet: d.edge.replicaSet,
+
 		RaftPort:    uint32(d.edge.raftPort),
 		GatewayAddr: d.edge.gateway.Addr(),
 		RaftState:   *rony.RaftState_None.Enum(),

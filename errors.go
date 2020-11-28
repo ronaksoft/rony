@@ -16,7 +16,7 @@ import (
 
 // Error Codes
 const (
-	ErrCodeInternal         = "E00"
+	ErrCodeInternal         = "E00" // When Error is Unknown or it is internal and should not be exposed to the client
 	ErrCodeInvalid          = "E01"
 	ErrCodeUnavailable      = "E02"
 	ErrCodeTooMany          = "E03"

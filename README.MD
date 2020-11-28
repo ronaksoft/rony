@@ -119,6 +119,9 @@ func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
 ```
 **This code does not run, please check example directory for working examples**
 
+
+### Redirect Handling
+
 ### Code Generators
 You must install the following protoc plugins which generate the appropriate codes
 > 1. protoc-gen-gorony

@@ -1,0 +1,37 @@
+syntax = "proto3";
+package rony;
+option go_package = ".;rony";
+import "msg.proto";
+
+// ClusterMessage
+message ClusterMessage {
+    bytes Sender = 1;
+    repeated KeyValue Store = 2;
+    MessageEnvelope Envelope = 3;
+}
+
+// RaftCommand
+message RaftCommand {
+    bytes Sender = 1;
+    repeated KeyValue Store = 2;
+    MessageEnvelope Envelope = 3;
+}
+
+enum RaftState {
+    None = 0;
+    Follower = 1;
+    Candidate = 2;
+    Leader = 3;
+    Shutdown = 4;
+}
+
+// EdgeNode
+message EdgeNode {
+    bytes ServerID = 1;
+    uint64 ReplicaSet = 2;
+    uint32 ShardRangeMin = 3;
+    uint32 ShardRangeMax = 4;
+    uint32 RaftPort = 5;
+    RaftState RaftState = 6;
+    repeated string GatewayAddr = 7;
+}

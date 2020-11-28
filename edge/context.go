@@ -8,9 +8,9 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"hash/crc32"
 	"reflect"
 	"sync"
+	"time"
 )
 
 /*
@@ -38,14 +38,14 @@ type DispatchCtx struct {
 	kind     byte
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
-	kv  map[uint32]interface{}
+	kv  map[string]interface{}
 }
 
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		edge: edge,
 		req:  &rony.MessageEnvelope{},
-		kv:   make(map[uint32]interface{}, 3),
+		kv:   make(map[string]interface{}, 3),
 	}
 }
 
@@ -79,19 +79,19 @@ func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payloa
 
 func (ctx *DispatchCtx) Set(key string, v interface{}) {
 	ctx.mtx.Lock()
-	ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
+	ctx.kv[key] = v
 	ctx.mtx.Unlock()
 }
 
 func (ctx *DispatchCtx) Get(key string) interface{} {
 	ctx.mtx.RLock()
-	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
+	v := ctx.kv[key]
 	ctx.mtx.RUnlock()
 	return v
 }
 
 func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].([]byte)
+	v, ok := ctx.kv[key].([]byte)
 	if ok {
 		return v
 	}
@@ -99,7 +99,7 @@ func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
 }
 
 func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
-	v := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))]
+	v := ctx.kv[key]
 	switch x := v.(type) {
 	case []byte:
 		return tools.ByteToStr(x)
@@ -111,7 +111,7 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 }
 
 func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(int64)
+	v, ok := ctx.kv[key].(int64)
 	if ok {
 		return v
 	}
@@ -119,7 +119,7 @@ func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
 }
 
 func (ctx *DispatchCtx) GetBool(key string) bool {
-	v, ok := ctx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))].(bool)
+	v, ok := ctx.kv[key].(bool)
 	if ok {
 		return v
 	}
@@ -178,7 +178,7 @@ func (ctx *RequestCtx) Stopped() bool {
 
 func (ctx *RequestCtx) Set(key string, v interface{}) {
 	ctx.dispatchCtx.mtx.Lock()
-	ctx.dispatchCtx.kv[crc32.ChecksumIEEE(tools.StrToByte(key))] = v
+	ctx.dispatchCtx.kv[key] = v
 	ctx.dispatchCtx.mtx.Unlock()
 }
 
@@ -200,6 +200,25 @@ func (ctx *RequestCtx) GetInt64(key string, defaultValue int64) int64 {
 
 func (ctx *RequestCtx) GetBool(key string) bool {
 	return ctx.dispatchCtx.GetBool(key)
+}
+
+func (ctx *RequestCtx) PushRedirectLeader() {
+	edge := ctx.dispatchCtx.edge
+	if leaderID := edge.cluster.leaderID; leaderID == "" {
+		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
+	} else {
+		ctx.PushMessage(
+			rony.C_Redirect,
+			&rony.Redirect{
+				LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
+				ServerID:       leaderID,
+			},
+		)
+	}
+}
+
+func (ctx *RequestCtx) PushRedirectShard(shard uint32, wait time.Duration) {
+
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {

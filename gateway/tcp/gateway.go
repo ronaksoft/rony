@@ -43,6 +43,7 @@ type Config struct {
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
 	Protocol      Protocol
+	ExternalAddrs []string
 }
 
 // Gateway
@@ -56,6 +57,7 @@ type Gateway struct {
 	listenOn      string
 	listener      net.Listener
 	addrs         []string
+	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
 
@@ -91,6 +93,7 @@ func New(config Config) (*Gateway, error) {
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      Auto,
+		extAddrs:           config.ExternalAddrs,
 	}
 
 	tcpConfig := tcplisten.Config{
@@ -242,6 +245,9 @@ func (g *Gateway) Shutdown() {
 
 // Addr return the address which gateway is listen on
 func (g *Gateway) Addr() []string {
+	if len(g.extAddrs) > 0 {
+		return g.extAddrs
+	}
 	return g.addrs
 }
 

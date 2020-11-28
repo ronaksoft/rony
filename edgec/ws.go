@@ -319,7 +319,7 @@ SendLoop:
 			x := &rony.Redirect{}
 			_ = proto.UnmarshalOptions{Merge: true}.Unmarshal(e.Message, x)
 			c.connectMtx.Lock()
-			if c.hostPort != x.LeaderHostPort[0] {
+			if len(x.LeaderHostPort) > 0 && c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
 				c.reconnect()
 			}

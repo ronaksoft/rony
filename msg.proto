@@ -32,7 +32,9 @@ message Error {
 // Redirect
 message Redirect {
     repeated string LeaderHostPort = 1;
-    string ServerID = 2;
+    repeated string HostPorts = 2;
+    string ServerID = 3;
+    uint32 WaitInSec = 4;
 }
 
 // KeyValue
@@ -41,35 +43,3 @@ message KeyValue {
     string Value = 2;
 }
 
-// ClusterMessage
-message ClusterMessage {
-    bytes Sender = 1;
-    repeated KeyValue Store = 2;
-    MessageEnvelope Envelope = 3;
-}
-
-// RaftCommand
-message RaftCommand {
-    bytes Sender = 1;
-    repeated KeyValue Store = 2;
-    MessageEnvelope Envelope = 3;
-}
-
-enum RaftState {
-    None = 0;
-    Follower = 1;
-    Candidate = 2;
-    Leader = 3;
-    Shutdown = 4;
-}
-
-// EdgeNode
-message EdgeNode {
-    bytes ServerID = 1;
-    uint64 ReplicaSet = 2;
-    uint64 ShardSet = 3;
-    uint32 RaftPort = 4;
-    RaftState RaftState = 5;
-    repeated string GatewayAddr = 6;
-
-}

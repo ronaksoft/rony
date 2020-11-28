@@ -40,6 +40,7 @@ type Server struct {
 	// General
 	serverID        []byte
 	replicaSet      uint64
+	shardRange      [2]uint32
 	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
@@ -207,17 +208,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 					zap.String("State", edge.raft.State().String()),
 				)
 			}
-			if leaderID := edge.cluster.leaderID; leaderID == "" {
-				requestCtx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
-			} else {
-				requestCtx.PushMessage(
-					rony.C_Redirect,
-					&rony.Redirect{
-						LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
-						ServerID:       leaderID,
-					},
-				)
-			}
+			requestCtx.PushRedirectLeader()
 			return
 		}
 	}
