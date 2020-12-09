@@ -300,6 +300,14 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		GoName:       "",
 		GoImportPath: "github.com/ronaksoft/rony/registry",
 	})
+	g.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "",
+		GoImportPath: "github.com/ronaksoft/rony/edge",
+	})
+	g.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "",
+		GoImportPath: "google.golang.org/protobuf/proto",
+	})
 
 	initFunc := strings.Builder{}
 	initFunc.WriteString("func init() {\n")
@@ -418,6 +426,28 @@ func GenPushToContext(file *protogen.File, g *protogen.GeneratedFile) {
 		mtName := mt.Desc.Name()
 		g.P("func (x *", mtName, ") PushToContext(ctx *edge.RequestCtx) {")
 		g.P("ctx.PushMessage(C_", mtName, ", x)")
+		g.P("}")
+		g.P()
+	}
+}
+
+// GenUnmarshal generates codes related for pooling of the messages
+func GenUnmarshal(file *protogen.File, g *protogen.GeneratedFile) {
+	for _, mt := range file.Messages {
+		mtName := mt.Desc.Name()
+		g.P("func (x *", mtName, ") Unmarshal(b []byte) error {")
+		g.P("return proto.UnmarshalOptions{Merge:true}.Unmarshal(b, x)")
+		g.P("}")
+		g.P()
+	}
+}
+
+// GenUnmarshal generates codes related for pooling of the messages
+func GenMarshal(file *protogen.File, g *protogen.GeneratedFile) {
+	for _, mt := range file.Messages {
+		mtName := mt.Desc.Name()
+		g.P("func (x *", mtName, ") MarshalTo(b []byte) ([]byte, error) {")
+		g.P("return proto.MarshalOptions{}.MarshalAppend(b, x)")
 		g.P("}")
 		g.P()
 	}

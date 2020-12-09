@@ -41,6 +41,8 @@ func main() {
 			GenPools(f, g1)
 			GenDeepCopy(f, g1)
 			GenPushToContext(f, g1)
+			GenMarshal(f, g1)
+			GenUnmarshal(f, g1)
 			if len(getModels()) > 0 {
 				// Generate Model's repo functionality
 				GenCql(f, g1)
