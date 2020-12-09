@@ -251,7 +251,7 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 func (ctx *RequestCtx) PushClusterMessage(serverID string, requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
-	err := ctx.dispatchCtx.edge.ClusterSend(tools.StrToByte(serverID), envelope, kvs...)
+	err := ctx.dispatchCtx.edge.ClusterSend(serverID, envelope, kvs...)
 	if err != nil {
 		log.Error("ClusterMessage Error",
 			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),

@@ -31,8 +31,8 @@ func (edge *Server) ClusterMembers() []*ClusterMember {
 
 // ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
 // is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *Server) ClusterSend(serverID []byte, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) (err error) {
-	m := edge.cluster.GetByID(tools.ByteToStr(serverID))
+func (edge *Server) ClusterSend(serverID string, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) (err error) {
+	m := edge.cluster.GetByID(serverID)
 	if m == nil {
 		return rony.ErrNotFound
 	}
@@ -40,7 +40,7 @@ func (edge *Server) ClusterSend(serverID []byte, envelope *rony.MessageEnvelope,
 	clusterMessage := acquireClusterMessage()
 	clusterMessage.Fill(edge.serverID, envelope, kvs...)
 
-	mo := proto.MarshalOptions{}
+	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(clusterMessage))
 	b, err = mo.MarshalAppend(b, clusterMessage)
 	if err != nil {
@@ -62,8 +62,8 @@ type ClusterMember struct {
 	ReplicaSet  uint64
 	ShardRange  [2]uint32
 	GatewayAddr []string
-	Addr        net.IP
-	Port        uint16
+	ClusterAddr net.IP
+	ClusterPort uint16
 	RaftPort    int
 	RaftState   rony.RaftState
 	node        *memberlist.Node
@@ -83,11 +83,12 @@ func convertMember(sm *memberlist.Node) *ClusterMember {
 	return &ClusterMember{
 		ServerID:    tools.ByteToStr(edgeNode.ServerID),
 		ReplicaSet:  edgeNode.GetReplicaSet(),
+		ShardRange:  [2]uint32{edgeNode.ShardRangeMin, edgeNode.ShardRangeMax},
 		GatewayAddr: edgeNode.GatewayAddr,
 		RaftPort:    int(edgeNode.GetRaftPort()),
 		RaftState:   edgeNode.GetRaftState(),
-		Addr:        sm.Addr,
-		Port:        sm.Port,
+		ClusterAddr: sm.Addr,
+		ClusterPort: sm.Port,
 		node:        sm,
 	}
 }
@@ -162,7 +163,7 @@ func (d delegateEvents) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
 	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
 	}
 }
 
@@ -170,7 +171,7 @@ func (d delegateEvents) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.AddMember(cm)
 	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+		_ = joinRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
 	}
 }
 
@@ -209,7 +210,7 @@ func (d delegateEvents) NotifyLeave(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.edge.cluster.RemoveMember(cm)
 	if cm.ReplicaSet == d.edge.replicaSet {
-		_ = leaveRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.Addr.String(), cm.RaftPort))
+		_ = leaveRaft(d.edge, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
 	}
 }
 
@@ -245,12 +246,13 @@ type delegateNode struct {
 
 func (d delegateNode) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
-		ServerID:   d.edge.serverID,
-		ReplicaSet: d.edge.replicaSet,
-
-		RaftPort:    uint32(d.edge.raftPort),
-		GatewayAddr: d.edge.gateway.Addr(),
-		RaftState:   *rony.RaftState_None.Enum(),
+		ServerID:      d.edge.serverID,
+		ShardRangeMin: d.edge.shardRange[0],
+		ShardRangeMax: d.edge.shardRange[1],
+		ReplicaSet:    d.edge.replicaSet,
+		RaftPort:      uint32(d.edge.raftPort),
+		GatewayAddr:   d.edge.gateway.Addr(),
+		RaftState:     *rony.RaftState_None.Enum(),
 	}
 	if d.edge.raftEnabled {
 		n.RaftState = *rony.RaftState(d.edge.raft.State() + 1).Enum()
@@ -258,7 +260,7 @@ func (d delegateNode) NodeMeta(limit int) []byte {
 
 	b, _ := proto.Marshal(&n)
 	if len(b) > limit {
-		log.Warn("Too Large Meta")
+		log.Warn("Too Large Meta", zap.ByteString("ServerID", d.edge.serverID))
 		return nil
 	}
 	return b

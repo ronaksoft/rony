@@ -412,6 +412,17 @@ func GenDeepCopy(file *protogen.File, g *protogen.GeneratedFile) {
 	}
 }
 
+// GenPushToContext generates codes related for pooling of the messages
+func GenPushToContext(file *protogen.File, g *protogen.GeneratedFile) {
+	for _, mt := range file.Messages {
+		mtName := mt.Desc.Name()
+		g.P("func (x *", mtName, ") PushToContext(ctx *edge.RequestCtx) {")
+		g.P("ctx.PushMessage(C_", mtName, ", x)")
+		g.P("}")
+		g.P()
+	}
+}
+
 // GenRPC generates the server and client interfaces if any proto service has been defined
 func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 	if len(file.Services) > 0 {
