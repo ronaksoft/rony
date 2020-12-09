@@ -9,7 +9,7 @@ message MessageEnvelope {
     fixed64 RequestID = 2;
     bytes Message = 4;
     bytes Auth = 8;
-    repeated KeyValue Store = 10;
+    repeated KeyValue Header = 10;
 }
 
 // MessageContainer

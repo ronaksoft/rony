@@ -302,10 +302,6 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 	})
 	g.QualifiedGoIdent(protogen.GoIdent{
 		GoName:       "",
-		GoImportPath: "github.com/ronaksoft/rony/edge",
-	})
-	g.QualifiedGoIdent(protogen.GoIdent{
-		GoName:       "",
 		GoImportPath: "google.golang.org/protobuf/proto",
 	})
 
@@ -422,6 +418,13 @@ func GenDeepCopy(file *protogen.File, g *protogen.GeneratedFile) {
 
 // GenPushToContext generates codes related for pooling of the messages
 func GenPushToContext(file *protogen.File, g *protogen.GeneratedFile) {
+	if file.GoPackageName == "rony" {
+		return
+	}
+	g.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "",
+		GoImportPath: "github.com/ronaksoft/rony/edge",
+	})
 	for _, mt := range file.Messages {
 		mtName := mt.Desc.Name()
 		g.P("func (x *", mtName, ") PushToContext(ctx *edge.RequestCtx) {")

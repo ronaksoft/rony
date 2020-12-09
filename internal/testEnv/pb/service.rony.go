@@ -235,6 +235,102 @@ func (x *AskResponse) DeepCopy(z *AskResponse) {
 	z.Responder = x.Responder
 }
 
+func (x *Req1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Req1, x)
+}
+
+func (x *Req2) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Req2, x)
+}
+
+func (x *Res1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Res1, x)
+}
+
+func (x *Res2) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Res2, x)
+}
+
+func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoRequest, x)
+}
+
+func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoResponse, x)
+}
+
+func (x *AskRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_AskRequest, x)
+}
+
+func (x *AskResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_AskResponse, x)
+}
+
+func (x *Req1) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Req2) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Res1) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Res2) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *EchoRequest) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *EchoResponse) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *AskRequest) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *AskResponse) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Req1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *Req2) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *Res1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *Res2) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *EchoRequest) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *EchoResponse) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *AskRequest) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *AskResponse) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
 const C_Func1 int64 = 272094254
 const C_Func2 int64 = 2302576020
 const C_Echo int64 = 3073810188

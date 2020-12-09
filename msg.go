@@ -40,7 +40,7 @@ func (x *MessageEnvelope) Clone() *MessageEnvelope {
 func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
 	x.RequestID = reqID
 	x.Constructor = constructor
-	x.Store = append(x.Store[:0], kvs...)
+	x.Header = append(x.Header[:0], kvs...)
 
 	mo := proto.MarshalOptions{
 		UseCachedSize: true,

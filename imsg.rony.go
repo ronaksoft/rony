@@ -2,6 +2,7 @@ package rony
 
 import (
 	registry "github.com/ronaksoft/rony/registry"
+	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
 
@@ -128,4 +129,28 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.RaftPort = x.RaftPort
 	z.RaftState = x.RaftState
 	z.GatewayAddr = append(z.GatewayAddr[:0], x.GatewayAddr...)
+}
+
+func (x *ClusterMessage) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *RaftCommand) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *EdgeNode) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *ClusterMessage) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *RaftCommand) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *EdgeNode) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
 }

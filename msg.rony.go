@@ -2,6 +2,7 @@ package rony
 
 import (
 	registry "github.com/ronaksoft/rony/registry"
+	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
 
@@ -24,7 +25,7 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 	x.RequestID = 0
 	x.Message = x.Message[:0]
 	x.Auth = x.Auth[:0]
-	x.Store = x.Store[:0]
+	x.Header = x.Header[:0]
 	p.pool.Put(x)
 }
 
@@ -137,11 +138,11 @@ func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	z.RequestID = x.RequestID
 	z.Message = append(z.Message[:0], x.Message...)
 	z.Auth = append(z.Auth[:0], x.Auth...)
-	for idx := range x.Store {
-		if x.Store[idx] != nil {
+	for idx := range x.Header {
+		if x.Header[idx] != nil {
 			xx := PoolKeyValue.Get()
-			x.Store[idx].DeepCopy(xx)
-			z.Store = append(z.Store, xx)
+			x.Header[idx].DeepCopy(xx)
+			z.Header = append(z.Header, xx)
 		}
 	}
 }
@@ -176,4 +177,44 @@ func (x *Redirect) DeepCopy(z *Redirect) {
 func (x *KeyValue) DeepCopy(z *KeyValue) {
 	z.Key = x.Key
 	z.Value = x.Value
+}
+
+func (x *MessageEnvelope) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *MessageContainer) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Error) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *Redirect) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *KeyValue) MarshalTo(b []byte) ([]byte, error) {
+	return proto.MarshalOptions{}.MarshalAppend(b, x)
+}
+
+func (x *MessageEnvelope) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *MessageContainer) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *Error) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *Redirect) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
+}
+
+func (x *KeyValue) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
 }
