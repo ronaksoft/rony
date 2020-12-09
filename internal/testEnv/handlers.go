@@ -1,6 +1,7 @@
 package testEnv
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 )
@@ -31,4 +32,21 @@ func (h Handlers) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoRe
 
 func (h Handlers) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {
 	panic("implement me")
+}
+
+func EchoSimple(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := pb.EchoRequest{}
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	ctx.PushMessage(pb.C_EchoResponse, &pb.EchoResponse{
+		Int:       req.Int,
+		Bool:      req.Bool,
+		Timestamp: req.Timestamp,
+		Delay:     0,
+		ServerID:  "ServerID",
+	})
 }

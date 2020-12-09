@@ -1,13 +1,14 @@
 package edge_test
 
 import (
+	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -20,46 +21,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-var (
-	raftServers map[string]*edge.Server
-)
-
-func initRaftWithWebsocket() {
-	if raftServers == nil {
-		raftServers = make(map[string]*edge.Server)
-	}
-	ids := []string{"AdamRaft", "EveRaft", "AbelRaft"}
-	for idx, id := range ids {
-		if raftServers[id] == nil {
-			bootstrap := false
-			if idx == 0 {
-				bootstrap = true
-			}
-			edgeServer := testEnv.InitEdgeServerWithWebsocket(id, 8080+idx,
-				edge.WithDataPath(filepath.Join("./_hdd/", id)),
-				edge.WithReplicaSet(1, 9080+idx, bootstrap),
-				edge.WithGossipPort(7080+idx),
-			)
-			err := edgeServer.StartCluster()
-			if err != nil {
-				panic(err)
-			}
-			if bootstrap {
-				time.Sleep(time.Second)
-			}
-			edgeServer.StartGateway()
-			raftServers[id] = edgeServer
-		}
-	}
-	time.Sleep(time.Second)
-	for _, id := range ids {
-		if raftServers[id].Stats().RaftState == "Leader" {
-			return
-		}
-	}
-	panic("BUG!! should not be here")
-}
 
 func BenchmarkStandaloneSerial(b *testing.B) {
 	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
@@ -83,4 +44,40 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 			edgeServer.OnGatewayMessage(&conn, 0, reqBytes)
 		}
 	})
+}
+
+func TestWithTestGateway(t *testing.T) {
+	Convey("EdgeTest Gateway", t, func(c C) {
+		s := testEnv.InitTestServer("TestServer")
+		s.SetHandlers(pb.C_EchoRequest, testEnv.EchoSimple)
+		s.Start()
+		defer s.Shutdown()
+
+		err := s.Context().
+			Request(pb.C_EchoRequest, &pb.EchoRequest{
+				Int:       100,
+				Bool:      true,
+				Timestamp: 123,
+			}).
+			Expect(pb.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
+				x := &pb.EchoResponse{}
+				err := x.Unmarshal(b)
+				if err != nil {
+					return err
+				}
+				if x.Int != 100 {
+					return fmt.Errorf("int not equal")
+				}
+				if x.Timestamp != 1232 {
+					return fmt.Errorf("timestamp not equal")
+				}
+				if !x.Bool {
+					return fmt.Errorf("bool not equal")
+				}
+				return nil
+			}).
+			Run(time.Second)
+		c.So(err, ShouldBeNil)
+	})
+
 }

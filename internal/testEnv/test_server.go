@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/edgetest"
 	"github.com/ronaksoft/rony/gateway"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	log "github.com/ronaksoft/rony/internal/logger"
@@ -75,18 +76,8 @@ func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.O
 	return edgeServer
 }
 
-func InitEdgeServerWithHttp(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
-	opts = append(opts,
-		edge.WithTcpGateway(tcpGateway.Config{
-			Protocol:      tcpGateway.Http,
-			Concurrency:   1 << 20,
-			ListenAddress: fmt.Sprintf("127.0.0.1:%d", clientPort),
-			MaxBodySize:   1 << 22,
-		}),
-	)
-	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
-
-	return edgeServer
+func InitTestServer(serverID string) *edgetest.Server {
+	return edgetest.NewServer(serverID, &testDispatcher{})
 }
 
 func ResetCounters() {
