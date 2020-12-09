@@ -61,6 +61,10 @@ func (c *conn) Expect(constructor int64, cf CheckFunc) *conn {
 	return c
 }
 
+func (c *conn) ExpectConstructor(constructor int64) *conn {
+	return c.Expect(constructor, nil)
+}
+
 func (c *conn) check(e *rony.MessageEnvelope) {
 	c.receiveChan <- struct{}{}
 	c.mtx.Lock()
@@ -81,6 +85,15 @@ func (c *conn) expectCount() int {
 	c.mtx.Unlock()
 	return n
 }
+
+func (c *conn) RunShort() error {
+	return c.Run(time.Second * 10)
+}
+
+func (c *conn) RunLong() error {
+	return c.Run(time.Minute)
+}
+
 func (c *conn) Run(timeout time.Duration) error {
 	// Open Connection
 	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
