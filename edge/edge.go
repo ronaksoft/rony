@@ -99,6 +99,20 @@ func (edge *Server) GetServerID() string {
 	return string(edge.serverID)
 }
 
+// SetPreHandlers set the handler which will be called before executing any request. These pre handlers are like middlewares
+// which will be automatically triggered for each request. If you want to set pre handler for specific request the your must
+// use SetHandlers, PrependHandlers or AppendHandlers
+func (edge *Server) SetPreHandlers(handlers ...Handler) {
+	edge.preHandlers = handlers
+}
+
+// SetPreHandlers set the handler which will be called after executing any request. These pre handlers are like middlewares
+// which will be automatically triggered for each request. If you want to set post handler for specific request the your must
+// use SetHandlers, PrependHandlers or AppendHandlers
+func (edge *Server) SetPostHandlers(handlers ...Handler) {
+	edge.postHandlers = handlers
+}
+
 // SetHandlers set the handlers for the constructor. 'leaderOnly' is applicable ONLY if the cluster is run
 // with Raft support. If cluster is a Raft enabled cluster, then by setting 'leaderOnly' to TRUE, requests sent
 // to a follower server will return redirect error to the client. For standalone servers 'leaderOnly' does not
