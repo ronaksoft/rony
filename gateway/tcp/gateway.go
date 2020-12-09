@@ -251,6 +251,11 @@ func (g *Gateway) Addr() []string {
 	return g.addrs
 }
 
+// GetConn returns the connection identified by connID
+func (g *Gateway) GetConn(connID uint64) gateway.Conn {
+	return g.getConnection(connID)
+}
+
 func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	req.Response.Header.Set("Access-Control-Allow-Origin", "*")

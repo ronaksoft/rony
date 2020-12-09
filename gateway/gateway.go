@@ -39,6 +39,7 @@ type Gateway interface {
 	Start()
 	Run()
 	Shutdown()
+	GetConn(connID uint64) Conn
 	Addr() []string
 }
 

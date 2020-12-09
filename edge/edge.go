@@ -534,3 +534,8 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 	<-ch
 	edge.Shutdown()
 }
+
+// GetGatewayConn return the gateway connection identified by connID or returns nil if not found.
+func (edge *Server) GetGatewayConn(connID uint64) gateway.Conn {
+	return edge.gateway.GetConn(connID)
+}
