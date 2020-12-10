@@ -91,9 +91,11 @@ func (c *conn) expectCount() int {
 	return n
 }
 
-func (c *conn) ErrorHandler(f func(e *rony.Error)) {
+func (c *conn) ErrorHandler(f func(e *rony.Error)) *conn {
 	c.errH = f
+	return c
 }
+
 func (c *conn) RunShort(kvs ...gateway.KeyValue) error {
 	return c.Run(time.Second*10, kvs...)
 }
