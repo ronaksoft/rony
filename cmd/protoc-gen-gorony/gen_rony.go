@@ -310,9 +310,9 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 
 	for _, mt := range file.Messages {
 		mtName := mt.Desc.Name()
-		constructor := crc32.ChecksumIEEE([]byte(mtName))
+		constructor := crc32.ChecksumIEEE([]byte(mt.Desc.FullName()))
 		g.P(fmt.Sprintf("const C_%s int64 = %d", mtName, constructor))
-		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, mtName))
+		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, mt.Desc.FullName()))
 		g.P(fmt.Sprintf("type pool%s struct{", mtName))
 		g.P("pool sync.Pool")
 		g.P("}")
