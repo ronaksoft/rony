@@ -24,11 +24,13 @@ type CheckFunc func(b []byte, auth []byte, kv ...*rony.KeyValue) error
 type conn struct {
 	mtx    sync.Mutex
 	id     uint64
+	reqC   int64
+	reqID  uint64
 	req    []byte
 	expect map[int64]CheckFunc
 	gw     *dummyGateway.Gateway
 	err    error
-	errH   func(e *rony.Error)
+	errH   func(constructor int64, e *rony.Error)
 	wg     sync.WaitGroup
 }
 
@@ -44,13 +46,15 @@ func newConn(gw *dummyGateway.Gateway) *conn {
 // Request set the request you wish to send to the server
 func (c *conn) Request(constructor int64, p proto.Message, kv ...*rony.KeyValue) *conn {
 	data, _ := proto.Marshal(p)
+	c.reqID = tools.RandomUint64(0)
 	e := &rony.MessageEnvelope{
 		Constructor: constructor,
-		RequestID:   tools.RandomUint64(0),
+		RequestID:   c.reqID,
 		Message:     data,
 		Auth:        nil,
 		Header:      kv,
 	}
+	c.reqC = constructor
 	c.req, c.err = proto.Marshal(e)
 	return c
 }
@@ -73,7 +77,7 @@ func (c *conn) check(e *rony.MessageEnvelope) {
 	if !ok && e.Constructor == rony.C_Error {
 		err := &rony.Error{}
 		c.err = err.Unmarshal(e.Message)
-		c.errH(err)
+		c.errH(c.reqC, err)
 		return
 	}
 	if f != nil {
@@ -91,7 +95,7 @@ func (c *conn) expectCount() int {
 	return n
 }
 
-func (c *conn) ErrorHandler(f func(e *rony.Error)) *conn {
+func (c *conn) ErrorHandler(f func(constructor int64, e *rony.Error)) *conn {
 	c.errH = f
 	return c
 }
