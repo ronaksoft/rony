@@ -22,21 +22,21 @@ import (
 type CheckFunc func(b []byte, auth []byte, kv ...*rony.KeyValue) error
 
 type conn struct {
-	mtx         sync.Mutex
-	id          uint64
-	req         []byte
-	expect      map[int64]CheckFunc
-	gw          *dummyGateway.Gateway
-	err         error
-	receiveChan chan struct{}
+	mtx    sync.Mutex
+	id     uint64
+	req    []byte
+	expect map[int64]CheckFunc
+	gw     *dummyGateway.Gateway
+	err    error
+	errH   func(e *rony.Error)
+	wg     sync.WaitGroup
 }
 
 func newConn(gw *dummyGateway.Gateway) *conn {
 	c := &conn{
-		id:          tools.RandomUint64(0),
-		expect:      make(map[int64]CheckFunc),
-		receiveChan: make(chan struct{}, 10),
-		gw:          gw,
+		id:     tools.RandomUint64(0),
+		expect: make(map[int64]CheckFunc),
+		gw:     gw,
 	}
 	return c
 }
@@ -67,14 +67,18 @@ func (c *conn) ExpectConstructor(constructor int64) *conn {
 }
 
 func (c *conn) check(e *rony.MessageEnvelope) {
-	c.receiveChan <- struct{}{}
 	c.mtx.Lock()
-	f := c.expect[e.Constructor]
+	f, ok := c.expect[e.Constructor]
 	c.mtx.Unlock()
-	if f == nil {
+	if !ok && e.Constructor == rony.C_Error {
+		err := &rony.Error{}
+		c.err = err.Unmarshal(e.Message)
+		c.errH(err)
 		return
 	}
-	c.err = f(e.Message, e.Auth, e.Header...)
+	if f != nil {
+		c.err = f(e.Message, e.Auth, e.Header...)
+	}
 	c.mtx.Lock()
 	delete(c.expect, e.Constructor)
 	c.mtx.Unlock()
@@ -87,17 +91,22 @@ func (c *conn) expectCount() int {
 	return n
 }
 
+func (c *conn) ErrorHandler(f func(e *rony.Error)) {
+	c.errH = f
+}
 func (c *conn) RunShort(kvs ...gateway.KeyValue) error {
-	return c.Run(time.Second * 10, kvs...)
+	return c.Run(time.Second*10, kvs...)
 }
 
 func (c *conn) RunLong(kvs ...gateway.KeyValue) error {
-	return c.Run(time.Minute, kvs ...)
+	return c.Run(time.Minute, kvs...)
 }
 
 func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
 	// Open Connection
+	c.wg.Add(1)
 	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
+		defer c.wg.Done()
 		e := &rony.MessageEnvelope{}
 		c.err = e.Unmarshal(data)
 		if c.err != nil {
@@ -122,16 +131,7 @@ func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
 	c.gw.SendToConn(c.id, 0, c.req, kvs...)
 
 	// Wait for Response(s)
-	for {
-		select {
-		case <-c.receiveChan:
-		case <-time.After(timeout):
-			return ErrTimeout
-		}
-		if c.expectCount() == 0 {
-			break
-		}
-	}
+	c.wg.Wait()
 
 	// Check if all the expectations have been passed
 	if c.expectCount() > 0 {
