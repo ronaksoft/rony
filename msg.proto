@@ -1,6 +1,6 @@
 syntax = "proto3";
 package rony;
-option go_package = "github.com/ronaksoft/rony;rony";
+option go_package = "github.com/ronaksoft/rony";
 
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
