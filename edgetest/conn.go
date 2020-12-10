@@ -7,6 +7,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,6 +21,10 @@ import (
 */
 
 type CheckFunc func(b []byte, auth []byte, kv ...*rony.KeyValue) error
+
+var (
+	connID uint64 = 1
+)
 
 type conn struct {
 	mtx    sync.Mutex
@@ -36,7 +41,7 @@ type conn struct {
 
 func newConn(gw *dummyGateway.Gateway) *conn {
 	c := &conn{
-		id:     tools.RandomUint64(0),
+		id:     atomic.AddUint64(&connID, 1),
 		expect: make(map[int64]CheckFunc),
 		gw:     gw,
 	}

@@ -439,7 +439,7 @@ func GenUnmarshal(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, mt := range file.Messages {
 		mtName := mt.Desc.Name()
 		g.P("func (x *", mtName, ") Unmarshal(b []byte) error {")
-		g.P("return proto.UnmarshalOptions{Merge:true}.Unmarshal(b, x)")
+		g.P("return proto.UnmarshalOptions{}.Unmarshal(b, x)")
 		g.P("}")
 		g.P()
 	}
