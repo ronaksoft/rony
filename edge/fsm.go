@@ -24,7 +24,7 @@ type raftFSM struct {
 
 func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	raftCmd := acquireRaftCommand()
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(raftLog.Data, raftCmd)
+	err := proto.UnmarshalOptions{}.Unmarshal(raftLog.Data, raftCmd)
 	if err != nil {
 		return err
 	}

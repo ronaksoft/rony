@@ -127,10 +127,7 @@ func (ctx *DispatchCtx) GetBool(key string) bool {
 }
 
 func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
-	uo := proto.UnmarshalOptions{
-		Merge: true,
-	}
-	return uo.Unmarshal(data, ctx.req)
+	return proto.Unmarshal(data, ctx.req)
 }
 
 // RequestCtx
