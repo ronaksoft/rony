@@ -1,6 +1,6 @@
 syntax = "proto3";
 package rony;
-option go_package = "github.com/ronaksoft/rony";
+option go_package = "github.com/ronaksoft/rony;rony";
 import "msg.proto";
 
 // ClusterMessage

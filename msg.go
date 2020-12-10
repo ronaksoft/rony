@@ -14,8 +14,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=. --go_out=. msg.proto imsg.proto
-//go:generate protoc -I=. --gorony_out=. msg.proto imsg.proto
+//go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto imsg.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative:. msg.proto imsg.proto
 var (
 	ConstructorNames = map[int64]string{}
 )
