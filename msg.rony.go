@@ -179,24 +179,24 @@ func (x *KeyValue) DeepCopy(z *KeyValue) {
 	z.Value = x.Value
 }
 
-func (x *MessageEnvelope) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *MessageEnvelope) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *MessageContainer) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *MessageContainer) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Error) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Error) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Redirect) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Redirect) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *KeyValue) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *KeyValue) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *MessageEnvelope) Unmarshal(b []byte) error {

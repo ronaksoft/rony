@@ -449,8 +449,8 @@ func GenUnmarshal(file *protogen.File, g *protogen.GeneratedFile) {
 func GenMarshal(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, mt := range file.Messages {
 		mtName := mt.Desc.Name()
-		g.P("func (x *", mtName, ") MarshalTo(b []byte) ([]byte, error) {")
-		g.P("return proto.MarshalOptions{}.MarshalAppend(b, x)")
+		g.P("func (x *", mtName, ") Marshal() ([]byte, error) {")
+		g.P("return proto.Marshal(x)")
 		g.P("}")
 		g.P()
 	}

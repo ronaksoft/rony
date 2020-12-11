@@ -131,16 +131,16 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.GatewayAddr = append(z.GatewayAddr[:0], x.GatewayAddr...)
 }
 
-func (x *ClusterMessage) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *ClusterMessage) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *RaftCommand) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *RaftCommand) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *EdgeNode) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *EdgeNode) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *ClusterMessage) Unmarshal(b []byte) error {

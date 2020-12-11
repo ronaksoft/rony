@@ -267,36 +267,36 @@ func (x *AskResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_AskResponse, x)
 }
 
-func (x *Req1) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Req1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Req2) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Req2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Res1) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Res1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Res2) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *Res2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *EchoRequest) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *EchoRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *EchoResponse) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *EchoResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *AskRequest) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *AskRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *AskResponse) MarshalTo(b []byte) ([]byte, error) {
-	return proto.MarshalOptions{}.MarshalAppend(b, x)
+func (x *AskResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Req1) Unmarshal(b []byte) error {
