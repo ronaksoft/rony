@@ -28,6 +28,7 @@ func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 			gateway: gw,
 			req:     req,
 			buf:     tools.NewLinkedList(),
+			kv:      make(map[string]interface{}, 4),
 		}
 	}
 	c.gateway = gw
@@ -78,7 +79,7 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 			conn:         conn,
 			desc:         desc,
 			closed:       false,
-			kv:           map[string]interface{}{},
+			kv:           make(map[string]interface{}, 4),
 			lastActivity: tools.TimeUnix(),
 		}
 	}
