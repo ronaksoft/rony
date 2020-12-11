@@ -78,6 +78,7 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 			conn:         conn,
 			desc:         desc,
 			closed:       false,
+			kv:           map[string]interface{}{},
 			lastActivity: tools.TimeUnix(),
 		}
 	}
