@@ -312,7 +312,7 @@ func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	releaseMessageEnvelope(envelope)
 }
 func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
-	edge.dispatcher.OnOpen(conn)
+	edge.dispatcher.OnOpen(conn, kvs...)
 }
 func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
