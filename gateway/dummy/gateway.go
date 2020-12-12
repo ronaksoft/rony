@@ -93,6 +93,9 @@ func (g *Gateway) GetConn(connID uint64) gateway.Conn {
 	g.connsMtx.RLock()
 	conn := g.conns[connID]
 	g.connsMtx.RUnlock()
+	if conn == nil {
+		return nil
+	}
 	return conn
 }
 

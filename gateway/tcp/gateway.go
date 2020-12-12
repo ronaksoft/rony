@@ -253,7 +253,11 @@ func (g *Gateway) Addr() []string {
 
 // GetConn returns the connection identified by connID
 func (g *Gateway) GetConn(connID uint64) gateway.Conn {
-	return g.getConnection(connID)
+	c := g.getConnection(connID)
+	if c == nil {
+		return nil
+	}
+	return c
 }
 
 func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
