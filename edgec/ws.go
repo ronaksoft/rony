@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,6 +40,7 @@ type Config struct {
 	IdleTimeout  time.Duration
 	DialTimeout  time.Duration
 	Handler      MessageHandler
+	Header       map[string]string
 	Secure       bool
 	ForceConnect bool
 	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
@@ -61,6 +63,7 @@ type Websocket struct {
 	stop           bool
 	connected      bool
 	connectMtx     sync.Mutex
+	header         map[string]string
 
 	// parameters related to handling request/responses
 	h          MessageHandler
@@ -95,6 +98,7 @@ func NewWebsocket(config Config) *Websocket {
 		hostPort:       config.HostPort,
 		h:              config.Handler,
 		pending:        make(map[uint64]chan *rony.MessageEnvelope, 100),
+		header:         config.Header,
 	}
 
 	// start the connection
@@ -153,6 +157,15 @@ func (c *Websocket) connect() {
 ConnectLoop:
 	log.Debug("Connect", zap.String("H", c.hostPort))
 	c.createDialer(c.dialTimeout)
+
+	sb := strings.Builder{}
+	for k, v := range c.header {
+		sb.WriteString(k)
+		sb.WriteString(": ")
+		sb.WriteString(v)
+		sb.WriteRune('\n')
+	}
+	c.dialer.Header = ws.HandshakeHeaderString(sb.String())
 	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPort))
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.String("Host", c.hostPort))
