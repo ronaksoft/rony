@@ -311,7 +311,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		req.HijackSetNoResponse(true)
 		req.Hijack(func(c net.Conn) {
 			g.waitGroupAcceptors.Add(1)
-			g.connectionAcceptor(wc, clientIP, clientType)
+			g.connectionAcceptor(wc, clientIP, clientType, kvs...)
 		})
 		return
 	}
