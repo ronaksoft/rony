@@ -389,7 +389,6 @@ func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *web
 			zap.Int32("Total", totalConns),
 		)
 	}
-	g.ConnectHandler(wsConn)
 	g.connGC.monitorConnection(connID)
 	return wsConn
 }
