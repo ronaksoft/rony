@@ -133,8 +133,9 @@ func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
 // RequestCtx
 type RequestCtx struct {
 	dispatchCtx *DispatchCtx
-	quickReturn bool
+	reqID       uint64
 	nextChan    chan struct{}
+	quickReturn bool
 	stop        bool
 }
 
@@ -162,7 +163,7 @@ func (ctx *RequestCtx) Conn() gateway.Conn {
 }
 
 func (ctx *RequestCtx) ReqID() uint64 {
-	return ctx.dispatchCtx.req.GetRequestID()
+	return ctx.reqID
 }
 
 func (ctx *RequestCtx) StopExecution() {

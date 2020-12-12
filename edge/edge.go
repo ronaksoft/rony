@@ -233,6 +233,9 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		return
 	}
 
+	// Set the context request
+	requestCtx.reqID = in.RequestID
+
 	// Run the handler
 	for idx := range edge.preHandlers {
 		edge.preHandlers[idx](requestCtx, in)
