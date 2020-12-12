@@ -28,19 +28,19 @@ type server struct {
 	e *edge.Server
 }
 
-func (s server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
+func (s server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	b, _ := proto.Marshal(envelope)
 	_ = ctx.Conn().SendBinary(ctx.StreamID(), b)
 }
 
-func (s server) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s server) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 
 func (s server) Done(ctx *edge.DispatchCtx) {
 }
 
-func (s server) OnOpen(conn gateway.Conn) {
+func (s server) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 	fmt.Println("Connected")
 }
 

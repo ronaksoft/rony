@@ -11,7 +11,7 @@ import (
 
 type dispatcher struct{}
 
-func (d dispatcher) OnOpen(conn gateway.Conn) {
+func (d dispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 
 }
 
@@ -19,7 +19,7 @@ func (d dispatcher) OnClose(conn gateway.Conn) {
 
 }
 
-func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
+func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		mo := proto.MarshalOptions{
 			UseCachedSize: true,
@@ -35,7 +35,7 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 
 }
 
-func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 

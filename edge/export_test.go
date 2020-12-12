@@ -14,6 +14,6 @@ import (
 */
 
 // OnGatewayMessage is exposed only for test packages
-func (edge *Server) OnGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
-	edge.onGatewayMessage(conn, streamID, data, kvs...)
+func (edge *Server) OnGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
+	edge.onGatewayMessage(conn, streamID, data)
 }

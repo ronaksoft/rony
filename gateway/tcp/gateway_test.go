@@ -57,7 +57,7 @@ func BenchmarkWebsocketConn(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+	gw.MessageHandler = func(conn gateway.Conn, streamID int64, data []byte) {
 		_ = conn.SendBinary(streamID, []byte{1, 2, 3, 4})
 	}
 	gw.Run()

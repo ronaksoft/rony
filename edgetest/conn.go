@@ -136,10 +136,10 @@ func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
 		default:
 			c.check(e)
 		}
-	})
+	}, kvs...)
 
 	// Send the Request
-	c.gw.SendToConn(c.id, 0, c.req, kvs...)
+	c.gw.SendToConn(c.id, 0, c.req)
 
 	// Wait for Response(s)
 	c.wg.Wait()

@@ -122,9 +122,9 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte, kvs ...gateway.KeyValue) {}
+	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
 	g.CloseHandler = func(c gateway.Conn) {}
-	g.ConnectHandler = func(c gateway.Conn) {}
+	g.ConnectHandler = func(c gateway.Conn, kvs ...gateway.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -320,8 +320,9 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	conn := acquireHttpConn(g, req)
 	conn.SetClientIP(tools.StrToByte(clientIP))
 	conn.SetClientType(tools.StrToByte(clientType))
-	g.ConnectHandler(conn)
-	g.MessageHandler(conn, int64(req.ID()), req.PostBody(), kvs...)
+
+	g.ConnectHandler(conn, kvs...)
+	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
 }

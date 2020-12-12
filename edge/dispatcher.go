@@ -20,29 +20,29 @@ import (
 type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
-	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
+	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
 	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
 	// Note that conn IS NOT nil in any circumstances.
-	Interceptor(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error)
+	Interceptor(ctx *DispatchCtx, data []byte) (err error)
 	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
 	// This will be called when a new connection has been opened
-	OnOpen(conn gateway.Conn)
+	OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue)
 	// This will be called when a connection is closed
 	OnClose(conn gateway.Conn)
 }
 
 // SimpleDispatcher is a naive implementation of Dispatcher. You only need to set OnMessageFunc with
 type SimpleDispatcher struct {
-	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue)
+	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
 }
 
-func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
+func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
 	if s.OnMessageFunc != nil {
-		s.OnMessageFunc(ctx, envelope, kvs...)
+		s.OnMessageFunc(ctx, envelope)
 		return
 	}
 
@@ -53,7 +53,7 @@ func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnv
 	pools.Bytes.Put(eb)
 }
 
-func (s *SimpleDispatcher) Interceptor(ctx *DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s *SimpleDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 
@@ -61,7 +61,7 @@ func (s *SimpleDispatcher) Done(ctx *DispatchCtx) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnOpen(conn gateway.Conn) {
+func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 	// Do nothing
 }
 

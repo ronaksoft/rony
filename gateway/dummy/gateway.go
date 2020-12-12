@@ -41,7 +41,7 @@ func New(config Config) (*Gateway, error) {
 	return g, nil
 }
 
-func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, streamID int64, data []byte)) {
+func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, streamID int64, data []byte), kvs ...gateway.KeyValue) {
 	dConn := &Conn{
 		id:        connID,
 		buf:       tools.NewLinkedList(),
@@ -50,7 +50,7 @@ func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, s
 	g.connsMtx.Lock()
 	g.conns[connID] = dConn
 	g.connsMtx.Unlock()
-	g.ConnectHandler(dConn)
+	g.ConnectHandler(dConn, kvs...)
 	atomic.AddInt32(&g.connsTotal, 1)
 	return
 }
@@ -66,7 +66,7 @@ func (g *Gateway) CloseConn(connID uint64) {
 	}
 }
 
-func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte) {
 	g.connsMtx.RLock()
 	conn := g.conns[connID]
 	g.connsMtx.RUnlock()
@@ -74,7 +74,7 @@ func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte, kvs ...
 		return
 	}
 
-	g.MessageHandler(conn, streamID, data, kvs...)
+	g.MessageHandler(conn, streamID, data)
 }
 
 func (g *Gateway) Start() {

@@ -65,11 +65,11 @@ func (s *Server) Shutdown(signals ...os.Signal) {
 	s.e.ShutdownWithSignal(signals...)
 }
 
-func (s *Server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
+func (s *Server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	panic("implement me")
 }
 
-func (s *Server) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (s *Server) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
 	panic("implement me")
 }
 
@@ -77,7 +77,7 @@ func (s *Server) Done(ctx *edge.DispatchCtx) {
 	panic("implement me")
 }
 
-func (s *Server) OnOpen(conn gateway.Conn) {
+func (s *Server) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 	panic("implement me")
 }
 

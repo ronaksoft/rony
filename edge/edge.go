@@ -281,12 +281,12 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
-func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte, kvs ...gateway.KeyValue) {
+func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "Handle Gateway Message")
 	// defer task.End()
 
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID)
-	err := edge.dispatcher.Interceptor(dispatchCtx, data, kvs...)
+	err := edge.dispatcher.Interceptor(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return
@@ -308,7 +308,7 @@ func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	edge.dispatcher.OnMessage(dispatchCtx, envelope)
 	releaseMessageEnvelope(envelope)
 }
-func (edge *Server) onConnect(conn gateway.Conn) {
+func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
 	edge.dispatcher.OnOpen(conn)
 }
 func (edge *Server) onClose(conn gateway.Conn) {

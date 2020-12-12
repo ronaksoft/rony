@@ -31,7 +31,7 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) OnOpen(conn gateway.Conn) {
+func (t testDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 
 }
 
@@ -39,7 +39,7 @@ func (t testDispatcher) OnClose(conn gateway.Conn) {
 
 }
 
-func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) {
+func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	if ctx.Conn() != nil {
 		mo := proto.MarshalOptions{
 			UseCachedSize: true,
@@ -56,7 +56,7 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageE
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
-func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte, kvs ...gateway.KeyValue) (err error) {
+func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 

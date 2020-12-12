@@ -225,7 +225,8 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
-	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope, kvs...)
+	envelope.Header = append(envelope.Header[:0], kvs...)
+	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
 	releaseMessageEnvelope(envelope)
 }
 

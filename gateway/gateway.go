@@ -43,8 +43,8 @@ type Gateway interface {
 	Addr() []string
 }
 
-type ConnectHandler func(c Conn)
-type MessageHandler func(c Conn, streamID int64, data []byte, kvs ...KeyValue)
+type ConnectHandler func(c Conn, kvs ...KeyValue)
+type MessageHandler func(c Conn, streamID int64, data []byte)
 type CloseHandler func(c Conn)
 type KeyValue struct {
 	Key   string
