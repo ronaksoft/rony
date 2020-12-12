@@ -232,10 +232,7 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 	switch e.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
-		uo := proto.UnmarshalOptions{
-			Merge: true,
-		}
-		_ = uo.Unmarshal(e.Message, x)
+		_ = x.Unmarshal(e.Message)
 		for idx := range x.Envelopes {
 			c.handler(x.Envelopes[idx])
 		}

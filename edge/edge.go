@@ -168,10 +168,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 	switch dispatchCtx.req.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := &rony.MessageContainer{}
-		mo := proto.UnmarshalOptions{
-			Merge: true,
-		}
-		err = mo.Unmarshal(dispatchCtx.req.Message, x)
+		err = x.Unmarshal(dispatchCtx.req.Message)
 		if err != nil {
 			return
 		}
