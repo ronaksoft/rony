@@ -331,7 +331,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	releaseHttpConn(conn)
 }
 
-func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string) {
+func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string, kvs ...gateway.KeyValue) {
 	defer g.waitGroupAcceptors.Done()
 	if atomic.LoadInt32(&g.stop) == 1 {
 		return
@@ -352,6 +352,8 @@ func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string) {
 		err error
 	)
 	wsConn := g.addConnection(c, clientIP, clientType)
+	g.ConnectHandler(wsConn, kvs...)
+
 	wsConn.desc, err = netpoll.Handle(c,
 		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
 	)
