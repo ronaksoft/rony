@@ -36,6 +36,19 @@ const (
 	Auto = Http | Websocket
 )
 
+var (
+	ignoredHeaders = map[string]bool{
+		"Host":                     true,
+		"Upgrade":                  true,
+		"Connection":               true,
+		"Sec-Websocket-Version":    true,
+		"Sec-Websocket-Protocol":   true,
+		"Sec-Websocket-Extensions": true,
+		"Sec-Websocket-Key":        true,
+		"Sec-Websocket-Accept":     true,
+	}
+)
+
 // Config
 type Config struct {
 	Concurrency   int
@@ -290,10 +303,12 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		case "X-Client-Type":
 			clientType = string(value)
 		default:
-			kvs = append(kvs, gateway.KeyValue{
-				Key:   string(key),
-				Value: string(value),
-			})
+			if !ignoredHeaders[tools.ByteToStr(key)] {
+				kvs = append(kvs, gateway.KeyValue{
+					Key:   string(key),
+					Value: string(value),
+				})
+			}
 		}
 	})
 	if !clientDetected {
