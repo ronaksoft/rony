@@ -10,7 +10,7 @@ import (
 	sync "sync"
 )
 
-const C_Req1 int64 = 36419086
+const C_Req1 int64 = 1772509555
 
 type poolReq1 struct {
 	pool sync.Pool
@@ -31,7 +31,7 @@ func (p *poolReq1) Put(x *Req1) {
 
 var PoolReq1 = poolReq1{}
 
-const C_Req2 int64 = 2602756020
+const C_Req2 int64 = 4038002889
 
 type poolReq2 struct {
 	pool sync.Pool
@@ -52,7 +52,7 @@ func (p *poolReq2) Put(x *Req2) {
 
 var PoolReq2 = poolReq2{}
 
-const C_Res1 int64 = 807261324
+const C_Res1 int64 = 1536179185
 
 type poolRes1 struct {
 	pool sync.Pool
@@ -73,7 +73,7 @@ func (p *poolRes1) Put(x *Res1) {
 
 var PoolRes1 = poolRes1{}
 
-const C_Res2 int64 = 2836694326
+const C_Res2 int64 = 3264834123
 
 type poolRes2 struct {
 	pool sync.Pool
@@ -94,7 +94,7 @@ func (p *poolRes2) Put(x *Res2) {
 
 var PoolRes2 = poolRes2{}
 
-const C_EchoRequest int64 = 3196215161
+const C_EchoRequest int64 = 1904100324
 
 type poolEchoRequest struct {
 	pool sync.Pool
@@ -117,7 +117,7 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 
 var PoolEchoRequest = poolEchoRequest{}
 
-const C_EchoResponse int64 = 2006407526
+const C_EchoResponse int64 = 4192619139
 
 type poolEchoResponse struct {
 	pool sync.Pool
@@ -142,7 +142,7 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 
 var PoolEchoResponse = poolEchoResponse{}
 
-const C_AskRequest int64 = 4187105886
+const C_AskRequest int64 = 3206229608
 
 type poolAskRequest struct {
 	pool sync.Pool
@@ -163,7 +163,7 @@ func (p *poolAskRequest) Put(x *AskRequest) {
 
 var PoolAskRequest = poolAskRequest{}
 
-const C_AskResponse int64 = 3537566840
+const C_AskResponse int64 = 489087205
 
 type poolAskResponse struct {
 	pool sync.Pool
@@ -186,14 +186,14 @@ func (p *poolAskResponse) Put(x *AskResponse) {
 var PoolAskResponse = poolAskResponse{}
 
 func init() {
-	registry.RegisterConstructor(36419086, "pb.Req1")
-	registry.RegisterConstructor(2602756020, "pb.Req2")
-	registry.RegisterConstructor(807261324, "pb.Res1")
-	registry.RegisterConstructor(2836694326, "pb.Res2")
-	registry.RegisterConstructor(3196215161, "pb.EchoRequest")
-	registry.RegisterConstructor(2006407526, "pb.EchoResponse")
-	registry.RegisterConstructor(4187105886, "pb.AskRequest")
-	registry.RegisterConstructor(3537566840, "pb.AskResponse")
+	registry.RegisterConstructor(1772509555, "Req1")
+	registry.RegisterConstructor(4038002889, "Req2")
+	registry.RegisterConstructor(1536179185, "Res1")
+	registry.RegisterConstructor(3264834123, "Res2")
+	registry.RegisterConstructor(1904100324, "EchoRequest")
+	registry.RegisterConstructor(4192619139, "EchoResponse")
+	registry.RegisterConstructor(3206229608, "AskRequest")
+	registry.RegisterConstructor(489087205, "AskResponse")
 }
 
 func (x *Req1) DeepCopy(z *Req1) {
