@@ -3,6 +3,7 @@ package dummy
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
+	"sync"
 )
 
 /*
@@ -18,16 +19,22 @@ type Conn struct {
 	id         uint64
 	clientIP   string
 	persistent bool
+	mtx        sync.Mutex
 	buf        *tools.LinkedList
+	kv         map[string]interface{}
 	onMessage  func(connID uint64, streamID int64, data []byte)
 }
 
 func (c *Conn) Get(key string) interface{} {
-	return nil
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	return c.kv[key]
 }
 
 func (c *Conn) Set(key string, val interface{}) {
-	return
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.kv[key] = val
 }
 
 func (c *Conn) ConnID() uint64 {

@@ -45,6 +45,7 @@ func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, s
 	dConn := &Conn{
 		id:        connID,
 		buf:       tools.NewLinkedList(),
+		kv:        make(map[string]interface{}),
 		onMessage: onReceiveMessage,
 	}
 	g.connsMtx.Lock()
