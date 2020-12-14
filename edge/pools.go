@@ -111,6 +111,8 @@ func releaseRequestCtx(ctx *RequestCtx) {
 	default:
 	}
 
+	ctx.reqID = 0
+
 	// Put back into the pool
 	requestCtxPool.Put(ctx)
 }

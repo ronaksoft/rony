@@ -210,6 +210,10 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			zap.Uint64("ReqID", in.GetRequestID()),
 		)
 	}
+
+	// Set the context request
+	requestCtx.reqID = in.RequestID
+
 	if !isLeader {
 		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
@@ -229,9 +233,6 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
 		return
 	}
-
-	// Set the context request
-	requestCtx.reqID = in.RequestID
 
 	// Run the handler
 	for idx := range edge.preHandlers {

@@ -47,6 +47,10 @@ func (s *Server) SetHandlers(constructor int64, h ...edge.Handler) {
 	s.edge.SetHandlers(constructor, true, h...)
 }
 
+func (s *Server) SetPostHandlers(h ...edge.Handler) {
+	s.edge.SetPostHandlers(h...)
+}
+
 func (s *Server) Context() *conn {
 	return newConn(s.gw)
 }
