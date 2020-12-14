@@ -3,6 +3,7 @@ package tools
 import (
 	"sync/atomic"
 	"time"
+	_ "unsafe"
 )
 
 /*
@@ -31,7 +32,6 @@ func init() {
 func TimeUnix() int64 {
 	return atomic.LoadInt64(&timeInSec)
 }
-
 
 // NanoTime returns the current time in nanoseconds from a monotonic clock.
 //go:linkname NanoTime runtime.nanotime
