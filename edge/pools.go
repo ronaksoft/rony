@@ -29,6 +29,8 @@ func releaseMessageEnvelope(x *rony.MessageEnvelope) {
 	x.Message = x.Message[:0]
 	x.Constructor = 0
 	x.RequestID = 0
+	x.Header = x.Header[:0]
+	x.Auth = x.Auth[:0]
 	messageEnvelopePool.Put(x)
 }
 

@@ -216,7 +216,7 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 }
 
 func (ctx *RequestCtx) PushRedirectShard(shard uint32, wait time.Duration) {
-
+	// TODO:: implement it
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {

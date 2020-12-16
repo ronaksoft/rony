@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
-	"time"
+	"github.com/ronaksoft/rony/tools"
 )
 
 /*
@@ -29,7 +29,7 @@ func (h *SampleServer) Func2(ctx *edge.RequestCtx, req *pb.Req2, res *pb.Res2) {
 func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
 	res.Bool = req.Bool
 	res.Int = req.Int
-	res.Timestamp = time.Now().UnixNano()
+	res.Timestamp = tools.CPUTicks()
 	res.Delay = res.Timestamp - req.Timestamp
 }
 

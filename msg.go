@@ -34,6 +34,18 @@ func (x *MessageEnvelope) Clone() *MessageEnvelope {
 	c.Constructor = x.Constructor
 	c.RequestID = x.RequestID
 	c.Message = append(c.Message[:0], x.Message...)
+	c.Auth = append(c.Auth[:0], x.Auth...)
+	if cap(c.Header) >= len(x.Header) {
+		c.Header = c.Header[:len(x.Header)]
+	} else {
+		c.Header = make([]*KeyValue, len(x.Header))
+	}
+	for idx, kv := range x.Header {
+		if c.Header[idx] == nil {
+			c.Header[idx] = &KeyValue{}
+		}
+		kv.DeepCopy(c.Header[idx])
+	}
 	return c
 }
 

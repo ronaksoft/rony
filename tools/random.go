@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	mathRand "math/rand"
 	"sync"
-	"time"
 	_ "unsafe"
 )
 
@@ -44,7 +43,7 @@ var rndGen randomGenerator
 
 func init() {
 	rndGen.New = func() interface{} {
-		x := mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
+		x := mathRand.New(mathRand.NewSource(CPUTicks()))
 		return x
 	}
 }
