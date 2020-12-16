@@ -277,7 +277,10 @@ func (d delegateNode) NotifyMsg(data []byte) {
 	cm := acquireClusterMessage()
 	_ = proto.Unmarshal(data, cm)
 	dispatchCtx := acquireDispatchCtx(d.edge, nil, 0, cm.Sender)
-	dispatchCtx.FillEnvelope(cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message)
+	dispatchCtx.FillEnvelope(
+		cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message,
+		cm.Envelope.Auth, cm.Envelope.Header...,
+	)
 
 	d.edge.rateLimitChan <- struct{}{}
 	go func() {

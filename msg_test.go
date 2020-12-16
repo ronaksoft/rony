@@ -35,7 +35,7 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 		}
 
 		wg := sync.WaitGroup{}
-		for i := 0 ;i < 100; i++ {
+		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
 				dst := src.Clone()
