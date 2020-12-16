@@ -77,7 +77,7 @@ func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payloa
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
 	ctx.req.Auth = append(ctx.req.Auth[:0], auth...)
 	if cap(ctx.req.Header) >= len(ctx.req.Header) {
-		ctx.req.Header = ctx.req.Header[:len(ctx.req.Header)]
+		ctx.req.Header = ctx.req.Header[:len(kv)]
 	} else {
 		ctx.req.Header = make([]*rony.KeyValue, len(ctx.req.Header))
 	}

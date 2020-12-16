@@ -44,6 +44,23 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+
+
+		src = &MessageEnvelope{
+			RequestID:   tools.RandomUint64(0),
+			Constructor: tools.RandomInt64(0),
+			Auth: tools.StrToByte(tools.RandomID(10)),
+		}
+
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				dst := src.Clone()
+				c.So(dst, ShouldResemble, src)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	})
 
 }
