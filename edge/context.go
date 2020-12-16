@@ -71,10 +71,21 @@ func (ctx *DispatchCtx) StreamID() int64 {
 	return ctx.streamID
 }
 
-func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte) {
+func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, payload []byte, kv ...*rony.KeyValue) {
 	ctx.req.RequestID = requestID
 	ctx.req.Constructor = constructor
 	ctx.req.Message = append(ctx.req.Message[:0], payload...)
+	if cap(ctx.req.Header) >= len(ctx.req.Header) {
+		ctx.req.Header = ctx.req.Header[:len(ctx.req.Header)]
+	} else {
+		ctx.req.Header = make([]*rony.KeyValue, len(ctx.req.Header))
+	}
+	for idx, kv := range kv {
+		if ctx.req.Header[idx] == nil {
+			ctx.req.Header[idx] = &rony.KeyValue{}
+		}
+		kv.DeepCopy(ctx.req.Header[idx])
+	}
 }
 
 func (ctx *DispatchCtx) Set(key string, v interface{}) {

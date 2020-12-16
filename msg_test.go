@@ -3,6 +3,7 @@ package rony
 import (
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 	"testing"
 )
 
@@ -33,8 +34,16 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 			Auth: tools.StrToByte(tools.RandomID(10)),
 		}
 
-		dst := src.Clone()
-		c.So(dst, ShouldResemble, src)
+		wg := sync.WaitGroup{}
+		for i := 0 ;i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				dst := src.Clone()
+				c.So(dst, ShouldResemble, src)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	})
 
 }
