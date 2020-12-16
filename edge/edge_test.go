@@ -68,7 +68,7 @@ func TestWithTestGateway(t *testing.T) {
 				if x.Int != 100 {
 					return fmt.Errorf("int not equal")
 				}
-				if x.Timestamp != 1232 {
+				if x.Timestamp != 123 {
 					return fmt.Errorf("timestamp not equal")
 				}
 				if !x.Bool {
