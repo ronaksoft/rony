@@ -36,7 +36,7 @@ type conn struct {
 	gw     *dummyGateway.Gateway
 	err    error
 	errH   func(constructor int64, e *rony.Error)
-	wg     sync.WaitGroup
+	doneCh chan struct{}
 }
 
 func newConn(gw *dummyGateway.Gateway) *conn {
@@ -44,6 +44,7 @@ func newConn(gw *dummyGateway.Gateway) *conn {
 		id:     atomic.AddUint64(&connID, 1),
 		expect: make(map[int64]CheckFunc),
 		gw:     gw,
+		doneCh: make(chan struct{}, 1),
 	}
 	return c
 }
@@ -115,9 +116,10 @@ func (c *conn) RunLong(kvs ...gateway.KeyValue) error {
 
 func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
 	// Open Connection
-	c.wg.Add(1)
 	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
-		defer c.wg.Done()
+		defer func() {
+			c.doneCh <- struct{}{}
+		}()
 		e := &rony.MessageEnvelope{}
 		c.err = e.Unmarshal(data)
 		if c.err != nil {
@@ -142,9 +144,19 @@ func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
 	c.gw.SendToConn(c.id, 0, c.req)
 
 	// Wait for Response(s)
-	c.wg.Wait()
+Loop:
+	for {
+		select {
+		case <-c.doneCh:
+			// Check if all the expectations have been passed
+			if c.expectCount() == 0 {
+				break Loop
+			}
+		case <-time.After(timeout):
+			break Loop
+		}
+	}
 
-	// Check if all the expectations have been passed
 	if c.expectCount() > 0 {
 		c.err = ErrExpectationFailed
 	}
