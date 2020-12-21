@@ -103,7 +103,7 @@ func (ctx *DispatchCtx) Get(key string) interface{} {
 }
 
 func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
-	v, ok := ctx.kv[key].([]byte)
+	v, ok := ctx.Get(key).([]byte)
 	if ok {
 		return v
 	}
@@ -111,7 +111,7 @@ func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
 }
 
 func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
-	v := ctx.kv[key]
+	v := ctx.Get(key)
 	switch x := v.(type) {
 	case []byte:
 		return tools.ByteToStr(x)
@@ -123,7 +123,7 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 }
 
 func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
-	v, ok := ctx.kv[key].(int64)
+	v, ok := ctx.Get(key).(int64)
 	if ok {
 		return v
 	}
@@ -131,7 +131,7 @@ func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
 }
 
 func (ctx *DispatchCtx) GetBool(key string) bool {
-	v, ok := ctx.kv[key].(bool)
+	v, ok := ctx.Get(key).(bool)
 	if ok {
 		return v
 	}
