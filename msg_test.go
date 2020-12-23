@@ -45,11 +45,10 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 		}
 		wg.Wait()
 
-
 		src = &MessageEnvelope{
 			RequestID:   tools.RandomUint64(0),
 			Constructor: tools.RandomInt64(0),
-			Auth: tools.StrToByte(tools.RandomID(10)),
+			Auth:        tools.StrToByte(tools.RandomID(10)),
 		}
 
 		for i := 0; i < 100; i++ {
