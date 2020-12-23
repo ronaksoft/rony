@@ -508,6 +508,11 @@ func (g *Gateway) writePump(wr *writeRequest) {
 		return
 	}
 
+	if wr.wc.conn == nil {
+		g.removeConnection(wr.wc.connID)
+		return
+	}
+
 	switch wr.opCode {
 	case ws.OpBinary, ws.OpText:
 		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
