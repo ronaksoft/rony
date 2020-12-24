@@ -2,7 +2,10 @@ package tcp_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/gobwas/ws"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/gateway"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
@@ -10,6 +13,7 @@ import (
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
+	. "github.com/smartystreets/goconvey/convey"
 	"net"
 	"testing"
 	"time"
@@ -30,18 +34,62 @@ func init() {
 	testEnv.Init()
 }
 
-// func TestWebsocketConn(t *testing.T) {
-//
-// }
-//
-// func TestHttpConn(t *testing.T) {
-//
-// }
-//
-// func BenchmarkHttpConn(b *testing.B) {
-// 	log.SetLevel(log.InfoLevel)
-//
-// }
+func TestWebsocketConn(t *testing.T) {
+	rony.SetLogLevel(0)
+	gw, err := tcpGateway.New(tcpGateway.Config{
+		Concurrency:   10,
+		ListenAddress: "0.0.0.0:88",
+		MaxBodySize:   0,
+		MaxIdleTime:   0,
+		Protocol:      tcpGateway.Auto,
+		ExternalAddrs: []string{"127.0.0.1:88"},
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
+		e := &rony.MessageEnvelope{}
+		_ = e.Unmarshal(data)
+		out, _ := e.Marshal()
+		err := c.SendBinary(streamID, out)
+		if err != nil {
+			fmt.Println("MessageHandler:", err.Error())
+		}
+	}
+	gw.Start()
+	defer gw.Shutdown()
+	Convey("Websocket Server Test", t, func(c C) {
+		for i := 0; i < 10000; i++ {
+			wsc := edgec.NewWebsocket(edgec.Config{
+				HostPort:        "127.0.0.1:88",
+				IdleTimeout:     time.Second,
+				DialTimeout:     time.Second,
+				Handler:         nil,
+				Header:          nil,
+				Secure:          false,
+				ForceConnect:    true,
+				RequestMaxRetry: 10,
+				RequestTimeout:  time.Second,
+				ContextTimeout:  time.Second,
+			})
+			req := &rony.MessageEnvelope{
+				Constructor: 100,
+				RequestID:   100,
+				Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
+				Auth:        nil,
+				Header:      nil,
+			}
+			res := &rony.MessageEnvelope{}
+			ctx, cf := context.WithTimeout(context.TODO(), time.Second)
+			err = wsc.SendWithContext(ctx, req, res)
+			c.So(err, ShouldBeNil)
+			cf()
+			err = wsc.Close()
+			c.So(err, ShouldBeNil)
+		}
+	})
+}
 
 func BenchmarkWebsocketConn(b *testing.B) {
 	log.SetLevel(log.InfoLevel)
