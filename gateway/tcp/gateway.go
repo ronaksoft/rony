@@ -449,6 +449,13 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 	return nil
 }
 
+func (g *Gateway) totalConnections() int {
+	g.connsMtx.RLock()
+	n := len(g.conns)
+	g.connsMtx.RUnlock()
+	return n
+}
+
 func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 	defer g.waitGroupReaders.Done()
 	var (
