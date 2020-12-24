@@ -32,12 +32,11 @@ type Gateway struct {
 
 func New(config Config) (*Gateway, error) {
 	g := &Gateway{
-		conns: make(map[uint64]*Conn, 32),
+		conns: make(map[uint64]*Conn, 8192),
 	}
 
 	// Call the exposer make caller have access to this gateway object
 	config.Exposer(g)
-
 	return g, nil
 }
 
