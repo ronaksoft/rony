@@ -49,6 +49,11 @@ var (
 	}
 )
 
+type UnsafeConn interface {
+	net.Conn
+	UnsafeConn() net.Conn
+}
+
 // Config
 type Config struct {
 	Concurrency   int
@@ -321,10 +326,12 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			req.SetStatusCode(http.StatusNotAcceptable)
 			return
 		}
-		wc := req.Conn().(*wrapConn)
-		wc.ReadyForUpgrade()
+
 		req.HijackSetNoResponse(true)
 		req.Hijack(func(c net.Conn) {
+			hjc, _ := c.(UnsafeConn)
+			wc, _ := hjc.UnsafeConn().(*wrapConn)
+			wc.ReadyForUpgrade()
 			g.waitGroupAcceptors.Add(1)
 			g.connectionAcceptor(wc, clientIP, clientType, kvs...)
 		})

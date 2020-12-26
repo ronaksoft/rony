@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 )
 
 /*
@@ -29,17 +30,45 @@ type filer interface {
 }
 
 type wrapConn struct {
-	net.Conn
-	io.Reader
+	c   net.Conn
+	r   io.Reader
 	buf *bytes.Buffer
+}
+
+func (wc *wrapConn) Write(b []byte) (n int, err error) {
+	return wc.c.Write(b)
+}
+
+func (wc *wrapConn) Close() error {
+	return wc.c.Close()
+}
+
+func (wc *wrapConn) LocalAddr() net.Addr {
+	return wc.c.LocalAddr()
+}
+
+func (wc *wrapConn) RemoteAddr() net.Addr {
+	return wc.c.RemoteAddr()
+}
+
+func (wc *wrapConn) SetDeadline(t time.Time) error {
+	return wc.c.SetDeadline(t)
+}
+
+func (wc *wrapConn) SetReadDeadline(t time.Time) error {
+	return wc.c.SetReadDeadline(t)
+}
+
+func (wc *wrapConn) SetWriteDeadline(t time.Time) error {
+	return wc.c.SetWriteDeadline(t)
 }
 
 func newWrapConn(c net.Conn) *wrapConn {
 	wc := &wrapConn{
-		Conn: c,
-		buf:  bytes.NewBuffer(make([]byte, 0, 128)),
+		c:   c,
+		buf: bytes.NewBuffer(make([]byte, 0, 128)),
 	}
-	wc.Reader = io.TeeReader(wc.Conn, wc.buf)
+	wc.r = io.TeeReader(wc.c, wc.buf)
 	return wc
 }
 
@@ -48,8 +77,8 @@ func acquireWrapConn(c net.Conn) *wrapConn {
 	if !ok {
 		return newWrapConn(c)
 	}
-	wc.Conn = c
-	wc.Reader = io.TeeReader(wc.Conn, wc.buf)
+	wc.c = c
+	wc.r = io.TeeReader(wc.c, wc.buf)
 	return wc
 }
 
@@ -58,12 +87,16 @@ func releaseWrapConn(wc *wrapConn) {
 	wrapConnPool.Put(wc)
 }
 
+func (wc *wrapConn) UnsafeConn() net.Conn {
+	return wc.c
+}
+
 func (wc *wrapConn) Read(p []byte) (int, error) {
-	return wc.Reader.Read(p)
+	return wc.r.Read(p)
 }
 
 func (wc *wrapConn) File() (*os.File, error) {
-	x, ok := wc.Conn.(filer)
+	x, ok := wc.c.(filer)
 	if !ok {
 		return nil, netpoll.ErrNotFiler
 	}
@@ -71,5 +104,5 @@ func (wc *wrapConn) File() (*os.File, error) {
 }
 
 func (wc *wrapConn) ReadyForUpgrade() {
-	wc.Reader = io.MultiReader(wc.buf, wc.Conn)
+	wc.r = io.MultiReader(wc.buf, wc.c)
 }

@@ -63,7 +63,7 @@ func TestWebsocketConn(t *testing.T) {
 				}
 			}
 
-			for i := 0; i < 1000; i++ {
+			for i := 0; i < 10; i++ {
 				wsc := edgec.NewWebsocket(edgec.Config{
 					HostPort:        "127.0.0.1:88",
 					IdleTimeout:     time.Second,
@@ -91,6 +91,7 @@ func TestWebsocketConn(t *testing.T) {
 				err = wsc.Close()
 				c.So(err, ShouldBeNil)
 			}
+			time.Sleep(time.Second)
 			c.Println("Total Connections", gw.TotalConnections())
 		})
 		Convey("With Panic Handler", func(c C) {
@@ -101,7 +102,7 @@ func TestWebsocketConn(t *testing.T) {
 				}
 			}
 
-			for i := 0; i < 10000; i++ {
+			for i := 0; i < 10; i++ {
 				wsc := edgec.NewWebsocket(edgec.Config{
 					HostPort:        "127.0.0.1:88",
 					IdleTimeout:     time.Second,
@@ -117,10 +118,8 @@ func TestWebsocketConn(t *testing.T) {
 				err = wsc.Close()
 				c.So(err, ShouldBeNil)
 			}
-			for i := 0; i < 10; i++ {
-				c.Println("Total Connections", gw.TotalConnections())
-				time.Sleep(time.Second)
-			}
+			time.Sleep(time.Second * 2)
+			c.Println("Total Connections", gw.TotalConnections())
 		})
 	})
 
