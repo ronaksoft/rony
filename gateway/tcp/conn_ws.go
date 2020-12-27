@@ -116,7 +116,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
 func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
-	if wc.closed {
+	if wc == nil || wc.closed {
 		return ErrWriteToClosedConn
 	}
 	wc.gateway.waitGroupWriters.Add(1)
@@ -124,10 +124,10 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 	wr := acquireWriteRequest(wc, ws.OpBinary)
 	wr.CopyPayload(payload)
 	err := wc.gateway.writePump(wr)
-	releaseWriteRequest(wr)
 	if err != nil {
 		wc.gateway.removeConnection(wr.wc.connID)
 	}
+	releaseWriteRequest(wr)
 	return nil
 }
 
