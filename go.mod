@@ -35,6 +35,7 @@ require (
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/tools v0.0.0-20200828013309-97019fc2e64b // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0

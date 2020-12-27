@@ -12,6 +12,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 	"net"
 	"net/http"
 	"sync"
@@ -94,6 +95,7 @@ type Gateway struct {
 	waitGroupWriters   *sync.WaitGroup
 	cntReads           uint64
 	cntWrites          uint64
+	sem                *semaphore.Weighted
 }
 
 // New
@@ -112,6 +114,7 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      Auto,
 		extAddrs:           config.ExternalAddrs,
+		sem:                semaphore.NewWeighted(int64(config.Concurrency)),
 	}
 
 	tcpConfig := tcplisten.Config{
@@ -218,7 +221,6 @@ func (g *Gateway) Run() {
 			// log.Warn("Error On Accept", zap.Error(err))
 			continue
 		}
-
 		wc := newWrapConn(conn)
 		err = server.ServeConn(wc)
 		if err != nil {
@@ -320,6 +322,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		clientIP = string(req.RemoteIP().To4())
 	}
 
+	// If this is a Http Upgrade then we handle websocket
 	if req.Request.Header.ConnectionUpgrade() {
 		if g.transportMode&Websocket == 0 {
 			req.SetConnectionClose()
@@ -338,6 +341,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		return
 	}
 
+	// This is going to be an HTTP request
 	req.SetConnectionClose()
 	if g.transportMode&Http == 0 {
 		req.SetStatusCode(http.StatusNotAcceptable)
@@ -381,7 +385,7 @@ func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string, kv
 	)
 
 	if err != nil {
-		log.Warn("Error On NetPoll Description", zap.Error(err))
+		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.totalConnections()))
 		g.removeConnection(wsConn.connID)
 		return
 	}
@@ -424,6 +428,7 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	}
 	delete(g.conns, wcID)
 	g.connsMtx.Unlock()
+
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
 	if wsConn.desc != nil {
 		_ = g.poller.Stop(wsConn.desc)
@@ -463,12 +468,7 @@ func (g *Gateway) totalConnections() int {
 	return n
 }
 
-func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
-	defer g.waitGroupReaders.Done()
-	var (
-		err error
-	)
-
+func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 	waitGroup := pools.AcquireWaitGroup()
 	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 	ms = ms[:0]
@@ -480,12 +480,9 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 				zap.Error(err),
 			)
 		}
-		// remove the connection from the list
-		wc.gateway.removeConnection(wc.connID)
-		return
+		return ErrUnexpectedSocketRead
 	}
 	atomic.AddUint64(&g.cntReads, 1)
-	_ = wc.gateway.poller.Resume(wc.desc)
 
 	// handle messages
 	for idx := range ms {
@@ -505,7 +502,7 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 			}()
 		case ws.OpClose:
 			// remove the connection from the list
-			wc.gateway.removeConnection(wc.connID)
+			err = ErrOpCloseReceived
 		default:
 			log.Warn("Unknown OpCode")
 		}
@@ -513,9 +510,10 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) {
 	}
 	waitGroup.Wait()
 	pools.ReleaseWaitGroup(waitGroup)
+	return err
 }
 
-func (g *Gateway) writePump(wr *writeRequest) {
+func (g *Gateway) writePump(wr *writeRequest) (err error) {
 	defer g.waitGroupWriters.Done()
 
 	if wr.wc.closed {
@@ -523,22 +521,21 @@ func (g *Gateway) writePump(wr *writeRequest) {
 	}
 
 	if wr.wc.conn == nil {
-		g.removeConnection(wr.wc.connID)
-		return
+		return ErrWriteToClosedConn
 	}
 
 	switch wr.opCode {
 	case ws.OpBinary, ws.OpText:
 		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-		err := wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
+		err = wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
 		if err != nil {
 			if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
-			g.removeConnection(wr.wc.connID)
+			return
 		} else {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}
 	}
-
+	return
 }

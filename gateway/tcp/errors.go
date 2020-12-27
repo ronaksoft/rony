@@ -14,4 +14,5 @@ import "errors"
 var (
 	ErrWriteToClosedConn    = errors.New("write to closed conn")
 	ErrUnexpectedSocketRead = errors.New("unexpected socket read")
+	ErrOpCloseReceived      = errors.New("close operation received")
 )

@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"sync/atomic"
+	"time"
 )
 
 /*
@@ -62,13 +63,13 @@ func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err err
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
-func InitEdgeServerWithWebsocket(serverID string, clientPort int, opts ...edge.Option) *edge.Server {
+func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithTcpGateway(tcpGateway.Config{
-			Protocol:      tcpGateway.Websocket,
-			Concurrency:   10,
-			MaxIdleTime:   0,
-			ListenAddress: fmt.Sprintf(":%d", clientPort),
+			Protocol:      tcpGateway.Auto,
+			Concurrency:   concurrency,
+			MaxIdleTime:   time.Second,
+			ListenAddress: fmt.Sprintf(":%d", listenPort),
 		}),
 	)
 	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)

@@ -3,6 +3,7 @@
 package tcp
 
 import (
+	"context"
 	"encoding/binary"
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
@@ -85,14 +86,30 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 	if atomic.LoadInt32(&wc.gateway.stop) == 1 {
 		return
 	}
+
+	if event&netpoll.EventReadHup != 0 {
+		wc.gateway.removeConnection(wc.connID)
+		return
+	}
+
 	if event&netpoll.EventRead != 0 {
 		wc.lastActivity = tools.TimeUnix()
 		wc.gateway.waitGroupReaders.Add(1)
-
-		ms := acquireWebsocketMessage()
-		wc.gateway.readPump(wc, ms)
-		releaseWebsocketMessage(ms)
+		_ = wc.gateway.sem.Acquire(context.TODO(), 1)
+		go func() {
+			ms := acquireWebsocketMessage()
+			err := wc.gateway.readPump(wc, ms)
+			releaseWebsocketMessage(ms)
+			if err != nil {
+				wc.gateway.removeConnection(wc.connID)
+			} else {
+				_ = wc.gateway.poller.Resume(wc.desc)
+			}
+			wc.gateway.sem.Release(1)
+			wc.gateway.waitGroupReaders.Done()
+		}()
 	}
+
 }
 
 // SendBinary
@@ -106,8 +123,11 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 
 	wr := acquireWriteRequest(wc, ws.OpBinary)
 	wr.CopyPayload(payload)
-	wc.gateway.writePump(wr)
+	err := wc.gateway.writePump(wr)
 	releaseWriteRequest(wr)
+	if err != nil {
+		wc.gateway.removeConnection(wr.wc.connID)
+	}
 	return nil
 }
 

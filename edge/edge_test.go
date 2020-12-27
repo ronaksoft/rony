@@ -1,14 +1,15 @@
 package edge_test
 
 import (
+	"flag"
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	. "github.com/smartystreets/goconvey/convey"
-	"google.golang.org/protobuf/proto"
+	"os"
 	"testing"
 	"time"
 )
@@ -22,26 +23,58 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func BenchmarkStandaloneSerial(b *testing.B) {
-	edgeServer := testEnv.InitEdgeServerWithWebsocket("Adam", 8080, edge.WithDataPath("./_hdd/adam"))
-	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
+var (
+	edgeServer *edge.Server
+	edgeClient *edgec.Websocket
+)
 
+func TestMain(m *testing.M) {
+	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000, edge.WithDataPath("./_hdd/adam"))
+
+	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
+	_ = edgeServer.StartCluster()
+	edgeServer.StartGateway()
+	defer func() {
+		time.Sleep(time.Second * 3)
+		edgeServer.Shutdown()
+	}()
+
+	flag.Parse()
+	os.Exit(m.Run())
+}
+func BenchmarkStandaloneSerial(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
-	b.SetParallelism(1000)
-	conn := dummyGateway.Conn{}
-	req := pb.EchoRequest{
+	// b.SetParallelism(10)
+
+	echoRequest := pb.EchoRequest{
 		Int:       100,
 		Bool:      false,
 		Timestamp: 32809238402,
 	}
-	e := &rony.MessageEnvelope{}
-	e.Fill(100, pb.C_Echo, &req)
 
-	reqBytes, _ := proto.Marshal(e)
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			edgeServer.OnGatewayMessage(&conn, 0, reqBytes)
+			edgeClient := edgec.NewWebsocket(edgec.Config{
+				HostPort:     "127.0.0.1:8080",
+				IdleTimeout:  time.Second,
+				DialTimeout:  time.Second,
+				ForceConnect: true,
+				Handler:      func(m *rony.MessageEnvelope) {},
+				// RequestMaxRetry: 1,
+				// RequestTimeout:  time.Second,
+				// ContextTimeout:  time.Second,
+			})
+
+			req := rony.PoolMessageEnvelope.Get()
+			res := rony.PoolMessageEnvelope.Get()
+			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
+			_ = edgeClient.Send(req, res)
+			// if err != nil {
+			// 	fmt.Println(err)
+			// }
+			rony.PoolMessageEnvelope.Put(req)
+			rony.PoolMessageEnvelope.Put(res)
 		}
 	})
 }
