@@ -28,12 +28,14 @@ type HttpConfig struct {
 }
 
 type Http struct {
-	reqID uint64
-	c     *fasthttp.Client
+	hostPort string
+	reqID    uint64
+	c        *fasthttp.Client
 }
 
 func NewHttp(config HttpConfig) *Http {
 	h := &Http{
+		hostPort: config.HostPort,
 		c: &fasthttp.Client{
 			Name:                      config.Name,
 			MaxIdemponentCallAttempts: 10,
@@ -60,6 +62,7 @@ func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) (err e
 	defer fasthttp.ReleaseRequest(httpReq)
 
 	httpReq.Header.SetMethod(http.MethodPost)
+	httpReq.SetHost(h.hostPort)
 	httpReq.SetBody(b)
 
 	httpRes := fasthttp.AcquireResponse()
