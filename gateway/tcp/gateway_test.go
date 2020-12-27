@@ -37,7 +37,7 @@ func init() {
 func TestGateway(t *testing.T) {
 	rony.SetLogLevel(0)
 	gw, err := tcpGateway.New(tcpGateway.Config{
-		Concurrency:   10,
+		Concurrency:   1,
 		ListenAddress: "0.0.0.0:88",
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
@@ -135,7 +135,7 @@ func TestGateway(t *testing.T) {
 			wg := pools.AcquireWaitGroup()
 			wg.Add(1)
 			go func() {
-				for i := 0; i < 10; i++ {
+				for i := 0; i < 100; i++ {
 					wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 						HostPort:        "127.0.0.1:88",
 						IdleTimeout:     time.Second,
@@ -174,19 +174,23 @@ func TestGateway(t *testing.T) {
 					HostPort:        "127.0.0.1:88",
 					Header:          nil,
 				})
-				for i := 0; i < 10; i++ {
-					req := &rony.MessageEnvelope{
-						Constructor: 100,
-						RequestID:   100,
-						Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
-						Auth:        nil,
-						Header:      nil,
-					}
-					res := &rony.MessageEnvelope{}
-					err = httpc.Send(req, res)
-					c.So(res.Constructor, ShouldEqual, req.Constructor)
-					c.So(res.RequestID, ShouldEqual, res.RequestID)
-					c.So(err, ShouldBeNil)
+				for i := 0; i < 100; i++ {
+					wg.Add(1)
+					go func() {
+						req := &rony.MessageEnvelope{
+							Constructor: 100,
+							RequestID:   100,
+							Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
+							Auth:        nil,
+							Header:      nil,
+						}
+						res := &rony.MessageEnvelope{}
+						err = httpc.Send(req, res)
+						c.So(res.Constructor, ShouldEqual, req.Constructor)
+						c.So(res.RequestID, ShouldEqual, res.RequestID)
+						c.So(err, ShouldBeNil)
+						wg.Done()
+					}()
 				}
 				err = httpc.Close()
 				c.So(err, ShouldBeNil)
