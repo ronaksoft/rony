@@ -155,7 +155,7 @@ var EchoCmd = &cobra.Command{
 			fmt.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec := edgec.NewWebsocket(edgec.Config{
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -226,7 +226,7 @@ var BenchCmd = &cobra.Command{
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()
-				ec := edgec.NewWebsocket(edgec.Config{
+				ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
 						cmd.Println(m.Constructor, m.RequestID, idx)

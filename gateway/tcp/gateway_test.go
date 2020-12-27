@@ -64,7 +64,7 @@ func TestWebsocketConn(t *testing.T) {
 			}
 
 			for i := 0; i < 10; i++ {
-				wsc := edgec.NewWebsocket(edgec.Config{
+				wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 					HostPort:        "127.0.0.1:88",
 					IdleTimeout:     time.Second,
 					DialTimeout:     time.Second,
@@ -103,7 +103,7 @@ func TestWebsocketConn(t *testing.T) {
 			}
 
 			for i := 0; i < 10; i++ {
-				wsc := edgec.NewWebsocket(edgec.Config{
+				wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 					HostPort:        "127.0.0.1:88",
 					IdleTimeout:     time.Second,
 					DialTimeout:     time.Second,

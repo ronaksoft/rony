@@ -91,7 +91,7 @@ func TestClient_Connect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := pb.NewSampleClient(edgec.NewWebsocket(edgec.Config{
+	c := pb.NewSampleClient(edgec.NewWebsocket(edgec.WebsocketConfig{
 		HostPort: "127.0.0.1:8081",
 	}))
 	wg := sync.WaitGroup{}

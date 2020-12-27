@@ -25,7 +25,6 @@ import (
 
 var (
 	edgeServer *edge.Server
-	edgeClient *edgec.Websocket
 )
 
 func TestMain(m *testing.M) {
@@ -42,7 +41,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	os.Exit(m.Run())
 }
-func BenchmarkStandaloneSerial(b *testing.B) {
+
+func BenchmarkServer(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	// b.SetParallelism(10)
@@ -55,7 +55,7 @@ func BenchmarkStandaloneSerial(b *testing.B) {
 
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			edgeClient := edgec.NewWebsocket(edgec.Config{
+			edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
 				HostPort:     "127.0.0.1:8080",
 				IdleTimeout:  time.Second,
 				DialTimeout:  time.Second,

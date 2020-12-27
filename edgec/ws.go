@@ -35,7 +35,7 @@ const (
 )
 
 type MessageHandler func(m *rony.MessageEnvelope)
-type Config struct {
+type WebsocketConfig struct {
 	HostPort     string
 	IdleTimeout  time.Duration
 	DialTimeout  time.Duration
@@ -72,7 +72,7 @@ type Websocket struct {
 	nextReqID  uint64
 }
 
-func NewWebsocket(config Config) *Websocket {
+func NewWebsocket(config WebsocketConfig) *Websocket {
 	if config.DialTimeout == 0 {
 		config.DialTimeout = dialTimeout
 	}
