@@ -429,13 +429,15 @@ func (g *Gateway) removeConnection(wcID uint64) {
 	delete(g.conns, wcID)
 	g.connsMtx.Unlock()
 
+
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
+	wsConn.Lock()
 	if wsConn.desc != nil {
 		_ = g.poller.Stop(wsConn.desc)
 		_ = wsConn.desc.Close()
 	}
 	_ = wsConn.conn.Close()
-	wsConn.Lock()
+
 	if !wsConn.closed {
 		g.CloseHandler(wsConn)
 		wsConn.closed = true
@@ -515,13 +517,14 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 
 func (g *Gateway) writePump(wr *writeRequest) (err error) {
 	defer g.waitGroupWriters.Done()
+	wr.wc.Lock()
+	defer wr.wc.Unlock()
 
 	if wr.wc.closed {
 		return
 	}
-
 	if wr.wc.conn == nil {
-		return ErrWriteToClosedConn
+		return
 	}
 
 	switch wr.opCode {
