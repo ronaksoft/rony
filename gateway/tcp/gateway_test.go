@@ -52,7 +52,7 @@ func TestGateway(t *testing.T) {
 	gw.Start()
 	defer gw.Shutdown()
 	Convey("Gateway Test", t, func(c C) {
-		SkipConvey("Websocket / With Normal Handler", func(c C) {
+		Convey("Websocket / With Normal Handler", func(c C) {
 			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
 				e := &rony.MessageEnvelope{}
 				_ = e.Unmarshal(data)
@@ -100,7 +100,7 @@ func TestGateway(t *testing.T) {
 			time.Sleep(time.Second)
 			c.Println("Total Connections", gw.TotalConnections())
 		})
-		SkipConvey("Websocket / With Panic Handler", func(c C) {
+		Convey("Websocket / With Panic Handler", func(c C) {
 			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
 				err := c.SendBinary(streamID, nil)
 				if err != nil {
@@ -129,7 +129,6 @@ func TestGateway(t *testing.T) {
 		})
 		Convey("Http With Normal Handler", func(c C) {
 			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
-				time.Sleep(time.Second * 2)
 				e := &rony.MessageEnvelope{}
 				_ = e.Unmarshal(data)
 				out, _ := e.Marshal()
@@ -158,12 +157,14 @@ func TestGateway(t *testing.T) {
 						}
 						res := &rony.MessageEnvelope{}
 						err = httpc.Send(req, res)
-						if err == nil {
-							fmt.Println(res.RequestID, res.RequestID)
+						if err != nil {
+							c.Println(err)
+							wg.Done()
+							return
 						}
-						// c.So(res.Constructor, ShouldEqual, req.Constructor)
-						// c.So(res.RequestID, ShouldEqual, res.RequestID)
-						// c.So(err, ShouldBeNil)
+						c.So(res.Constructor, ShouldEqual, req.Constructor)
+						c.So(res.RequestID, ShouldEqual, res.RequestID)
+						c.So(err, ShouldBeNil)
 						wg.Done()
 					}()
 				}

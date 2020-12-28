@@ -1,6 +1,7 @@
 package edge_test
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/ronaksoft/rony"
@@ -28,16 +29,13 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000, edge.WithDataPath("./_hdd/adam"))
+	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 10000, edge.WithDataPath("./_hdd/adam"))
 
 	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
 	_ = edgeServer.StartCluster()
 	edgeServer.StartGateway()
 	flag.Parse()
 	code := m.Run()
-
-	time.Sleep(time.Second * 10)
-
 	edgeServer.Shutdown()
 	os.Exit(code)
 }
@@ -56,20 +54,22 @@ func BenchmarkServer(b *testing.B) {
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
 			edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
-				HostPort:     "127.0.0.1:8080",
-				IdleTimeout:  time.Second,
-				DialTimeout:  time.Second,
-				ForceConnect: true,
-				Handler:      func(m *rony.MessageEnvelope) {},
-				// RequestMaxRetry: 1,
-				// RequestTimeout:  time.Second,
+				HostPort:        "127.0.0.1:8080",
+				IdleTimeout:     time.Second,
+				DialTimeout:     time.Second,
+				ForceConnect:    true,
+				Handler:         func(m *rony.MessageEnvelope) {},
+				RequestMaxRetry: 10,
+				RequestTimeout:  time.Second,
 				// ContextTimeout:  time.Second,
 			})
 
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
 			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
-			_ = edgeClient.Send(req, res)
+			ctx, cf := context.WithTimeout(context.TODO(), time.Second)
+			_ = edgeClient.SendWithContext(ctx, req, res)
+			cf()
 			// if err != nil {
 			// 	fmt.Println(err)
 			// }

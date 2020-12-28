@@ -215,6 +215,7 @@ func (g *Gateway) Run() {
 		KeepHijackedConns:  true,
 		MaxRequestBodySize: g.maxBodySize,
 	}
+
 	for {
 		conn, err := g.listener.Accept()
 		if err != nil {
@@ -222,7 +223,6 @@ func (g *Gateway) Run() {
 			continue
 		}
 		wc := newWrapConn(conn)
-
 		err = g.sem.Acquire(context.TODO(), 1)
 		if err != nil {
 			continue
