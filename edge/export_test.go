@@ -2,6 +2,7 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/gateway/tcp"
 )
 
 /*
@@ -16,4 +17,12 @@ import (
 // OnGatewayMessage is exposed only for test packages
 func (edge *Server) OnGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	edge.onGatewayMessage(conn, streamID, data)
+}
+
+func (edge *Server) GatewayConns() int {
+	g, _ := edge.gateway.(*tcp.Gateway)
+	if g == nil {
+		return 0
+	}
+	return g.TotalConnections()
 }

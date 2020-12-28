@@ -80,14 +80,14 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 			desc:         desc,
 			closed:       false,
 			kv:           make(map[string]interface{}, 4),
-			lastActivity: tools.TimeUnix(),
+			lastActivity: tools.CPUTicks(),
 		}
 	}
 	c.gateway = gw
 	c.connID = connID
 	c.desc = desc
 	c.conn = conn
-	c.lastActivity = tools.TimeUnix()
+	c.lastActivity = tools.CPUTicks()
 	return c
 }
 

@@ -107,7 +107,7 @@ func New(config Config) (*Gateway, error) {
 		listenOn:           config.ListenAddress,
 		concurrency:        config.Concurrency,
 		maxBodySize:        config.MaxBodySize,
-		maxIdleTime:        int64(defaultConnIdleTime.Seconds()),
+		maxIdleTime:        int64(defaultConnIdleTime),
 		waitGroupReaders:   &sync.WaitGroup{},
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
@@ -226,10 +226,12 @@ func (g *Gateway) Run() {
 		if err != nil {
 			if nErr, ok := err.(net.Error); ok {
 				if !nErr.Temporary() {
-					return
+					log.Warn("Error On ServeConn", zap.Error(err))
+					continue
 				}
 			} else {
-				return
+				log.Warn("Error On ServeConn", zap.Error(err))
+				continue
 			}
 		}
 	}
@@ -261,6 +263,15 @@ func (g *Gateway) Shutdown() {
 		zap.Uint64("Reads", g.cntReads),
 		zap.Uint64("Writes", g.cntWrites),
 	)
+
+	g.connsMtx.Lock()
+	for id, c := range g.conns {
+		fmt.Println("Conn(", id, ") Stalled",
+			time.Duration(tools.CPUTicks()-atomic.LoadInt64(&c.startTime)),
+			time.Duration(tools.CPUTicks()-(atomic.LoadInt64(&c.lastActivity))),
+		)
+	}
+	g.connsMtx.Unlock()
 }
 
 // Addr return the address which gateway is listen on
@@ -278,6 +289,13 @@ func (g *Gateway) GetConn(connID uint64) gateway.Conn {
 		return nil
 	}
 	return c
+}
+
+func (g *Gateway) TotalConnections() int {
+	g.connsMtx.RLock()
+	n := len(g.conns)
+	g.connsMtx.RUnlock()
+	return n
 }
 
 func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
@@ -377,79 +395,18 @@ func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string, kv
 	var (
 		err error
 	)
-	wsConn := g.addConnection(c, clientIP, clientType)
+
+	wsConn, err := newWebsocketConn(g, c, clientIP, clientType)
+	if err != nil {
+		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
+		return
+	}
+
 	g.ConnectHandler(wsConn, kvs...)
 
-	wsConn.desc, err = netpoll.Handle(c,
-		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
-	)
-
+	err = wsConn.registerDesc()
 	if err != nil {
-		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.totalConnections()))
-		g.removeConnection(wsConn.connID)
-		return
-	}
-	err = g.poller.Start(wsConn.desc, wsConn.startEvent)
-	if err != nil {
-		log.Warn("Error On NetPoll Start", zap.Error(err))
-		g.removeConnection(wsConn.connID)
-		return
-	}
-}
-
-func (g *Gateway) addConnection(conn net.Conn, clientIP, clientType string) *websocketConn {
-	// Increment total connection counter and connection ID
-	totalConns := atomic.AddInt32(&g.connsTotal, 1)
-	connID := atomic.AddUint64(&g.connsLastID, 1)
-	wsConn := acquireWebsocketConn(g, connID, conn, nil)
-	wsConn.SetClientIP(tools.StrToByte(clientIP))
-
-	g.connsMtx.Lock()
-	g.conns[connID] = wsConn
-	g.connsMtx.Unlock()
-	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
-		ce.Write(
-			zap.Uint64("ConnID", connID),
-			zap.String("Client", clientType),
-			zap.String("IP", wsConn.ClientIP()),
-			zap.Int32("Total", totalConns),
-		)
-	}
-	g.connGC.monitorConnection(connID)
-	return wsConn
-}
-
-func (g *Gateway) removeConnection(wcID uint64) {
-	g.connsMtx.Lock()
-	wsConn, ok := g.conns[wcID]
-	if !ok {
-		g.connsMtx.Unlock()
-		return
-	}
-	delete(g.conns, wcID)
-	g.connsMtx.Unlock()
-
-
-	totalConns := atomic.AddInt32(&g.connsTotal, -1)
-	wsConn.Lock()
-	if wsConn.desc != nil {
-		_ = g.poller.Stop(wsConn.desc)
-		_ = wsConn.desc.Close()
-	}
-	_ = wsConn.conn.Close()
-
-	if !wsConn.closed {
-		g.CloseHandler(wsConn)
-		wsConn.closed = true
-	}
-	wsConn.Unlock()
-	releaseWebsocketConn(wsConn)
-
-	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
-		ce.Write(
-			zap.Uint64("ConnID", wcID),
-			zap.Int32("Total", totalConns),
-		)
+		log.Warn("Error On RegisterDesc", zap.Error(err))
 	}
 }
 
@@ -461,13 +418,6 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 		return wsConn
 	}
 	return nil
-}
-
-func (g *Gateway) totalConnections() int {
-	g.connsMtx.RLock()
-	n := len(g.conns)
-	g.connsMtx.RUnlock()
-	return n
 }
 
 func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {

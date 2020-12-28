@@ -9,7 +9,9 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/ronaksoft/rony"
+	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/tools"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -43,6 +45,115 @@ type websocketConn struct {
 	conn         net.Conn
 	desc         *netpoll.Desc
 	closed       bool
+	startTime    int64
+}
+
+func newWebsocketConn(g *Gateway, conn net.Conn, clientIP, clientType string) (*websocketConn, error) {
+	// desc, err := netpoll.HandleRead(conn)
+	desc, err := netpoll.Handle(conn,
+		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Increment total connection counter and connection ID
+	totalConns := atomic.AddInt32(&g.connsTotal, 1)
+	connID := atomic.AddUint64(&g.connsLastID, 1)
+	wsConn := acquireWebsocketConn(g, connID, conn, desc)
+	wsConn.SetClientIP(tools.StrToByte(clientIP))
+
+	g.connsMtx.Lock()
+	g.conns[connID] = wsConn
+	g.connsMtx.Unlock()
+	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
+		ce.Write(
+			zap.Uint64("ConnID", connID),
+			zap.String("Client", clientType),
+			zap.String("IP", wsConn.ClientIP()),
+			zap.Int32("Total", totalConns),
+		)
+	}
+	g.connGC.monitorConnection(connID)
+	return wsConn, nil
+}
+
+func (wc *websocketConn) registerDesc() error {
+	atomic.StoreInt64(&wc.startTime, tools.CPUTicks())
+	err := wc.gateway.poller.Start(wc.desc, wc.startEvent)
+	if err != nil {
+		wc.release()
+	}
+	return err
+	// return wc.gateway.poller.Resume(wc.desc)
+}
+
+func (wc *websocketConn) release() {
+	// delete the reference from the gateway's conns
+	g := wc.gateway
+	g.connsMtx.Lock()
+	_, ok := g.conns[wc.connID]
+	if !ok {
+		g.connsMtx.Unlock()
+		return
+	}
+	delete(g.conns, wc.connID)
+	g.connsMtx.Unlock()
+
+	// Decrease the total connection counter
+	totalConns := atomic.AddInt32(&g.connsTotal, -1)
+
+	// fmt.Println("Conn(", wc.connID, "): LifeTime:", time.Duration(tools.CPUTicks()-atomic.LoadInt64(&wc.startTime)))
+	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
+		ce.Write(
+			zap.Uint64("ConnID", wc.connID),
+			zap.Int32("Total", totalConns),
+		)
+	}
+
+	wc.Lock()
+	if wc.desc != nil {
+		_ = g.poller.Stop(wc.desc)
+		_ = wc.desc.Close()
+	}
+	_ = wc.conn.Close()
+
+	if !wc.closed {
+		g.CloseHandler(wc)
+		wc.closed = true
+	}
+	wc.Unlock()
+	releaseWebsocketConn(wc)
+}
+
+func (wc *websocketConn) startEvent(event netpoll.Event) {
+	if atomic.LoadInt32(&wc.gateway.stop) == 1 {
+		return
+	}
+
+	if event&netpoll.EventReadHup != 0 {
+		wc.release()
+		return
+	}
+
+	if event&netpoll.EventRead != 0 {
+		atomic.StoreInt64(&wc.lastActivity, tools.CPUTicks())
+		wc.gateway.waitGroupReaders.Add(1)
+		_ = wc.gateway.sem.Acquire(context.TODO(), 1)
+		go func() {
+			ms := acquireWebsocketMessage()
+			err := wc.gateway.readPump(wc, ms)
+			releaseWebsocketMessage(ms)
+			if err != nil {
+				wc.release()
+			} else {
+				_ = wc.gateway.poller.Resume(wc.desc)
+			}
+			wc.gateway.sem.Release(1)
+			wc.gateway.waitGroupReaders.Done()
+		}()
+	}
+
 }
 
 func (wc *websocketConn) Get(key string) interface{} {
@@ -82,36 +193,6 @@ func (wc *websocketConn) Pop() *rony.MessageEnvelope {
 	return nil
 }
 
-func (wc *websocketConn) startEvent(event netpoll.Event) {
-	if atomic.LoadInt32(&wc.gateway.stop) == 1 {
-		return
-	}
-
-	if event&netpoll.EventReadHup != 0 {
-		wc.gateway.removeConnection(wc.connID)
-		return
-	}
-
-	if event&netpoll.EventRead != 0 {
-		wc.lastActivity = tools.TimeUnix()
-		wc.gateway.waitGroupReaders.Add(1)
-		_ = wc.gateway.sem.Acquire(context.TODO(), 1)
-		go func() {
-			ms := acquireWebsocketMessage()
-			err := wc.gateway.readPump(wc, ms)
-			releaseWebsocketMessage(ms)
-			if err != nil {
-				wc.gateway.removeConnection(wc.connID)
-			} else {
-				_ = wc.gateway.poller.Resume(wc.desc)
-			}
-			wc.gateway.sem.Release(1)
-			wc.gateway.waitGroupReaders.Done()
-		}()
-	}
-
-}
-
 // SendBinary
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
@@ -125,20 +206,21 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 	wr.CopyPayload(payload)
 	err := wc.gateway.writePump(wr)
 	if err != nil {
-		wc.gateway.removeConnection(wr.wc.connID)
+		wc.release()
 	}
 	releaseWriteRequest(wr)
 	return nil
 }
 
 func (wc *websocketConn) Disconnect() {
-	wc.gateway.removeConnection(wc.connID)
+	wc.release()
 }
 
 func (wc *websocketConn) Persistent() bool {
 	return true
 }
 
+// writeRequest
 type writeRequest struct {
 	wc      *websocketConn
 	opCode  ws.OpCode
@@ -149,6 +231,7 @@ func (wr *writeRequest) CopyPayload(p []byte) {
 	wr.payload = append(wr.payload[:0], p...)
 }
 
+// websocketConnGC the garbage collector of the stalled websocket connections
 type websocketConnGC struct {
 	bg     *bigcache.BigCache
 	gw     *Gateway
@@ -160,7 +243,7 @@ func newWebsocketConnGC(gw *Gateway) *websocketConnGC {
 		gw:     gw,
 		inChan: make(chan uint64, 1000),
 	}
-	bgConf := bigcache.DefaultConfig(time.Duration(gw.maxIdleTime) * time.Second)
+	bgConf := bigcache.DefaultConfig(time.Duration(gw.maxIdleTime))
 	bgConf.CleanWindow = time.Second
 	bgConf.Verbose = false
 	bgConf.OnRemoveWithReason = gc.onRemove
@@ -186,8 +269,8 @@ func (gc *websocketConnGC) onRemove(key string, entry []byte, reason bigcache.Re
 	case bigcache.Expired:
 		connID := binary.BigEndian.Uint64(entry)
 		if wsConn := gc.gw.getConnection(connID); wsConn != nil {
-			if tools.TimeUnix()-wsConn.lastActivity > gc.gw.maxIdleTime {
-				gc.gw.removeConnection(connID)
+			if tools.CPUTicks()-atomic.LoadInt64(&wsConn.lastActivity) > gc.gw.maxIdleTime {
+				wsConn.release()
 			} else {
 				gc.monitorConnection(connID)
 			}

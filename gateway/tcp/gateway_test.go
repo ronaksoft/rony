@@ -62,39 +62,45 @@ func TestGateway(t *testing.T) {
 					fmt.Println("MessageHandler:", err.Error())
 				}
 			}
-
-			for i := 0; i < 10; i++ {
-				wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
-					HostPort:        "127.0.0.1:88",
-					IdleTimeout:     time.Second,
-					DialTimeout:     time.Second,
-					Handler:         nil,
-					Header:          nil,
-					Secure:          false,
-					ForceConnect:    true,
-					RequestMaxRetry: 10,
-					RequestTimeout:  time.Second,
-					ContextTimeout:  time.Second,
-				})
-				req := &rony.MessageEnvelope{
-					Constructor: 100,
-					RequestID:   100,
-					Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
-					Auth:        nil,
-					Header:      nil,
-				}
-				res := &rony.MessageEnvelope{}
-				ctx, cf := context.WithTimeout(context.TODO(), time.Second)
-				err = wsc.SendWithContext(ctx, req, res)
-				c.So(err, ShouldBeNil)
-				cf()
-				err = wsc.Close()
-				c.So(err, ShouldBeNil)
+			wg := pools.AcquireWaitGroup()
+			for i := 0; i < 500; i++ {
+				wg.Add(1)
+				go func() {
+					wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
+						HostPort:        "127.0.0.1:88",
+						IdleTimeout:     time.Second,
+						DialTimeout:     time.Second,
+						Handler:         nil,
+						Header:          nil,
+						Secure:          false,
+						ForceConnect:    true,
+						RequestMaxRetry: 10,
+						RequestTimeout:  time.Second,
+						ContextTimeout:  time.Second,
+					})
+					req := &rony.MessageEnvelope{
+						Constructor: 100,
+						RequestID:   100,
+						Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
+						Auth:        nil,
+						Header:      nil,
+					}
+					res := &rony.MessageEnvelope{}
+					for j := 0; j < 20; j++ {
+						ctx, cf := context.WithTimeout(context.TODO(), time.Second * 5)
+						err = wsc.SendWithContext(ctx, req, res)
+						c.So(err, ShouldBeNil)
+						cf()
+					}
+					err = wsc.Close()
+					wg.Done()
+				}()
 			}
+			wg.Wait()
 			time.Sleep(time.Second)
 			c.Println("Total Connections", gw.TotalConnections())
 		})
-		Convey("Websocket / With Panic Handler", func(c C) {
+		SkipConvey("Websocket / With Panic Handler", func(c C) {
 			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
 				err := c.SendBinary(streamID, nil)
 				if err != nil {
@@ -121,7 +127,7 @@ func TestGateway(t *testing.T) {
 			time.Sleep(time.Second * 2)
 			c.Println("Total Connections", gw.TotalConnections())
 		})
-		Convey("Mixed / With Normal Handler", func(c C) {
+		SkipConvey("Mixed / With Normal Handler", func(c C) {
 			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
 				e := &rony.MessageEnvelope{}
 				_ = e.Unmarshal(data)
@@ -171,8 +177,8 @@ func TestGateway(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				httpc := edgec.NewHttp(edgec.HttpConfig{
-					HostPort:        "127.0.0.1:88",
-					Header:          nil,
+					HostPort: "127.0.0.1:88",
+					Header:   nil,
 				})
 				for i := 0; i < 100; i++ {
 					wg.Add(1)

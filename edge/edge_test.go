@@ -33,13 +33,13 @@ func TestMain(m *testing.M) {
 	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
 	_ = edgeServer.StartCluster()
 	edgeServer.StartGateway()
-	defer func() {
-		time.Sleep(time.Second * 3)
-		edgeServer.Shutdown()
-	}()
-
 	flag.Parse()
-	os.Exit(m.Run())
+	code := m.Run()
+
+	time.Sleep(time.Second * 10)
+
+	edgeServer.Shutdown()
+	os.Exit(code)
 }
 
 func BenchmarkServer(b *testing.B) {
