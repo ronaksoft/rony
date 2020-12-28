@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"context"
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
@@ -210,7 +211,6 @@ func (g *Gateway) Start() {
 func (g *Gateway) Run() {
 	server := fasthttp.Server{
 		Name:               "Rony TCP Gateway",
-		Concurrency:        g.concurrency,
 		Handler:            g.requestHandler,
 		KeepHijackedConns:  true,
 		MaxRequestBodySize: g.maxBodySize,
@@ -222,18 +222,19 @@ func (g *Gateway) Run() {
 			continue
 		}
 		wc := newWrapConn(conn)
-		err = server.ServeConn(wc)
+
+		err = g.sem.Acquire(context.TODO(), 1)
 		if err != nil {
-			if nErr, ok := err.(net.Error); ok {
-				if !nErr.Temporary() {
-					log.Warn("Error On ServeConn", zap.Error(err))
-					continue
-				}
-			} else {
-				log.Warn("Error On ServeConn", zap.Error(err))
-				continue
-			}
+			continue
 		}
+
+		go func() {
+			err = server.ServeConn(wc)
+			if err != nil {
+				log.Warn("Error On ServeConn", zap.Error(err))
+			}
+			g.sem.Release(1)
+		}()
 	}
 }
 
