@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
-	"github.com/ronaksoft/rony/gateway"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"net"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,12 +39,17 @@ func main() {
 	fmt.Println("RUN...")
 	log.Init(log.DefaultConfig)
 	log.SetLevel(log.InfoLevel)
-	n := 5000
-	m := 10
-	log.Info("Server Starting ...")
-	gw := runServer()
-	log.Info("Server Started.")
-	time.Sleep(time.Second * 1)
+
+	var n, m, port int64
+	switch len(os.Args) {
+	case 4:
+		n = tools.StrToInt64(os.Args[1])
+		m = tools.StrToInt64(os.Args[2])
+		port = tools.StrToInt64(os.Args[3])
+	default:
+		fmt.Println("needs 3 args, n m port")
+		return
+	}
 
 	go func() {
 		for {
@@ -57,7 +63,7 @@ func main() {
 		}
 	}()
 
-	runClients(n, m)
+	runClients(int(n), int(m), int(port))
 	log.Info("Final Stats",
 		zap.Int32("Received", cntReceivedPacket),
 		zap.Int32("Sent", cntWritePacket),
@@ -65,15 +71,14 @@ func main() {
 		zap.Int32("Connected", cntConnected),
 		zap.Duration("Avg Latency", time.Duration(latency/int64(cntReceivedPacket))),
 	)
-	gw.Shutdown()
 }
 
-func runClients(n, m int) {
+func runClients(n, m, port int) {
 	waitGroup := sync.WaitGroup{}
 	for i := 0; i < n; i++ {
 		waitGroup.Add(1)
 		go func(i int) {
-			runClient(&waitGroup, m)
+			runClient(&waitGroup, m, port)
 			waitGroup.Done()
 		}(i)
 		time.Sleep(time.Millisecond)
@@ -82,14 +87,14 @@ func runClients(n, m int) {
 	log.Debug("Running Clients Finished")
 }
 
-func runClient(wg *sync.WaitGroup, m int) {
+func runClient(wg *sync.WaitGroup, m int, port int) {
 	var (
 		c   net.Conn
 		err error
 	)
 
 	for {
-		c, _, _, err = ws.Dialer{}.Dial(context.Background(), "ws://localhost:8080")
+		c, _, _, err = ws.Dialer{}.Dial(context.Background(), fmt.Sprintf("ws://localhost:%d", port))
 		if err == nil {
 			break
 		}
@@ -105,9 +110,9 @@ func runClient(wg *sync.WaitGroup, m int) {
 		for {
 			m = m[:0]
 			_ = c.SetReadDeadline(time.Now().Add(time.Second * 3))
-			startTime := time.Now()
+			startTime := tools.CPUTicks()
 			m, err = wsutil.ReadServerMessage(c, m)
-			d := time.Now().Sub(startTime)
+			d := time.Duration(tools.CPUTicks() - startTime)
 			if err != nil {
 				err = c.Close()
 				if err != nil {
@@ -120,10 +125,17 @@ func runClient(wg *sync.WaitGroup, m int) {
 
 		}
 	}()
-	sentData := make([]byte, ps)
-	rand.Read(sentData)
+
+	echoRequest := pb.EchoRequest{
+		Int:       21313,
+		Bool:      false,
+		Timestamp: 42342342342,
+	}
+	req := rony.PoolMessageEnvelope.Get()
+	req.Fill(tools.RandomUint64(0), pb.C_Echo, &echoRequest)
+	reqBytes, _ := req.Marshal()
 	for i := 0; i < m; i++ {
-		err := wsutil.WriteClientMessage(c, ws.OpBinary, sentData)
+		err := wsutil.WriteClientMessage(c, ws.OpBinary, reqBytes)
 		if err != nil {
 			log.Error(err.Error())
 			_ = c.Close()
@@ -132,25 +144,4 @@ func runClient(wg *sync.WaitGroup, m int) {
 			atomic.AddInt32(&cntWritePacket, 1)
 		}
 	}
-}
-
-func runServer() gateway.Gateway {
-	gw, err := tcpGateway.New(tcpGateway.Config{
-		Concurrency:   1000,
-		ListenAddress: ":8080",
-	})
-
-	if err != nil {
-		log.Fatal(err.Error())
-		return nil
-	}
-	gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
-		atomic.AddInt32(&cntServerReceived, 1)
-		err := c.SendBinary(0, []byte("HI"))
-		if err != nil {
-			log.Warn("Error On SendBinary", zap.Error(err))
-		}
-	}
-	go gw.Run()
-	return gw
 }

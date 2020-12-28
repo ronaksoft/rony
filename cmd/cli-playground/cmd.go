@@ -34,13 +34,15 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		BatchStartCmd, StartCmd, EchoCmd, BenchCmd, ListCmd, Members,
+		TraceOn, TraceOff,
 	)
 
-	RootCmd.PersistentFlags().String(FlagServerID, "Node", "")
+	RootCmd.PersistentFlags().String(FlagServerID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 	RootCmd.PersistentFlags().Int("n", 5, "")
+	RootCmd.PersistentFlags().Int(FlagConcurrency, 1000, "")
 }
 
 var BatchStartCmd = &cobra.Command{
@@ -141,11 +143,12 @@ func listFunc() {
 var EchoCmd = &cobra.Command{
 	Use: "echo",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			fmt.Println("Needs ServerID, e.g. echo First.01")
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		if len(serverID) == 0 {
+			fmt.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
-		e1 := Edges[args[0]]
+		e1 := Edges[serverID]
 		if e1 == nil {
 			fmt.Println("Invalid Args")
 			return
@@ -184,12 +187,13 @@ var EchoCmd = &cobra.Command{
 var BenchCmd = &cobra.Command{
 	Use: "bench",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if len(args) != 1 {
-			fmt.Println("Needs ServerID, e.g. echo First.01")
+		concurrency, _ := cmd.Flags().GetInt(FlagConcurrency)
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		if len(serverID) == 0 {
+			fmt.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
-		e1 := Edges[args[0]]
+		e1 := Edges[serverID]
 		if e1 == nil {
 			fmt.Println("Invalid Args")
 			return
@@ -205,9 +209,10 @@ var BenchCmd = &cobra.Command{
 			return
 		}
 		var (
-			dd   int64
-			cnt  int64
-			gcnt int64
+			dd         int64
+			reqCnt     int64
+			resCnt     int64
+			delayedCnt int64
 		)
 
 		f, err := os.Create("rony-bench.trace")
@@ -221,39 +226,42 @@ var BenchCmd = &cobra.Command{
 		}
 		defer trace.Stop()
 
+		benchStart := tools.CPUTicks()
 		waitGroup := pools.AcquireWaitGroup()
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < concurrency; i++ {
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()
 				ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
-						cmd.Println(m.Constructor, m.RequestID, idx)
-						atomic.AddInt64(&gcnt, 1)
+						atomic.AddInt64(&delayedCnt, 1)
 					},
 				})
 				c := pb.NewSampleClient(ec)
-				for i := 0; i < 100; i++ {
-					startTime := time.Now()
+				for i := 0; i < 10; i++ {
+					startTime := tools.CPUTicks()
 					req := pb.PoolEchoRequest.Get()
 					req.Int = tools.RandomInt64(0)
 					req.Bool = true
-					req.Timestamp = time.Now().UnixNano()
+					req.Timestamp = tools.CPUTicks()
+					atomic.AddInt64(&reqCnt, 1)
 					_, err := c.Echo(req)
 					pb.PoolEchoRequest.Put(req)
 					if err != nil {
 						cmd.Println("Error:", idx, i, err)
 						continue
 					}
-					d := time.Now().Sub(startTime)
-					atomic.AddInt64(&cnt, 1)
+					d := time.Duration(tools.CPUTicks() - startTime)
+					atomic.AddInt64(&resCnt, 1)
 					atomic.AddInt64(&dd, int64(d))
 				}
 			}(i)
 		}
 		waitGroup.Wait()
-		cmd.Println("Avg Response:", time.Duration(dd/cnt), cnt, gcnt)
+		cmd.Println("Bench Test Time:", time.Duration(tools.CPUTicks()-benchStart))
+		cmd.Println("Avg Response:", time.Duration(dd/resCnt))
+		cmd.Println("Reqs / Res / Delayed", reqCnt, resCnt, delayedCnt)
 	},
 }
 
@@ -284,5 +292,33 @@ var Members = &cobra.Command{
 			)
 		}
 		cmd.Println(columnize.SimpleFormat(rows))
+	},
+}
+
+var (
+	traceFile *os.File
+)
+var TraceOn = &cobra.Command{
+	Use: "trace-on",
+	Run: func(cmd *cobra.Command, args []string) {
+		f, err := os.Create("rony-bench.trace")
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		err = trace.Start(f)
+		if err != nil {
+			cmd.Println("Error On TraceStart", err)
+		}
+		traceFile = f
+
+	},
+}
+
+var TraceOff = &cobra.Command{
+	Use: "trace-off",
+	Run: func(cmd *cobra.Command, args []string) {
+		trace.Stop()
+		_ = traceFile.Close()
 	},
 }

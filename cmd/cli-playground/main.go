@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"runtime"
-
 	"github.com/c-bata/go-prompt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"os"
+	"runtime"
 	"strings"
 )
 
 func main() {
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	RootCmd.AddCommand(ExitCmd)
 	p := prompt.New(executor, completer)
 	p.Run()

@@ -1,16 +1,11 @@
 package edge_test
 
 import (
-	"context"
-	"flag"
 	"fmt"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
 	"testing"
 	"time"
 )
@@ -23,61 +18,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-var (
-	edgeServer *edge.Server
-)
-
-func TestMain(m *testing.M) {
-	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 10000, edge.WithDataPath("./_hdd/adam"))
-
-	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
-	_ = edgeServer.StartCluster()
-	edgeServer.StartGateway()
-	flag.Parse()
-	code := m.Run()
-	edgeServer.Shutdown()
-	os.Exit(code)
-}
-
-func BenchmarkServer(b *testing.B) {
-	b.ResetTimer()
-	b.ReportAllocs()
-	// b.SetParallelism(10)
-
-	echoRequest := pb.EchoRequest{
-		Int:       100,
-		Bool:      false,
-		Timestamp: 32809238402,
-	}
-
-	b.RunParallel(func(p *testing.PB) {
-		for p.Next() {
-			edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
-				HostPort:        "127.0.0.1:8080",
-				IdleTimeout:     time.Second,
-				DialTimeout:     time.Second,
-				ForceConnect:    true,
-				Handler:         func(m *rony.MessageEnvelope) {},
-				RequestMaxRetry: 10,
-				RequestTimeout:  time.Second,
-				// ContextTimeout:  time.Second,
-			})
-
-			req := rony.PoolMessageEnvelope.Get()
-			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
-			ctx, cf := context.WithTimeout(context.TODO(), time.Second)
-			_ = edgeClient.SendWithContext(ctx, req, res)
-			cf()
-			// if err != nil {
-			// 	fmt.Println(err)
-			// }
-			rony.PoolMessageEnvelope.Put(req)
-			rony.PoolMessageEnvelope.Put(res)
-		}
-	})
-}
 
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
