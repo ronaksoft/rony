@@ -16,6 +16,7 @@ import (
 	"runtime/pprof"
 	"runtime/trace"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -174,14 +175,22 @@ var EchoCmd = &cobra.Command{
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
 
-		res, err := c.Echo(req)
-		switch err {
-		case nil:
-		default:
-			cmd.Println("Error:", err)
-			return
+		wg := sync.WaitGroup{}
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				res, err := c.Echo(req)
+				switch err {
+				case nil:
+				default:
+					cmd.Println("Error:", err)
+					return
+				}
+				cmd.Println(res)
+				wg.Done()
+			}()
 		}
-		cmd.Println(res)
+		wg.Wait()
 	},
 }
 

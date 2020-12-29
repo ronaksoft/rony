@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"time"
 )
 
 /*
@@ -42,6 +43,23 @@ func EchoSimple(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 		return
 	}
 
+	ctx.PushMessage(pb.C_EchoResponse, &pb.EchoResponse{
+		Int:       req.Int,
+		Bool:      req.Bool,
+		Timestamp: req.Timestamp,
+		Delay:     0,
+		ServerID:  "ServerID",
+	})
+}
+
+func EchoHold(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := pb.EchoRequest{}
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+	time.Sleep(time.Second * 10)
 	ctx.PushMessage(pb.C_EchoResponse, &pb.EchoResponse{
 		Int:       req.Int,
 		Bool:      req.Bool,

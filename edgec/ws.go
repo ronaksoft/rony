@@ -208,6 +208,7 @@ func (c *Websocket) receiver() {
 		_ = c.conn.SetReadDeadline(time.Now().Add(c.idleTimeout))
 		ms, err := wsutil.ReadServerMessage(c.conn, ms)
 		if err != nil {
+			log.Warn("Error On Receiver", zap.Error(err))
 			_ = c.conn.Close()
 			if !c.stop {
 				c.connect()
@@ -313,7 +314,9 @@ SendLoop:
 	c.pendingMtx.Lock()
 	c.pending[req.GetRequestID()] = resChan
 	c.pendingMtx.Unlock()
+	c.connectMtx.Lock()
 	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
+	c.connectMtx.Unlock()
 	if err != nil {
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())

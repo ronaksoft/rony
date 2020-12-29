@@ -81,13 +81,12 @@ func (wc *websocketConn) registerDesc() error {
 	atomic.StoreInt64(&wc.startTime, tools.CPUTicks())
 	err := wc.gateway.poller.Start(wc.desc, wc.startEvent)
 	if err != nil {
-		wc.release()
+		wc.release(1)
 	}
 	return err
-	// return wc.gateway.poller.Resume(wc.desc)
 }
 
-func (wc *websocketConn) release() {
+func (wc *websocketConn) release(reason int) {
 	// delete the reference from the gateway's conns
 	g := wc.gateway
 	g.connsMtx.Lock()
@@ -131,7 +130,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 	}
 
 	if event&netpoll.EventReadHup != 0 {
-		wc.release()
+		wc.release(2)
 		return
 	}
 
@@ -144,7 +143,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 			err := wc.gateway.readPump(wc, ms)
 			releaseWebsocketMessage(ms)
 			if err != nil {
-				wc.release()
+				wc.release(3)
 			} else {
 				_ = wc.gateway.poller.Resume(wc.desc)
 			}
@@ -207,14 +206,14 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 	wr.CopyPayload(payload)
 	err := wc.gateway.writePump(wr)
 	if err != nil {
-		wc.release()
+		wc.release(4)
 	}
 	releaseWriteRequest(wr)
 	return nil
 }
 
 func (wc *websocketConn) Disconnect() {
-	wc.release()
+	wc.release(5)
 }
 
 func (wc *websocketConn) Persistent() bool {
@@ -271,7 +270,7 @@ func (gc *websocketConnGC) onRemove(key string, entry []byte, reason bigcache.Re
 		connID := binary.BigEndian.Uint64(entry)
 		if wsConn := gc.gw.getConnection(connID); wsConn != nil {
 			if tools.CPUTicks()-atomic.LoadInt64(&wsConn.lastActivity) > gc.gw.maxIdleTime {
-				wsConn.release()
+				wsConn.release(6)
 			} else {
 				gc.monitorConnection(connID)
 			}

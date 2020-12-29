@@ -364,7 +364,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			wc, _ := hjc.UnsafeConn().(*wrapConn)
 			wc.ReadyForUpgrade()
 			g.waitGroupAcceptors.Add(1)
-			g.connectionAcceptor(wc, clientIP, clientType, kvs...)
+			g.websocketHandler(wc, clientIP, clientType, kvs...)
 		})
 		return
 	}
@@ -385,7 +385,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	releaseHttpConn(conn)
 }
 
-func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string, kvs ...gateway.KeyValue) {
+func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs ...gateway.KeyValue) {
 	defer g.waitGroupAcceptors.Done()
 	if atomic.LoadInt32(&g.stop) == 1 {
 		return
@@ -412,6 +412,7 @@ func (g *Gateway) connectionAcceptor(c net.Conn, clientIP, clientType string, kv
 		return
 	}
 
+
 	g.ConnectHandler(wsConn, kvs...)
 
 	err = wsConn.registerDesc()
@@ -436,7 +437,7 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 	ms = ms[:0]
 	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
 	if err != nil {
-		if ce := log.Check(log.DebugLevel, "Error in readPump"); ce != nil {
+		if ce := log.Check(log.WarnLevel, "Error in readPump"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),
