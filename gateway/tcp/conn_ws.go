@@ -3,7 +3,6 @@
 package tcp
 
 import (
-	"context"
 	"encoding/binary"
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
@@ -139,8 +138,8 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 	if event&netpoll.EventRead != 0 {
 		atomic.StoreInt64(&wc.lastActivity, tools.CPUTicks())
 		wc.gateway.waitGroupReaders.Add(1)
-		_ = wc.gateway.sem.Acquire(context.TODO(), 1)
-		err := wc.gateway.goPool.Submit(func() {
+
+		err := goPoolNB.Submit(func() {
 			ms := acquireWebsocketMessage()
 			err := wc.gateway.readPump(wc, ms)
 			releaseWebsocketMessage(ms)
@@ -149,11 +148,10 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 			} else {
 				_ = wc.gateway.poller.Resume(wc.desc)
 			}
-			wc.gateway.sem.Release(1)
 			wc.gateway.waitGroupReaders.Done()
 		})
 		if err != nil {
-			log.Warn("Error On StartEvent", zap.Error(err))
+			log.Warn("Error On StartEvent (Pool)", zap.Error(err))
 		}
 	}
 

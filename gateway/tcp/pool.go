@@ -3,6 +3,7 @@ package tcp
 import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/panjf2000/ants/v2"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
@@ -18,6 +19,8 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+var goPoolB, goPoolNB *ants.Pool
 
 var httpConnPool sync.Pool
 

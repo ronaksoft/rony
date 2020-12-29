@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"context"
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
@@ -14,7 +13,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 	"net"
 	"net/http"
 	"sync"
@@ -81,7 +79,6 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
-	goPool        *ants.Pool
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -98,7 +95,6 @@ type Gateway struct {
 	waitGroupWriters   *sync.WaitGroup
 	cntReads           uint64
 	cntWrites          uint64
-	sem                *semaphore.Weighted
 }
 
 // New
@@ -117,7 +113,6 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      Auto,
 		extAddrs:           config.ExternalAddrs,
-		sem:                semaphore.NewWeighted(int64(config.Concurrency)),
 	}
 
 	tcpConfig := tcplisten.Config{
@@ -193,7 +188,18 @@ func New(config Config) (*Gateway, error) {
 		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
 	}
 
-	g.goPool, err = ants.NewPool(g.concurrency, ants.WithNonblocking(true))
+	goPoolB, err = ants.NewPool(g.concurrency,
+		ants.WithNonblocking(false),
+		ants.WithPreAlloc(true),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	goPoolNB, err = ants.NewPool(g.concurrency,
+		ants.WithNonblocking(true),
+		ants.WithPreAlloc(true),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -225,24 +231,18 @@ func (g *Gateway) Run() {
 	for {
 		conn, err := g.listener.Accept()
 		if err != nil {
-			// log.Warn("Error On Accept", zap.Error(err))
 			continue
 		}
 		wc := newWrapConn(conn)
-		err = g.sem.Acquire(context.TODO(), 1)
-		if err != nil {
-			continue
-		}
 
-		err = g.goPool.Submit(func() {
+		err = goPoolNB.Submit(func() {
 			err = server.ServeConn(wc)
 			if err != nil {
 				log.Warn("Error On ServeConn", zap.Error(err))
 			}
-			g.sem.Release(1)
 		})
 		if err != nil {
-			log.Warn("GoPool is full, rejecting the requests", zap.Error(err))
+			log.Warn("Error On ServeConn (Pool)", zap.Error(err))
 		}
 	}
 }
@@ -458,10 +458,11 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 			}
 		case ws.OpBinary:
 			waitGroup.Add(1)
-			go func() {
+			_ = goPoolB.Submit(func() {
 				g.MessageHandler(wc, 0, ms[idx].Payload)
 				waitGroup.Done()
-			}()
+			})
+
 		case ws.OpClose:
 			// remove the connection from the list
 			err = ErrOpCloseReceived
