@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"runtime/trace"
 	"strings"
 	"sync/atomic"
@@ -34,7 +35,7 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		BatchStartCmd, StartCmd, EchoCmd, BenchCmd, ListCmd, Members,
-		TraceOn, TraceOff,
+		Trace, MemProf,
 	)
 
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
@@ -295,11 +296,8 @@ var Members = &cobra.Command{
 	},
 }
 
-var (
-	traceFile *os.File
-)
-var TraceOn = &cobra.Command{
-	Use: "trace-on",
+var Trace = &cobra.Command{
+	Use: "trace",
 	Run: func(cmd *cobra.Command, args []string) {
 		f, err := os.Create("rony-bench.trace")
 		if err != nil {
@@ -310,15 +308,29 @@ var TraceOn = &cobra.Command{
 		if err != nil {
 			cmd.Println("Error On TraceStart", err)
 		}
-		traceFile = f
-
+		time.Sleep(time.Second * 10)
+		trace.Stop()
+		_ = f.Close()
 	},
 }
 
-var TraceOff = &cobra.Command{
-	Use: "trace-off",
+var MemProf = &cobra.Command{
+	Use: "mem-prof",
 	Run: func(cmd *cobra.Command, args []string) {
-		trace.Stop()
-		_ = traceFile.Close()
+		f1, err := os.Create("rony-mem.out")
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		pprof.Lookup("heap").WriteTo(f1, 0)
+		_ = f1.Close()
+
+		f2, err := os.Create("rony-alloc.out")
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		pprof.Lookup("allocs").WriteTo(f2, 0)
+		_ = f2.Close()
 	},
 }

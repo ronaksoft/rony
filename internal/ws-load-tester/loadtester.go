@@ -30,9 +30,7 @@ var (
 	cntConnected      int32
 	cntReceivedPacket int32
 	cntWritePacket    int32
-	cntServerReceived int32
 	latency           int64
-	ps                = 4 * 1024
 )
 
 func main() {
@@ -56,7 +54,6 @@ func main() {
 			log.Info("Stats",
 				zap.Int32("Received", cntReceivedPacket),
 				zap.Int32("Sent", cntWritePacket),
-				zap.Int32("Server Received", cntServerReceived),
 				zap.Int32("Connected", cntConnected),
 			)
 			time.Sleep(time.Second)
@@ -67,7 +64,6 @@ func main() {
 	log.Info("Final Stats",
 		zap.Int32("Received", cntReceivedPacket),
 		zap.Int32("Sent", cntWritePacket),
-		zap.Int32("Server Received", cntServerReceived),
 		zap.Int32("Connected", cntConnected),
 		zap.Duration("Avg Latency", time.Duration(latency/int64(cntReceivedPacket))),
 	)
