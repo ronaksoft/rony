@@ -140,7 +140,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 		atomic.StoreInt64(&wc.lastActivity, tools.CPUTicks())
 		wc.gateway.waitGroupReaders.Add(1)
 		_ = wc.gateway.sem.Acquire(context.TODO(), 1)
-		go func() {
+		err := wc.gateway.goPool.Submit(func() {
 			ms := acquireWebsocketMessage()
 			err := wc.gateway.readPump(wc, ms)
 			releaseWebsocketMessage(ms)
@@ -151,7 +151,10 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 			}
 			wc.gateway.sem.Release(1)
 			wc.gateway.waitGroupReaders.Done()
-		}()
+		})
+		if err != nil {
+			log.Warn("Error On StartEvent", zap.Error(err))
+		}
 	}
 
 }

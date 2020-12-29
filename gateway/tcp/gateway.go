@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony/gateway"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	log "github.com/ronaksoft/rony/internal/logger"
@@ -80,6 +81,7 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
+	goPool        *ants.Pool
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -191,6 +193,10 @@ func New(config Config) (*Gateway, error) {
 		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
 	}
 
+	g.goPool, err = ants.NewPool(g.concurrency, ants.WithNonblocking(true))
+	if err != nil {
+		return nil, err
+	}
 	return g, nil
 }
 
@@ -228,13 +234,16 @@ func (g *Gateway) Run() {
 			continue
 		}
 
-		go func() {
+		err = g.goPool.Submit(func() {
 			err = server.ServeConn(wc)
 			if err != nil {
 				log.Warn("Error On ServeConn", zap.Error(err))
 			}
 			g.sem.Release(1)
-		}()
+		})
+		if err != nil {
+			log.Warn("GoPool is full, rejecting the requests", zap.Error(err))
+		}
 	}
 }
 
