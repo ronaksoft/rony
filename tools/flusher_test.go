@@ -31,13 +31,12 @@ func TestNewFlusherPool(t *testing.T) {
 		for i := 0; i < total; i++ {
 			wg.Add(1)
 			go func() {
-				f.Enter(fmt.Sprintf("T%d", RandomInt(3)), RandomInt(10))
+				f.EnterAndWait(fmt.Sprintf("T%d", RandomInt(3)), NewEntry(RandomInt(10)))
 				atomic.AddInt64(&in, 1)
 				wg.Done()
 			}()
 		}
 		wg.Wait()
-		time.Sleep(time.Second * 10)
 		for _, q := range f.pool {
 			c.So(q.entryChan, ShouldHaveLength, 0)
 		}

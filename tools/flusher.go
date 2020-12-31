@@ -13,7 +13,30 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type FlushEntry interface{}
+type FlushEntry interface {
+	wait() chan struct{}
+	done()
+}
+
+type entry struct {
+	v  interface{}
+	ch chan struct{}
+}
+
+func NewEntry(v interface{}) FlushEntry {
+	return &entry{
+		v:  v,
+		ch: make(chan struct{}, 1),
+	}
+}
+
+func (e *entry) wait() chan struct{} {
+	return e.ch
+}
+
+func (e *entry) done() {
+	e.ch <- struct{}{}
+}
 
 type FlusherFunc func(targetID string, entries []FlushEntry)
 
@@ -51,6 +74,24 @@ func (fp *flusherPool) Enter(targetID string, entry FlushEntry) {
 	f.enter(entry)
 }
 
+func (fp *flusherPool) EnterAndWait(targetID string, entry FlushEntry) {
+	fp.poolMtx.Lock()
+	f := fp.pool[targetID]
+	fp.poolMtx.Unlock()
+	if f == nil {
+		f = &flusher{
+			readyWorkers: fp.size,
+			flusherFunc:  fp.flusherFunc,
+			entryChan:    make(chan FlushEntry, fp.size),
+			targetID:     targetID,
+		}
+		fp.poolMtx.Lock()
+		fp.pool[targetID] = f
+		fp.poolMtx.Unlock()
+	}
+	f.enterAndWait(entry)
+}
+
 type flusher struct {
 	SpinLock
 	readyWorkers int32
@@ -77,6 +118,12 @@ func (f *flusher) startWorker() {
 func (f *flusher) enter(entry FlushEntry) {
 	f.entryChan <- entry
 	f.startWorker()
+}
+
+func (f *flusher) enterAndWait(entry FlushEntry) {
+	f.entryChan <- entry
+	f.startWorker()
+	<-entry.wait()
 }
 
 type worker struct {
@@ -108,6 +155,9 @@ func (w *worker) run() {
 		}
 		w.f.Unlock()
 		w.f.flusherFunc(w.f.targetID, el)
+		for idx := range el {
+			el[idx].done()
+		}
 	}
 
 }
