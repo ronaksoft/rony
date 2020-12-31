@@ -16,6 +16,7 @@ import (
 type FlushEntry interface {
 	wait() chan struct{}
 	done()
+	Value() interface{}
 }
 
 type entry struct {
@@ -36,6 +37,10 @@ func (e *entry) wait() chan struct{} {
 
 func (e *entry) done() {
 	e.ch <- struct{}{}
+}
+
+func (e *entry) Value() interface{} {
+	return e.v
 }
 
 type FlusherFunc func(targetID string, entries []FlushEntry)
@@ -65,8 +70,9 @@ func (fp *flusherPool) getFlusher(targetID string) *flusher {
 	if f == nil {
 		f = &flusher{
 			readyWorkers: fp.poolSize,
+			batchSize:    fp.batchSize,
 			flusherFunc:  fp.flusherFunc,
-			entryChan:    make(chan FlushEntry, fp.poolSize),
+			entryChan:    make(chan FlushEntry, fp.batchSize),
 			targetID:     targetID,
 		}
 		fp.poolMtx.Lock()
@@ -87,6 +93,7 @@ func (fp *flusherPool) EnterAndWait(targetID string, entry FlushEntry) {
 type flusher struct {
 	SpinLock
 	readyWorkers int32
+	batchSize    int32
 	flusherFunc  FlusherFunc
 	entryChan    chan FlushEntry
 	targetID     string
@@ -102,7 +109,8 @@ func (f *flusher) startWorker() {
 	f.Unlock()
 
 	w := &worker{
-		f: f,
+		f:  f,
+		bs: int(f.batchSize),
 	}
 	go w.run()
 }
@@ -119,12 +127,13 @@ func (f *flusher) enterAndWait(entry FlushEntry) {
 }
 
 type worker struct {
-	f *flusher
+	f  *flusher
+	bs int
 }
 
 func (w *worker) run() {
 	var (
-		el = make([]FlushEntry, 0, 100)
+		el = make([]FlushEntry, 0, w.bs)
 	)
 	for {
 		el = el[:0]
@@ -132,7 +141,9 @@ func (w *worker) run() {
 			select {
 			case e := <-w.f.entryChan:
 				el = append(el, e)
-				continue
+				if len(el) < w.bs {
+					continue
+				}
 			default:
 			}
 			break
