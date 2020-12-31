@@ -8,7 +8,7 @@ import (
 )
 
 /*
-   Creation Time: 2019 - Nov - 25
+   Creation Time: 2021 - Jan - 01
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -44,19 +44,4 @@ func TestRandomID(t *testing.T) {
 	time.Sleep(time.Second)
 	runtime.GC()
 	fmt.Println(x)
-}
-
-func TestSanitizePhone(t *testing.T) {
-	phones := map[string]string{
-		"989121228718":  "989121228718",
-		"+989121228718": "989121228718",
-		"9121228718":    "989121228718",
-	}
-
-	for ph, cph := range phones {
-		sph := SanitizePhone(ph, "IR")
-		if sph != cph {
-			t.Fatal()
-		}
-	}
 }

@@ -37,18 +37,18 @@ func (edge *Server) ClusterSend(serverID string, envelope *rony.MessageEnvelope,
 		return rony.ErrNotFound
 	}
 
-	clusterMessage := acquireClusterMessage()
-	clusterMessage.Fill(edge.serverID, envelope, kvs...)
+	cm := acquireClusterMessage()
+	cm.Fill(edge.serverID, envelope, kvs...)
 
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Bytes.GetCap(mo.Size(clusterMessage))
-	b, err = mo.MarshalAppend(b, clusterMessage)
+	b := pools.Bytes.GetCap(mo.Size(cm))
+	b, err = mo.MarshalAppend(b, cm)
 	if err != nil {
 		return err
 	}
 	err = edge.gossip.SendBestEffort(m.node, b)
 	pools.Bytes.Put(b)
-	releaseClusterMessage(clusterMessage)
+	releaseClusterMessage(cm)
 	return err
 }
 

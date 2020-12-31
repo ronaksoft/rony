@@ -140,7 +140,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 
 		err := goPoolNB.Submit(func() {
 			ms := acquireWebsocketMessage()
-			err := wc.gateway.readPump(wc, ms)
+			err := wc.gateway.websocketReadPump(wc, ms)
 			releaseWebsocketMessage(ms)
 			if err != nil {
 				wc.release(3)
@@ -204,7 +204,7 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 
 	wr := acquireWriteRequest(wc, ws.OpBinary)
 	wr.CopyPayload(payload)
-	err := wc.gateway.writePump(wr)
+	err := wc.gateway.websocketWritePump(wr)
 	if err != nil {
 		wc.release(4)
 	}

@@ -399,23 +399,13 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 	}
 }
 
-func (g *Gateway) getConnection(connID uint64) *websocketConn {
-	g.connsMtx.RLock()
-	wsConn, ok := g.conns[connID]
-	g.connsMtx.RUnlock()
-	if ok {
-		return wsConn
-	}
-	return nil
-}
-
-func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
+func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 	waitGroup := pools.AcquireWaitGroup()
 	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 	ms = ms[:0]
 	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
 	if err != nil {
-		if ce := log.Check(log.WarnLevel, "Error in readPump"); ce != nil {
+		if ce := log.Check(log.WarnLevel, "Error in websocketReadPump"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),
@@ -455,7 +445,7 @@ func (g *Gateway) readPump(wc *websocketConn, ms []wsutil.Message) (err error) {
 	return err
 }
 
-func (g *Gateway) writePump(wr *writeRequest) (err error) {
+func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 	defer g.waitGroupWriters.Done()
 	wr.wc.Lock()
 	defer wr.wc.Unlock()
@@ -472,7 +462,7 @@ func (g *Gateway) writePump(wr *writeRequest) (err error) {
 		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 		err = wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
 		if err != nil {
-			if ce := log.Check(log.WarnLevel, "Error in writePump"); ce != nil {
+			if ce := log.Check(log.WarnLevel, "Error in websocketWritePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
 			return
@@ -481,4 +471,14 @@ func (g *Gateway) writePump(wr *writeRequest) (err error) {
 		}
 	}
 	return
+}
+
+func (g *Gateway) getConnection(connID uint64) *websocketConn {
+	g.connsMtx.RLock()
+	wsConn, ok := g.conns[connID]
+	g.connsMtx.RUnlock()
+	if ok {
+		return wsConn
+	}
+	return nil
 }
