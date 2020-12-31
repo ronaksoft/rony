@@ -14,7 +14,3 @@ package pb
 func init() {
 
 }
-
-var (
-	ConstructorNames = map[int64]string{}
-)

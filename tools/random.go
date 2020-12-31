@@ -19,8 +19,8 @@ import (
 */
 
 const (
-	DIGITS        = "0123456789"
-	ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	digits        = "0123456789"
+	alphaNumerics = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )
 
 // FastRand is a fast thread local random function.
@@ -54,7 +54,7 @@ func RandomID(n int) string {
 	defer rndGen.PutRand(rnd)
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = ALPHANUMERICS[rnd.Intn(len(ALPHANUMERICS))]
+		b[i] = alphaNumerics[rnd.Intn(len(alphaNumerics))]
 	}
 	return ByteToStr(b)
 }
@@ -65,7 +65,7 @@ func RandomDigit(n int) string {
 	defer rndGen.PutRand(rnd)
 	b := make([]byte, n)
 	for i := 0; i < len(b); i++ {
-		b[i] = DIGITS[rnd.Intn(len(DIGITS))]
+		b[i] = digits[rnd.Intn(len(digits))]
 	}
 	return ByteToStr(b)
 }

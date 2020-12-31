@@ -40,20 +40,6 @@ func WithGossipPort(gossipPort int) Option {
 	}
 }
 
-// WithCustomerConstructorName will be used to give a human readable names to messages
-func WithCustomConstructorName(h func(constructor int64) (name string)) Option {
-	return func(edge *Server) {
-		edge.getConstructorName = func(constructor int64) string {
-			// Lookup internal messages first
-			n := rony.ConstructorNames[constructor]
-			if len(n) > 0 {
-				return n
-			}
-			return h(constructor)
-		}
-	}
-}
-
 // WithDataPath set where the internal data for raft and gossip are stored.
 func WithDataPath(path string) Option {
 	return func(edge *Server) {
