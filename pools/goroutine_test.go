@@ -8,4 +8,3 @@ package pools_test
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-

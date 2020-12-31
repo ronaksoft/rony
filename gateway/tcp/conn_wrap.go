@@ -3,6 +3,7 @@ package tcp
 import (
 	"bytes"
 	"github.com/mailru/easygo/netpoll"
+	"github.com/valyala/tcplisten"
 	"io"
 	"net"
 	"os"
@@ -23,6 +24,38 @@ var (
 	wrapConnPool sync.Pool
 )
 
+type wrapListener struct {
+	l net.Listener
+}
+
+func (w *wrapListener) Accept() (net.Conn, error) {
+	c, err := w.l.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return acquireWrapConn(c), nil
+}
+
+func (w *wrapListener) Close() error {
+	return w.l.Close()
+}
+
+func (w *wrapListener) Addr() net.Addr {
+	return w.l.Addr()
+}
+
+func newWrapListener(listenOn string) (wl *wrapListener, err error) {
+	tcpConfig := tcplisten.Config{
+		ReusePort:   true,
+		FastOpen:    true,
+		DeferAccept: true,
+		Backlog:     2048,
+	}
+	wl = &wrapListener{}
+	wl.l, err = tcpConfig.NewListener("tcp4", listenOn)
+	return
+}
+
 // filer describes an object that has ability to return os.File.
 type filer interface {
 	// File returns a copy of object's file descriptor.
@@ -40,7 +73,9 @@ func (wc *wrapConn) Write(b []byte) (n int, err error) {
 }
 
 func (wc *wrapConn) Close() error {
-	return wc.c.Close()
+	err := wc.c.Close()
+	releaseWrapConn(wc)
+	return err
 }
 
 func (wc *wrapConn) LocalAddr() net.Addr {

@@ -25,16 +25,19 @@ type HttpConfig struct {
 	Header       map[string]string
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
+	Retries      int
 }
 
 type Http struct {
 	hostPort string
 	reqID    uint64
+	retries  uint64
 	c        *fasthttp.Client
 }
 
 func NewHttp(config HttpConfig) *Http {
 	h := &Http{
+		retries:  uint64(config.Retries),
 		hostPort: config.HostPort,
 		c: &fasthttp.Client{
 			Name:                      config.Name,
@@ -42,7 +45,6 @@ func NewHttp(config HttpConfig) *Http {
 			ReadTimeout:               config.ReadTimeout,
 			WriteTimeout:              config.WriteTimeout,
 			MaxResponseBodySize:       0,
-			RetryIf:                   nil,
 		},
 	}
 	return h
@@ -67,11 +69,19 @@ func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) (err e
 
 	httpRes := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(httpRes)
+
+	retries := h.retries
+Retries:
 	err = h.c.Do(httpReq, httpRes)
+	switch err {
+	case fasthttp.ErrNoFreeConns:
+		retries--
+		goto Retries
+	}
+
 	if err != nil {
 		return
 	}
-
 	err = res.Unmarshal(httpRes.Body())
 	return
 }

@@ -9,6 +9,7 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -30,7 +31,7 @@ func init() {
 func TestGateway(t *testing.T) {
 	rony.SetLogLevel(0)
 	gw, err := tcpGateway.New(tcpGateway.Config{
-		Concurrency:   100,
+		Concurrency:   1000,
 		ListenAddress: "0.0.0.0:88",
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
@@ -82,6 +83,9 @@ func TestGateway(t *testing.T) {
 					for j := 0; j < 20; j++ {
 						ctx, cf := context.WithTimeout(context.TODO(), time.Second*5)
 						err = wsc.SendWithContext(ctx, req, res)
+						if err != nil {
+							c.Println(err)
+						}
 						c.So(err, ShouldBeNil)
 						cf()
 					}
@@ -142,9 +146,9 @@ func TestGateway(t *testing.T) {
 					wg.Add(1)
 					go func() {
 						req := &rony.MessageEnvelope{
-							Constructor: 100,
+							Constructor: tools.RandomInt64(0),
 							RequestID:   httpc.GetRequestID(),
-							Message:     []byte{1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
+							Message:     tools.StrToByte(tools.RandomID(32)),
 							Auth:        nil,
 							Header:      nil,
 						}
@@ -152,11 +156,10 @@ func TestGateway(t *testing.T) {
 						err = httpc.Send(req, res)
 						if err != nil {
 							c.Println(err)
-							wg.Done()
-							return
 						}
 						c.So(res.Constructor, ShouldEqual, req.Constructor)
-						c.So(res.RequestID, ShouldEqual, res.RequestID)
+						c.So(res.RequestID, ShouldEqual, req.RequestID)
+						c.So(res.Message, ShouldResemble, req.Message)
 						c.So(err, ShouldBeNil)
 						wg.Done()
 					}()

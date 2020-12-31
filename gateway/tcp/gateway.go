@@ -11,7 +11,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
-	"github.com/valyala/tcplisten"
 	"go.uber.org/zap"
 	"net"
 	"net/http"
@@ -74,7 +73,7 @@ type Gateway struct {
 	// Internals
 	transportMode Protocol
 	listenOn      string
-	listener      net.Listener
+	listener      *wrapListener
 	addrs         []string
 	extAddrs      []string
 	concurrency   int
@@ -115,14 +114,7 @@ func New(config Config) (*Gateway, error) {
 		extAddrs:           config.ExternalAddrs,
 	}
 
-	tcpConfig := tcplisten.Config{
-		ReusePort:   true,
-		FastOpen:    true,
-		DeferAccept: true,
-		Backlog:     2048,
-	}
-
-	g.listener, err = tcpConfig.NewListener("tcp4", g.listenOn)
+	g.listener, err = newWrapListener(g.listenOn)
 	if err != nil {
 		return nil, err
 	}
@@ -224,26 +216,13 @@ func (g *Gateway) Run() {
 	server := fasthttp.Server{
 		Name:               "Rony TCP Gateway",
 		Handler:            g.requestHandler,
+		Concurrency:        g.concurrency,
 		KeepHijackedConns:  true,
 		MaxRequestBodySize: g.maxBodySize,
 	}
-
-	for {
-		conn, err := g.listener.Accept()
-		if err != nil {
-			continue
-		}
-		wc := newWrapConn(conn)
-
-		err = goPoolNB.Submit(func() {
-			err = server.ServeConn(wc)
-			if err != nil {
-				log.Warn("Error On ServeConn", zap.Error(err))
-			}
-		})
-		if err != nil {
-			log.Warn("Error On ServeConn (Pool)", zap.Error(err))
-		}
+	err := server.Serve(g.listener)
+	if err != nil {
+		log.Warn("Error On Serve", zap.Error(err))
 	}
 }
 
@@ -411,7 +390,6 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
 		return
 	}
-
 
 	g.ConnectHandler(wsConn, kvs...)
 

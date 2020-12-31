@@ -79,7 +79,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
 			edge.WithTcpGateway(tcpGateway.Config{
-				Concurrency:   5000,
+				Concurrency:   10000,
 				MaxIdleTime:   0,
 				ListenAddress: "0.0.0.0:0",
 			}),
@@ -174,23 +174,26 @@ var EchoCmd = &cobra.Command{
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
 		req.Timestamp = time.Now().UnixNano()
-
+		var cnt int64
 		wg := sync.WaitGroup{}
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
 				res, err := c.Echo(req)
 				switch err {
 				case nil:
+					atomic.AddInt64(&cnt, 1)
+					cmd.Println(res)
 				default:
 					cmd.Println("Error:", err)
 					return
 				}
-				cmd.Println(res)
+
 				wg.Done()
 			}()
 		}
 		wg.Wait()
+		cmd.Println("N:", cnt)
 	},
 }
 

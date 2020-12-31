@@ -208,7 +208,6 @@ func (c *Websocket) receiver() {
 		_ = c.conn.SetReadDeadline(time.Now().Add(c.idleTimeout))
 		ms, err := wsutil.ReadServerMessage(c.conn, ms)
 		if err != nil {
-			log.Warn("Error On Receiver", zap.Error(err))
 			_ = c.conn.Close()
 			if !c.stop {
 				c.connect()
