@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	"github.com/ronaksoft/rony"
+	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -206,7 +206,7 @@ func (c *Websocket) receiver() {
 	for {
 		ms = ms[:0]
 		_ = c.conn.SetReadDeadline(time.Now().Add(c.idleTimeout))
-		ms, err := wsutil.ReadServerMessage(c.conn, ms)
+		ms, err := wsutil.ReadMessage(c.conn, ws.StateClientSide, ms)
 		if err != nil {
 			_ = c.conn.Close()
 			if !c.stop {
@@ -314,7 +314,7 @@ SendLoop:
 	c.pending[req.GetRequestID()] = resChan
 	c.pendingMtx.Unlock()
 	c.connectMtx.Lock()
-	err = wsutil.WriteClientMessage(c.conn, ws.OpBinary, b)
+	err = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpBinary, b)
 	c.connectMtx.Unlock()
 	if err != nil {
 		c.pendingMtx.Lock()
