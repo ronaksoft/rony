@@ -41,55 +41,47 @@ func (e *entry) done() {
 type FlusherFunc func(targetID string, entries []FlushEntry)
 
 type flusherPool struct {
-	size        int32
+	poolSize    int32
+	batchSize   int32
 	flusherFunc FlusherFunc
 	poolMtx     SpinLock
 	pool        map[string]*flusher
 }
 
-func NewFlusherPool(size int32, f FlusherFunc) *flusherPool {
+func NewFlusherPool(poolSize, batchSize int32, f FlusherFunc) *flusherPool {
 	fp := &flusherPool{
-		size:        size,
+		poolSize:    poolSize,
+		batchSize:   batchSize,
 		flusherFunc: f,
 		pool:        make(map[string]*flusher),
 	}
 	return fp
 }
 
-func (fp *flusherPool) Enter(targetID string, entry FlushEntry) {
+func (fp *flusherPool) getFlusher(targetID string) *flusher {
 	fp.poolMtx.Lock()
 	f := fp.pool[targetID]
 	fp.poolMtx.Unlock()
 	if f == nil {
 		f = &flusher{
-			readyWorkers: fp.size,
+			readyWorkers: fp.poolSize,
 			flusherFunc:  fp.flusherFunc,
-			entryChan:    make(chan FlushEntry, fp.size),
+			entryChan:    make(chan FlushEntry, fp.poolSize),
 			targetID:     targetID,
 		}
 		fp.poolMtx.Lock()
 		fp.pool[targetID] = f
 		fp.poolMtx.Unlock()
 	}
-	f.enter(entry)
+	return f
+}
+
+func (fp *flusherPool) Enter(targetID string, entry FlushEntry) {
+	fp.getFlusher(targetID).enter(entry)
 }
 
 func (fp *flusherPool) EnterAndWait(targetID string, entry FlushEntry) {
-	fp.poolMtx.Lock()
-	f := fp.pool[targetID]
-	fp.poolMtx.Unlock()
-	if f == nil {
-		f = &flusher{
-			readyWorkers: fp.size,
-			flusherFunc:  fp.flusherFunc,
-			entryChan:    make(chan FlushEntry, fp.size),
-			targetID:     targetID,
-		}
-		fp.poolMtx.Lock()
-		fp.pool[targetID] = f
-		fp.poolMtx.Unlock()
-	}
-	f.enterAndWait(entry)
+	fp.getFlusher(targetID).enterAndWait(entry)
 }
 
 type flusher struct {

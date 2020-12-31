@@ -21,9 +21,10 @@ import (
 func TestNewFlusherPool(t *testing.T) {
 	Convey("Flusher", t, func(c C) {
 		var out, in int64
-		f := NewFlusherPool(10, func(targetID string, entries []FlushEntry) {
-			time.Sleep(time.Second)
+		f := NewFlusherPool(10, 20, func(targetID string, entries []FlushEntry) {
+			time.Sleep(time.Millisecond * 100)
 			atomic.AddInt64(&out, int64(len(entries)))
+			c.Println(targetID, entries)
 		})
 
 		wg := sync.WaitGroup{}
