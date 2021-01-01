@@ -13,27 +13,28 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var TinyBytes = New(4, 128)
-var Bytes = New(32, 64*(1<<10))
+var TinyBytes = NewByteSlice(4, 128)
+var Bytes = NewByteSlice(32, 64<<10)
+var BytesBuffer = NewByteBuffer(4, 64<<10)
 
 const (
 	bitSize       = 32 << (^uint(0) >> 63)
 	maxintHeadBit = 1 << (bitSize - 2)
 )
 
-// Pool contains logic of reusing objects distinguishable by size in generic
+// byteSlicePool contains logic of reusing objects distinguishable by size in generic
 // way.
-type Pool struct {
+type byteSlicePool struct {
 	pool map[int]*sync.Pool
 }
 
-// New creates new Pool that reuses objects which size is in logarithmic range
+// New creates new byteSlicePool that reuses objects which size is in logarithmic range
 // [min, max].
 //
 // Note that it is a shortcut for Custom() constructor with Options provided by
 // WithLogSizeMapping() and WithLogSizeRange(min, max) calls.
-func New(min, max int) *Pool {
-	p := &Pool{
+func NewByteSlice(min, max int) *byteSlicePool {
+	p := &byteSlicePool{
 		pool: make(map[int]*sync.Pool),
 	}
 	logarithmicRange(min, max, func(n int) {
@@ -44,7 +45,7 @@ func New(min, max int) *Pool {
 
 // Get returns probably reused slice of bytes with at least capacity of c and
 // exactly len of n.
-func (p *Pool) Get(n, c int) []byte {
+func (p *byteSlicePool) Get(n, c int) []byte {
 	if n > c {
 		panic("requested length is greater than capacity")
 	}
@@ -67,20 +68,109 @@ func (p *Pool) Get(n, c int) []byte {
 // Put returns given slice to reuse pool.
 // It does not reuse bytes whose size is not power of two or is out of pool
 // min/max range.
-func (p *Pool) Put(bts []byte) {
+func (p *byteSlicePool) Put(bts []byte) {
 	if pool := p.pool[cap(bts)]; pool != nil {
 		pool.Put(bts)
 	}
 }
 
 // GetCap returns probably reused slice of bytes with at least capacity of n.
-func (p *Pool) GetCap(c int) []byte {
+func (p *byteSlicePool) GetCap(c int) []byte {
 	return p.Get(0, c)
 }
 
 // GetLen returns probably reused slice of bytes with at least capacity of n
 // and exactly len of n.
-func (p *Pool) GetLen(n int) []byte {
+func (p *byteSlicePool) GetLen(n int) []byte {
+	return p.Get(n, n)
+}
+
+type ByteBuffer struct {
+	b []byte
+}
+
+func newByteBuffer(n, c int) *ByteBuffer {
+	if n > c {
+		panic("requested length is greater than capacity")
+	}
+	return &ByteBuffer{b: make([]byte, n, c)}
+}
+
+func (bb *ByteBuffer) Reset() {
+	bb.b = bb.b[:0]
+}
+
+func (bb *ByteBuffer) Bytes() *[]byte {
+	return &bb.b
+}
+
+func (bb *ByteBuffer) SetBytes(b *[]byte) {
+	if b == nil {
+		return
+	}
+	bb.b = *b
+}
+
+// byteBufferPool. contains logic of reusing objects distinguishable by size in generic
+// way.
+type byteBufferPool struct {
+	pool map[int]*sync.Pool
+}
+
+// NewByteBuffer creates new byteBufferPool that reuses objects which size is in logarithmic range
+// [min, max].
+//
+// Note that it is a shortcut for Custom() constructor with Options provided by
+// WithLogSizeMapping() and WithLogSizeRange(min, max) calls.
+func NewByteBuffer(min, max int) *byteBufferPool {
+	p := &byteBufferPool{
+		pool: make(map[int]*sync.Pool),
+	}
+	logarithmicRange(min, max, func(n int) {
+		p.pool[n] = &sync.Pool{}
+	})
+	return p
+}
+
+// Get returns probably reused slice of bytes with at least capacity of c and
+// exactly len of n.
+func (p *byteBufferPool) Get(n, c int) *ByteBuffer {
+	if n > c {
+		panic("requested length is greater than capacity")
+	}
+
+	size := ceilToPowerOfTwo(c)
+	if pool := p.pool[size]; pool != nil {
+		v := pool.Get()
+		if v != nil {
+			bb := v.(*ByteBuffer)
+			bb.b = bb.b[:n]
+			return bb
+		} else {
+			return newByteBuffer(n, size)
+		}
+	}
+
+	return newByteBuffer(n, c)
+}
+
+// Put returns given slice to reuse pool.
+// It does not reuse bytes whose size is not power of two or is out of pool
+// min/max range.
+func (p *byteBufferPool) Put(bb *ByteBuffer) {
+	if pool := p.pool[cap(bb.b)]; pool != nil {
+		pool.Put(bb)
+	}
+}
+
+// GetCap returns probably reused slice of bytes with at least capacity of n.
+func (p *byteBufferPool) GetCap(c int) *ByteBuffer {
+	return p.Get(0, c)
+}
+
+// GetLen returns probably reused slice of bytes with at least capacity of n
+// and exactly len of n.
+func (p *byteBufferPool) GetLen(n int) *ByteBuffer {
 	return p.Get(n, n)
 }
 

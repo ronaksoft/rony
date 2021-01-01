@@ -17,7 +17,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func TestPoolGet(t *testing.T) {
+func TestByteSlicePoolGet(t *testing.T) {
 	for _, test := range []struct {
 		min      int
 		max      int
@@ -41,7 +41,7 @@ func TestPoolGet(t *testing.T) {
 		},
 	} {
 		t.Run("", func(t *testing.T) {
-			p := New(test.min, test.max)
+			p := NewByteSlice(test.min, test.max)
 			act := p.Get(test.len, test.cap)
 			if n := len(act); n != test.len {
 				t.Errorf(
@@ -65,8 +65,8 @@ func TestPoolGet(t *testing.T) {
 	}
 }
 
-func TestPoolPut(t *testing.T) {
-	p := New(0, 32)
+func TestByteSlicePoolPut(t *testing.T) {
+	p := NewByteSlice(0, 32)
 
 	miss := make([]byte, 5, 5)
 	rand.Read(miss)
@@ -99,12 +99,21 @@ func BenchmarkPool(b *testing.B) {
 		1 << 8,
 		1 << 9,
 	} {
-		b.Run(strconv.Itoa(size)+"(pool)", func(b *testing.B) {
+		b.Run(strconv.Itoa(size)+"(pool(slice))", func(b *testing.B) {
 			b.ReportAllocs()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
 					p := Bytes.GetLen(size)
 					Bytes.Put(p)
+				}
+			})
+		})
+		b.Run(strconv.Itoa(size)+"(pool(buffer))", func(b *testing.B) {
+			b.ReportAllocs()
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					p := BytesBuffer.GetLen(size)
+					BytesBuffer.Put(p)
 				}
 			})
 		})
