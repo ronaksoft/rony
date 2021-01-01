@@ -405,7 +405,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 	ms = ms[:0]
 	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
 	if err != nil {
-		if ce := log.Check(log.WarnLevel, "Error in websocketReadPump"); ce != nil {
+		if ce := log.Check(log.DebugLevel, "Error in websocketReadPump"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),

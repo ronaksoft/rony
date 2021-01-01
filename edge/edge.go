@@ -267,7 +267,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
-	// _, task := trace.NewTask(context.Background(), "Handle Gateway Message")
+	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID)
@@ -301,9 +301,13 @@ func (edge *Server) onClose(conn gateway.Conn) {
 }
 
 func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
-
+	// _, task := trace.NewTask(context.Background(), "onClusterMessage")
+	// defer task.End()
 }
 func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
+	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
+	// defer task.End()
+
 	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender)
 	dispatchCtx.FillEnvelope(
 		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,

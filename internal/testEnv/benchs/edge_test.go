@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func BenchmarkServer(b *testing.B) {
+func BenchmarkSingleClient(b *testing.B) {
 	edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
 		HostPort:        "127.0.0.1:8080",
 		IdleTimeout:     time.Second,
@@ -58,6 +58,37 @@ func BenchmarkServer(b *testing.B) {
 	b.ReportAllocs()
 	// b.SetParallelism(10)
 	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			req := rony.PoolMessageEnvelope.Get()
+			res := rony.PoolMessageEnvelope.Get()
+			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
+			_ = edgeClient.Send(req, res)
+			rony.PoolMessageEnvelope.Put(req)
+			rony.PoolMessageEnvelope.Put(res)
+		}
+	})
+}
+
+func BenchmarkMultiClient(b *testing.B) {
+	echoRequest := pb.EchoRequest{
+		Int:       100,
+		Bool:      false,
+		Timestamp: 32809238402,
+	}
+	b.ResetTimer()
+	b.ReportAllocs()
+	// b.SetParallelism(10)
+	b.RunParallel(func(p *testing.PB) {
+		edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
+			HostPort:        "127.0.0.1:8080",
+			IdleTimeout:     time.Second,
+			DialTimeout:     time.Second,
+			ForceConnect:    true,
+			Handler:         func(m *rony.MessageEnvelope) {},
+			RequestMaxRetry: 10,
+			RequestTimeout:  time.Second,
+			// ContextTimeout:  time.Second,
+		})
 		for p.Next() {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
