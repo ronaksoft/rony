@@ -1,4 +1,4 @@
-package edge
+package cluster
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 
 // raftFSM is the finite state machine which will be used when Raft is enabled.
 type raftFSM struct {
-	edge *Server
+	c *Cluster
 }
 
 func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
@@ -30,20 +30,15 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	}
 
 	// We dont execute the command, if we are the sender server
-	if bytes.Equal(raftCmd.Sender, fsm.edge.serverID) {
+	if bytes.Equal(raftCmd.Sender, fsm.c.serverID) {
 		releaseRaftCommand(raftCmd)
 		return rony.ErrRaftExecuteOnLeader
 	}
 
-	dispatchCtx := acquireDispatchCtx(fsm.edge, nil, 0, raftCmd.Sender)
-	dispatchCtx.FillEnvelope(
-		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
-		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
-	)
-
-	err = fsm.edge.execute(dispatchCtx, false)
-	fsm.edge.dispatcher.Done(dispatchCtx)
-	releaseDispatchCtx(dispatchCtx)
+	err = fsm.c.onReplicaMessage(raftCmd)
+	if err != nil {
+		return rony.ErrRaftExecuteOnLeader
+	}
 	releaseRaftCommand(raftCmd)
 	return nil
 }

@@ -1,13 +1,9 @@
 package edge
 
 import (
-	"fmt"
-	raftbadger "github.com/bbva/raft-badger"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/gateway"
 	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/pools"
@@ -15,11 +11,8 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"io/ioutil"
-	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/debug"
 	"time"
 )
@@ -34,37 +27,23 @@ import (
 */
 
 type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
-type GetConstructorNameFunc func(constructor int64) string
 
 // Server
 type Server struct {
 	// General
 	serverID        []byte
-	replicaSet      uint64
-	shardRange      [2]uint32
-	dataPath        string
 	gatewayProtocol gateway.Protocol
 	gateway         gateway.Gateway
 	dispatcher      Dispatcher
 
 	// Handlers
-	preHandlers        []Handler
-	handlers           map[int64][]Handler
-	postHandlers       []Handler
-	readonlyHandlers   map[int64]struct{}
-	getConstructorName GetConstructorNameFunc
+	preHandlers      []Handler
+	handlers         map[int64][]Handler
+	postHandlers     []Handler
+	readonlyHandlers map[int64]struct{}
 
 	// Raft & Gossip
-	raftEnabled   bool
-	raftPort      int
-	raftBootstrap bool
-	raftFSM       raftFSM
-	raft          *raft.Raft
-	rateLimitChan chan struct{}
-	gossipPort    int
-	gossip        *memberlist.Memberlist
-	cluster       Cluster
-	badgerStore   *raftbadger.BadgerStore
+	cluster *cluster.Cluster
 }
 
 func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
@@ -73,19 +52,12 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 		readonlyHandlers: make(map[int64]struct{}),
 		serverID:         []byte(serverID),
 		dispatcher:       dispatcher,
-		getConstructorName: func(constructor int64) string {
-			return fmt.Sprintf("%d", constructor)
-		},
-		dataPath:      ".",
-		raftEnabled:   false,
-		raftPort:      0,
-		raftBootstrap: false,
-		rateLimitChan: make(chan struct{}, clusterMessageRateLimit),
-		gossipPort:    7946,
-		cluster: Cluster{
-			byServerID: make(map[string]*ClusterMember, 100),
-		},
 	}
+	edgeServer.cluster = cluster.New(
+		edgeServer.serverID,
+		edgeServer.onReplicaMessage,
+		edgeServer.onClusterMessage,
+	)
 
 	for _, opt := range opts {
 		opt(edgeServer)
@@ -136,14 +108,25 @@ func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
 	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
 }
 
+// ClusterMembers returns a list of all the discovered nodes in the cluster
+func (edge *Server) ClusterMembers() []*cluster.Member {
+	return edge.cluster.Members()
+}
+
+// ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
+// is not in the list. The message will be send with BEST EFFORT and using UDP
+func (edge *Server) ClusterSend(serverID string, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) (err error) {
+	return edge.cluster.Send(serverID, envelope, kvs...)
+}
+
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {
 	// If server is standalone then we are the leader anyway
 	isLeader = true
-	if !edge.raftEnabled {
+	if !edge.cluster.RaftEnabled() {
 		return
 	}
 
-	if edge.raft.State() == raft.Leader {
+	if edge.cluster.RaftState() == raft.Leader {
 		raftCmd := acquireRaftCommand()
 		raftCmd.Fill(edge.serverID, dispatchCtx.req)
 		mo := proto.MarshalOptions{UseCachedSize: true}
@@ -152,7 +135,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 		if err != nil {
 			return
 		}
-		f := edge.raft.Apply(raftCmdBytes, raftApplyTimeout)
+		f := edge.cluster.RaftApply(raftCmdBytes, raftApplyTimeout)
 		err = f.Error()
 		pools.Bytes.Put(raftCmdBytes)
 		releaseRaftCommand(raftCmd)
@@ -206,7 +189,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
 		startTime = tools.CPUTicks()
 		ce.Write(
-			zap.String("Constructor", edge.getConstructorName(in.GetConstructor())),
+			zap.String("C", registry.ConstructorName(in.GetConstructor())),
 			zap.Uint64("ReqID", in.GetRequestID()),
 		)
 	}
@@ -219,8 +202,8 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		if !ok {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
 				ce.Write(
-					zap.String("LeaderID", edge.cluster.leaderID),
-					zap.String("State", edge.raft.State().String()),
+					zap.String("LeaderID", edge.cluster.LeaderID()),
+					zap.String("State", edge.cluster.RaftState().String()),
 				)
 			}
 			requestCtx.PushRedirectLeader()
@@ -317,154 +300,36 @@ func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
 
-func (edge *Server) onClusterMessage(dispatchCtx *DispatchCtx, kvs ...*rony.KeyValue) {}
+func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
+
+}
+func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender)
+	dispatchCtx.FillEnvelope(
+		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
+		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
+	)
+
+	err := edge.execute(dispatchCtx, false)
+	if err != nil {
+		return err
+	}
+	edge.dispatcher.Done(dispatchCtx)
+	releaseDispatchCtx(dispatchCtx)
+	return nil
+}
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set
 func (edge *Server) StartCluster() (err error) {
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
-		zap.Bool("Raft", edge.raftEnabled),
-		zap.Int("GossipPort", edge.gossipPort),
+		zap.Bool("Raft", edge.cluster.RaftEnabled()),
+		zap.Int("GossipPort", edge.cluster.GossipPort()),
 	)
 
-	notifyChan := make(chan bool, 1)
-	if edge.raftEnabled {
-		err = edge.startRaft(notifyChan)
-		if err != nil {
-			log.Warn("Error On Starting Raft", zap.Error(err))
-			return
-		}
-	}
-
-	err = edge.startGossip()
-	if err != nil {
-		return
-	}
-	go func() {
-		for range notifyChan {
-			err := tools.Try(10, time.Millisecond, func() error {
-				return edge.updateCluster(gossipUpdateTimeout)
-			})
-			if err != nil {
-				log.Warn("Rony got error on updating the cluster",
-					zap.Error(err),
-					zap.ByteString("ID", edge.serverID),
-				)
-			}
-		}
-	}()
-
+	edge.cluster.Start()
 	return
-}
-func (edge *Server) startGossip() error {
-	dirPath := filepath.Join(edge.dataPath, "gossip")
-	_ = os.MkdirAll(dirPath, os.ModePerm)
-
-	conf := memberlist.DefaultWANConfig()
-	conf.Name = string(edge.serverID)
-	conf.Events = &delegateEvents{edge: edge}
-	conf.Delegate = &delegateNode{edge: edge}
-	conf.LogOutput = ioutil.Discard
-	conf.Logger = nil
-	conf.BindPort = edge.gossipPort
-	if s, err := memberlist.Create(conf); err != nil {
-		log.Warn("Error On Creating MemberList", zap.Error(err))
-		return err
-	} else {
-		edge.gossip = s
-	}
-
-	return edge.updateCluster(gossipUpdateTimeout)
-}
-func (edge *Server) startRaft(notifyChan chan bool) (err error) {
-	// Initialize LogStore for Raft
-	dirPath := filepath.Join(edge.dataPath, "raft")
-	_ = os.MkdirAll(dirPath, os.ModePerm)
-	badgerOpt := badger.DefaultOptions(dirPath).WithLogger(nil)
-	edge.badgerStore, err = raftbadger.New(raftbadger.Options{
-		Path:                dirPath,
-		BadgerOptions:       &badgerOpt,
-		NoSync:              false,
-		ValueLogGC:          false,
-		GCInterval:          0,
-		MandatoryGCInterval: 0,
-		GCThreshold:         0,
-	})
-	if err != nil {
-		return
-	}
-
-	// Initialize Raft
-	raftConfig := raft.DefaultConfig()
-	// raftConfig.LogLevel = "DEBUG"
-	raftConfig.NotifyCh = notifyChan
-	raftConfig.Logger = hclog.NewNullLogger()
-	raftConfig.LocalID = raft.ServerID(edge.serverID)
-
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return err
-	}
-
-	var raftAdvertiseAddr *net.TCPAddr
-	var raftBind string
-	for _, addr := range addrs {
-		ipNet, ok := addr.(*net.IPNet)
-		if ok {
-			if ipNet.IP == nil || ipNet.IP.IsLoopback() || ipNet.IP.To4() == nil {
-				continue
-			}
-			raftBind = fmt.Sprintf("%s:%d", ipNet.IP.String(), edge.raftPort)
-			raftAdvertiseAddr, err = net.ResolveTCPAddr("tcp", raftBind)
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-
-	log.Info("Raft",
-		zap.String("Bind", raftBind),
-		zap.String("Advertise", raftAdvertiseAddr.String()),
-	)
-
-	raftTransport, err := raft.NewTCPTransport(raftBind, raftAdvertiseAddr, 3, 10*time.Second, os.Stdout)
-	if err != nil {
-		return err
-	}
-
-	raftSnapshot, err := raft.NewFileSnapshotStore(dirPath, 3, os.Stdout)
-	if err != nil {
-		return err
-	}
-
-	edge.raft, err = raft.NewRaft(raftConfig, edge.raftFSM, edge.badgerStore, edge.badgerStore, raftSnapshot, raftTransport)
-	if err != nil {
-		return err
-	}
-
-	if edge.raftBootstrap {
-		bootConfig := raft.Configuration{
-			Servers: []raft.Server{
-				{
-					ID:      raftConfig.LocalID,
-					Address: raftTransport.LocalAddr(),
-				},
-			},
-		}
-		f := edge.raft.BootstrapCluster(bootConfig)
-		if err := f.Error(); err != nil {
-			if err == raft.ErrCantBootstrap {
-				log.Info("Error On Raft Bootstrap", zap.Error(err))
-			} else {
-				log.Warn("Error On Raft Bootstrap", zap.Error(err))
-			}
-
-		}
-	}
-
-	return nil
 }
 
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
@@ -478,7 +343,7 @@ func (edge *Server) StartGateway() {
 // none could be reached. If an error is returned, the node did not successfully
 // join the cluster.
 func (edge *Server) JoinCluster(addr ...string) (int, error) {
-	return edge.gossip.Join(addr)
+	return edge.cluster.Join(addr...)
 }
 
 // Shutdown gracefully shutdown the services
@@ -488,40 +353,8 @@ func (edge *Server) Shutdown() {
 		edge.gateway.Shutdown()
 	}
 
-	// Second shutdown raft, if it is enabled
-	if edge.raftEnabled {
-		if f := edge.raft.Snapshot(); f.Error() != nil {
-			if f.Error() != raft.ErrNothingNewToSnapshot {
-				log.Warn("Error On Shutdown (Raft Snapshot)",
-					zap.Error(f.Error()),
-					zap.String("ServerID", edge.GetServerID()),
-				)
-			} else {
-				log.Info("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
-			}
-
-		}
-		if f := edge.raft.Shutdown(); f.Error() != nil {
-			log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(f.Error()))
-		}
-
-		err := edge.badgerStore.Close()
-		if err != nil {
-			log.Warn("Error On Shutdown (Close Raft Badger)", zap.Error(err))
-		}
-	}
-
-	// Shutdown gossip
-	if edge.gossip != nil {
-		err := edge.gossip.Leave(gossipLeaveTimeout)
-		if err != nil {
-			log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
-		}
-		err = edge.gossip.Shutdown()
-		if err != nil {
-			log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
-		}
-	}
+	// Shutdown the cluster
+	edge.cluster.Shutdown()
 
 	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))

@@ -25,25 +25,21 @@ func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool) Option {
 		panic("replica-set could not be set zero")
 	}
 	return func(edge *Server) {
-		edge.raftFSM = raftFSM{edge: edge}
-		edge.replicaSet = replicaSet
-		edge.raftEnabled = true
-		edge.raftPort = bindPort
-		edge.raftBootstrap = bootstrap
+		edge.cluster.SetRaft(replicaSet, bindPort, bootstrap)
 	}
 }
 
 // WithGossipPort
 func WithGossipPort(gossipPort int) Option {
 	return func(edge *Server) {
-		edge.gossipPort = gossipPort
+		edge.cluster.SetGossipPort(gossipPort)
 	}
 }
 
 // WithDataPath set where the internal data for raft and gossip are stored.
 func WithDataPath(path string) Option {
 	return func(edge *Server) {
-		edge.dataPath = path
+		edge.cluster.SetDataPath(path)
 	}
 }
 

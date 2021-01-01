@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
 	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -214,7 +215,7 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 
 func (ctx *RequestCtx) PushRedirectLeader() {
 	edge := ctx.dispatchCtx.edge
-	if leaderID := edge.cluster.leaderID; leaderID == "" {
+	if leaderID := edge.cluster.LeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 	} else {
 		ctx.PushMessage(
@@ -266,8 +267,8 @@ func (ctx *RequestCtx) PushClusterMessage(serverID string, requestID uint64, con
 	if err != nil {
 		log.Error("ClusterMessage Error",
 			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),
-			zap.Uint64("RequestID", envelope.GetRequestID()),
-			zap.String("C", ctx.dispatchCtx.edge.getConstructorName(envelope.GetConstructor())),
+			zap.Uint64("ReqID", envelope.GetRequestID()),
+			zap.String("C", registry.ConstructorName(envelope.GetConstructor())),
 			zap.Error(err),
 		)
 	}

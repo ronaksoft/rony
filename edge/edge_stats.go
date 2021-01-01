@@ -1,7 +1,6 @@
 package edge
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony/gateway"
 )
 
@@ -29,20 +28,20 @@ type Stats struct {
 // Stats exports some internal metrics data packed in 'Stats' struct
 func (edge *Server) Stats() *Stats {
 	s := Stats{
-		Address:         fmt.Sprintf("%s:%d", edge.gossip.LocalNode().Addr.String(), edge.gossip.LocalNode().Port),
-		Members:         len(edge.gossip.Members()),
-		MembershipScore: edge.gossip.GetHealthScore(),
+		Address: edge.cluster.Addr(),
+		Members: len(edge.cluster.Members()),
+		// MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
-		ReplicaSet:      edge.replicaSet,
+		ReplicaSet:      edge.cluster.ReplicaSet(),
 	}
 
 	if edge.gateway != nil {
 		s.GatewayAddr = edge.gateway.Addr()
 	}
 
-	if edge.raftEnabled {
-		s.RaftState = edge.raft.State().String()
-		f := edge.raft.GetConfiguration()
+	if edge.cluster.RaftEnabled() {
+		s.RaftState = edge.cluster.RaftState().String()
+		f := edge.cluster.RaftConfigs()
 		if f.Error() == nil {
 			s.RaftMembers = len(f.Configuration().Servers)
 		}
