@@ -322,6 +322,8 @@ func (edge *Server) onClose(conn gateway.Conn) {
 func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
 	// _, task := trace.NewTask(context.Background(), "onClusterMessage")
 	// defer task.End()
+
+	log.Info("ClusterMessage arrived", zap.String("ServerID", edge.GetServerID()), zap.ByteString("Source", cm.Sender))
 	dispatchCtx := acquireDispatchCtx(edge, nil, 0, cm.Sender, ClusterMessage)
 	dispatchCtx.FillEnvelope(
 		cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message,
