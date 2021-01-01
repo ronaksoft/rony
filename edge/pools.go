@@ -121,7 +121,7 @@ func releaseRequestCtx(ctx *RequestCtx) {
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverID []byte) *DispatchCtx {
+func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverID []byte, kind ContextKind) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)
@@ -129,11 +129,7 @@ func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverI
 		ctx = v.(*DispatchCtx)
 	}
 	ctx.conn = conn
-	if ctx.conn == nil {
-		ctx.kind = GatewayMessage
-	} else {
-		ctx.kind = ClusterMessage
-	}
+	ctx.kind = kind
 	ctx.streamID = streamID
 	ctx.serverID = append(ctx.serverID[:0], serverID...)
 	return ctx

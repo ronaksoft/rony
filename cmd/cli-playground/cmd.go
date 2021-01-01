@@ -179,6 +179,7 @@ var EchoCmd = &cobra.Command{
 	Use: "echo",
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 {
 			fmt.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
@@ -210,7 +211,7 @@ var EchoCmd = &cobra.Command{
 		req.Timestamp = tools.NanoTime()
 		var cnt int64
 		wg := sync.WaitGroup{}
-		for i := 0; i < 100; i++ {
+		for i := 0; i < n; i++ {
 			wg.Add(1)
 			go func() {
 				res, err := c.Echo(req)
@@ -235,6 +236,7 @@ var AskCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		targetID, _ := cmd.Flags().GetString(FlagTargetID)
+		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 || len(targetID) == 0 {
 			fmt.Println("Needs ServerID and TargetID, e.g. ask --serverID First.01 --targetID Second.01")
 			return
@@ -264,7 +266,7 @@ var AskCmd = &cobra.Command{
 		req.ServerID = targetID
 		var cnt int64
 		wg := sync.WaitGroup{}
-		for i := 0; i < 100; i++ {
+		for i := 0; i < n; i++ {
 			wg.Add(1)
 			go func() {
 				res, err := c.Ask(req)

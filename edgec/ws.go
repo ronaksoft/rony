@@ -329,8 +329,19 @@ SendLoop:
 		switch e.GetConstructor() {
 		case rony.C_Redirect:
 			x := &rony.Redirect{}
-			_ = proto.Unmarshal(e.Message, x)
+			err = proto.Unmarshal(e.Message, x)
+			if err != nil {
+				log.Warn("Error On Unmarshal Redirect", zap.Error(err))
+				goto SendLoop
+			}
 			c.connectMtx.Lock()
+			if ce := log.Check(log.InfoLevel, "Redirect"); ce != nil {
+				ce.Write(
+					zap.Any("Leaders", x.LeaderHostPort),
+					zap.Any("Servers", x.HostPorts),
+					zap.Any("Wait", x.WaitInSec),
+				)
+			}
 			if len(x.LeaderHostPort) > 0 && c.hostPort != x.LeaderHostPort[0] {
 				c.hostPort = x.LeaderHostPort[0]
 				c.reconnect()

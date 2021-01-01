@@ -274,7 +274,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender)
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage)
 	dispatchCtx.FillEnvelope(
 		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
 		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
@@ -291,8 +291,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
-
-	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID)
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
 	err := edge.dispatcher.Interceptor(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
@@ -301,12 +300,11 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	err, isLeader := edge.executePrepare(dispatchCtx)
 	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
-	}
-	err = edge.execute(dispatchCtx, isLeader)
-	if err != nil {
+	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+	} else {
+		edge.dispatcher.Done(dispatchCtx)
 	}
-	edge.dispatcher.Done(dispatchCtx)
 	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
@@ -324,7 +322,7 @@ func (edge *Server) onClose(conn gateway.Conn) {
 func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
 	// _, task := trace.NewTask(context.Background(), "onClusterMessage")
 	// defer task.End()
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, cm.Sender)
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, cm.Sender, ClusterMessage)
 	dispatchCtx.FillEnvelope(
 		cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message,
 		cm.Envelope.Auth, cm.Envelope.Header...,
@@ -354,8 +352,9 @@ func (edge *Server) StartCluster() (err error) {
 }
 
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
-func (edge *Server) StartGateway() {
+func (edge *Server) StartGateway() error {
 	edge.gateway.Start()
+	return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster

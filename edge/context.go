@@ -29,6 +29,7 @@ const (
 	_ ContextKind = iota
 	GatewayMessage
 	ClusterMessage
+	ReplicaMessage
 )
 
 // DispatchCtx
@@ -251,7 +252,7 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 }
 
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
-	if ctx.dispatchCtx.kind == ClusterMessage {
+	if ctx.dispatchCtx.kind != GatewayMessage {
 		return
 	}
 	envelope := acquireMessageEnvelope()

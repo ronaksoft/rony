@@ -339,6 +339,11 @@ func (c *Cluster) SetDataPath(path string) {
 	c.dataPath = path
 }
 
+func (c *Cluster) SetGatewayAddrs(addrs []string) error {
+	c.gatewayAddr = addrs
+	return c.updateCluster(gossipUpdateTimeout)
+}
+
 func (c *Cluster) RaftEnabled() bool {
 	return c.raftEnabled
 }
@@ -381,7 +386,7 @@ func (c *Cluster) AddMember(m *Member) {
 		return
 	}
 
-	if m.RaftState == rony.RaftState_Leader {
+	if m.ReplicaSet == c.replicaSet && m.RaftState == rony.RaftState_Leader {
 		c.leaderID = m.ServerID
 	}
 	c.byServerID[m.ServerID] = m
