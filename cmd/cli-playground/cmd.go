@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime/pprof"
 	"runtime/trace"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -35,11 +36,13 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		BatchStartCmd, StartCmd, EchoCmd, BenchCmd, ListCmd, Members,
+		BatchStartCmd, StartCmd, BenchCmd, ListCmd, Members,
+		AskCmd, EchoCmd,
 		Trace, MemProf,
 	)
 
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
+	RootCmd.PersistentFlags().String(FlagTargetID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
@@ -48,17 +51,40 @@ func init() {
 }
 
 var BatchStartCmd = &cobra.Command{
-	Use: "batch_start",
+	Use: "demo_cluster_start",
 	Run: func(cmd *cobra.Command, args []string) {
-		serverID, _ := cmd.Flags().GetString(FlagServerID)
-		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
-		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
-		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
-		n, _ := cmd.Flags().GetInt("n")
-		for i := 0; i < n; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, raftBootstrap)
+
+		serverID := "A"
+		replicaSet := uint64(1)
+		gossipPort := 700
+		for i := 0; i < 3; i++ {
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
 			gossipPort++
-			raftBootstrap = false
+			if i == 0 {
+				time.Sleep(time.Second * 3)
+			}
+		}
+
+		serverID = "B"
+		replicaSet = uint64(2)
+		gossipPort = 800
+		for i := 0; i < 3; i++ {
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
+			gossipPort++
+			if i == 0 {
+				time.Sleep(time.Second * 3)
+			}
+		}
+
+		serverID = "C"
+		replicaSet = uint64(3)
+		gossipPort = 900
+		for i := 0; i < 3; i++ {
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
+			gossipPort++
+			if i == 0 {
+				time.Sleep(time.Second * 3)
+			}
 		}
 	},
 }
@@ -92,7 +118,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		}
 
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
-		pb.RegisterSample(&SampleServer{}, Edges[serverID])
+		pb.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
 
 		err := Edges[serverID].StartCluster()
 		if err != nil {
@@ -128,10 +154,17 @@ func listFunc() {
 		"------- | ----------- | ------ | ------ | -------- | ------- | ------",
 	)
 
-	for id, s := range Edges {
+	ea := make([]*edge.Server, 0, len(Edges))
+	for _, s := range Edges {
+		ea = append(ea, s)
+	}
+	sort.Slice(ea, func(i, j int) bool {
+		return strings.Compare(ea[i].GetServerID(), ea[j].GetServerID()) < 0
+	})
+	for _, s := range ea {
 		edgeStats := s.Stats()
 		rows = append(rows,
-			fmt.Sprintf("%s | %d | %d | %s | %d | %d | %s(%s)", id,
+			fmt.Sprintf("%s | %d | %d | %s | %d | %d | %s(%s)", s.GetServerID(),
 				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
 				edgeStats.Members, edgeStats.MembershipScore,
 				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
@@ -165,7 +198,8 @@ var EchoCmd = &cobra.Command{
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
 			},
-			Secure: false,
+			Secure:         false,
+			ContextTimeout: time.Second * 3,
 		})
 		defer ec.Close()
 		c := pb.NewSampleClient(ec)
@@ -173,7 +207,7 @@ var EchoCmd = &cobra.Command{
 		defer pb.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Bool = true
-		req.Timestamp = time.Now().UnixNano()
+		req.Timestamp = tools.NanoTime()
 		var cnt int64
 		wg := sync.WaitGroup{}
 		for i := 0; i < 100; i++ {
@@ -186,9 +220,61 @@ var EchoCmd = &cobra.Command{
 					cmd.Println(res)
 				default:
 					cmd.Println("Error:", err)
-					return
 				}
 
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		cmd.Println("N:", cnt)
+	},
+}
+
+var AskCmd = &cobra.Command{
+	Use: "ask",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		targetID, _ := cmd.Flags().GetString(FlagTargetID)
+		if len(serverID) == 0 || len(targetID) == 0 {
+			fmt.Println("Needs ServerID and TargetID, e.g. ask --serverID First.01 --targetID Second.01")
+			return
+		}
+		e1 := Edges[serverID]
+		if e1 == nil {
+			fmt.Println("Invalid Args")
+			return
+		}
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			fmt.Println("No Gateway Addr", gatewayAddrs)
+			return
+		}
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			Handler: func(m *rony.MessageEnvelope) {
+				cmd.Print(m)
+			},
+			Secure:         false,
+			ContextTimeout: time.Second * 3,
+		})
+		defer ec.Close()
+		c := pb.NewSampleClient(ec)
+		req := pb.PoolAskRequest.Get()
+		defer pb.PoolAskRequest.Put(req)
+		req.ServerID = targetID
+		var cnt int64
+		wg := sync.WaitGroup{}
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				res, err := c.Ask(req)
+				switch err {
+				case nil:
+					atomic.AddInt64(&cnt, 1)
+					cmd.Println(res)
+				default:
+					cmd.Println("Error:", err)
+				}
 				wg.Done()
 			}()
 		}

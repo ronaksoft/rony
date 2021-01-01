@@ -347,8 +347,8 @@ func (c *Cluster) RaftState() raft.RaftState {
 	return c.raft.State()
 }
 
-func (c *Cluster) RaftApply(cmd []byte, timeout time.Duration) raft.ApplyFuture {
-	return c.raft.Apply(cmd, timeout)
+func (c *Cluster) RaftApply(cmd []byte) raft.ApplyFuture {
+	return c.raft.Apply(cmd, raftApplyTimeout)
 }
 
 func (c *Cluster) RaftConfigs() raft.ConfigurationFuture {

@@ -23,10 +23,12 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type ContextKind byte
+
 const (
-	_ byte = iota
-	gatewayMessage
-	clusterMessage
+	_ ContextKind = iota
+	GatewayMessage
+	ClusterMessage
 )
 
 // DispatchCtx
@@ -36,7 +38,7 @@ type DispatchCtx struct {
 	conn     gateway.Conn
 	req      *rony.MessageEnvelope
 	edge     *Server
-	kind     byte
+	kind     ContextKind
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -143,6 +145,10 @@ func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
 	return proto.Unmarshal(data, ctx.req)
 }
 
+func (ctx *DispatchCtx) Kind() ContextKind {
+	return ctx.kind
+}
+
 // RequestCtx
 type RequestCtx struct {
 	dispatchCtx *DispatchCtx
@@ -177,6 +183,14 @@ func (ctx *RequestCtx) Conn() gateway.Conn {
 
 func (ctx *RequestCtx) ReqID() uint64 {
 	return ctx.reqID
+}
+
+func (ctx *RequestCtx) ServerID() string {
+	return string(ctx.dispatchCtx.serverID)
+}
+
+func (ctx *RequestCtx) Kind() ContextKind {
+	return ctx.dispatchCtx.Kind()
 }
 
 func (ctx *RequestCtx) StopExecution() {
@@ -237,6 +251,9 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 }
 
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
+	if ctx.dispatchCtx.kind == ClusterMessage {
+		return
+	}
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	envelope.Header = append(envelope.Header[:0], kvs...)

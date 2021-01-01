@@ -66,5 +66,5 @@ func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 }
 
 func (s *SimpleDispatcher) OnClose(conn gateway.Conn) {
-	panic("implement me")
+	// Do nothing
 }

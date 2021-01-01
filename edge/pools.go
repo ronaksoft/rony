@@ -130,9 +130,9 @@ func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverI
 	}
 	ctx.conn = conn
 	if ctx.conn == nil {
-		ctx.kind = gatewayMessage
+		ctx.kind = GatewayMessage
 	} else {
-		ctx.kind = clusterMessage
+		ctx.kind = ClusterMessage
 	}
 	ctx.streamID = streamID
 	ctx.serverID = append(ctx.serverID[:0], serverID...)

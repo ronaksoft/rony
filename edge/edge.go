@@ -26,6 +26,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+func init() {
+	log.Init(log.DefaultConfig)
+}
+
 type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
 
 // Server
@@ -135,7 +139,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 		if err != nil {
 			return
 		}
-		f := edge.cluster.RaftApply(raftCmdBytes, raftApplyTimeout)
+		f := edge.cluster.RaftApply(raftCmdBytes)
 		err = f.Error()
 		pools.Bytes.Put(raftCmdBytes)
 		releaseRaftCommand(raftCmd)
@@ -266,6 +270,24 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
+func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
+	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
+	// defer task.End()
+
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender)
+	dispatchCtx.FillEnvelope(
+		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
+		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
+	)
+
+	err := edge.execute(dispatchCtx, false)
+	if err != nil {
+		return err
+	}
+	edge.dispatcher.Done(dispatchCtx)
+	releaseDispatchCtx(dispatchCtx)
+	return nil
+}
 func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
@@ -299,28 +321,23 @@ func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
 func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
-
 func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
 	// _, task := trace.NewTask(context.Background(), "onClusterMessage")
 	// defer task.End()
-}
-func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
-	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
-	// defer task.End()
-
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender)
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, cm.Sender)
 	dispatchCtx.FillEnvelope(
-		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
-		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
+		cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message,
+		cm.Envelope.Auth, cm.Envelope.Header...,
 	)
-
-	err := edge.execute(dispatchCtx, false)
+	err, isLeader := edge.executePrepare(dispatchCtx)
 	if err != nil {
-		return err
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	}
-	edge.dispatcher.Done(dispatchCtx)
+	err = edge.execute(dispatchCtx, isLeader)
+	if err != nil {
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+	}
 	releaseDispatchCtx(dispatchCtx)
-	return nil
 }
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set

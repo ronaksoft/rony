@@ -26,16 +26,41 @@ type clusterDelegate struct {
 func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.AddMember(cm)
-	if cm.ReplicaSet == d.c.replicaSet {
-		_ = joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+
+	if cm.ReplicaSet != 0 && cm.ReplicaSet == d.c.replicaSet {
+		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+		if err != nil {
+			log.Debug("Error On Join Raft (NodeJoin)",
+				zap.ByteString("ServerID", d.c.serverID),
+				zap.String("NodeID", cm.ServerID),
+				zap.Error(err),
+			)
+		} else {
+			log.Info("Join Raft (NodeJoin)",
+				zap.ByteString("ServerID", d.c.serverID),
+				zap.String("NodeID", cm.ServerID),
+			)
+		}
 	}
 }
 
 func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.AddMember(cm)
-	if cm.ReplicaSet == d.c.replicaSet {
-		_ = joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+	if cm.ReplicaSet != 0 && cm.ReplicaSet == d.c.replicaSet {
+		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+		if err != nil {
+			log.Debug("Error On Join Raft (NodeUpdate)",
+				zap.ByteString("ServerID", d.c.serverID),
+				zap.String("NodeID", cm.ServerID),
+				zap.Error(err),
+			)
+		} else {
+			log.Info("Join Raft (NodeUpdate)",
+				zap.ByteString("ServerID", d.c.serverID),
+				zap.String("NodeID", cm.ServerID),
+			)
+		}
 	}
 }
 
