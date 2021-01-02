@@ -14,7 +14,7 @@ import (
 */
 
 type Client interface {
-	Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) error
+	Send(req, res *rony.MessageEnvelope) error
 	Close() error
 	GetRequestID() uint64
 }

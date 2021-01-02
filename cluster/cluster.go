@@ -46,6 +46,17 @@ type Member struct {
 	node        *memberlist.Node
 }
 
+func (m *Member) Proto(p *rony.NodeInfo) *rony.NodeInfo {
+	if p == nil {
+		p = &rony.NodeInfo{}
+	}
+	p.ReplicaSet = m.ReplicaSet
+	p.ServerID = m.ServerID
+	p.HostPorts = append(p.HostPorts, m.GatewayAddr...)
+	p.Leader = m.RaftState == rony.RaftState_Leader
+	return p
+}
+
 func convertMember(sm *memberlist.Node) *Member {
 	edgeNode := &rony.EdgeNode{}
 	err := proto.UnmarshalOptions{}.Unmarshal(sm.Meta, edgeNode)
@@ -72,14 +83,17 @@ func convertMember(sm *memberlist.Node) *Member {
 
 // Cluster
 type Cluster struct {
-	sync.RWMutex
-	serverID    []byte
-	byServerID  map[string]*Member
-	leaderID    string
-	replicaSet  uint64
-	shardRange  [2]uint32
-	dataPath    string
-	gatewayAddr []string
+	mtx              sync.RWMutex
+	mode             Mode
+	dataPath         string
+	localServerID    []byte
+	localGatewayAddr []string
+	localShardRange  [2]uint32
+	replicaLeaderID  string
+	replicaSet       uint64
+	replicaMembers   map[uint64]map[string]*Member
+	clusterMembers   map[string]*Member
+
 	// External Handlers
 	onClusterMessage MessageHandler
 	onReplicaMessage ReplicaMessageHandler
@@ -99,10 +113,12 @@ type Cluster struct {
 
 func New(serverID []byte, replicaHandler ReplicaMessageHandler, clusterHandler MessageHandler) *Cluster {
 	return &Cluster{
+		mode:             NoReplica,
 		onReplicaMessage: replicaHandler,
 		onClusterMessage: clusterHandler,
-		serverID:         serverID,
-		byServerID:       make(map[string]*Member, 100),
+		localServerID:    serverID,
+		clusterMembers:   make(map[string]*Member, 100),
+		replicaMembers:   make(map[uint64]map[string]*Member, 100),
 		dataPath:         ".",
 		raftEnabled:      false,
 		raftPort:         0,
@@ -123,8 +139,8 @@ func (c *Cluster) startGossip() error {
 	cd := &clusterDelegate{
 		c: c,
 	}
-	conf := memberlist.DefaultWANConfig()
-	conf.Name = string(c.serverID)
+	conf := memberlist.DefaultLANConfig()
+	conf.Name = string(c.localServerID)
 	conf.Events = cd
 	conf.Delegate = cd
 	conf.LogOutput = ioutil.Discard
@@ -163,7 +179,7 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 	// raftConfig.LogLevel = "DEBUG"
 	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
-	raftConfig.LocalID = raft.ServerID(c.serverID)
+	raftConfig.LocalID = raft.ServerID(c.localServerID)
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -252,7 +268,7 @@ func (c *Cluster) Start() {
 			if err != nil {
 				log.Warn("Rony got error on updating the cluster",
 					zap.Error(err),
-					zap.ByteString("ID", c.serverID),
+					zap.ByteString("ID", c.localServerID),
 				)
 			}
 		}
@@ -271,7 +287,7 @@ func (c *Cluster) Shutdown() {
 			if f.Error() != raft.ErrNothingNewToSnapshot {
 				log.Warn("Error On Shutdown (Raft Snapshot)",
 					zap.Error(f.Error()),
-					zap.ByteString("ServerID", c.serverID),
+					zap.ByteString("ServerID", c.localServerID),
 				)
 			} else {
 				log.Info("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
@@ -309,7 +325,7 @@ func (c *Cluster) Send(serverID string, envelope *rony.MessageEnvelope, kvs ...*
 	}
 
 	cm := acquireClusterMessage()
-	cm.Fill(c.serverID, envelope, kvs...)
+	cm.Fill(c.localServerID, envelope, kvs...)
 
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(cm))
@@ -323,12 +339,19 @@ func (c *Cluster) Send(serverID string, envelope *rony.MessageEnvelope, kvs ...*
 	return err
 }
 
-func (c *Cluster) SetRaft(replicaSet uint64, bindPort int, bootstrap bool) {
+func (c *Cluster) SetRaft(replicaSet uint64, bindPort int, bootstrap bool, mod Mode) {
+	switch mod {
+	case MultiReplica, SingleReplica:
+		c.mode = mod
+	default:
+		panic("only singleReplica and multiReplica supported")
+	}
 	c.raftFSM = raftFSM{c: c}
 	c.replicaSet = replicaSet
 	c.raftEnabled = true
 	c.raftPort = bindPort
 	c.raftBootstrap = bootstrap
+
 }
 
 func (c *Cluster) SetGossipPort(port int) {
@@ -340,7 +363,7 @@ func (c *Cluster) SetDataPath(path string) {
 }
 
 func (c *Cluster) SetGatewayAddrs(addrs []string) error {
-	c.gatewayAddr = addrs
+	c.localGatewayAddr = addrs
 	return c.updateCluster(gossipUpdateTimeout)
 }
 
@@ -365,19 +388,19 @@ func (c *Cluster) GossipPort() int {
 }
 
 func (c *Cluster) GetByID(id string) *Member {
-	c.RLock()
-	defer c.RUnlock()
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
 
-	return c.byServerID[id]
+	return c.clusterMembers[id]
 }
 
 func (c *Cluster) LeaderID() string {
-	return c.leaderID
+	return c.replicaLeaderID
 }
 
 func (c *Cluster) AddMember(m *Member) {
-	c.Lock()
-	defer c.Unlock()
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
 	if m == nil {
 		return
@@ -387,35 +410,55 @@ func (c *Cluster) AddMember(m *Member) {
 	}
 
 	if m.ReplicaSet == c.replicaSet && m.RaftState == rony.RaftState_Leader {
-		c.leaderID = m.ServerID
+		c.replicaLeaderID = m.ServerID
 	}
-	c.byServerID[m.ServerID] = m
+	c.clusterMembers[m.ServerID] = m
+	if c.replicaMembers[m.ReplicaSet] == nil {
+		c.replicaMembers[m.ReplicaSet] = make(map[string]*Member, 100)
+	}
+	c.replicaMembers[m.ReplicaSet][m.ServerID] = m
 }
 
 func (c *Cluster) RemoveMember(m *Member) {
-	c.Lock()
-	defer c.Unlock()
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
 	if m == nil {
 		return
 	}
+
 	if len(m.ServerID) == 0 {
 		return
 	}
-	if m.ServerID == c.leaderID {
-		c.leaderID = ""
+
+	if m.ServerID == c.replicaLeaderID {
+		c.replicaLeaderID = ""
 	}
 
-	delete(c.byServerID, m.ServerID)
+	delete(c.clusterMembers, m.ServerID)
+
+	if c.replicaMembers[m.ReplicaSet] != nil {
+		delete(c.replicaMembers[m.ReplicaSet], m.ServerID)
+	}
 }
 
 func (c *Cluster) Members() []*Member {
-	members := make([]*Member, 0, 10)
-	c.RLock()
-	for _, cm := range c.byServerID {
+	members := make([]*Member, 0, 16)
+	c.mtx.RLock()
+	for _, cm := range c.clusterMembers {
 		members = append(members, cm)
 	}
-	c.RUnlock()
+	c.mtx.RUnlock()
+	return members
+}
+
+func (c *Cluster) ReplicaMembers(replicaSet uint64) []*Member {
+	members := make([]*Member, 0, 8)
+	c.mtx.RLock()
+	for _, cm := range c.replicaMembers[replicaSet] {
+		members = append(members, cm)
+	}
+	c.mtx.RUnlock()
 	return members
 }
 

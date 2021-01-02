@@ -2,6 +2,7 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/gateway"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
@@ -20,12 +21,12 @@ import (
 type Option func(edge *Server)
 
 // WithReplicaSet
-func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool) Option {
+func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool, mod cluster.Mode) Option {
 	if replicaSet == 0 {
 		panic("replica-set could not be set zero")
 	}
 	return func(edge *Server) {
-		edge.cluster.SetRaft(replicaSet, bindPort, bootstrap)
+		edge.cluster.SetRaft(replicaSet, bindPort, bootstrap, mod)
 	}
 }
 

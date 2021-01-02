@@ -12,6 +12,12 @@ message MessageEnvelope {
     repeated KeyValue Header = 10;
 }
 
+// KeyValue
+message KeyValue {
+    string Key = 1;
+    string Value = 2;
+}
+
 // MessageContainer
 // This type of message will be used to send multi messages inside a single container message
 message MessageContainer {
@@ -29,17 +35,36 @@ message Error {
     repeated string LocalTemplateItems = 6;
 }
 
-// Redirect
-message Redirect {
-    repeated string LeaderHostPort = 1;
-    repeated string HostPorts = 2;
-    string ServerID = 3;
-    uint32 WaitInSec = 4;
+// RedirectReason
+enum RedirectReason {
+    ReplicaMaster = 0;
+    ReplicaSet = 1;
 }
 
-// KeyValue
-message KeyValue {
-    string Key = 1;
-    string Value = 2;
+// Redirect
+message Redirect {
+    RedirectReason Reason = 100;
+    NodeInfo Leader = 1;
+    repeated NodeInfo Followers = 2;
+    uint32 WaitInSec = 3;
+}
+
+// NodeInfo
+message NodeInfo {
+    uint64 ReplicaSet = 1;
+    string ServerID = 2;
+    repeated string HostPorts = 3;
+    bool Leader = 4;
+}
+
+// GetNodes
+// @Returns: NodeInfoMany
+message GetNodes {
+    repeated uint64 ReplicaSet = 1;
+}
+
+// NodeInfoMany
+message NodeInfoMany {
+    repeated NodeInfo Nodes = 1;
 }
 

@@ -14,6 +14,7 @@ const (
 	FlagServerID    = "serverID"
 	FlagTargetID    = "targetID"
 	FlagReplicaSet  = "replicaSet"
+	FlagReplicaMode = "replicaMode"
 	FlagBootstrap   = "bootstrap"
 	FlagGossipPort  = "port"
 	FlagConcurrency = "concurrency"

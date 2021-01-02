@@ -61,7 +61,7 @@ func TestGateway(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
-						HostPort:        "127.0.0.1:88",
+						SeedHostPort:    "127.0.0.1:88",
 						IdleTimeout:     time.Second,
 						DialTimeout:     time.Second,
 						Handler:         nil,
@@ -107,7 +107,7 @@ func TestGateway(t *testing.T) {
 
 			for i := 0; i < 10; i++ {
 				wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
-					HostPort:        "127.0.0.1:88",
+					SeedHostPort:    "127.0.0.1:88",
 					IdleTimeout:     time.Second,
 					DialTimeout:     time.Second,
 					Handler:         nil,

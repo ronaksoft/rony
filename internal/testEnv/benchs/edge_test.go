@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 func BenchmarkSingleClient(b *testing.B) {
 	edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
-		HostPort:        "127.0.0.1:8080",
+		SeedHostPort:    "127.0.0.1:8080",
 		IdleTimeout:     time.Second,
 		DialTimeout:     time.Second,
 		ForceConnect:    true,
@@ -80,7 +80,7 @@ func BenchmarkMultiClient(b *testing.B) {
 	// b.SetParallelism(10)
 	b.RunParallel(func(p *testing.PB) {
 		edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
-			HostPort:        "127.0.0.1:8080",
+			SeedHostPort:    "127.0.0.1:8080",
 			IdleTimeout:     time.Second,
 			DialTimeout:     time.Second,
 			ForceConnect:    true,

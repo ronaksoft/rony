@@ -30,7 +30,7 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 	}
 
 	// We dont execute the command, if we are the sender server
-	if bytes.Equal(raftCmd.Sender, fsm.c.serverID) {
+	if bytes.Equal(raftCmd.Sender, fsm.c.localServerID) {
 		releaseRaftCommand(raftCmd)
 		return rony.ErrRaftExecuteOnLeader
 	}

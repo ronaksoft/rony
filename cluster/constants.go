@@ -19,3 +19,11 @@ const (
 	gossipLeaveTimeout      = time.Second * 5
 	clusterMessageRateLimit = 100
 )
+
+type Mode string
+
+const (
+	NoReplica     Mode = "noReplica"
+	SingleReplica Mode = "singleReplica"
+	MultiReplica  Mode = "multiReplica"
+)

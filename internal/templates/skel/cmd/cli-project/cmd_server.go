@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/gateway"
@@ -29,7 +30,12 @@ var ServerCmd = &cobra.Command{
 				Protocol:      tcpGateway.Auto,
 			}),
 			edge.WithGossipPort(config.GetInt("gossip.port")),
-			edge.WithReplicaSet(config.GetUint64("replica.set"), config.GetInt("replica.port"), config.GetBool("replica.bootstrap")),
+			edge.WithReplicaSet(
+				config.GetUint64("replica.set"),
+				config.GetInt("replica.port"),
+				config.GetBool("replica.bootstrap"),
+				cluster.Mode(config.GetString("replica.mode")),
+			),
 		)
 		err = s.Start()
 		if err != nil {

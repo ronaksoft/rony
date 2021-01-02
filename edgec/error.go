@@ -14,6 +14,7 @@ import (
 */
 
 var (
-	ErrTimeout        = fmt.Errorf("time out")
-	ErrLeaderRedirect = fmt.Errorf("leader redirect")
+	ErrTimeout         = fmt.Errorf("time out")
+	ErrLeaderRedirect  = fmt.Errorf("leader redirect")
+	ErrUnknownResponse = fmt.Errorf("unknown response")
 )

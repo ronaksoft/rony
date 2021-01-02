@@ -31,6 +31,28 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 
 var PoolMessageEnvelope = poolMessageEnvelope{}
 
+const C_KeyValue int64 = 4276272820
+
+type poolKeyValue struct {
+	pool sync.Pool
+}
+
+func (p *poolKeyValue) Get() *KeyValue {
+	x, ok := p.pool.Get().(*KeyValue)
+	if !ok {
+		return &KeyValue{}
+	}
+	return x
+}
+
+func (p *poolKeyValue) Put(x *KeyValue) {
+	x.Key = ""
+	x.Value = ""
+	p.pool.Put(x)
+}
+
+var PoolKeyValue = poolKeyValue{}
+
 const C_MessageContainer int64 = 1972016308
 
 type poolMessageContainer struct {
@@ -94,43 +116,93 @@ func (p *poolRedirect) Get() *Redirect {
 }
 
 func (p *poolRedirect) Put(x *Redirect) {
-	x.LeaderHostPort = x.LeaderHostPort[:0]
-	x.HostPorts = x.HostPorts[:0]
-	x.ServerID = ""
+	x.Reason = 0
+	if x.Leader != nil {
+		PoolNodeInfo.Put(x.Leader)
+		x.Leader = nil
+	}
+	x.Followers = x.Followers[:0]
 	x.WaitInSec = 0
 	p.pool.Put(x)
 }
 
 var PoolRedirect = poolRedirect{}
 
-const C_KeyValue int64 = 4276272820
+const C_NodeInfo int64 = 2894317502
 
-type poolKeyValue struct {
+type poolNodeInfo struct {
 	pool sync.Pool
 }
 
-func (p *poolKeyValue) Get() *KeyValue {
-	x, ok := p.pool.Get().(*KeyValue)
+func (p *poolNodeInfo) Get() *NodeInfo {
+	x, ok := p.pool.Get().(*NodeInfo)
 	if !ok {
-		return &KeyValue{}
+		return &NodeInfo{}
 	}
 	return x
 }
 
-func (p *poolKeyValue) Put(x *KeyValue) {
-	x.Key = ""
-	x.Value = ""
+func (p *poolNodeInfo) Put(x *NodeInfo) {
+	x.ReplicaSet = 0
+	x.ServerID = ""
+	x.HostPorts = x.HostPorts[:0]
+	x.Leader = false
 	p.pool.Put(x)
 }
 
-var PoolKeyValue = poolKeyValue{}
+var PoolNodeInfo = poolNodeInfo{}
+
+const C_GetNodes int64 = 362407405
+
+type poolGetNodes struct {
+	pool sync.Pool
+}
+
+func (p *poolGetNodes) Get() *GetNodes {
+	x, ok := p.pool.Get().(*GetNodes)
+	if !ok {
+		return &GetNodes{}
+	}
+	return x
+}
+
+func (p *poolGetNodes) Put(x *GetNodes) {
+	x.ReplicaSet = x.ReplicaSet[:0]
+	p.pool.Put(x)
+}
+
+var PoolGetNodes = poolGetNodes{}
+
+const C_NodeInfoMany int64 = 1963715709
+
+type poolNodeInfoMany struct {
+	pool sync.Pool
+}
+
+func (p *poolNodeInfoMany) Get() *NodeInfoMany {
+	x, ok := p.pool.Get().(*NodeInfoMany)
+	if !ok {
+		return &NodeInfoMany{}
+	}
+	return x
+}
+
+func (p *poolNodeInfoMany) Put(x *NodeInfoMany) {
+	x.Nodes = x.Nodes[:0]
+	p.pool.Put(x)
+}
+
+var PoolNodeInfoMany = poolNodeInfoMany{}
 
 func init() {
 	registry.RegisterConstructor(535232465, "MessageEnvelope")
+	registry.RegisterConstructor(4276272820, "KeyValue")
 	registry.RegisterConstructor(1972016308, "MessageContainer")
 	registry.RegisterConstructor(2619118453, "Error")
 	registry.RegisterConstructor(981138557, "Redirect")
-	registry.RegisterConstructor(4276272820, "KeyValue")
+	registry.RegisterConstructor(2894317502, "NodeInfo")
+	registry.RegisterConstructor(362407405, "GetNodes")
+	registry.RegisterConstructor(1963715709, "NodeInfoMany")
 }
 
 func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
@@ -145,6 +217,11 @@ func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 			z.Header = append(z.Header, xx)
 		}
 	}
+}
+
+func (x *KeyValue) DeepCopy(z *KeyValue) {
+	z.Key = x.Key
+	z.Value = x.Value
 }
 
 func (x *MessageContainer) DeepCopy(z *MessageContainer) {
@@ -168,18 +245,47 @@ func (x *Error) DeepCopy(z *Error) {
 }
 
 func (x *Redirect) DeepCopy(z *Redirect) {
-	z.LeaderHostPort = append(z.LeaderHostPort[:0], x.LeaderHostPort...)
-	z.HostPorts = append(z.HostPorts[:0], x.HostPorts...)
-	z.ServerID = x.ServerID
+	z.Reason = x.Reason
+	if x.Leader != nil {
+		z.Leader = PoolNodeInfo.Get()
+		x.Leader.DeepCopy(z.Leader)
+	}
+	for idx := range x.Followers {
+		if x.Followers[idx] != nil {
+			xx := PoolNodeInfo.Get()
+			x.Followers[idx].DeepCopy(xx)
+			z.Followers = append(z.Followers, xx)
+		}
+	}
 	z.WaitInSec = x.WaitInSec
 }
 
-func (x *KeyValue) DeepCopy(z *KeyValue) {
-	z.Key = x.Key
-	z.Value = x.Value
+func (x *NodeInfo) DeepCopy(z *NodeInfo) {
+	z.ReplicaSet = x.ReplicaSet
+	z.ServerID = x.ServerID
+	z.HostPorts = append(z.HostPorts[:0], x.HostPorts...)
+	z.Leader = x.Leader
+}
+
+func (x *GetNodes) DeepCopy(z *GetNodes) {
+	z.ReplicaSet = append(z.ReplicaSet[:0], x.ReplicaSet...)
+}
+
+func (x *NodeInfoMany) DeepCopy(z *NodeInfoMany) {
+	for idx := range x.Nodes {
+		if x.Nodes[idx] != nil {
+			xx := PoolNodeInfo.Get()
+			x.Nodes[idx].DeepCopy(xx)
+			z.Nodes = append(z.Nodes, xx)
+		}
+	}
 }
 
 func (x *MessageEnvelope) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *KeyValue) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
@@ -195,11 +301,23 @@ func (x *Redirect) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
-func (x *KeyValue) Marshal() ([]byte, error) {
+func (x *NodeInfo) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *GetNodes) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *NodeInfoMany) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
 func (x *MessageEnvelope) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *KeyValue) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
@@ -215,6 +333,14 @@ func (x *Redirect) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *KeyValue) Unmarshal(b []byte) error {
+func (x *NodeInfo) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetNodes) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *NodeInfoMany) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }

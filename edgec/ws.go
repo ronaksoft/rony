@@ -35,86 +35,29 @@ const (
 )
 
 type MessageHandler func(m *rony.MessageEnvelope)
-type WebsocketConfig struct {
-	HostPort     string
-	IdleTimeout  time.Duration
-	DialTimeout  time.Duration
-	Handler      MessageHandler
-	Header       map[string]string
-	Secure       bool
-	ForceConnect bool
-	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
-	RequestMaxRetry int
-	// RequestTimeout is the timeout for each individual request on each try.
-	RequestTimeout time.Duration
-	// ContextTimeout is the amount that Send function will wait until times out. This includes all the retries.
-	ContextTimeout time.Duration
-}
-type Websocket struct {
-	hostPort       string
-	secure         bool
-	idleTimeout    time.Duration
-	dialTimeout    time.Duration
-	requestTimeout time.Duration
-	contextTimeout time.Duration
-	requestRetry   int
-	dialer         ws.Dialer
-	conn           net.Conn
-	stop           bool
-	connected      bool
-	connectMtx     sync.Mutex
-	header         map[string]string
 
-	// parameters related to handling request/responses
-	h          MessageHandler
+type RouterFunc func(m *rony.MessageEnvelope) (replicaSet uint64, forceLeader bool)
+
+type wsConn struct {
+	ws         *Websocket
+	conn       net.Conn
+	dialer     ws.Dialer
+	connected  bool
+	connectMtx sync.Mutex
+	hostPort   string
+	secure     bool
 	pendingMtx sync.RWMutex
 	pending    map[uint64]chan *rony.MessageEnvelope
-	nextReqID  uint64
 }
 
-func NewWebsocket(config WebsocketConfig) *Websocket {
-	if config.DialTimeout == 0 {
-		config.DialTimeout = dialTimeout
+func newConn(hostPort string) *wsConn {
+	return &wsConn{
+		hostPort: hostPort,
+		pending:  make(map[uint64]chan *rony.MessageEnvelope, 100),
 	}
-	if config.IdleTimeout == 0 {
-		config.IdleTimeout = idleTimeout
-	}
-	if config.RequestMaxRetry == 0 {
-		config.RequestMaxRetry = requestRetry
-	}
-	if config.RequestTimeout == 0 {
-		config.RequestTimeout = requestTimeout
-	}
-	if config.ContextTimeout == 0 {
-		config.ContextTimeout = config.RequestTimeout * time.Duration(config.RequestMaxRetry)
-	}
-	c := Websocket{
-		nextReqID:      tools.RandomUint64(0),
-		idleTimeout:    config.IdleTimeout,
-		dialTimeout:    config.DialTimeout,
-		requestTimeout: config.RequestTimeout,
-		contextTimeout: config.ContextTimeout,
-		requestRetry:   config.RequestMaxRetry,
-		hostPort:       config.HostPort,
-		h:              config.Handler,
-		pending:        make(map[uint64]chan *rony.MessageEnvelope, 100),
-		header:         config.Header,
-	}
-
-	// start the connection
-	if config.ForceConnect {
-		c.connect()
-	} else {
-		go c.connect()
-	}
-	return &c
 }
 
-func (c *Websocket) GetRequestID() uint64 {
-	return atomic.AddUint64(&c.nextReqID, 1)
-}
-
-func (c *Websocket) createDialer(timeout time.Duration) {
+func (c *wsConn) createDialer(timeout time.Duration) {
 	c.dialer = ws.Dialer{
 		ReadBufferSize:  32 * 1024, // 32kB
 		WriteBufferSize: 32 * 1024, // 32kB
@@ -149,17 +92,17 @@ func (c *Websocket) createDialer(timeout time.Duration) {
 	}
 }
 
-func (c *Websocket) connect() {
+func (c *wsConn) connect() {
 	urlPrefix := "ws://"
 	if c.secure {
 		urlPrefix = "wss://"
 	}
 ConnectLoop:
 	log.Debug("Connect", zap.String("H", c.hostPort))
-	c.createDialer(c.dialTimeout)
+	c.createDialer(c.ws.dialTimeout)
 
 	sb := strings.Builder{}
-	for k, v := range c.header {
+	for k, v := range c.ws.header {
 		sb.WriteString(k)
 		sb.WriteString(": ")
 		sb.WriteString(v)
@@ -178,13 +121,14 @@ ConnectLoop:
 	return
 }
 
-func (c *Websocket) reconnect() {
+func (c *wsConn) reconnect() {
 	c.connected = false
 	_ = c.conn.SetReadDeadline(time.Now())
 }
 
-func (c *Websocket) waitUntilConnect(ctx context.Context) error {
-	for !c.stop {
+func (c *wsConn) waitUntilConnect(ctx context.Context) error {
+	step := time.Duration(10)
+	for !c.ws.stop {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -193,23 +137,26 @@ func (c *Websocket) waitUntilConnect(ctx context.Context) error {
 		if c.connected {
 			break
 		}
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * step)
+		if step < 1000 {
+			step += 10
+		}
 	}
 	return nil
 }
 
-func (c *Websocket) receiver() {
+func (c *wsConn) receiver() {
 	var (
 		ms []wsutil.Message
 	)
 	// Receive Loop
 	for {
 		ms = ms[:0]
-		_ = c.conn.SetReadDeadline(time.Now().Add(c.idleTimeout))
+		_ = c.conn.SetReadDeadline(time.Now().Add(c.ws.idleTimeout))
 		ms, err := wsutil.ReadMessage(c.conn, ws.StateClientSide, ms)
 		if err != nil {
 			_ = c.conn.Close()
-			if !c.stop {
+			if !c.ws.stop {
 				c.connect()
 			}
 			return
@@ -228,7 +175,7 @@ func (c *Websocket) receiver() {
 	}
 }
 
-func (c *Websocket) extractor(e *rony.MessageEnvelope) {
+func (c *wsConn) extractor(e *rony.MessageEnvelope) {
 	switch e.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := rony.PoolMessageContainer.Get()
@@ -242,10 +189,10 @@ func (c *Websocket) extractor(e *rony.MessageEnvelope) {
 	}
 }
 
-func (c *Websocket) handler(e *rony.MessageEnvelope) {
+func (c *wsConn) handler(e *rony.MessageEnvelope) {
 	if e.GetRequestID() == 0 {
-		if c.h != nil {
-			c.h(e.Clone())
+		if c.ws.h != nil {
+			c.ws.h(e.Clone())
 		}
 		return
 	}
@@ -257,23 +204,16 @@ func (c *Websocket) handler(e *rony.MessageEnvelope) {
 	if h != nil {
 		h <- e.Clone()
 	} else {
-		c.h(e.Clone())
+		c.ws.h(e.Clone())
 	}
 }
 
-func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), c.contextTimeout)
-	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
-	cancelFunc()
-	return
+func (c *wsConn) close() error {
+	// by setting the read deadline we make the receiver() routine stops
+	return c.conn.SetReadDeadline(time.Now())
 }
 
-func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope) (err error) {
-	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
-	return
-}
-
-func (c *Websocket) SendWithDetails(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (err error) {
+func (c *wsConn) send(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (err error) {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(req))
 	defer pools.Bytes.Put(b)
@@ -337,15 +277,15 @@ SendLoop:
 			c.connectMtx.Lock()
 			if ce := log.Check(log.InfoLevel, "Redirect"); ce != nil {
 				ce.Write(
-					zap.Any("Leaders", x.LeaderHostPort),
-					zap.Any("Servers", x.HostPorts),
+					zap.Any("Leader", x.Leader),
+					zap.Any("Followers", x.Followers),
 					zap.Any("Wait", x.WaitInSec),
 				)
 			}
-			if len(x.LeaderHostPort) > 0 && c.hostPort != x.LeaderHostPort[0] {
-				c.hostPort = x.LeaderHostPort[0]
-				c.reconnect()
-			}
+			// if len(x.LeaderHostPort) > 0 && c.hostPort != x.LeaderHostPort[0] {
+			// 	c.hostPort = x.LeaderHostPort[0]
+			// 	c.reconnect()
+			// }
 			c.connectMtx.Unlock()
 			err = ErrLeaderRedirect
 			goto SendLoop
@@ -361,10 +301,141 @@ SendLoop:
 	return
 }
 
+// WebsocketConfig holds the configs for the Websocket client
+type WebsocketConfig struct {
+	SeedHostPort string
+	IdleTimeout  time.Duration
+	DialTimeout  time.Duration
+	Handler      MessageHandler
+	Header       map[string]string
+	Secure       bool
+	ForceConnect bool
+	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
+	RequestMaxRetry int
+	// RequestTimeout is the timeout for each individual request on each try.
+	RequestTimeout time.Duration
+	// ContextTimeout is the amount that Send function will wait until times out. This includes all the retries.
+	ContextTimeout time.Duration
+	Router         RouterFunc
+}
+
+// Websocket client which could handle multiple connections
+type Websocket struct {
+	hostPort       string
+	secure         bool
+	idleTimeout    time.Duration
+	dialTimeout    time.Duration
+	requestTimeout time.Duration
+	contextTimeout time.Duration
+	requestRetry   int
+	stop           bool
+	header         map[string]string
+
+	// parameters related to handling request/responses
+	h         MessageHandler
+	router    RouterFunc
+	nextReqID uint64
+}
+
+func NewWebsocket(config WebsocketConfig) *Websocket {
+	if config.DialTimeout == 0 {
+		config.DialTimeout = dialTimeout
+	}
+	if config.IdleTimeout == 0 {
+		config.IdleTimeout = idleTimeout
+	}
+	if config.RequestMaxRetry == 0 {
+		config.RequestMaxRetry = requestRetry
+	}
+	if config.RequestTimeout == 0 {
+		config.RequestTimeout = requestTimeout
+	}
+	if config.ContextTimeout == 0 {
+		config.ContextTimeout = config.RequestTimeout * time.Duration(config.RequestMaxRetry)
+	}
+	if config.Router == nil {
+		config.Router = func(m *rony.MessageEnvelope) (replicaSet uint64, forceLeader bool) {
+			return 0, false
+		}
+	}
+	c := Websocket{
+		nextReqID:      tools.RandomUint64(0),
+		idleTimeout:    config.IdleTimeout,
+		dialTimeout:    config.DialTimeout,
+		requestTimeout: config.RequestTimeout,
+		contextTimeout: config.ContextTimeout,
+		requestRetry:   config.RequestMaxRetry,
+		hostPort:       config.SeedHostPort,
+		h:              config.Handler,
+		header:         config.Header,
+	}
+
+	// start the connection
+	// if config.ForceConnect {
+	// 	c.connect()
+	// } else {
+	// 	go c.connect()
+	// }
+	return &c
+}
+
+func (c *Websocket) GetRequestID() uint64 {
+	return atomic.AddUint64(&c.nextReqID, 1)
+}
+
+func (c *Websocket) initConn() error {
+	wsc := newConn(c.hostPort)
+	wsc.connect()
+	ctx, cf := context.WithTimeout(context.Background(), c.contextTimeout)
+	defer cf()
+	req := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(req)
+	res := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(res)
+	err := wsc.send(ctx, req, res, true, requestRetry, requestTimeout)
+	if err != nil {
+		return err
+	}
+	switch res.Constructor {
+	case rony.C_NodeInfoMany:
+		x := &rony.NodeInfoMany{}
+		_ = x.Unmarshal(res.Message)
+
+	default:
+		return ErrUnknownResponse
+
+	}
+
+	return nil
+}
+
+func (c *Websocket) getConn(replicaSet uint64, forceLeader bool) *wsConn {
+
+	return nil
+}
+
+func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.contextTimeout)
+	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
+	cancelFunc()
+	return
+}
+
+func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope) (err error) {
+	err = c.SendWithDetails(ctx, req, res, true, c.requestRetry, c.requestTimeout)
+	return
+}
+
+func (c *Websocket) SendWithDetails(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (err error) {
+	wsc := c.getConn(c.router(req))
+	return wsc.send(ctx, req, res, waitToConnect, retry, timeout)
+}
+
 func (c *Websocket) Close() error {
 	// by setting the stop flag, we are making sure no reconnection will happen
 	c.stop = true
 
 	// by setting the read deadline we make the receiver() routine stops
-	return c.conn.SetReadDeadline(time.Now())
+	// TODO:: close all the connections
+	return nil
 }

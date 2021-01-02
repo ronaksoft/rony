@@ -233,13 +233,25 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 	if leaderID := edge.cluster.LeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 	} else {
-		ctx.PushMessage(
-			rony.C_Redirect,
-			&rony.Redirect{
-				LeaderHostPort: edge.cluster.GetByID(leaderID).GatewayAddr,
-				ServerID:       leaderID,
-			},
-		)
+		r := rony.PoolRedirect.Get()
+		r.Reason = rony.RedirectReason_ReplicaMaster
+		r.WaitInSec = 0
+		members := edge.cluster.ReplicaMembers(edge.cluster.ReplicaSet())
+		nodeInfos := make([]*rony.NodeInfo, 0, len(members))
+		for _, m := range members {
+			ni := m.Proto(rony.PoolNodeInfo.Get())
+			if ni.Leader {
+				r.Leader = ni
+			} else {
+				r.Followers = append(r.Followers, ni)
+			}
+			nodeInfos = append(nodeInfos, ni)
+		}
+		ctx.PushMessage(rony.C_Redirect, r)
+		for _, p := range nodeInfos {
+			rony.PoolNodeInfo.Put(p)
+		}
+		rony.PoolRedirect.Put(r)
 	}
 }
 

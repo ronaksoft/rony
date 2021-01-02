@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
@@ -44,6 +45,7 @@ func init() {
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
 	RootCmd.PersistentFlags().String(FlagTargetID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
+	RootCmd.PersistentFlags().String(FlagReplicaMode, string(cluster.NoReplica), "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 	RootCmd.PersistentFlags().Int("n", 5, "")
@@ -58,7 +60,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet := uint64(1)
 		gossipPort := 700
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -69,7 +71,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet = uint64(2)
 		gossipPort = 800
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -80,7 +82,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet = uint64(3)
 		gossipPort = 900
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0)
+			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -94,13 +96,15 @@ var StartCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
+		replicaMod, _ := cmd.Flags().GetString(FlagReplicaMode)
 		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
-		startFunc(serverID, replicaSet, gossipPort, raftBootstrap)
+
+		startFunc(serverID, replicaSet, gossipPort, raftBootstrap, cluster.Mode(replicaMod))
 	},
 }
 
-func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
+func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool, mode cluster.Mode) {
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
@@ -114,7 +118,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool) {
 		)
 
 		if replicaSet != 0 {
-			opts = append(opts, edge.WithReplicaSet(replicaSet, port*10, bootstrap))
+			opts = append(opts, edge.WithReplicaSet(replicaSet, port*10, bootstrap, mode))
 		}
 
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
@@ -195,7 +199,7 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
 			},
@@ -252,7 +256,7 @@ var AskCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			HostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
 			},
@@ -334,7 +338,7 @@ var BenchCmd = &cobra.Command{
 			go func(idx int) {
 				defer waitGroup.Done()
 				ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-					HostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
+					SeedHostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
 						atomic.AddInt64(&delayedCnt, 1)
 					},

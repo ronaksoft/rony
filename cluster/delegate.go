@@ -31,13 +31,13 @@ func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
 		if err != nil {
 			log.Debug("Error On Join Raft (NodeJoin)",
-				zap.ByteString("ServerID", d.c.serverID),
+				zap.ByteString("ServerID", d.c.localServerID),
 				zap.String("NodeID", cm.ServerID),
 				zap.Error(err),
 			)
 		} else {
 			log.Info("Join Raft (NodeJoin)",
-				zap.ByteString("ServerID", d.c.serverID),
+				zap.ByteString("ServerID", d.c.localServerID),
 				zap.String("NodeID", cm.ServerID),
 			)
 		}
@@ -51,13 +51,13 @@ func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
 		if err != nil {
 			log.Debug("Error On Join Raft (NodeUpdate)",
-				zap.ByteString("ServerID", d.c.serverID),
+				zap.ByteString("ServerID", d.c.localServerID),
 				zap.String("NodeID", cm.ServerID),
 				zap.Error(err),
 			)
 		} else {
 			log.Info("Join Raft (NodeUpdate)",
-				zap.ByteString("ServerID", d.c.serverID),
+				zap.ByteString("ServerID", d.c.localServerID),
 				zap.String("NodeID", cm.ServerID),
 			)
 		}
@@ -131,12 +131,12 @@ func leaveRaft(c *Cluster, nodeID, addr string) error {
 
 func (d clusterDelegate) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
-		ServerID:      d.c.serverID,
-		ShardRangeMin: d.c.shardRange[0],
-		ShardRangeMax: d.c.shardRange[1],
+		ServerID:      d.c.localServerID,
+		ShardRangeMin: d.c.localShardRange[0],
+		ShardRangeMax: d.c.localShardRange[1],
 		ReplicaSet:    d.c.replicaSet,
 		RaftPort:      uint32(d.c.raftPort),
-		GatewayAddr:   d.c.gatewayAddr,
+		GatewayAddr:   d.c.localGatewayAddr,
 		RaftState:     *rony.RaftState_None.Enum(),
 	}
 	if d.c.raftEnabled {
@@ -145,7 +145,7 @@ func (d clusterDelegate) NodeMeta(limit int) []byte {
 
 	b, _ := proto.Marshal(&n)
 	if len(b) > limit {
-		log.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.serverID))
+		log.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
 		return nil
 	}
 	return b
@@ -154,7 +154,7 @@ func (d clusterDelegate) NodeMeta(limit int) []byte {
 func (d clusterDelegate) NotifyMsg(data []byte) {
 	if ce := log.Check(log.DebugLevel, "Cluster Message Received"); ce != nil {
 		ce.Write(
-			zap.ByteString("ServerID", d.c.serverID),
+			zap.ByteString("ServerID", d.c.localServerID),
 			zap.Int("Data", len(data)),
 		)
 	}
