@@ -14,7 +14,9 @@ import (
 */
 
 var (
-	ErrTimeout         = fmt.Errorf("time out")
-	ErrLeaderRedirect  = fmt.Errorf("leader redirect")
-	ErrUnknownResponse = fmt.Errorf("unknown response")
+	ErrTimeout           = fmt.Errorf("time out")
+	ErrReplicaMaster     = fmt.Errorf("leader redirect")
+	ErrReplicaSetSession = fmt.Errorf("replica redirect session")
+	ErrReplicaSetRequest = fmt.Errorf("replica redirect request")
+	ErrUnknownResponse   = fmt.Errorf("unknown response")
 )

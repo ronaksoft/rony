@@ -91,9 +91,13 @@ func TestClient_Connect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := pb.NewSampleClient(edgec.NewWebsocket(edgec.WebsocketConfig{
+	wsc, err := edgec.NewWebsocket(edgec.WebsocketConfig{
 		SeedHostPort: "127.0.0.1:8081",
-	}))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := pb.NewSampleClient(wsc)
 	wg := sync.WaitGroup{}
 	for i := 0; i < 20; i++ {
 		wg.Add(1)

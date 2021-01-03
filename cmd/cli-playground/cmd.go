@@ -60,7 +60,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet := uint64(1)
 		gossipPort := 700
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -71,7 +71,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet = uint64(2)
 		gossipPort = 800
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -82,7 +82,7 @@ var BatchStartCmd = &cobra.Command{
 		replicaSet = uint64(3)
 		gossipPort = 900
 		for i := 0; i < 3; i++ {
-			startFunc(fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
 			gossipPort++
 			if i == 0 {
 				time.Sleep(time.Second * 3)
@@ -100,11 +100,11 @@ var StartCmd = &cobra.Command{
 		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
 
-		startFunc(serverID, replicaSet, gossipPort, raftBootstrap, cluster.Mode(replicaMod))
+		startFunc(cmd, serverID, replicaSet, gossipPort, raftBootstrap, cluster.Mode(replicaMod))
 	},
 }
 
-func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool, mode cluster.Mode) {
+func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int, bootstrap bool, mode cluster.Mode) {
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
@@ -126,7 +126,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool, mod
 
 		err := Edges[serverID].StartCluster()
 		if err != nil {
-			fmt.Println(err)
+			cmd.Println(err)
 			delete(Edges, serverID)
 			return
 		}
@@ -135,7 +135,7 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool, mod
 			if e.GetServerID() != serverID {
 				_, err = Edges[serverID].JoinCluster(e.Stats().Address)
 				if err != nil {
-					fmt.Println("Error On Join", err)
+					cmd.Println("Error On Join", err)
 				}
 				break
 			}
@@ -147,11 +147,11 @@ func startFunc(serverID string, replicaSet uint64, port int, bootstrap bool, mod
 var ListCmd = &cobra.Command{
 	Use: "list",
 	Run: func(cmd *cobra.Command, args []string) {
-		listFunc()
+		listFunc(cmd)
 	},
 }
 
-func listFunc() {
+func listFunc(cmd *cobra.Command) {
 	var rows []string
 	rows = append(rows,
 		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Membership Score | Gateway ",
@@ -176,7 +176,7 @@ func listFunc() {
 		)
 	}
 
-	fmt.Println(columnize.SimpleFormat(rows))
+	cmd.Println(columnize.SimpleFormat(rows))
 }
 
 var EchoCmd = &cobra.Command{
@@ -185,20 +185,20 @@ var EchoCmd = &cobra.Command{
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 {
-			fmt.Println("Needs ServerID, e.g. echo --serverID First.01")
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
-			fmt.Println("Invalid Args")
+			cmd.Println("Invalid Args")
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
-			fmt.Println("No Gateway Addr", gatewayAddrs)
+			cmd.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+		ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -206,6 +206,10 @@ var EchoCmd = &cobra.Command{
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
 		})
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
 		defer ec.Close()
 		c := pb.NewSampleClient(ec)
 		req := pb.PoolEchoRequest.Get()
@@ -242,20 +246,20 @@ var AskCmd = &cobra.Command{
 		targetID, _ := cmd.Flags().GetString(FlagTargetID)
 		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 || len(targetID) == 0 {
-			fmt.Println("Needs ServerID and TargetID, e.g. ask --serverID First.01 --targetID Second.01")
+			cmd.Println("Needs ServerID and TargetID, e.g. ask --serverID First.01 --targetID Second.01")
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
-			fmt.Println("Invalid Args")
+			cmd.Println("Invalid Args")
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
-			fmt.Println("No Gateway Addr", gatewayAddrs)
+			cmd.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+		ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -263,6 +267,10 @@ var AskCmd = &cobra.Command{
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
 		})
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
 		defer ec.Close()
 		c := pb.NewSampleClient(ec)
 		req := pb.PoolAskRequest.Get()
@@ -295,22 +303,22 @@ var BenchCmd = &cobra.Command{
 		concurrency, _ := cmd.Flags().GetInt(FlagConcurrency)
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		if len(serverID) == 0 {
-			fmt.Println("Needs ServerID, e.g. echo --serverID First.01")
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
-			fmt.Println("Invalid Args")
+			cmd.Println("Invalid Args")
 			return
 		}
 		gatewayAddr := e1.Stats().GatewayAddr
 		if len(gatewayAddr) == 0 {
-			fmt.Println("No Gateway Addr", gatewayAddr)
+			cmd.Println("No Gateway Addr", gatewayAddr)
 			return
 		}
 		parts := strings.Split(gatewayAddr[0], ":")
 		if len(parts) != 2 {
-			fmt.Println("Invalid Gateway Addr", gatewayAddr)
+			cmd.Println("Invalid Gateway Addr", gatewayAddr)
 			return
 		}
 		var (
@@ -337,12 +345,16 @@ var BenchCmd = &cobra.Command{
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()
-				ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+				ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
 					SeedHostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
 						atomic.AddInt64(&delayedCnt, 1)
 					},
 				})
+				if err != nil {
+					cmd.Println(err)
+					return
+				}
 				c := pb.NewSampleClient(ec)
 				for i := 0; i < 10; i++ {
 					startTime := tools.CPUTicks()
@@ -374,12 +386,12 @@ var Members = &cobra.Command{
 	Use: "members",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Println("Needs ServerID, e.g. echo First.01")
+			cmd.Println("Needs ServerID, e.g. echo First.01")
 			return
 		}
 		e1 := Edges[args[0]]
 		if e1 == nil {
-			fmt.Println("Invalid Args")
+			cmd.Println("Invalid Args")
 			return
 		}
 

@@ -38,7 +38,12 @@ message Error {
 // RedirectReason
 enum RedirectReason {
     ReplicaMaster = 0;
-    ReplicaSet = 1;
+    ReplicaSetSession = 1;
+    ReplicaSetRequest = 2;
+    Reserved1 = 3;
+    Reserved2 = 4;
+    Reserved3 = 5;
+    Reserved4 = 6;
 }
 
 // Redirect
