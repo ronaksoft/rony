@@ -1,6 +1,8 @@
 package edgec
 
 import (
+	log "github.com/ronaksoft/rony/internal/logger"
+	"go.uber.org/zap"
 	"sync"
 )
 
@@ -28,15 +30,19 @@ func newConnPool() *connPool {
 }
 
 func (cp *connPool) addConn(serverID string, replicaSet uint64, leader bool, c *wsConn) {
+	log.Debug("Pool connection added",
+		zap.String("ServerID", serverID),
+		zap.Uint64("RS", replicaSet),
+		zap.Bool("Leader", leader),
+	)
 	cp.mtx.Lock()
 	defer cp.mtx.Unlock()
 
-	m := cp.pool[replicaSet]
-	if m == nil {
-		m = make(map[string]*wsConn, 16)
+	if cp.pool[replicaSet] == nil {
+		cp.pool[replicaSet] = make(map[string]*wsConn, 16)
 	}
-	m[serverID] = c
-	if leader {
+	cp.pool[replicaSet][serverID] = c
+	if leader || replicaSet == 0 {
 		cp.leaderIDs[replicaSet] = serverID
 	}
 }

@@ -307,7 +307,6 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 
 	initFunc := strings.Builder{}
 	initFunc.WriteString("func init() {\n")
-
 	for _, mt := range file.Messages {
 		mtName := mt.Desc.Name()
 		constructor := crc32.ChecksumIEEE([]byte(mt.Desc.Name()))
@@ -358,6 +357,13 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P(fmt.Sprintf("var Pool%s = pool%s{}", mtName, mtName))
 		g.P("")
 	}
+	for _, st := range file.Services {
+		for _, m := range st.Methods {
+			constructor := crc32.ChecksumIEEE([]byte(m.Desc.Name()))
+			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, m.Desc.Name()))
+		}
+	}
+
 	initFunc.WriteString("}")
 	g.P("")
 	g.P(initFunc.String())

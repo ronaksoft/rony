@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"github.com/ronaksoft/rony/tools"
@@ -36,11 +35,6 @@ func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.E
 }
 
 func (h *SampleServer) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {
-	if ctx.Kind() == edge.ClusterMessage {
-		fmt.Printf("%s :: Cluster ASK by %s\n", h.es.GetServerID(), ctx.ServerID())
-	} else {
-		res.Responder = req.ServerID
-		res.Coordinator = ctx.ServerID()
-		ctx.PushClusterMessage(req.ServerID, ctx.ReqID(), pb.C_Ask, req)
-	}
+	res.Responder = req.ServerID
+	res.Coordinator = ctx.ServerID()
 }

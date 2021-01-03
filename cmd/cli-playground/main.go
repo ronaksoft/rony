@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/c-bata/go-prompt"
+	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	RootCmd.AddCommand(ExitCmd)
 	p := prompt.New(executor, completer)

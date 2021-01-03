@@ -34,20 +34,11 @@ type wsConn struct {
 	conn       net.Conn
 	dialer     ws.Dialer
 	connected  bool
-	connectMtx sync.Mutex
+	mtx        sync.Mutex
 	hostPorts  []string
 	secure     bool
 	pendingMtx sync.RWMutex
 	pending    map[uint64]chan *rony.MessageEnvelope
-}
-
-func newConn(id string, replicaSet uint64, hostPorts ...string) *wsConn {
-	return &wsConn{
-		id:         id,
-		replicaSet: replicaSet,
-		hostPorts:  hostPorts,
-		pending:    make(map[uint64]chan *rony.MessageEnvelope, 100),
-	}
 }
 
 func (c *wsConn) createDialer(timeout time.Duration) {
@@ -106,7 +97,7 @@ ConnectLoop:
 		sb.WriteRune('\n')
 	}
 	c.dialer.Header = ws.HandshakeHeaderString(sb.String())
-	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPorts))
+	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPorts[0]))
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.Strings("Host", c.hostPorts))
 		time.Sleep(time.Duration(tools.RandomInt64(2000))*time.Millisecond + time.Second)
@@ -114,6 +105,7 @@ ConnectLoop:
 	}
 	c.conn = conn
 	c.connected = true
+
 	go c.receiver()
 	return
 }
@@ -256,9 +248,9 @@ SendLoop:
 	c.pendingMtx.Lock()
 	c.pending[req.GetRequestID()] = resChan
 	c.pendingMtx.Unlock()
-	c.connectMtx.Lock()
+	c.mtx.Lock()
 	err = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpBinary, b)
-	c.connectMtx.Unlock()
+	c.mtx.Unlock()
 	if err != nil {
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
@@ -303,13 +295,13 @@ func (c *wsConn) redirect(x *rony.Redirect) (replicaSet uint64, err error) {
 
 	c.ws.pool.addConn(
 		x.Leader.ServerID, x.Leader.ReplicaSet, true,
-		newConn(x.Leader.ServerID, x.Leader.ReplicaSet, x.Leader.HostPorts...),
+		c.ws.newConn(x.Leader.ServerID, x.Leader.ReplicaSet, x.Leader.HostPorts...),
 	)
 	replicaSet = x.Leader.ReplicaSet
 	for _, n := range x.Followers {
 		c.ws.pool.addConn(
 			n.ServerID, n.ReplicaSet, false,
-			newConn(n.ServerID, n.ReplicaSet, n.HostPorts...),
+			c.ws.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...),
 		)
 	}
 

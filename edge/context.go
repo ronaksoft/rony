@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
-	log "github.com/ronaksoft/rony/internal/logger"
-	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"reflect"
 	"sync"
@@ -28,8 +25,8 @@ type ContextKind byte
 const (
 	_ ContextKind = iota
 	GatewayMessage
-	ClusterMessage
 	ReplicaMessage
+	TunnelMessage
 )
 
 // DispatchCtx
@@ -288,19 +285,4 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 		LocalTemplateItems: localItems,
 	})
 	ctx.stop = true
-}
-
-func (ctx *RequestCtx) PushClusterMessage(serverID string, requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
-	envelope := acquireMessageEnvelope()
-	envelope.Fill(requestID, constructor, proto)
-	err := ctx.dispatchCtx.edge.ClusterSend(serverID, envelope, kvs...)
-	if err != nil {
-		log.Error("ClusterMessage Error",
-			zap.Bool("GatewayRequest", ctx.dispatchCtx.conn != nil),
-			zap.Uint64("ReqID", envelope.GetRequestID()),
-			zap.String("C", registry.ConstructorName(envelope.GetConstructor())),
-			zap.Error(err),
-		)
-	}
-	releaseMessageEnvelope(envelope)
 }

@@ -1,7 +1,6 @@
 package testEnv
 
 import (
-	"github.com/ronaksoft/rony/edgetest"
 	log "github.com/ronaksoft/rony/internal/logger"
 )
 
@@ -16,7 +15,6 @@ import (
 
 var (
 	_Initialized bool
-	Server       *edgetest.Server
 )
 
 func Init() {

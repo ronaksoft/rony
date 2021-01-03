@@ -206,7 +206,6 @@ var EchoCmd = &cobra.Command{
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
 		})
-
 		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)

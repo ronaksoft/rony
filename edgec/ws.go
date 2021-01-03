@@ -3,7 +3,9 @@ package edgec
 import (
 	"context"
 	"github.com/ronaksoft/rony"
+	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/tools"
+	"go.uber.org/zap"
 	"sync/atomic"
 	"time"
 )
@@ -75,7 +77,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		c.cfg.RequestTimeout = requestTimeout
 	}
 	if c.cfg.ContextTimeout == 0 {
-		config.ContextTimeout = config.RequestTimeout * time.Duration(config.RequestMaxRetry)
+		c.cfg.ContextTimeout = c.cfg.RequestTimeout * time.Duration(c.cfg.RequestMaxRetry)
 	}
 	if c.cfg.Router == nil {
 		c.cfg.Router = c.defaultRouter
@@ -102,8 +104,20 @@ func (c *Websocket) GetRequestID() uint64 {
 	return atomic.AddUint64(&c.nextReqID, 1)
 }
 
+func (c *Websocket) newConn(id string, replicaSet uint64, hostPorts ...string) *wsConn {
+	return &wsConn{
+		id:         id,
+		ws:         c,
+		replicaSet: replicaSet,
+		hostPorts:  hostPorts,
+		pending:    make(map[uint64]chan *rony.MessageEnvelope, 100),
+	}
+}
+
 func (c *Websocket) initConn() error {
-	wsConn := newConn("", 0, c.cfg.SeedHostPort)
+	initConn := c.newConn("", 0, c.cfg.SeedHostPort)
+	initConn.connect()
+	log.Debug("InitConn connected")
 	ctx, cf := context.WithTimeout(context.Background(), c.cfg.ContextTimeout)
 	defer cf()
 	req := rony.PoolMessageEnvelope.Get()
@@ -111,7 +125,7 @@ func (c *Websocket) initConn() error {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(c.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
-	sessionReplica, err := wsConn.send(ctx, req, res, true, requestRetry, requestTimeout)
+	sessionReplica, err := initConn.send(ctx, req, res, true, requestRetry, requestTimeout)
 	if err != nil {
 		return err
 	}
@@ -120,8 +134,22 @@ func (c *Websocket) initConn() error {
 	case rony.C_NodeInfoMany:
 		x := &rony.NodeInfoMany{}
 		_ = x.Unmarshal(res.Message)
+		log.Debug("NodeInfo for initConn",
+			zap.Any("Res", x),
+		)
+		found := false
 		for _, n := range x.Nodes {
-			wsc := newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
+			wsc := c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
+			if !found {
+				for _, hp := range n.HostPorts {
+					if hp == initConn.hostPorts[0] {
+						wsc = initConn
+						wsc.hostPorts = n.HostPorts
+						found = true
+					}
+				}
+			}
+
 			c.pool.addConn(n.ServerID, n.ReplicaSet, n.Leader, wsc)
 			if n.Leader {
 				c.sessionReplica = n.ReplicaSet
@@ -158,6 +186,15 @@ func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageE
 func (c *Websocket) SendWithDetails(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (err error) {
 	rs, leader := c.cfg.Router(req)
 	wsc := c.pool.getConn(rs, leader)
+	log.Debug("SendWithDetails",
+		zap.Uint64("ReqID", req.RequestID),
+		zap.Uint64("RS", rs),
+		zap.Bool("LeaderOnly", leader),
+	)
+	if wsc == nil {
+		return ErrNoConnection
+	}
+
 SendLoop:
 	rs, err = wsc.send(ctx, req, res, waitToConnect, retry, timeout)
 	switch err {

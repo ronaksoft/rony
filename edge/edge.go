@@ -60,7 +60,6 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 	edgeServer.cluster = cluster.New(
 		edgeServer.serverID,
 		edgeServer.onReplicaMessage,
-		edgeServer.onClusterMessage,
 	)
 
 	for _, opt := range opts {
@@ -204,7 +203,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	// Set the context request
 	requestCtx.reqID = in.RequestID
 
-	if !isLeader {
+	if !isLeader && requestCtx.Kind() == GatewayMessage {
 		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
@@ -321,24 +320,6 @@ func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
 }
 func (edge *Server) onClose(conn gateway.Conn) {
 	edge.dispatcher.OnClose(conn)
-}
-func (edge *Server) onClusterMessage(cm *rony.ClusterMessage) {
-	// _, task := trace.NewTask(context.Background(), "onClusterMessage")
-	// defer task.End()
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, cm.Sender, ClusterMessage)
-	dispatchCtx.FillEnvelope(
-		cm.Envelope.GetRequestID(), cm.Envelope.GetConstructor(), cm.Envelope.Message,
-		cm.Envelope.Auth, cm.Envelope.Header...,
-	)
-	err, isLeader := edge.executePrepare(dispatchCtx)
-	if err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
-	}
-	err = edge.execute(dispatchCtx, isLeader)
-	if err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
-	}
-	releaseDispatchCtx(dispatchCtx)
 }
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set

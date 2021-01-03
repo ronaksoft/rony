@@ -151,18 +151,7 @@ func (d clusterDelegate) NodeMeta(limit int) []byte {
 	return b
 }
 
-func (d clusterDelegate) NotifyMsg(data []byte) {
-	if ce := log.Check(log.DebugLevel, "Cluster Message Received"); ce != nil {
-		ce.Write(
-			zap.ByteString("ServerID", d.c.localServerID),
-			zap.Int("Data", len(data)),
-		)
-	}
-	cm := acquireClusterMessage()
-	_ = proto.Unmarshal(data, cm)
-	d.c.onClusterMessage(cm)
-	releaseClusterMessage(cm)
-}
+func (d clusterDelegate) NotifyMsg(data []byte) {}
 
 func (d clusterDelegate) GetBroadcasts(overhead, limit int) [][]byte {
 	return nil

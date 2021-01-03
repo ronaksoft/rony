@@ -7,7 +7,6 @@ import (
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/gateway"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
-	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
@@ -65,7 +64,7 @@ func (s server) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskRespons
 }
 
 func newTestServer() *server {
-	log.SetLevel(log.WarnLevel)
+	// log.SetLevel(log.WarnLevel)
 	s := &server{}
 	s.e = edge.NewServer("Test.01", s,
 		edge.WithTcpGateway(
@@ -82,11 +81,15 @@ func newTestServer() *server {
 
 	return s
 }
+
 func TestClient_Connect(t *testing.T) {
 	testEnv.Init()
 	s := newTestServer()
-	s.e.StartGateway()
 	err := s.e.StartCluster()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = s.e.StartGateway()
 	if err != nil {
 		t.Fatal(err)
 	}

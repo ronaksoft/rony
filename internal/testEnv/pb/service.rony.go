@@ -194,6 +194,10 @@ func init() {
 	registry.RegisterConstructor(4192619139, "EchoResponse")
 	registry.RegisterConstructor(3206229608, "AskRequest")
 	registry.RegisterConstructor(489087205, "AskResponse")
+	registry.RegisterConstructor(272094254, "Func1")
+	registry.RegisterConstructor(2302576020, "Func2")
+	registry.RegisterConstructor(3073810188, "Echo")
+	registry.RegisterConstructor(1349233664, "Ask")
 }
 
 func (x *Req1) DeepCopy(z *Req1) {

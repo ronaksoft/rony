@@ -95,7 +95,6 @@ type Cluster struct {
 	clusterMembers   map[string]*Member
 
 	// External Handlers
-	onClusterMessage MessageHandler
 	onReplicaMessage ReplicaMessageHandler
 
 	// Raft
@@ -111,11 +110,10 @@ type Cluster struct {
 	rateLimitChan chan struct{}
 }
 
-func New(serverID []byte, replicaHandler ReplicaMessageHandler, clusterHandler MessageHandler) *Cluster {
+func New(serverID []byte, replicaHandler ReplicaMessageHandler) *Cluster {
 	return &Cluster{
 		mode:             NoReplica,
 		onReplicaMessage: replicaHandler,
-		onClusterMessage: clusterHandler,
 		localServerID:    serverID,
 		clusterMembers:   make(map[string]*Member, 100),
 		replicaMembers:   make(map[uint64]map[string]*Member, 100),
