@@ -60,7 +60,7 @@ func TestGateway(t *testing.T) {
 			for i := 0; i < 500; i++ {
 				wg.Add(1)
 				go func() {
-					wsc, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+					wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 						SeedHostPort:    "127.0.0.1:88",
 						IdleTimeout:     time.Second,
 						DialTimeout:     time.Second,
@@ -72,6 +72,7 @@ func TestGateway(t *testing.T) {
 						RequestTimeout:  time.Second,
 						ContextTimeout:  time.Second,
 					})
+					err := wsc.Start()
 					if err != nil {
 						c.Println(err)
 						wg.Done()
@@ -111,7 +112,7 @@ func TestGateway(t *testing.T) {
 			}
 
 			for i := 0; i < 10; i++ {
-				wsc, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+				wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 					SeedHostPort:    "127.0.0.1:88",
 					IdleTimeout:     time.Second,
 					DialTimeout:     time.Second,
@@ -123,6 +124,7 @@ func TestGateway(t *testing.T) {
 					RequestTimeout:  time.Second,
 					ContextTimeout:  time.Second,
 				})
+				err := wsc.Start()
 				c.So(err, ShouldBeNil)
 				err = wsc.Close()
 				c.So(err, ShouldBeNil)

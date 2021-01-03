@@ -18,3 +18,8 @@ type Client interface {
 	Close() error
 	GetRequestID() uint64
 }
+
+type Router interface {
+	UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64)
+	GetRoute(req *rony.MessageEnvelope) (replicaSet uint64)
+}

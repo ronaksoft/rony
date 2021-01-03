@@ -198,7 +198,7 @@ var EchoCmd = &cobra.Command{
 			cmd.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -206,6 +206,8 @@ var EchoCmd = &cobra.Command{
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
 		})
+
+		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
 			return
@@ -259,7 +261,7 @@ var AskCmd = &cobra.Command{
 			cmd.Println("No Gateway Addr", gatewayAddrs)
 			return
 		}
-		ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Print(m)
@@ -267,6 +269,7 @@ var AskCmd = &cobra.Command{
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
 		})
+		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
 			return
@@ -345,12 +348,13 @@ var BenchCmd = &cobra.Command{
 			waitGroup.Add(1)
 			go func(idx int) {
 				defer waitGroup.Done()
-				ec, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+				ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 					SeedHostPort: fmt.Sprintf("127.0.0.1:%s", parts[1]),
 					Handler: func(m *rony.MessageEnvelope) {
 						atomic.AddInt64(&delayedCnt, 1)
 					},
 				})
+				err := ec.Start()
 				if err != nil {
 					cmd.Println(err)
 					return

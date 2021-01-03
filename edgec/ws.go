@@ -54,7 +54,7 @@ type Websocket struct {
 	nextReqID      uint64
 }
 
-func NewWebsocket(config WebsocketConfig) (*Websocket, error) {
+func NewWebsocket(config WebsocketConfig) *Websocket {
 	c := Websocket{
 		nextReqID: tools.RandomUint64(0),
 		pool:      newConnPool(),
@@ -81,17 +81,21 @@ func NewWebsocket(config WebsocketConfig) (*Websocket, error) {
 		c.cfg.Router = c.defaultRouter
 	}
 
-	err := c.initConn()
-	if err != nil {
-		return nil, err
-	}
 	// start the connection
 	// if config.ForceConnect {
 	// 	c.connect()
 	// } else {
 	// 	go c.connect()
 	// }
-	return &c, nil
+	return &c
+}
+
+func (c *Websocket) Start() error {
+	err := c.initConn()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Websocket) GetRequestID() uint64 {

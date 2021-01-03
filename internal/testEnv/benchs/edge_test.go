@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 }
 
 func BenchmarkSingleClient(b *testing.B) {
-	edgeClient, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+	edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
 		SeedHostPort:    "127.0.0.1:8080",
 		IdleTimeout:     time.Second,
 		DialTimeout:     time.Second,
@@ -48,6 +48,7 @@ func BenchmarkSingleClient(b *testing.B) {
 		RequestTimeout:  time.Second,
 		// ContextTimeout:  time.Second,
 	})
+	err := edgeClient.Start()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -82,7 +83,7 @@ func BenchmarkMultiClient(b *testing.B) {
 	b.ReportAllocs()
 	// b.SetParallelism(10)
 	b.RunParallel(func(p *testing.PB) {
-		edgeClient, err := edgec.NewWebsocket(edgec.WebsocketConfig{
+		edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort:    "127.0.0.1:8080",
 			IdleTimeout:     time.Second,
 			DialTimeout:     time.Second,
@@ -92,6 +93,7 @@ func BenchmarkMultiClient(b *testing.B) {
 			RequestTimeout:  time.Second,
 			// ContextTimeout:  time.Second,
 		})
+		err := edgeClient.Start()
 		if err != nil {
 			b.Fatal(err)
 		}
