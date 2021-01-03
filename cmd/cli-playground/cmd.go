@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
+	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
@@ -13,7 +14,6 @@ import (
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 	"os"
-	"path/filepath"
 	"runtime/pprof"
 	"runtime/trace"
 	"sort"
@@ -113,12 +113,18 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 				MaxIdleTime:   0,
 				ListenAddress: "0.0.0.0:0",
 			}),
-			edge.WithDataPath(filepath.Join("./_hdd", serverID)),
-			edge.WithGossipPort(port),
 		)
 
 		if replicaSet != 0 {
-			opts = append(opts, edge.WithReplicaSet(replicaSet, port*10, bootstrap, mode))
+			opts = append(opts, edge.WithGossipCluster(gossipCluster.Config{
+				ServerID:   []byte(serverID),
+				Bootstrap:  bootstrap,
+				RaftPort:   port * 10,
+				ReplicaSet: replicaSet,
+				Mode:       mode,
+				GossipPort: port,
+				DataPath:   "./_hdd",
+			}))
 		}
 
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
@@ -407,7 +413,7 @@ var Members = &cobra.Command{
 		for _, m := range e1.ClusterMembers() {
 			rows = append(rows,
 				fmt.Sprintf("%s | %d | %s | %d | %v",
-					m.ServerID, m.ReplicaSet, m.RaftState.String(), m.RaftPort, m.GatewayAddr,
+					m.ServerID(), m.ReplicaSet(), m.RaftState().String(), m.RaftPort(), m.GatewayAddr(),
 				),
 			)
 		}

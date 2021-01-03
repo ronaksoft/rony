@@ -1,4 +1,4 @@
-package cluster
+package gossipCluster
 
 import (
 	"fmt"
@@ -25,20 +25,20 @@ type clusterDelegate struct {
 
 func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
-	d.c.AddMember(cm)
+	d.c.addMember(cm)
 
-	if cm.ReplicaSet != 0 && cm.ReplicaSet == d.c.replicaSet {
-		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
+		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
 			log.Debug("Error On Join Raft (NodeJoin)",
 				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.ServerID),
+				zap.String("NodeID", cm.serverID),
 				zap.Error(err),
 			)
 		} else {
 			log.Info("Join Raft (NodeJoin)",
 				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.ServerID),
+				zap.String("NodeID", cm.serverID),
 			)
 		}
 	}
@@ -46,28 +46,25 @@ func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 
 func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
-	d.c.AddMember(cm)
-	if cm.ReplicaSet != 0 && cm.ReplicaSet == d.c.replicaSet {
-		err := joinRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+	d.c.addMember(cm)
+	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
+		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
 			log.Debug("Error On Join Raft (NodeUpdate)",
 				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.ServerID),
+				zap.String("NodeID", cm.serverID),
 				zap.Error(err),
 			)
 		} else {
 			log.Info("Join Raft (NodeUpdate)",
 				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.ServerID),
+				zap.String("NodeID", cm.serverID),
 			)
 		}
 	}
 }
 
 func joinRaft(c *Cluster, nodeID, addr string) error {
-	if !c.raftEnabled {
-		return rony.ErrRaftNotSet
-	}
 	if c.raft.State() != raft.Leader {
 		return rony.ErrNotRaftLeader
 	}
@@ -97,16 +94,13 @@ func joinRaft(c *Cluster, nodeID, addr string) error {
 
 func (d clusterDelegate) NotifyLeave(n *memberlist.Node) {
 	cm := convertMember(n)
-	d.c.RemoveMember(cm)
-	if cm.ReplicaSet == d.c.replicaSet {
-		_ = leaveRaft(d.c, cm.ServerID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort))
+	d.c.removeMember(cm)
+	if cm.replicaSet == d.c.cfg.ReplicaSet {
+		_ = leaveRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 	}
 }
 
 func leaveRaft(c *Cluster, nodeID, addr string) error {
-	if !c.raftEnabled {
-		return rony.ErrRaftNotSet
-	}
 	if c.raft.State() != raft.Leader {
 		return rony.ErrNotRaftLeader
 	}
@@ -134,14 +128,13 @@ func (d clusterDelegate) NodeMeta(limit int) []byte {
 		ServerID:      d.c.localServerID,
 		ShardRangeMin: d.c.localShardRange[0],
 		ShardRangeMax: d.c.localShardRange[1],
-		ReplicaSet:    d.c.replicaSet,
-		RaftPort:      uint32(d.c.raftPort),
+		ReplicaSet:    d.c.cfg.ReplicaSet,
+		RaftPort:      uint32(d.c.cfg.RaftPort),
 		GatewayAddr:   d.c.localGatewayAddr,
 		RaftState:     *rony.RaftState_None.Enum(),
 	}
-	if d.c.raftEnabled {
-		n.RaftState = *rony.RaftState(d.c.raft.State() + 1).Enum()
-	}
+
+	n.RaftState = *rony.RaftState(d.c.raft.State() + 1).Enum()
 
 	b, _ := proto.Marshal(&n)
 	if len(b) > limit {

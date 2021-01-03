@@ -26,7 +26,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000, edge.WithDataPath("./_hdd/adam"))
+	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000)
 
 	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
 	_ = edgeServer.StartCluster()

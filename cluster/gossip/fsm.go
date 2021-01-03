@@ -1,4 +1,4 @@
-package cluster
+package gossipCluster
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ func (fsm raftFSM) Apply(raftLog *raft.Log) interface{} {
 		return rony.ErrRaftExecuteOnLeader
 	}
 
-	err = fsm.c.onReplicaMessage(raftCmd)
+	err = fsm.c.ReplicaMessageHandler(raftCmd)
 	if err != nil {
 		return rony.ErrRaftExecuteOnLeader
 	}

@@ -2,7 +2,7 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cluster"
+	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/gateway"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
@@ -20,27 +20,13 @@ import (
 // Option
 type Option func(edge *Server)
 
-// WithReplicaSet
-func WithReplicaSet(replicaSet uint64, bindPort int, bootstrap bool, mod cluster.Mode) Option {
-	if replicaSet == 0 {
-		panic("replica-set could not be set zero")
-	}
+// WithGossipCluster enables the cluster in gossip mode. This mod is eventually consistent mode but there is
+// no need to a central key-value store or any other 3rd party service to run the cluster
+func WithGossipCluster(cfg gossipCluster.Config) Option {
 	return func(edge *Server) {
-		edge.cluster.SetRaft(replicaSet, bindPort, bootstrap, mod)
-	}
-}
-
-// WithGossipPort
-func WithGossipPort(gossipPort int) Option {
-	return func(edge *Server) {
-		edge.cluster.SetGossipPort(gossipPort)
-	}
-}
-
-// WithDataPath set where the internal data for raft and gossip are stored.
-func WithDataPath(path string) Option {
-	return func(edge *Server) {
-		edge.cluster.SetDataPath(path)
+		c := gossipCluster.New(cfg)
+		c.ReplicaMessageHandler = edge.onReplicaMessage
+		edge.cluster = c
 	}
 }
 

@@ -47,7 +47,7 @@ type Server struct {
 	readonlyHandlers map[int64]struct{}
 
 	// Raft & Gossip
-	cluster *cluster.Cluster
+	cluster cluster.Cluster
 }
 
 func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
@@ -57,10 +57,6 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 		serverID:         []byte(serverID),
 		dispatcher:       dispatcher,
 	}
-	edgeServer.cluster = cluster.New(
-		edgeServer.serverID,
-		edgeServer.onReplicaMessage,
-	)
 
 	for _, opt := range opts {
 		opt(edgeServer)
@@ -115,20 +111,14 @@ func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
 }
 
 // ClusterMembers returns a list of all the discovered nodes in the cluster
-func (edge *Server) ClusterMembers() []*cluster.Member {
+func (edge *Server) ClusterMembers() []cluster.Member {
 	return edge.cluster.Members()
-}
-
-// ClusterSend sends 'envelope' to the server identified by 'serverID'. It may returns ErrNotFound if the server
-// is not in the list. The message will be send with BEST EFFORT and using UDP
-func (edge *Server) ClusterSend(serverID string, envelope *rony.MessageEnvelope, kvs ...*rony.KeyValue) (err error) {
-	return edge.cluster.Send(serverID, envelope, kvs...)
 }
 
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {
 	// If server is standalone then we are the leader anyway
 	isLeader = true
-	if !edge.cluster.RaftEnabled() {
+	if edge.cluster == nil {
 		return
 	}
 
@@ -208,7 +198,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		if !ok {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
 				ce.Write(
-					zap.String("LeaderID", edge.cluster.LeaderID()),
+					zap.String("RaftLeaderID", edge.cluster.RaftLeaderID()),
 					zap.String("State", edge.cluster.RaftState().String()),
 				)
 			}
@@ -327,8 +317,7 @@ func (edge *Server) StartCluster() (err error) {
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
-		zap.Bool("Raft", edge.cluster.RaftEnabled()),
-		zap.Int("GossipPort", edge.cluster.GossipPort()),
+		zap.Bool("Cluster", edge.cluster != nil),
 	)
 
 	edge.cluster.Start()

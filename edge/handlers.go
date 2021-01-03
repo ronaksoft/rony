@@ -25,13 +25,13 @@ func (edge *Server) getNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 
 	if len(req.ReplicaSet) == 0 {
-		members := edge.cluster.ReplicaMembers(edge.cluster.ReplicaSet())
+		members := edge.cluster.RaftMembers(edge.cluster.ReplicaSet())
 		for _, m := range members {
 			res.Nodes = append(res.Nodes, m.Proto(nil))
 		}
 	} else {
 		for _, rs := range req.ReplicaSet {
-			members := edge.cluster.ReplicaMembers(rs)
+			members := edge.cluster.RaftMembers(rs)
 			for _, m := range members {
 				res.Nodes = append(res.Nodes, m.Proto(nil))
 			}

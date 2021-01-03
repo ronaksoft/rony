@@ -227,13 +227,13 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 
 func (ctx *RequestCtx) PushRedirectLeader() {
 	edge := ctx.dispatchCtx.edge
-	if leaderID := edge.cluster.LeaderID(); leaderID == "" {
+	if leaderID := edge.cluster.RaftLeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 	} else {
 		r := rony.PoolRedirect.Get()
 		r.Reason = rony.RedirectReason_ReplicaMaster
 		r.WaitInSec = 0
-		members := edge.cluster.ReplicaMembers(edge.cluster.ReplicaSet())
+		members := edge.cluster.RaftMembers(edge.cluster.ReplicaSet())
 		nodeInfos := make([]*rony.NodeInfo, 0, len(members))
 		for _, m := range members {
 			ni := m.Proto(rony.PoolNodeInfo.Get())

@@ -28,18 +28,17 @@ type Stats struct {
 // Stats exports some internal metrics data packed in 'Stats' struct
 func (edge *Server) Stats() *Stats {
 	s := Stats{
-		Address: edge.cluster.Addr(),
-		Members: len(edge.cluster.Members()),
-		// MembershipScore: edge.gossip.GetHealthScore(),
 		GatewayProtocol: edge.gatewayProtocol,
-		ReplicaSet:      edge.cluster.ReplicaSet(),
 	}
 
 	if edge.gateway != nil {
 		s.GatewayAddr = edge.gateway.Addr()
 	}
 
-	if edge.cluster.RaftEnabled() {
+	if edge.cluster != nil {
+		s.ReplicaSet = edge.cluster.ReplicaSet()
+		s.Address = edge.cluster.Addr()
+		s.Members = len(edge.cluster.Members())
 		s.RaftState = edge.cluster.RaftState().String()
 		f := edge.cluster.RaftConfigs()
 		if f.Error() == nil {
