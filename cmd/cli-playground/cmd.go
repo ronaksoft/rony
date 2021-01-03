@@ -123,7 +123,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 				ReplicaSet: replicaSet,
 				Mode:       mode,
 				GossipPort: port,
-				DataPath:   "./_hdd",
+				DataPath:   fmt.Sprintf("./_hdd/%s", serverID),
 			}))
 		}
 

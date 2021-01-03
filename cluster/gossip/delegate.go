@@ -30,11 +30,13 @@ func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
-			log.Debug("Error On Join Raft (NodeJoin)",
-				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.serverID),
-				zap.Error(err),
-			)
+			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeJoin)"); ce != nil {
+				ce.Write(
+					zap.ByteString("ServerID", d.c.localServerID),
+					zap.String("NodeID", cm.serverID),
+					zap.Error(err),
+				)
+			}
 		} else {
 			log.Info("Join Raft (NodeJoin)",
 				zap.ByteString("ServerID", d.c.localServerID),
@@ -50,11 +52,13 @@ func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
-			log.Debug("Error On Join Raft (NodeUpdate)",
-				zap.ByteString("ServerID", d.c.localServerID),
-				zap.String("NodeID", cm.serverID),
-				zap.Error(err),
-			)
+			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeUpdate)"); ce != nil {
+				ce.Write(
+					zap.ByteString("ServerID", d.c.localServerID),
+					zap.String("NodeID", cm.serverID),
+					zap.Error(err),
+				)
+			}
 		} else {
 			log.Info("Join Raft (NodeUpdate)",
 				zap.ByteString("ServerID", d.c.localServerID),

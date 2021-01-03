@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"errors"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
@@ -314,6 +315,10 @@ func (edge *Server) onClose(conn gateway.Conn) {
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set
 func (edge *Server) StartCluster() (err error) {
+	if edge.cluster == nil {
+		return ErrClusterNotSet
+	}
+
 	log.Info("Edge Server Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Gateway", string(edge.gatewayProtocol)),
@@ -367,3 +372,8 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 func (edge *Server) GetGatewayConn(connID uint64) gateway.Conn {
 	return edge.gateway.GetConn(connID)
 }
+
+
+var (
+	ErrClusterNotSet = errors.New("cluster is not set")
+)

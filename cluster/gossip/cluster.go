@@ -271,6 +271,50 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 	return nil
 }
 
+func (c *Cluster) addMember(m *Member) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	if m == nil {
+		return
+	}
+	if len(m.serverID) == 0 {
+		return
+	}
+
+	if m.replicaSet == c.cfg.ReplicaSet && m.raftState == rony.RaftState_Leader {
+		c.replicaLeaderID = m.serverID
+	}
+	c.clusterMembers[m.serverID] = m
+	if c.replicaMembers[m.replicaSet] == nil {
+		c.replicaMembers[m.replicaSet] = make(map[string]*Member, 100)
+	}
+	c.replicaMembers[m.replicaSet][m.serverID] = m
+}
+
+func (c *Cluster) removeMember(m *Member) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	if m == nil {
+		return
+	}
+
+	if len(m.serverID) == 0 {
+		return
+	}
+
+	if m.serverID == c.replicaLeaderID {
+		c.replicaLeaderID = ""
+	}
+
+	delete(c.clusterMembers, m.serverID)
+
+	if c.replicaMembers[m.replicaSet] != nil {
+		delete(c.replicaMembers[m.replicaSet], m.serverID)
+	}
+}
+
 func (c *Cluster) Start() {
 	notifyChan := make(chan bool, 1)
 	err := c.startRaft(notifyChan)
@@ -378,57 +422,6 @@ func (c *Cluster) RaftConfigs() raft.ConfigurationFuture {
 func (c *Cluster) SetGatewayAddrs(addrs []string) error {
 	c.localGatewayAddr = addrs
 	return c.updateCluster(gossipUpdateTimeout)
-}
-
-func (c *Cluster) GetByID(id string) *Member {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
-
-	return c.clusterMembers[id]
-}
-
-func (c *Cluster) addMember(m *Member) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	if m == nil {
-		return
-	}
-	if len(m.serverID) == 0 {
-		return
-	}
-
-	if m.replicaSet == c.cfg.ReplicaSet && m.raftState == rony.RaftState_Leader {
-		c.replicaLeaderID = m.serverID
-	}
-	c.clusterMembers[m.serverID] = m
-	if c.replicaMembers[m.replicaSet] == nil {
-		c.replicaMembers[m.replicaSet] = make(map[string]*Member, 100)
-	}
-	c.replicaMembers[m.replicaSet][m.serverID] = m
-}
-
-func (c *Cluster) removeMember(m *Member) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	if m == nil {
-		return
-	}
-
-	if len(m.serverID) == 0 {
-		return
-	}
-
-	if m.serverID == c.replicaLeaderID {
-		c.replicaLeaderID = ""
-	}
-
-	delete(c.clusterMembers, m.serverID)
-
-	if c.replicaMembers[m.replicaSet] != nil {
-		delete(c.replicaMembers[m.replicaSet], m.serverID)
-	}
 }
 
 func (c *Cluster) Addr() string {
