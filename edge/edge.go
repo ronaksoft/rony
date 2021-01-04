@@ -332,7 +332,10 @@ func (edge *Server) StartCluster() (err error) {
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	edge.gateway.Start()
-	return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
+	if edge.cluster != nil {
+		return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
+	}
+	return nil
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster
@@ -372,7 +375,6 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 func (edge *Server) GetGatewayConn(connID uint64) gateway.Conn {
 	return edge.gateway.GetConn(connID)
 }
-
 
 var (
 	ErrClusterNotSet = errors.New("cluster is not set")

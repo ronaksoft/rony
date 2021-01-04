@@ -28,9 +28,19 @@ var (
 func TestMain(m *testing.M) {
 	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000)
 
-	pb.RegisterSample(testEnv.Handlers{}, edgeServer)
-	_ = edgeServer.StartCluster()
-	edgeServer.StartGateway()
+	pb.RegisterSample(
+		&testEnv.Handlers{
+			ServerID: edgeServer.GetServerID(),
+		}, edgeServer)
+	err := edgeServer.StartCluster()
+	if err != nil {
+		panic(err)
+	}
+
+	err = edgeServer.StartGateway()
+	if err != nil {
+		panic(err)
+	}
 	flag.Parse()
 	code := m.Run()
 	edgeServer.Shutdown()
@@ -54,7 +64,6 @@ func BenchmarkSingleClient(b *testing.B) {
 	}
 	echoRequest := pb.EchoRequest{
 		Int:       100,
-		Bool:      false,
 		Timestamp: 32809238402,
 	}
 
@@ -76,7 +85,6 @@ func BenchmarkSingleClient(b *testing.B) {
 func BenchmarkMultiClient(b *testing.B) {
 	echoRequest := pb.EchoRequest{
 		Int:       100,
-		Bool:      false,
 		Timestamp: 32809238402,
 	}
 	b.ResetTimer()

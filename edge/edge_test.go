@@ -22,14 +22,13 @@ import (
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
 		s := testEnv.InitTestServer("TestServer")
-		s.SetHandlers(pb.C_EchoRequest, testEnv.EchoSimple)
+		pb.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
 		s.Start()
 		defer s.Shutdown()
 
 		err := s.Context().
 			Request(pb.C_EchoRequest, &pb.EchoRequest{
 				Int:       100,
-				Bool:      true,
 				Timestamp: 123,
 			}).
 			Expect(pb.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
@@ -43,9 +42,6 @@ func TestWithTestGateway(t *testing.T) {
 				}
 				if x.Timestamp != 123 {
 					return fmt.Errorf("timestamp not equal")
-				}
-				if !x.Bool {
-					return fmt.Errorf("bool not equal")
 				}
 				return nil
 			}).

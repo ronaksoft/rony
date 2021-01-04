@@ -19,22 +19,23 @@ type SampleServer struct {
 	es *edge.Server
 }
 
-func (h *SampleServer) Func1(ctx *edge.RequestCtx, req *pb.Req1, res *pb.Res1) {
-	res.Item1 = req.Item1
-}
-
-func (h *SampleServer) Func2(ctx *edge.RequestCtx, req *pb.Req2, res *pb.Res2) {
-	res.Item1 = req.Item1
-}
-
-func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
-	res.Bool = req.Bool
+func (h *SampleServer) EchoLeaderOnly(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp
+	res.ServerID = h.es.GetServerID()
 }
 
-func (h *SampleServer) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {
-	res.Responder = req.ServerID
-	res.Coordinator = ctx.ServerID()
+func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+	res.Int = req.Int
+	res.Timestamp = tools.NanoTime()
+	res.Delay = res.Timestamp - req.Timestamp
+	res.ServerID = h.es.GetServerID()
+}
+
+func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+	res.Int = req.Int
+	res.Timestamp = tools.NanoTime()
+	res.Delay = res.Timestamp - req.Timestamp
+	res.ServerID = h.es.GetServerID()
 }

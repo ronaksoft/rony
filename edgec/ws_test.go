@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/gateway"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"google.golang.org/protobuf/proto"
@@ -47,37 +46,15 @@ func (s server) OnClose(conn gateway.Conn) {
 	fmt.Println("Disconnected")
 }
 
-func (s server) Func1(ctx *edge.RequestCtx, req *pb.Req1, res *pb.Res1) {
-	res.Item1 = req.Item1
-}
-
-func (s server) Func2(ctx *edge.RequestCtx, req *pb.Req2, res *pb.Res2) {
-
-}
-
-func (s server) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
-
-}
-
-func (s server) Ask(ctx *edge.RequestCtx, req *pb.AskRequest, res *pb.AskResponse) {
-
-}
-
 func newTestServer() *server {
 	// log.SetLevel(log.WarnLevel)
-	s := &server{}
-	s.e = edge.NewServer("Test.01", s,
-		edge.WithTcpGateway(
-			tcpGateway.Config{
-				Concurrency:   10,
-				ListenAddress: ":8081",
-				MaxBodySize:   0,
-				MaxIdleTime:   0,
-				Protocol:      tcpGateway.Auto,
-			},
-		),
-	)
-	pb.RegisterSample(s, s.e)
+
+	s := &server{
+		e: testEnv.InitEdgeServerWithWebsocket("Test.01", 8081, 10),
+	}
+	pb.RegisterSample(&testEnv.Handlers{
+		ServerID: s.e.GetServerID(),
+	}, s.e)
 
 	return s
 }
@@ -107,7 +84,7 @@ func TestClient_Connect(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			res, err := c.Func1(&pb.Req1{Item1: 123})
+			res, err := c.Echo(&pb.EchoRequest{Int: 123})
 			if err != nil {
 				t.Error(err)
 				return

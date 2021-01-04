@@ -3,48 +3,21 @@ package pb;
 option go_package = ".;pb";
 
 service Sample {
-    rpc Func1 (Req1) returns (Res1) {}
-    rpc Func2 (Req2) returns (Res2) {}
-    rpc Echo(EchoRequest) returns (EchoResponse) {}
-    rpc Ask(AskRequest) returns (AskResponse) {}
+    rpc Echo (EchoRequest) returns (EchoResponse);
+    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
+    rpc EchoTunnel (EchoRequest) returns (EchoResponse);
 }
-
-message Req1 {
-    int64 Item1 = 1;
-}
-
-message Req2 {
-    string Item1 = 1;
-}
-
-message Res1 {
-    int64 Item1 = 1;
-}
-
-message Res2 {
-    string Item1 = 1;
-}
-
 
 message EchoRequest {
     int64 Int = 1;
-    bool Bool = 2;
     int64 Timestamp = 3;
 }
 
 message EchoResponse {
     int64 Int = 1;
-    bool Bool = 2;
+    string Responder = 2;
     int64 Timestamp = 4;
     int64 Delay = 5;
     string ServerID = 6;
 }
 
-message AskRequest {
-    string ServerID = 1;
-}
-
-message AskResponse {
-    string Coordinator = 1;
-    string Responder = 2;
-}

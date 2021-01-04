@@ -83,12 +83,6 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		c.cfg.Router = c.defaultRouter
 	}
 
-	// start the connection
-	// if config.ForceConnect {
-	// 	c.connect()
-	// } else {
-	// 	go c.connect()
-	// }
 	return &c
 }
 

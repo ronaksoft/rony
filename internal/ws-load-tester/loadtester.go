@@ -124,7 +124,6 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 
 	echoRequest := pb.EchoRequest{
 		Int:       21313,
-		Bool:      false,
 		Timestamp: 42342342342,
 	}
 	req := rony.PoolMessageEnvelope.Get()

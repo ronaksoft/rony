@@ -38,7 +38,7 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		BatchStartCmd, StartCmd, BenchCmd, ListCmd, Members,
-		AskCmd, EchoCmd,
+		EchoCmd, EchoLeaderOnlyCmd,
 		Trace, MemProf,
 	)
 
@@ -222,7 +222,6 @@ var EchoCmd = &cobra.Command{
 		req := pb.PoolEchoRequest.Get()
 		defer pb.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
-		req.Bool = true
 		req.Timestamp = tools.NanoTime()
 		var cnt int64
 		wg := sync.WaitGroup{}
@@ -246,14 +245,13 @@ var EchoCmd = &cobra.Command{
 	},
 }
 
-var AskCmd = &cobra.Command{
-	Use: "ask",
+var EchoLeaderOnlyCmd = &cobra.Command{
+	Use: "echo-leader",
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
-		targetID, _ := cmd.Flags().GetString(FlagTargetID)
 		n, _ := cmd.Flags().GetInt("n")
-		if len(serverID) == 0 || len(targetID) == 0 {
-			cmd.Println("Needs ServerID and TargetID, e.g. ask --serverID First.01 --targetID Second.01")
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
 		e1 := Edges[serverID]
@@ -281,15 +279,16 @@ var AskCmd = &cobra.Command{
 		}
 		defer ec.Close()
 		c := pb.NewSampleClient(ec)
-		req := pb.PoolAskRequest.Get()
-		defer pb.PoolAskRequest.Put(req)
-		req.ServerID = targetID
+		req := pb.PoolEchoRequest.Get()
+		defer pb.PoolEchoRequest.Put(req)
+		req.Int = tools.RandomInt64(0)
+		req.Timestamp = tools.NanoTime()
 		var cnt int64
 		wg := sync.WaitGroup{}
 		for i := 0; i < n; i++ {
 			wg.Add(1)
 			go func() {
-				res, err := c.Ask(req)
+				res, err := c.EchoLeaderOnly(req)
 				switch err {
 				case nil:
 					atomic.AddInt64(&cnt, 1)
@@ -297,6 +296,7 @@ var AskCmd = &cobra.Command{
 				default:
 					cmd.Println("Error:", err)
 				}
+
 				wg.Done()
 			}()
 		}
@@ -369,7 +369,6 @@ var BenchCmd = &cobra.Command{
 					startTime := tools.CPUTicks()
 					req := pb.PoolEchoRequest.Get()
 					req.Int = tools.RandomInt64(0)
-					req.Bool = true
 					req.Timestamp = tools.CPUTicks()
 					atomic.AddInt64(&reqCnt, 1)
 					_, err := c.Echo(req)

@@ -39,6 +39,10 @@ func (s *Server) Shutdown() {
 	s.edge.Shutdown()
 }
 
+func (s *Server) RealEdge() *edge.Server {
+	return s.edge
+}
+
 func (s *Server) SetPreHandlers(h ...edge.Handler) {
 	s.edge.SetPreHandlers(h...)
 }
