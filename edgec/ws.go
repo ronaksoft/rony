@@ -129,7 +129,7 @@ func (c *Websocket) initConn() error {
 		_ = x.Unmarshal(res.Message)
 		found := false
 		for _, n := range x.Nodes {
-			var wsc *wsConn
+			wsc := c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
 			if !found {
 				for _, hp := range n.HostPorts {
 					if hp == initConn.hostPorts[0] {
@@ -138,8 +138,6 @@ func (c *Websocket) initConn() error {
 						found = true
 					}
 				}
-			} else {
-				wsc = c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
 			}
 
 			c.pool.addConn(n.ServerID, n.ReplicaSet, n.Leader, wsc)
@@ -174,7 +172,7 @@ func (c *Websocket) SendWithDetails(
 ) (err error) {
 	rs := c.cfg.Router.GetRoute(req)
 	wsc := c.pool.getConn(rs, leaderOnly)
-	if ce := log.Check(log.DebugLevel, "SendWithDetails"); ce != nil {
+	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
 		ce.Write(
 			zap.Uint64("ReqID", req.RequestID),
 			zap.Uint64("RS", rs),

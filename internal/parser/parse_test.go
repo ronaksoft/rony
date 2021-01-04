@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -29,23 +28,22 @@ func TestLexer(t *testing.T) {
 		if i.tok == ERROR {
 			break
 		}
-		fmt.Println(i.String())
 	}
 }
 
 func TestParse(t *testing.T) {
-	tr, err := Parse("PARSER", input)
+	_, err := Parse("PARSER", input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for idx, n := range tr.Root.Nodes {
-		switch n.Type() {
-		case NodeText:
-			t.Log(idx, ": ", "Text", []byte(n.String()))
-		default:
-			t.Log(idx, ": ", n.String())
-
-		}
-
-	}
+	// for idx, n := range tr.Root.Nodes {
+	// 	switch n.Type() {
+	// 	case NodeText:
+	// 		// t.Log(idx, ": ", "Text", []byte(n.String()))
+	// 	default:
+	// 		// t.Log(idx, ": ", n.String())
+	//
+	// 	}
+	//
+	// }
 }

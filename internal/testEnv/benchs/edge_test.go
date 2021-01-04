@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 			ServerID: edgeServer.GetServerID(),
 		}, edgeServer)
 	err := edgeServer.StartCluster()
-	if err != nil {
+	if err != nil && err != edge.ErrClusterNotSet {
 		panic(err)
 	}
 

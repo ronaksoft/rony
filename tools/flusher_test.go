@@ -24,8 +24,6 @@ func TestNewFlusherPool(t *testing.T) {
 		f := NewFlusherPool(10, 20, func(targetID string, entries []FlushEntry) {
 			time.Sleep(time.Millisecond * 100)
 			atomic.AddInt64(&out, int64(len(entries)))
-			c.Println(targetID, len(entries))
-
 		})
 
 		wg := sync.WaitGroup{}

@@ -8,6 +8,7 @@ import (
 	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
 	"sync"
 	"testing"
@@ -60,38 +61,34 @@ func newTestServer() *server {
 }
 
 func TestClient_Connect(t *testing.T) {
-	testEnv.Init()
-	s := newTestServer()
-	err := s.e.StartCluster()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = s.e.StartGateway()
-	if err != nil {
-		t.Fatal(err)
-	}
+	Convey("Client Connect", t, func(c C) {
+		testEnv.Init()
+		s := newTestServer()
+		err := s.e.StartCluster()
+		if err != nil && err != edge.ErrClusterNotSet {
+			t.Fatal(err)
+		}
+		err = s.e.StartGateway()
+		c.So(err, ShouldBeNil)
 
-	wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
-		SeedHostPort: "127.0.0.1:8081",
+		wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: "127.0.0.1:8081",
+		})
+		clnt := pb.NewSampleClient(wsc)
+		err = wsc.Start()
+		c.So(err, ShouldBeNil)
+
+		wg := sync.WaitGroup{}
+		for i := 0; i < 20; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				res, err := clnt.Echo(&pb.EchoRequest{Int: 123})
+				c.So(err, ShouldBeNil)
+				c.Println(res)
+			}()
+		}
+		wg.Wait()
 	})
-	c := pb.NewSampleClient(wsc)
-	err = wsc.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	wg := sync.WaitGroup{}
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			res, err := c.Echo(&pb.EchoRequest{Int: 123})
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			t.Log(res)
-		}()
-	}
-	wg.Wait()
 
 }
