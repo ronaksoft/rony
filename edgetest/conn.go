@@ -83,7 +83,9 @@ func (c *conn) check(e *rony.MessageEnvelope) {
 	if !ok && e.Constructor == rony.C_Error {
 		err := &rony.Error{}
 		c.err = err.Unmarshal(e.Message)
-		c.errH(c.reqC, err)
+		if c.errH != nil {
+			c.errH(c.reqC, err)
+		}
 		return
 	}
 	if f != nil {

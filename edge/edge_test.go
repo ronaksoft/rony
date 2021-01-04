@@ -1,10 +1,10 @@
 package edge_test
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/registry"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -27,22 +27,19 @@ func TestWithTestGateway(t *testing.T) {
 		defer s.Shutdown()
 
 		err := s.Context().
-			Request(pb.C_EchoRequest, &pb.EchoRequest{
+			Request(pb.C_Echo, &pb.EchoRequest{
 				Int:       100,
 				Timestamp: 123,
+			}).
+			ErrorHandler(func(constructor int64, e *rony.Error) {
+				c.Println(registry.ConstructorName(constructor), "-->", e.Code, e.Items, e.Template)
 			}).
 			Expect(pb.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
 				x := &pb.EchoResponse{}
 				err := x.Unmarshal(b)
-				if err != nil {
-					return err
-				}
-				if x.Int != 100 {
-					return fmt.Errorf("int not equal")
-				}
-				if x.Timestamp != 123 {
-					return fmt.Errorf("timestamp not equal")
-				}
+				c.So(err, ShouldBeNil)
+				c.So(x.Int, ShouldEqual, 100)
+				c.So(x.Timestamp, ShouldEqual, 123)
 				return nil
 			}).
 			Run(time.Second)

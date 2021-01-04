@@ -355,7 +355,9 @@ func (edge *Server) Shutdown() {
 	}
 
 	// Shutdown the cluster
-	edge.cluster.Shutdown()
+	if edge.cluster != nil {
+		edge.cluster.Shutdown()
+	}
 
 	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
