@@ -111,7 +111,6 @@ func (c *Websocket) newConn(id string, replicaSet uint64, hostPorts ...string) *
 func (c *Websocket) initConn() error {
 	initConn := c.newConn("", 0, c.cfg.SeedHostPort)
 	initConn.connect()
-	log.Debug("InitConn connected")
 	ctx, cf := context.WithTimeout(context.Background(), c.cfg.ContextTimeout)
 	defer cf()
 	req := rony.PoolMessageEnvelope.Get()
@@ -128,12 +127,9 @@ func (c *Websocket) initConn() error {
 	case rony.C_NodeInfoMany:
 		x := &rony.NodeInfoMany{}
 		_ = x.Unmarshal(res.Message)
-		log.Debug("NodeInfo for initConn",
-			zap.Any("Res", x),
-		)
 		found := false
 		for _, n := range x.Nodes {
-			wsc := c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
+			var wsc *wsConn
 			if !found {
 				for _, hp := range n.HostPorts {
 					if hp == initConn.hostPorts[0] {
@@ -142,6 +138,8 @@ func (c *Websocket) initConn() error {
 						found = true
 					}
 				}
+			} else {
+				wsc = c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
 			}
 
 			c.pool.addConn(n.ServerID, n.ReplicaSet, n.Leader, wsc)
