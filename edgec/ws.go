@@ -28,8 +28,6 @@ const (
 
 type MessageHandler func(m *rony.MessageEnvelope)
 
-type RouterFunc func(m *rony.MessageEnvelope) (replicaSet uint64, forceLeader bool)
-
 // WebsocketConfig holds the configs for the Websocket client
 type WebsocketConfig struct {
 	SeedHostPort string
@@ -45,7 +43,7 @@ type WebsocketConfig struct {
 	RequestTimeout time.Duration
 	// ContextTimeout is the amount that Send function will wait until times out. This includes all the retries.
 	ContextTimeout time.Duration
-	Router         RouterFunc
+	Router         Router
 }
 
 // Websocket client which could handle multiple connections
@@ -57,7 +55,7 @@ type Websocket struct {
 }
 
 func NewWebsocket(config WebsocketConfig) *Websocket {
-	c := Websocket{
+	c := &Websocket{
 		nextReqID: tools.RandomUint64(0),
 		pool:      newConnPool(),
 		cfg:       config,
@@ -80,10 +78,12 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		c.cfg.ContextTimeout = c.cfg.RequestTimeout * time.Duration(c.cfg.RequestMaxRetry)
 	}
 	if c.cfg.Router == nil {
-		c.cfg.Router = c.defaultRouter
+		c.cfg.Router = &defaultRouter{
+			c: c,
+		}
 	}
 
-	return &c
+	return c
 }
 
 func (c *Websocket) Start() error {
@@ -157,34 +157,33 @@ func (c *Websocket) initConn() error {
 	return nil
 }
 
-func (c *Websocket) isLeaderOnly(req *rony.MessageEnvelope) bool {
-	return true
-}
-
-func (c *Websocket) defaultRouter(req *rony.MessageEnvelope) (replicaSet uint64, leaderOnly bool) {
-	return c.sessionReplica, c.isLeaderOnly(req)
-}
-
-func (c *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
+func (c *Websocket) Send(req, res *rony.MessageEnvelope, leaderOnly bool) (err error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.cfg.ContextTimeout)
-	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout)
+	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout, leaderOnly)
 	cancelFunc()
 	return
 }
 
-func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope) (err error) {
-	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout)
+func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope, leaderOnly bool) (err error) {
+	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout, leaderOnly)
 	return
 }
 
-func (c *Websocket) SendWithDetails(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (err error) {
-	rs, leader := c.cfg.Router(req)
-	wsc := c.pool.getConn(rs, leader)
-	log.Debug("SendWithDetails",
-		zap.Uint64("ReqID", req.RequestID),
-		zap.Uint64("RS", rs),
-		zap.Bool("LeaderOnly", leader),
-	)
+func (c *Websocket) SendWithDetails(
+	ctx context.Context, req, res *rony.MessageEnvelope,
+	waitToConnect bool, retry int, timeout time.Duration,
+	leaderOnly bool,
+) (err error) {
+	rs := c.cfg.Router.GetRoute(req)
+	wsc := c.pool.getConn(rs, leaderOnly)
+	if ce := log.Check(log.DebugLevel, "SendWithDetails"); ce != nil {
+		ce.Write(
+			zap.Uint64("ReqID", req.RequestID),
+			zap.Uint64("RS", rs),
+			zap.Bool("LeaderOnly", leaderOnly),
+		)
+	}
+
 	if wsc == nil {
 		return ErrNoConnection
 	}
@@ -195,7 +194,8 @@ SendLoop:
 	case nil:
 		return nil
 	case ErrReplicaMaster:
-		wsc = c.pool.getConn(rs, true)
+		leaderOnly = true
+		wsc = c.pool.getConn(rs, leaderOnly)
 	case ErrReplicaSetSession, ErrReplicaSetRequest:
 		rs = c.sessionReplica
 	}

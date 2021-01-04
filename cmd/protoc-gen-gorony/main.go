@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-
 	plugins := make(map[string]struct{})
 	pgo := protogen.Options{
 		ParamFunc: func(name, value string) error {
@@ -30,6 +29,14 @@ func main() {
 	}
 	pgo.Run(func(plugin *protogen.Plugin) error {
 		for _, f := range plugin.Files {
+			if !f.Generate {
+				continue
+			}
+
+			if f.Proto.GetPackage() == "google.protobuf" {
+				continue
+			}
+
 			// reset the global model and fill with the new data
 			resetModels()
 			for _, m := range f.Messages {

@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"hash/crc32"
 	"strings"
 )
@@ -479,7 +482,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		})
 		if file.GoPackageName != "rony" {
 			g.QualifiedGoIdent(protogen.GoIdent{
-				GoName:       "MessageEnvelope",
+				GoName:       "",
 				GoImportPath: "github.com/ronaksoft/rony",
 			})
 		}
@@ -492,6 +495,8 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 			g.P("const C_", m.Desc.Name(), " int64 = ", fmt.Sprintf("%d", constructor))
 		}
 		g.P()
+
+		// Generate the Server Interface
 		g.P("type I", s.Desc.Name(), " interface {")
 		for _, m := range s.Methods {
 			inputPkg, inputType := descName(file, g, m.Desc.Input())
@@ -593,6 +598,14 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 			if outputPkg != "" {
 				outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
 			}
+
+			leaderOnlyText := "false"
+			opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+			leaderOnly := proto.GetExtension(opt, rony.E_LeaderOnly).(bool)
+			if leaderOnly {
+				leaderOnlyText = "true"
+			}
+
 			// constructor := crc32.ChecksumIEEE([]byte(*m.Name))
 			g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 			g.P("out := rony.PoolMessageEnvelope.Get()")
@@ -600,7 +613,7 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 			g.P("in := rony.PoolMessageEnvelope.Get()")
 			g.P("defer rony.PoolMessageEnvelope.Put(in)")
 			g.P("out.Fill(c.c.GetRequestID(), C_", m.Desc.Name(), ", req, kvs...)")
-			g.P("err := c.c.Send(out, in)")
+			g.P("err := c.c.Send(out, in, ", leaderOnlyText, ")")
 			g.P("if err != nil {")
 			g.P("return nil, err")
 			g.P("}")

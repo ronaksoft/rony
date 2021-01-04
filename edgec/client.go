@@ -14,12 +14,7 @@ import (
 */
 
 type Client interface {
-	Send(req, res *rony.MessageEnvelope) error
+	Send(req, res *rony.MessageEnvelope, leaderOnly bool) error
 	Close() error
 	GetRequestID() uint64
-}
-
-type Router interface {
-	UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64)
-	GetRoute(req *rony.MessageEnvelope) (replicaSet uint64)
 }

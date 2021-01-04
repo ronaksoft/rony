@@ -14,7 +14,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto imsg.proto
+//go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto imsg.proto options.proto
 //go:generate protoc -I=. --gorony_out=paths=source_relative:. msg.proto imsg.proto
 
 func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {

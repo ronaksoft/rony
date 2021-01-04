@@ -1,0 +1,7 @@
+syntax = "proto2";
+import "google/protobuf/descriptor.proto";
+option go_package = "github.com/ronaksoft/rony";
+
+extend google.protobuf.MethodOptions {
+    optional bool leader_only = 50001;
+}

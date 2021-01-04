@@ -9,8 +9,8 @@ package pb
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=.  --go_out=. service.proto
-//go:generate protoc -I=. --gorony_out=. service.proto
+//go:generate protoc -I=. -I=../../.. --go_out=. service.proto
+//go:generate protoc -I=. -I=../../.. --gorony_out=. service.proto
 func init() {
 
 }

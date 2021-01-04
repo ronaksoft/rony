@@ -1,10 +1,13 @@
 syntax = "proto3";
 package pb;
 option go_package = ".;pb";
+import "options.proto";
 
 service Sample {
     rpc Echo (EchoRequest) returns (EchoResponse);
-    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
+    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse){
+        option (leader_only) = true;
+    }
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);
 }
 

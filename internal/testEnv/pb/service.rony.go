@@ -196,7 +196,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_Echo, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(out, in, false)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (c *SampleClient) EchoLeaderOnly(req *EchoRequest, kvs ...*rony.KeyValue) (
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_EchoLeaderOnly, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_EchoTunnel, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(out, in, false)
 	if err != nil {
 		return nil, err
 	}

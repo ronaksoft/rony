@@ -88,7 +88,7 @@ func TestGateway(t *testing.T) {
 					res := &rony.MessageEnvelope{}
 					for j := 0; j < 20; j++ {
 						ctx, cf := context.WithTimeout(context.TODO(), time.Second*5)
-						err = wsc.SendWithContext(ctx, req, res)
+						err = wsc.SendWithContext(ctx, req, res, true)
 						if err != nil {
 							c.Println(err)
 						}
