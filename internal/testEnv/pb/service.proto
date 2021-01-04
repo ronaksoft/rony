@@ -6,7 +6,7 @@ import "options.proto";
 service Sample {
     rpc Echo (EchoRequest) returns (EchoResponse);
     rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse){
-        option (leader_only) = true;
+        option (follower_ok) = true;
     }
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);
 }

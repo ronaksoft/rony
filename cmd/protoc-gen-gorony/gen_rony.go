@@ -527,7 +527,14 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P()
 		g.P("func (sw *", s.Desc.Name(), "Wrapper) Register (e *edge.Server) {")
 		for _, m := range s.Methods {
-			g.P("e.SetHandlers(C_", m.Desc.Name(), ", true, sw.", m.Desc.Name(), "Wrapper)")
+			leaderOnlyText := "true"
+			opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+			leaderOnly := proto.GetExtension(opt, rony.E_FollowerOk).(bool)
+			if leaderOnly {
+				leaderOnlyText = "false"
+			}
+
+			g.P("e.SetHandlers(C_", m.Desc.Name(), ", ", leaderOnlyText, ", sw.", m.Desc.Name(), "Wrapper)")
 		}
 		g.P("}")
 		g.P()
@@ -599,13 +606,12 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 				outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
 			}
 
-			leaderOnlyText := "false"
+			leaderOnlyText := "true"
 			opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-			leaderOnly := proto.GetExtension(opt, rony.E_LeaderOnly).(bool)
+			leaderOnly := proto.GetExtension(opt, rony.E_FollowerOk).(bool)
 			if leaderOnly {
-				leaderOnlyText = "true"
+				leaderOnlyText = "false"
 			}
-
 			// constructor := crc32.ChecksumIEEE([]byte(*m.Name))
 			g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 			g.P("out := rony.PoolMessageEnvelope.Get()")

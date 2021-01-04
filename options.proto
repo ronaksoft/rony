@@ -3,5 +3,5 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
 extend google.protobuf.MethodOptions {
-    optional bool leader_only = 50001;
+    optional bool follower_ok = 50001;
 }

@@ -125,7 +125,7 @@ func RegisterSample(h ISample, e *edge.Server) {
 
 func (sw *SampleWrapper) Register(e *edge.Server) {
 	e.SetHandlers(C_Echo, true, sw.EchoWrapper)
-	e.SetHandlers(C_EchoLeaderOnly, true, sw.EchoLeaderOnlyWrapper)
+	e.SetHandlers(C_EchoLeaderOnly, false, sw.EchoLeaderOnlyWrapper)
 	e.SetHandlers(C_EchoTunnel, true, sw.EchoTunnelWrapper)
 }
 
@@ -196,7 +196,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_Echo, req, kvs...)
-	err := c.c.Send(out, in, false)
+	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (c *SampleClient) EchoLeaderOnly(req *EchoRequest, kvs ...*rony.KeyValue) (
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_EchoLeaderOnly, req, kvs...)
-	err := c.c.Send(out, in, true)
+	err := c.c.Send(out, in, false)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_EchoTunnel, req, kvs...)
-	err := c.c.Send(out, in, false)
+	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
 	}
