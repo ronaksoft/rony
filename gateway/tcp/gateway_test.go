@@ -34,11 +34,11 @@ func TestGateway(t *testing.T) {
 	rony.SetLogLevel(0)
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
-		ListenAddress: "0.0.0.0:88",
+		ListenAddress: "0.0.0.0:1088",
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
 		Protocol:      tcpGateway.Auto,
-		ExternalAddrs: []string{"127.0.0.1:88"},
+		ExternalAddrs: []string{"127.0.0.1:1088"},
 	})
 
 	if err != nil {
@@ -59,7 +59,7 @@ func TestGateway(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func() {
-					wsc, _, _, err := ws.Dial(context.Background(), "ws://127.0.0.1:88")
+					wsc, _, _, err := ws.Dial(context.Background(), "ws://127.0.0.1:1088")
 					if err != nil {
 						c.Println(err)
 					}
@@ -94,7 +94,7 @@ func TestGateway(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				httpc := edgec.NewHttp(edgec.HttpConfig{
-					HostPort: "127.0.0.1:88",
+					HostPort: "127.0.0.1:1088",
 					Header:   nil,
 				})
 				for i := 0; i < 1000; i++ {
