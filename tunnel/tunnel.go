@@ -12,5 +12,4 @@ package tunnel
 // Tunnel provides the communication channel between edge servers. Tunnel is similar to gateway.Gateway in functionalities.
 // However Tunnel is optimized for inter-communication between edge servers, and Gateway is optimized for client-server communications.
 type Tunnel interface {
-
 }

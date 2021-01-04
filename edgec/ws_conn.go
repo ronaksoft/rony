@@ -41,8 +41,6 @@ type wsConn struct {
 	pending    map[uint64]chan *rony.MessageEnvelope
 }
 
-
-
 func (c *wsConn) createDialer(timeout time.Duration) {
 	c.dialer = ws.Dialer{
 		ReadBufferSize:  32 * 1024, // 32kB

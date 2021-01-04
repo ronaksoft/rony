@@ -65,7 +65,7 @@ func TestGateway(t *testing.T) {
 					}
 					c.So(err, ShouldBeNil)
 					for j := 0; j < 20; j++ {
-						err := wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, []byte{1,2,3,4})
+						err := wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, []byte{1, 2, 3, 4})
 						if err != nil {
 							c.Println(err)
 						}
