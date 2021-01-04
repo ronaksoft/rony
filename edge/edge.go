@@ -194,7 +194,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	// Set the context request
 	requestCtx.reqID = in.RequestID
 
-	if !isLeader && requestCtx.Kind() == GatewayMessage {
+	if !isLeader && requestCtx.Kind() != ReplicaMessage {
 		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {

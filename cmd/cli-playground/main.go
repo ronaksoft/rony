@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	RootCmd.AddCommand(ExitCmd)
 	p := prompt.New(executor, completer)

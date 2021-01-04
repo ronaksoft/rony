@@ -23,7 +23,7 @@ type clusterDelegate struct {
 	c *Cluster
 }
 
-func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
+func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.addMember(cm)
 
@@ -32,21 +32,21 @@ func (d clusterDelegate) NotifyJoin(n *memberlist.Node) {
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeJoin)"); ce != nil {
 				ce.Write(
-					zap.ByteString("ServerID", d.c.localServerID),
+					zap.ByteString("This", d.c.localServerID),
 					zap.String("NodeID", cm.serverID),
 					zap.Error(err),
 				)
 			}
 		} else {
 			log.Info("Join Raft (NodeJoin)",
-				zap.ByteString("ServerID", d.c.localServerID),
+				zap.ByteString("This", d.c.localServerID),
 				zap.String("NodeID", cm.serverID),
 			)
 		}
 	}
 }
 
-func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
+func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.addMember(cm)
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
@@ -54,18 +54,41 @@ func (d clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeUpdate)"); ce != nil {
 				ce.Write(
-					zap.ByteString("ServerID", d.c.localServerID),
+					zap.ByteString("This", d.c.localServerID),
 					zap.String("NodeID", cm.serverID),
 					zap.Error(err),
 				)
 			}
 		} else {
 			log.Info("Join Raft (NodeUpdate)",
-				zap.ByteString("ServerID", d.c.localServerID),
+				zap.ByteString("This", d.c.localServerID),
 				zap.String("NodeID", cm.serverID),
 			)
 		}
 	}
+}
+
+func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
+	cm := convertMember(n)
+	d.c.addMember(cm)
+	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
+		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
+		if err != nil {
+			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeAlive)"); ce != nil {
+				ce.Write(
+					zap.ByteString("This", d.c.localServerID),
+					zap.String("NodeID", cm.serverID),
+					zap.Error(err),
+				)
+			}
+		} else {
+			log.Info("Join Raft (NodeAlive)",
+				zap.ByteString("This", d.c.localServerID),
+				zap.String("NodeID", cm.serverID),
+			)
+		}
+	}
+	return nil
 }
 
 func joinRaft(c *Cluster, nodeID, addr string) error {
@@ -79,7 +102,7 @@ func joinRaft(c *Cluster, nodeID, addr string) error {
 	raftConf := futureConfig.Configuration()
 	for _, srv := range raftConf.Servers {
 		if srv.ID == raft.ServerID(nodeID) && srv.Address == raft.ServerAddress(addr) {
-			return nil
+			return rony.ErrRaftAlreadyJoined
 		}
 		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
 			future := c.raft.RemoveServer(srv.ID, 0, 0)
@@ -96,7 +119,7 @@ func joinRaft(c *Cluster, nodeID, addr string) error {
 	return nil
 }
 
-func (d clusterDelegate) NotifyLeave(n *memberlist.Node) {
+func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.removeMember(cm)
 	if cm.replicaSet == d.c.cfg.ReplicaSet {
@@ -127,7 +150,7 @@ func leaveRaft(c *Cluster, nodeID, addr string) error {
 	return nil
 }
 
-func (d clusterDelegate) NodeMeta(limit int) []byte {
+func (d *clusterDelegate) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
 		ServerID:      d.c.localServerID,
 		ShardRangeMin: d.c.localShardRange[0],
@@ -148,16 +171,16 @@ func (d clusterDelegate) NodeMeta(limit int) []byte {
 	return b
 }
 
-func (d clusterDelegate) NotifyMsg(data []byte) {}
+func (d *clusterDelegate) NotifyMsg(data []byte) {}
 
-func (d clusterDelegate) GetBroadcasts(overhead, limit int) [][]byte {
+func (d *clusterDelegate) GetBroadcasts(overhead, limit int) [][]byte {
 	return nil
 }
 
-func (d clusterDelegate) LocalState(join bool) []byte {
+func (d *clusterDelegate) LocalState(join bool) []byte {
 	return nil
 }
 
-func (d clusterDelegate) MergeRemoteState(buf []byte, join bool) {
+func (d *clusterDelegate) MergeRemoteState(buf []byte, join bool) {
 	return
 }

@@ -168,6 +168,7 @@ func (c *Cluster) startGossip() error {
 	conf.Name = string(c.localServerID)
 	conf.Events = cd
 	conf.Delegate = cd
+	conf.Alive = cd
 	conf.LogOutput = ioutil.Discard
 	conf.Logger = nil
 	conf.BindPort = c.cfg.GossipPort
@@ -201,7 +202,7 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
-	// raftConfig.LogLevel = "DEBUG"
+	raftConfig.LogLevel = "WARN"
 	raftConfig.NotifyCh = notifyChan
 	raftConfig.Logger = hclog.NewNullLogger()
 	raftConfig.LocalID = raft.ServerID(c.localServerID)
