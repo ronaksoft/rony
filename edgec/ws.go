@@ -77,7 +77,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		c.cfg.ContextTimeout = c.cfg.RequestTimeout * time.Duration(c.cfg.RequestMaxRetry)
 	}
 	if c.cfg.Router == nil {
-		c.cfg.Router = &defaultRouter{
+		c.cfg.Router = &wsRouter{
 			c: c,
 		}
 	}
@@ -207,4 +207,16 @@ func (c *Websocket) Close() error {
 	// by setting the read deadline we make the receiver() routine stops
 	// TODO:: close all the connections
 	return nil
+}
+
+type wsRouter struct {
+	c *Websocket
+}
+
+func (d *wsRouter) UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64) {
+	// TODO:: implement cache maybe
+}
+
+func (d *wsRouter) GetRoute(req *rony.MessageEnvelope) (replicaSet uint64) {
+	return d.c.sessionReplica
 }

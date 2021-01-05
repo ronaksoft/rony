@@ -17,15 +17,3 @@ type Router interface {
 	UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64)
 	GetRoute(req *rony.MessageEnvelope) (replicaSet uint64)
 }
-
-type defaultRouter struct {
-	c *Websocket
-}
-
-func (d *defaultRouter) UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64) {
-	// TODO:: implement cache maybe
-}
-
-func (d *defaultRouter) GetRoute(req *rony.MessageEnvelope) (replicaSet uint64) {
-	return d.c.sessionReplica
-}
