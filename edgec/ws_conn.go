@@ -77,10 +77,9 @@ func (c *wsConn) createDialer(timeout time.Duration) {
 }
 
 func (c *wsConn) connect() {
-	if c.connected {
+	if c.isConnected() {
 		return
 	}
-
 	urlPrefix := "ws://"
 	if c.secure {
 		urlPrefix = "wss://"
@@ -104,14 +103,25 @@ ConnectLoop:
 		goto ConnectLoop
 	}
 	c.conn = conn
+	c.mtx.Lock()
 	c.connected = true
+	c.mtx.Unlock()
 
 	go c.receiver()
 	return
 }
 
+func (c *wsConn) isConnected() bool {
+	c.mtx.Lock()
+	b := c.connected
+	c.mtx.Unlock()
+	return b
+}
+
 func (c *wsConn) reconnect() {
+	c.mtx.Lock()
 	c.connected = false
+	c.mtx.Unlock()
 	_ = c.conn.SetReadDeadline(time.Now())
 }
 
@@ -123,7 +133,7 @@ func (c *wsConn) waitUntilConnect(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
-		if c.connected {
+		if c.isConnected() {
 			break
 		}
 		time.Sleep(time.Millisecond * step)
@@ -146,9 +156,12 @@ func (c *wsConn) receiver() {
 		if err != nil {
 			_ = c.conn.Close()
 			if !c.stop {
+				c.mtx.Lock()
+				c.connected = false
+				c.mtx.Unlock()
 				c.connect()
 			}
-			return
+			break
 		}
 		for idx := range ms {
 			switch ms[idx].OpCode {
