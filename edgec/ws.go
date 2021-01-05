@@ -145,6 +145,11 @@ func (c *Websocket) initConn() error {
 				c.sessionReplica = n.ReplicaSet
 			}
 		}
+
+		// If this connection is not our pool then we just close it.
+		if !found {
+			_ = initConn.close()
+		}
 	default:
 		return ErrUnknownResponse
 
