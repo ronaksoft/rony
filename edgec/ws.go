@@ -36,7 +36,6 @@ type WebsocketConfig struct {
 	Handler      MessageHandler
 	Header       map[string]string
 	Secure       bool
-	ForceConnect bool
 	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
 	RequestMaxRetry int
 	// RequestTimeout is the timeout for each individual request on each try.

@@ -19,6 +19,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// HttpConfig holds the configurations for the Http client.
 type HttpConfig struct {
 	Name         string
 	HostPort     string
@@ -28,17 +29,16 @@ type HttpConfig struct {
 	Retries      int
 }
 
+// Http connects to edge servers with HTTP transport.
 type Http struct {
-	hostPort string
-	reqID    uint64
-	retries  uint64
-	c        *fasthttp.Client
+	cfg   HttpConfig
+	reqID uint64
+	c     *fasthttp.Client
 }
 
 func NewHttp(config HttpConfig) *Http {
 	h := &Http{
-		retries:  uint64(config.Retries),
-		hostPort: config.HostPort,
+		cfg: config,
 		c: &fasthttp.Client{
 			Name:                      config.Name,
 			MaxIdemponentCallAttempts: 10,
@@ -50,6 +50,7 @@ func NewHttp(config HttpConfig) *Http {
 	return h
 }
 
+// Send implements Client interface
 func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) (err error) {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(req))
@@ -64,13 +65,13 @@ func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) (err e
 	defer fasthttp.ReleaseRequest(httpReq)
 
 	httpReq.Header.SetMethod(http.MethodPost)
-	httpReq.SetHost(h.hostPort)
+	httpReq.SetHost(h.cfg.HostPort)
 	httpReq.SetBody(b)
 
 	httpRes := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(httpRes)
 
-	retries := h.retries
+	retries := h.cfg.Retries
 Retries:
 	err = h.c.Do(httpReq, httpRes)
 	switch err {
@@ -86,11 +87,13 @@ Retries:
 	return
 }
 
+// Close implements Client interface
 func (h *Http) Close() error {
 	h.c.CloseIdleConnections()
 	return nil
 }
 
+// GetRequestID implements Client interface
 func (h *Http) GetRequestID() uint64 {
 	return atomic.AddUint64(&h.reqID, 1)
 }
