@@ -25,7 +25,7 @@ func Init() {
 	}
 
 	log.Init(log.Config{
-		Level:       log.InfoLevel,
+		Level:       log.WarnLevel,
 		DirPath:     "",
 		Filename:    "",
 		SentryDSN:   "",
