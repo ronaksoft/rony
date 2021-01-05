@@ -319,12 +319,6 @@ func (edge *Server) StartCluster() (err error) {
 		return ErrClusterNotSet
 	}
 
-	log.Info("Edge Server Started",
-		zap.ByteString("ServerID", edge.serverID),
-		zap.String("Gateway", string(edge.gatewayProtocol)),
-		zap.Bool("Cluster", edge.cluster != nil),
-	)
-
 	edge.cluster.Start()
 	return
 }
@@ -335,6 +329,13 @@ func (edge *Server) StartGateway() error {
 	if edge.cluster != nil {
 		return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
 	}
+
+	log.Info("Edge Server Started",
+		zap.ByteString("ServerID", edge.serverID),
+		zap.String("Gateway", string(edge.gatewayProtocol)),
+		zap.Bool("Cluster", edge.cluster != nil),
+	)
+
 	return nil
 }
 
