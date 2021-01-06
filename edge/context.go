@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"reflect"
@@ -30,16 +29,27 @@ const (
 	TunnelMessage
 )
 
+// Conn defines the Connection interface
+type Conn interface {
+	ConnID() uint64
+	ClientIP() string
+	SendBinary(streamID int64, data []byte) error
+	Persistent() bool
+	Get(key string) interface{}
+	Set(key string, val interface{})
+}
+
 // DispatchCtx
 type DispatchCtx struct {
 	streamID          int64
 	serverID          []byte
-	conn              gateway.Conn
+	conn              Conn
 	req               *rony.MessageEnvelope
 	cluster           cluster.Cluster
 	gatewayDispatcher GatewayDispatcher
 	tunnelDispatcher  TunnelDispatcher
 	kind              ContextKind
+	buf               *tools.LinkedList
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -52,6 +62,7 @@ func newDispatchCtx(edge *Server) *DispatchCtx {
 		tunnelDispatcher:  edge.tunnelDispatcher,
 		req:               &rony.MessageEnvelope{},
 		kv:                make(map[string]interface{}, 3),
+		buf:               tools.NewLinkedList(),
 	}
 }
 
@@ -59,6 +70,7 @@ func (ctx *DispatchCtx) reset() {
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
+	ctx.buf.Reset()
 }
 
 func (ctx *DispatchCtx) Debug() {
@@ -69,7 +81,7 @@ func (ctx *DispatchCtx) Debug() {
 	}
 }
 
-func (ctx *DispatchCtx) Conn() gateway.Conn {
+func (ctx *DispatchCtx) Conn() Conn {
 	return ctx.conn
 }
 
@@ -152,6 +164,18 @@ func (ctx *DispatchCtx) Kind() ContextKind {
 	return ctx.kind
 }
 
+func (ctx *DispatchCtx) Push(m *rony.MessageEnvelope) {
+	ctx.buf.Append(m)
+}
+
+func (ctx *DispatchCtx) Pop() *rony.MessageEnvelope {
+	v := ctx.buf.PickHeadData()
+	if v != nil {
+		return v.(*rony.MessageEnvelope)
+	}
+	return nil
+}
+
 // RequestCtx
 type RequestCtx struct {
 	dispatchCtx *DispatchCtx
@@ -180,7 +204,7 @@ func (ctx *RequestCtx) ConnID() uint64 {
 	return 0
 }
 
-func (ctx *RequestCtx) Conn() gateway.Conn {
+func (ctx *RequestCtx) Conn() Conn {
 	return ctx.dispatchCtx.Conn()
 }
 

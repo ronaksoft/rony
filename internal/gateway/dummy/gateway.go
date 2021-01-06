@@ -2,7 +2,6 @@ package dummyGateway
 
 import (
 	"github.com/ronaksoft/rony/gateway"
-	"github.com/ronaksoft/rony/tools"
 	"sync"
 	"sync/atomic"
 )
@@ -43,7 +42,6 @@ func New(config Config) (*Gateway, error) {
 func (g *Gateway) OpenConn(connID uint64, onReceiveMessage func(connID uint64, streamID int64, data []byte), kvs ...gateway.KeyValue) {
 	dConn := &Conn{
 		id:        connID,
-		buf:       tools.NewLinkedList(),
 		kv:        make(map[string]interface{}),
 		onMessage: onReceiveMessage,
 	}

@@ -2,7 +2,6 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/gateway"
 	"sync"
 )
 
@@ -122,7 +121,7 @@ func releaseRequestCtx(ctx *RequestCtx) {
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *Server, conn gateway.Conn, streamID int64, serverID []byte, kind ContextKind) *DispatchCtx {
+func acquireDispatchCtx(edge *Server, conn Conn, streamID int64, serverID []byte, kind ContextKind) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)

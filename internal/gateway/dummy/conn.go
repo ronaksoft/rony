@@ -1,8 +1,6 @@
 package dummyGateway
 
 import (
-	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/tools"
 	"sync"
 )
 
@@ -20,7 +18,6 @@ type Conn struct {
 	clientIP   string
 	persistent bool
 	mtx        sync.Mutex
-	buf        *tools.LinkedList
 	kv         map[string]interface{}
 	onMessage  func(connID uint64, streamID int64, data []byte)
 }
@@ -43,18 +40,6 @@ func (c *Conn) ConnID() uint64 {
 
 func (c *Conn) ClientIP() string {
 	return c.clientIP
-}
-
-func (c *Conn) Push(m *rony.MessageEnvelope) {
-	c.buf.Append(m)
-}
-
-func (c *Conn) Pop() *rony.MessageEnvelope {
-	v := c.buf.PickHeadData()
-	if v != nil {
-		return v.(*rony.MessageEnvelope)
-	}
-	return nil
 }
 
 func (c *Conn) SendBinary(streamID int64, data []byte) error {

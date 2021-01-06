@@ -30,7 +30,6 @@ func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 		return &httpConn{
 			gateway: gw,
 			req:     req,
-			buf:     tools.NewLinkedList(),
 			kv:      make(map[string]interface{}, 4),
 		}
 	}
@@ -45,7 +44,6 @@ func releaseHttpConn(c *httpConn) {
 	for k := range c.kv {
 		delete(c.kv, k)
 	}
-	c.buf.Reset()
 	httpConnPool.Put(c)
 }
 
@@ -77,7 +75,6 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 	if !ok {
 		return &websocketConn{
 			connID:       connID,
-			buf:          tools.NewLinkedList(),
 			gateway:      gw,
 			conn:         conn,
 			desc:         desc,
@@ -96,7 +93,6 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 
 func releaseWebsocketConn(wc *websocketConn) {
 	wc.clientIP = wc.clientIP[:0]
-	wc.buf.Reset()
 	wc.conn = nil
 	for k := range wc.kv {
 		delete(wc.kv, k)

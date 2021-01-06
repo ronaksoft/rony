@@ -7,7 +7,6 @@ import (
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
@@ -38,7 +37,6 @@ type websocketConn struct {
 	kv  map[string]interface{}
 
 	// Internals
-	buf          *tools.LinkedList
 	gateway      *Gateway
 	lastActivity int64
 	conn         net.Conn
@@ -179,18 +177,6 @@ func (wc *websocketConn) ClientIP() string {
 
 func (wc *websocketConn) SetClientIP(ip []byte) {
 	wc.clientIP = append(wc.clientIP[:0], ip...)
-}
-
-func (wc *websocketConn) Push(m *rony.MessageEnvelope) {
-	wc.buf.Append(m)
-}
-
-func (wc *websocketConn) Pop() *rony.MessageEnvelope {
-	v := wc.buf.PickHeadData()
-	if v != nil {
-		return v.(*rony.MessageEnvelope)
-	}
-	return nil
 }
 
 // SendBinary

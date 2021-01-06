@@ -1,9 +1,5 @@
 package gateway
 
-import (
-	"github.com/ronaksoft/rony"
-)
-
 /*
    Creation Time: 2019 - Aug - 31
    Created by:  (ehsan)
@@ -28,8 +24,6 @@ const (
 type Conn interface {
 	ConnID() uint64
 	ClientIP() string
-	Push(m *rony.MessageEnvelope)
-	Pop() *rony.MessageEnvelope
 	SendBinary(streamID int64, data []byte) error
 	Persistent() bool
 	Get(key string) interface{}

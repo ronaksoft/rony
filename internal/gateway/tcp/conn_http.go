@@ -1,8 +1,6 @@
 package tcpGateway
 
 import (
-	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"
 	"sync"
@@ -21,7 +19,6 @@ import (
 type httpConn struct {
 	gateway    *Gateway
 	req        *fasthttp.RequestCtx
-	buf        *tools.LinkedList
 	clientIP   []byte
 	clientType []byte
 	mtx        sync.RWMutex
@@ -39,18 +36,6 @@ func (c *httpConn) Set(key string, val interface{}) {
 	c.mtx.Lock()
 	c.kv[key] = val
 	c.mtx.Unlock()
-}
-
-func (c *httpConn) Push(m *rony.MessageEnvelope) {
-	c.buf.Append(m)
-}
-
-func (c *httpConn) Pop() *rony.MessageEnvelope {
-	v := c.buf.PickHeadData()
-	if v != nil {
-		return v.(*rony.MessageEnvelope)
-	}
-	return nil
 }
 
 func (c *httpConn) ConnID() uint64 {
