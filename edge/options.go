@@ -2,10 +2,10 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
-	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/gateway"
-	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
+	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
+	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 )
 
 /*
@@ -20,24 +20,28 @@ import (
 // Option
 type Option func(edge *Server)
 
+type GossipClusterConfig gossipCluster.Config
+
 // WithGossipCluster enables the cluster in gossip mode. This mod is eventually consistent mode but there is
 // no need to a central key-value store or any other 3rd party service to run the cluster
-func WithGossipCluster(cfg gossipCluster.Config) Option {
+func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
-		c := gossipCluster.New(cfg)
+		c := gossipCluster.New(gossipCluster.Config(cfg))
 		c.ReplicaMessageHandler = edge.onReplicaMessage
 		edge.cluster = c
 	}
 }
 
+type TcpGatewayConfig tcpGateway.Config
+
 // WithTcpGateway set the gateway to tcp which can support http and/or websocket
 // Only one gateway could be set and if you set another gateway it panics on runtime.
-func WithTcpGateway(config tcpGateway.Config) Option {
+func WithTcpGateway(config TcpGatewayConfig) Option {
 	return func(edge *Server) {
 		if edge.gatewayProtocol != gateway.Undefined {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
-		gatewayTcp, err := tcpGateway.New(config)
+		gatewayTcp, err := tcpGateway.New(tcpGateway.Config(config))
 		if err != nil {
 			panic(err)
 		}
@@ -50,14 +54,16 @@ func WithTcpGateway(config tcpGateway.Config) Option {
 	}
 }
 
+type DummyGatewayConfig dummyGateway.Config
+
 // WithTestGateway set the gateway to a dummy gateway which is useful for writing tests.
 // Only one gateway could be set and if you set another gateway it panics on runtime.
-func WithTestGateway(config dummyGateway.Config) Option {
+func WithTestGateway(config DummyGatewayConfig) Option {
 	return func(edge *Server) {
 		if edge.gatewayProtocol != gateway.Undefined {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
-		gatewayDummy, err := dummyGateway.New(config)
+		gatewayDummy, err := dummyGateway.New(dummyGateway.Config(config))
 		if err != nil {
 			panic(err)
 		}

@@ -3,7 +3,7 @@ package edgetest
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
-	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"sync"

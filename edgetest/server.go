@@ -2,7 +2,7 @@ package edgetest
 
 import (
 	"github.com/ronaksoft/rony/edge"
-	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 )
 
 /*
@@ -22,7 +22,7 @@ type Server struct {
 func NewServer(serverID string, d edge.Dispatcher) *Server {
 	s := &Server{}
 	s.edge = edge.NewServer(serverID, d,
-		edge.WithTestGateway(dummyGateway.Config{
+		edge.WithTestGateway(edge.DummyGatewayConfig{
 			Exposer: func(gw *dummyGateway.Gateway) {
 				s.gw = gw
 			},
@@ -32,7 +32,7 @@ func NewServer(serverID string, d edge.Dispatcher) *Server {
 }
 
 func (s *Server) Start() {
-	s.edge.StartGateway()
+	_ = s.edge.StartGateway()
 }
 
 func (s *Server) Shutdown() {

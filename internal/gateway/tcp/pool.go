@@ -1,10 +1,10 @@
-package tcp
+package tcpGateway
 
 import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
-	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"net"

@@ -1,4 +1,4 @@
-package tcp_test
+package tcpGateway_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/gateway"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
-	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
+	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -37,7 +37,6 @@ func TestGateway(t *testing.T) {
 		ListenAddress: "0.0.0.0:1088",
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
-		Protocol:      tcpGateway.Auto,
 		ExternalAddrs: []string{"127.0.0.1:1088"},
 	})
 

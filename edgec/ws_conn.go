@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
-	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"

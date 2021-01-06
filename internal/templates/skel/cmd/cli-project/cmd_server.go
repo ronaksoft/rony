@@ -3,11 +3,9 @@ package main
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
-	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/gateway"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	"github.com/spf13/cobra"
 	"os"
 	"time"
@@ -23,14 +21,13 @@ var ServerCmd = &cobra.Command{
 
 		s := NewServer(
 			config.GetString("server.id"),
-			edge.WithTcpGateway(tcpGateway.Config{
+			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   100,
 				ListenAddress: ":80",
 				MaxBodySize:   0,
 				MaxIdleTime:   time.Minute,
-				Protocol:      tcpGateway.Auto,
 			}),
-			edge.WithGossipCluster(gossipCluster.Config{
+			edge.WithGossipCluster(edge.GossipClusterConfig{
 				Bootstrap:  config.GetBool("replica.bootstrap"),
 				GossipPort: config.GetInt("gossip.port"),
 				RaftPort:   config.GetInt("replica.port"),

@@ -1,4 +1,4 @@
-package tcp
+package tcpGateway
 
 import (
 	"github.com/ronaksoft/rony"

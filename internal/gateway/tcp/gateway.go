@@ -1,4 +1,4 @@
-package tcp
+package tcpGateway
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony/gateway"
-	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	log "github.com/ronaksoft/rony/internal/logger"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -27,14 +27,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-type Protocol int
-
-const (
-	Http Protocol = 1 << iota
-	Websocket
-	Auto = Http | Websocket
-)
 
 var (
 	ignoredHeaders = map[string]bool{
@@ -60,7 +52,7 @@ type Config struct {
 	ListenAddress string
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
-	Protocol      Protocol
+	Protocol      gateway.Protocol
 	ExternalAddrs []string
 }
 
@@ -71,7 +63,7 @@ type Gateway struct {
 	gateway.CloseHandler
 
 	// Internals
-	transportMode Protocol
+	transportMode gateway.Protocol
 	listenOn      string
 	listener      *wrapListener
 	addrs         []string
@@ -110,7 +102,7 @@ func New(config Config) (*Gateway, error) {
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
-		transportMode:      Auto,
+		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
 	}
 
@@ -122,7 +114,7 @@ func New(config Config) (*Gateway, error) {
 	if config.MaxIdleTime != 0 {
 		g.maxIdleTime = int64(config.MaxIdleTime)
 	}
-	if config.Protocol != 0 {
+	if config.Protocol != "" {
 		g.transportMode = config.Protocol
 	}
 
@@ -331,7 +323,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 
 	// If this is a Http Upgrade then we handle websocket
 	if req.Request.Header.ConnectionUpgrade() {
-		if g.transportMode&Websocket == 0 {
+		if g.transportMode == gateway.Websocket {
 			req.SetConnectionClose()
 			req.SetStatusCode(http.StatusNotAcceptable)
 			return
@@ -350,7 +342,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 
 	// This is going to be an HTTP request
 	req.SetConnectionClose()
-	if g.transportMode&Http == 0 {
+	if g.transportMode == gateway.Http {
 		req.SetStatusCode(http.StatusNotAcceptable)
 		return
 	}

@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
-	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
-	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -108,7 +106,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
-			edge.WithTcpGateway(tcpGateway.Config{
+			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   10000,
 				MaxIdleTime:   0,
 				ListenAddress: "0.0.0.0:0",
@@ -116,7 +114,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 		)
 
 		if replicaSet != 0 {
-			opts = append(opts, edge.WithGossipCluster(gossipCluster.Config{
+			opts = append(opts, edge.WithGossipCluster(edge.GossipClusterConfig{
 				ServerID:   []byte(serverID),
 				Bootstrap:  bootstrap,
 				RaftPort:   port * 10,

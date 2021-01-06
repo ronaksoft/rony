@@ -19,6 +19,8 @@ const (
 	Undefined Protocol = ""
 	TCP       Protocol = "tcp"
 	Dummy     Protocol = "dummy"
+	Websocket Protocol = "ws"
+	Http      Protocol = "http"
 )
 
 // Conn defines the Connection interface

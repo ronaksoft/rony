@@ -2,7 +2,7 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony/gateway"
-	"github.com/ronaksoft/rony/gateway/tcp"
+	"github.com/ronaksoft/rony/internal/gateway/tcp"
 )
 
 /*
@@ -20,7 +20,7 @@ func (edge *Server) OnGatewayMessage(conn gateway.Conn, streamID int64, data []b
 }
 
 func (edge *Server) GatewayConns() int {
-	g, _ := edge.gateway.(*tcp.Gateway)
+	g, _ := edge.gateway.(*tcpGateway.Gateway)
 	if g == nil {
 		return 0
 	}
