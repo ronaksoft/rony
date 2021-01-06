@@ -307,6 +307,12 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
+func (edge *Server) onGatewayConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
+	edge.gatewayDispatcher.OnOpen(conn, kvs...)
+}
+func (edge *Server) onGatewayClose(conn gateway.Conn) {
+	edge.gatewayDispatcher.OnClose(conn)
+}
 func (edge *Server) onTunnelMessage(tmIn, tmOut *rony.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
 	// defer task.End()
@@ -331,14 +337,13 @@ func (edge *Server) onTunnelMessage(tmIn, tmOut *rony.TunnelMessage) {
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
 	rony.ErrorMessage(envelope, dispatchCtx.req.GetRequestID(), code, item)
-	edge.gatewayDispatcher.OnMessage(dispatchCtx, envelope)
+	switch dispatchCtx.kind {
+	case GatewayMessage:
+		edge.gatewayDispatcher.OnMessage(dispatchCtx, envelope)
+	case TunnelMessage:
+		edge.tunnelDispatcher.OnMessage(dispatchCtx, envelope)
+	}
 	releaseMessageEnvelope(envelope)
-}
-func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
-	edge.gatewayDispatcher.OnOpen(conn, kvs...)
-}
-func (edge *Server) onClose(conn gateway.Conn) {
-	edge.gatewayDispatcher.OnClose(conn)
 }
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set

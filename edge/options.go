@@ -47,8 +47,8 @@ func WithTcpGateway(config TcpGatewayConfig) Option {
 			panic(err)
 		}
 		gatewayTcp.MessageHandler = edge.onGatewayMessage
-		gatewayTcp.ConnectHandler = edge.onConnect
-		gatewayTcp.CloseHandler = edge.onClose
+		gatewayTcp.ConnectHandler = edge.onGatewayConnect
+		gatewayTcp.CloseHandler = edge.onGatewayClose
 		edge.gatewayProtocol = gateway.TCP
 		edge.gateway = gatewayTcp
 		return
@@ -69,8 +69,8 @@ func WithTestGateway(config DummyGatewayConfig) Option {
 			panic(err)
 		}
 		gatewayDummy.MessageHandler = edge.onGatewayMessage
-		gatewayDummy.ConnectHandler = edge.onConnect
-		gatewayDummy.CloseHandler = edge.onClose
+		gatewayDummy.ConnectHandler = edge.onGatewayConnect
+		gatewayDummy.CloseHandler = edge.onGatewayClose
 		edge.gatewayProtocol = gateway.Dummy
 		edge.gateway = gatewayDummy
 		return
