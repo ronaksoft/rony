@@ -6,22 +6,23 @@ import (
 	sync "sync"
 )
 
-const C_ClusterMessage int64 = 1078766375
+const C_TunnelMessage int64 = 3271476222
 
-type poolClusterMessage struct {
+type poolTunnelMessage struct {
 	pool sync.Pool
 }
 
-func (p *poolClusterMessage) Get() *ClusterMessage {
-	x, ok := p.pool.Get().(*ClusterMessage)
+func (p *poolTunnelMessage) Get() *TunnelMessage {
+	x, ok := p.pool.Get().(*TunnelMessage)
 	if !ok {
-		return &ClusterMessage{}
+		return &TunnelMessage{}
 	}
 	return x
 }
 
-func (p *poolClusterMessage) Put(x *ClusterMessage) {
-	x.Sender = x.Sender[:0]
+func (p *poolTunnelMessage) Put(x *TunnelMessage) {
+	x.SenderID = x.SenderID[:0]
+	x.SenderReplicaSet = 0
 	x.Store = x.Store[:0]
 	if x.Envelope != nil {
 		PoolMessageEnvelope.Put(x.Envelope)
@@ -30,7 +31,7 @@ func (p *poolClusterMessage) Put(x *ClusterMessage) {
 	p.pool.Put(x)
 }
 
-var PoolClusterMessage = poolClusterMessage{}
+var PoolTunnelMessage = poolTunnelMessage{}
 
 const C_RaftCommand int64 = 2919813429
 
@@ -80,19 +81,21 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 	x.RaftPort = 0
 	x.RaftState = 0
 	x.GatewayAddr = x.GatewayAddr[:0]
+	x.TunnelAddr = x.TunnelAddr[:0]
 	p.pool.Put(x)
 }
 
 var PoolEdgeNode = poolEdgeNode{}
 
 func init() {
-	registry.RegisterConstructor(1078766375, "ClusterMessage")
+	registry.RegisterConstructor(3271476222, "TunnelMessage")
 	registry.RegisterConstructor(2919813429, "RaftCommand")
 	registry.RegisterConstructor(999040174, "EdgeNode")
 }
 
-func (x *ClusterMessage) DeepCopy(z *ClusterMessage) {
-	z.Sender = append(z.Sender[:0], x.Sender...)
+func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
+	z.SenderID = append(z.SenderID[:0], x.SenderID...)
+	z.SenderReplicaSet = x.SenderReplicaSet
 	for idx := range x.Store {
 		if x.Store[idx] != nil {
 			xx := PoolKeyValue.Get()
@@ -129,9 +132,10 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.RaftPort = x.RaftPort
 	z.RaftState = x.RaftState
 	z.GatewayAddr = append(z.GatewayAddr[:0], x.GatewayAddr...)
+	z.TunnelAddr = append(z.TunnelAddr[:0], x.TunnelAddr...)
 }
 
-func (x *ClusterMessage) Marshal() ([]byte, error) {
+func (x *TunnelMessage) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
@@ -143,7 +147,7 @@ func (x *EdgeNode) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
-func (x *ClusterMessage) Unmarshal(b []byte) error {
+func (x *TunnelMessage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 

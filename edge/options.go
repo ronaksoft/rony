@@ -6,6 +6,7 @@ import (
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
+	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 )
 
 /*
@@ -73,5 +74,17 @@ func WithTestGateway(config DummyGatewayConfig) Option {
 		edge.gatewayProtocol = gateway.Dummy
 		edge.gateway = gatewayDummy
 		return
+	}
+}
+
+type UdpTunnelConfig udpTunnel.Config
+
+// WithUdpTunnel set the tunnel to a udp based tunnel which provides communication channel between
+// edge servers.
+func WithUdpTunnel(config UdpTunnelConfig) Option {
+	return func(edge *Server) {
+		tunnelUDP := udpTunnel.New(udpTunnel.Config(config))
+		tunnelUDP.MessageHandler = edge.onTunnelMessage
+		edge.tunnel = tunnelUDP
 	}
 }

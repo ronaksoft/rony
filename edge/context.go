@@ -267,7 +267,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	envelope.Header = append(envelope.Header[:0], kvs...)
-	ctx.dispatchCtx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
+	ctx.dispatchCtx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
 	releaseMessageEnvelope(envelope)
 }
 

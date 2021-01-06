@@ -10,6 +10,7 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/tunnel"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"os"
@@ -36,10 +37,7 @@ type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
 // Server
 type Server struct {
 	// General
-	serverID        []byte
-	gatewayProtocol gateway.Protocol
-	gateway         gateway.Gateway
-	dispatcher      Dispatcher
+	serverID []byte
 
 	// Handlers
 	preHandlers      []Handler
@@ -47,16 +45,25 @@ type Server struct {
 	postHandlers     []Handler
 	readonlyHandlers map[int64]struct{}
 
-	// Raft & Gossip
+	// Gateway's Configs
+	gatewayProtocol   gateway.Protocol
+	gateway           gateway.Gateway
+	gatewayDispatcher Dispatcher
+
+	// Cluster Configs
 	cluster cluster.Cluster
+
+	// Tunnel Configs
+	tunnel           tunnel.Tunnel
+	tunnelDispatcher Dispatcher
 }
 
 func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 	edgeServer := &Server{
-		handlers:         make(map[int64][]Handler),
-		readonlyHandlers: make(map[int64]struct{}),
-		serverID:         []byte(serverID),
-		dispatcher:       dispatcher,
+		handlers:          make(map[int64][]Handler),
+		readonlyHandlers:  make(map[int64]struct{}),
+		serverID:          []byte(serverID),
+		gatewayDispatcher: dispatcher,
 	}
 
 	for _, opt := range opts {
@@ -272,20 +279,19 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
 		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
 	)
-
 	err := edge.execute(dispatchCtx, false)
 	if err != nil {
 		return err
 	}
-	edge.dispatcher.Done(dispatchCtx)
 	releaseDispatchCtx(dispatchCtx)
 	return nil
 }
 func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
+
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
-	err := edge.dispatcher.Interceptor(dispatchCtx, data)
+	err := edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return
@@ -296,21 +302,43 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		edge.dispatcher.Done(dispatchCtx)
+		edge.gatewayDispatcher.Done(dispatchCtx)
 	}
 	releaseDispatchCtx(dispatchCtx)
+	return
+}
+func (edge *Server) onTunnelMessage(tmIn, tmOut *rony.TunnelMessage) {
+	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
+	// defer task.End()
+
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, tmIn.SenderID, ReplicaMessage)
+	dispatchCtx.FillEnvelope(
+		tmIn.Envelope.GetRequestID(), tmIn.Envelope.GetConstructor(), tmIn.Envelope.Message,
+		tmIn.Envelope.Auth, tmIn.Envelope.Header...,
+	)
+
+	err, isLeader := edge.executePrepare(dispatchCtx)
+	if err != nil {
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
+		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+	} else {
+		edge.tunnelDispatcher.Done(dispatchCtx)
+	}
+	releaseDispatchCtx(dispatchCtx)
+	return
 }
 func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
 	rony.ErrorMessage(envelope, dispatchCtx.req.GetRequestID(), code, item)
-	edge.dispatcher.OnMessage(dispatchCtx, envelope)
+	edge.gatewayDispatcher.OnMessage(dispatchCtx, envelope)
 	releaseMessageEnvelope(envelope)
 }
 func (edge *Server) onConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
-	edge.dispatcher.OnOpen(conn, kvs...)
+	edge.gatewayDispatcher.OnOpen(conn, kvs...)
 }
 func (edge *Server) onClose(conn gateway.Conn) {
-	edge.dispatcher.OnClose(conn)
+	edge.gatewayDispatcher.OnClose(conn)
 }
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set

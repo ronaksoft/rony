@@ -79,8 +79,9 @@ func (x *RaftCommand) Fill(senderID []byte, e *MessageEnvelope, kvs ...*KeyValue
 	e.DeepCopy(x.Envelope)
 }
 
-func (x *ClusterMessage) Fill(senderID []byte, e *MessageEnvelope, kvs ...*KeyValue) {
-	x.Sender = append(x.Sender[:0], senderID...)
+func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *MessageEnvelope, kvs ...*KeyValue) {
+	x.SenderID = append(x.SenderID[:0], senderID...)
+	x.SenderReplicaSet = senderReplicaSet
 	x.Store = append(x.Store[:0], kvs...)
 	e.DeepCopy(x.Envelope)
 }

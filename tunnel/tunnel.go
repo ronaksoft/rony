@@ -1,5 +1,9 @@
 package tunnel
 
+import (
+	"github.com/ronaksoft/rony"
+)
+
 /*
    Creation Time: 2021 - Jan - 04
    Created by:  (ehsan)
@@ -18,4 +22,4 @@ type Tunnel interface {
 	Addr() []string
 }
 
-type MessageHandler func()
+type MessageHandler func(in, out *rony.TunnelMessage)

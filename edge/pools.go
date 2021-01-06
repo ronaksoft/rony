@@ -34,25 +34,26 @@ func releaseMessageEnvelope(x *rony.MessageEnvelope) {
 	messageEnvelopePool.Put(x)
 }
 
-var clusterMessagePool sync.Pool
+var tunnelMessagePool sync.Pool
 
-func acquireClusterMessage() *rony.ClusterMessage {
-	v := clusterMessagePool.Get()
+func acquireTunnelMessage() *rony.TunnelMessage {
+	v := tunnelMessagePool.Get()
 	if v == nil {
-		return &rony.ClusterMessage{
+		return &rony.TunnelMessage{
 			Envelope: &rony.MessageEnvelope{},
 		}
 	}
-	return v.(*rony.ClusterMessage)
+	return v.(*rony.TunnelMessage)
 }
 
-func releaseClusterMessage(x *rony.ClusterMessage) {
+func releaseTunnelMessage(x *rony.TunnelMessage) {
 	x.Store = x.Store[:0]
-	x.Sender = x.Sender[:0]
+	x.SenderID = x.SenderID[:0]
+	x.SenderReplicaSet = 0
 	x.Envelope.Constructor = 0
 	x.Envelope.Message = x.Envelope.Message[:0]
 	x.Envelope.RequestID = 0
-	clusterMessagePool.Put(x)
+	tunnelMessagePool.Put(x)
 }
 
 var raftCommandPool sync.Pool
