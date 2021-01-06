@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/c-bata/go-prompt"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"

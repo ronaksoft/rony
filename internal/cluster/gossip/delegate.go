@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )

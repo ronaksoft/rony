@@ -3,7 +3,7 @@ package tools
 import (
 	"fmt"
 	"github.com/nyaruka/phonenumbers"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"go.uber.org/zap"
 	"regexp"
 	"strings"

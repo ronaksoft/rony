@@ -3,7 +3,7 @@ package edgec
 import (
 	"context"
 	"github.com/ronaksoft/rony"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"sync/atomic"

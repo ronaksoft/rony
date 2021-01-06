@@ -7,7 +7,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony/gateway"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"

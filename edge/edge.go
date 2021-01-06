@@ -6,7 +6,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/gateway"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"

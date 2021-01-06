@@ -6,7 +6,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"

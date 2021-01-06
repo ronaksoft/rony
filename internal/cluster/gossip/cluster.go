@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"

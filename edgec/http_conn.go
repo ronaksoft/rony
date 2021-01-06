@@ -2,7 +2,7 @@ package edgec
 
 import (
 	"github.com/ronaksoft/rony"
-	log "github.com/ronaksoft/rony/internal/logger"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
