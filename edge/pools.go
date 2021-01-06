@@ -140,5 +140,6 @@ func releaseDispatchCtx(ctx *DispatchCtx) {
 	// Reset the Key-Value store
 	ctx.reset()
 
+	// Put back the context into the pool
 	dispatchCtxPool.Put(ctx)
 }

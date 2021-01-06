@@ -16,8 +16,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Dispatcher
-type Dispatcher interface {
+// GatewayDispatcher
+type GatewayDispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
 	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
@@ -35,7 +35,7 @@ type Dispatcher interface {
 	OnClose(conn gateway.Conn)
 }
 
-// SimpleDispatcher is a naive implementation of Dispatcher. You only need to set OnMessageFunc with
+// SimpleDispatcher is a naive implementation of GatewayDispatcher. You only need to set OnMessageFunc with
 type SimpleDispatcher struct {
 	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
 }
@@ -67,4 +67,14 @@ func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
 
 func (s *SimpleDispatcher) OnClose(conn gateway.Conn) {
 	// Do nothing
+}
+
+// TunnelDispatcher
+type TunnelDispatcher interface {
+	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
+	// async functions, make sure to hard copy (clone) it before sending it.
+	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
+	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
+	// messages and updates in one go.
+	Done(ctx *DispatchCtx)
 }

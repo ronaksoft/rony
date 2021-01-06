@@ -19,7 +19,7 @@ type Server struct {
 	gw   *dummyGateway.Gateway
 }
 
-func NewServer(serverID string, d edge.Dispatcher) *Server {
+func NewServer(serverID string, d edge.GatewayDispatcher) *Server {
 	s := &Server{}
 	s.edge = edge.NewServer(serverID, d,
 		edge.WithTestGateway(edge.DummyGatewayConfig{

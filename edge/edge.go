@@ -48,17 +48,17 @@ type Server struct {
 	// Gateway's Configs
 	gatewayProtocol   gateway.Protocol
 	gateway           gateway.Gateway
-	gatewayDispatcher Dispatcher
+	gatewayDispatcher GatewayDispatcher
 
 	// Cluster Configs
 	cluster cluster.Cluster
 
 	// Tunnel Configs
 	tunnel           tunnel.Tunnel
-	tunnelDispatcher Dispatcher
+	tunnelDispatcher GatewayDispatcher
 }
 
-func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
+func NewServer(serverID string, dispatcher GatewayDispatcher, opts ...Option) *Server {
 	edgeServer := &Server{
 		handlers:          make(map[int64][]Handler),
 		readonlyHandlers:  make(map[int64]struct{}),

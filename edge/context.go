@@ -3,6 +3,7 @@ package edge
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -31,12 +32,14 @@ const (
 
 // DispatchCtx
 type DispatchCtx struct {
-	streamID int64
-	serverID []byte
-	conn     gateway.Conn
-	req      *rony.MessageEnvelope
-	edge     *Server
-	kind     ContextKind
+	streamID          int64
+	serverID          []byte
+	conn              gateway.Conn
+	req               *rony.MessageEnvelope
+	cluster           cluster.Cluster
+	gatewayDispatcher GatewayDispatcher
+	tunnelDispatcher  TunnelDispatcher
+	kind              ContextKind
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -44,9 +47,11 @@ type DispatchCtx struct {
 
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
-		edge: edge,
-		req:  &rony.MessageEnvelope{},
-		kv:   make(map[string]interface{}, 3),
+		cluster:           edge.cluster,
+		gatewayDispatcher: edge.gatewayDispatcher,
+		tunnelDispatcher:  edge.tunnelDispatcher,
+		req:               &rony.MessageEnvelope{},
+		kv:                make(map[string]interface{}, 3),
 	}
 }
 
@@ -226,14 +231,14 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 }
 
 func (ctx *RequestCtx) PushRedirectLeader() {
-	edge := ctx.dispatchCtx.edge
-	if leaderID := edge.cluster.RaftLeaderID(); leaderID == "" {
+	ctxCluster := ctx.dispatchCtx.cluster
+	if leaderID := ctxCluster.RaftLeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 	} else {
 		r := rony.PoolRedirect.Get()
 		r.Reason = rony.RedirectReason_ReplicaMaster
 		r.WaitInSec = 0
-		members := edge.cluster.RaftMembers(edge.cluster.ReplicaSet())
+		members := ctxCluster.RaftMembers(ctxCluster.ReplicaSet())
 		nodeInfos := make([]*rony.NodeInfo, 0, len(members))
 		for _, m := range members {
 			ni := m.Proto(rony.PoolNodeInfo.Get())
@@ -261,13 +266,21 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 }
 
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
-	if ctx.dispatchCtx.kind != GatewayMessage {
+	if ctx.dispatchCtx.kind == ReplicaMessage {
 		return
 	}
+
 	envelope := acquireMessageEnvelope()
 	envelope.Fill(requestID, constructor, proto)
 	envelope.Header = append(envelope.Header[:0], kvs...)
-	ctx.dispatchCtx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+
+	switch ctx.dispatchCtx.kind {
+	case GatewayMessage:
+		ctx.dispatchCtx.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+	case TunnelMessage:
+		ctx.dispatchCtx.tunnelDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+	}
+
 	releaseMessageEnvelope(envelope)
 }
 
