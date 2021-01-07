@@ -64,6 +64,7 @@ func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 		readonlyHandlers:  make(map[int64]struct{}),
 		serverID:          []byte(serverID),
 		gatewayDispatcher: dispatcher,
+		tunnelDispatcher:  dispatcher,
 	}
 
 	for _, opt := range opts {
@@ -317,7 +318,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, ReplicaMessage)
+	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage)
 	dispatchCtx.FillEnvelope(
 		tm.Envelope.GetRequestID(), tm.Envelope.GetConstructor(), tm.Envelope.Message,
 		tm.Envelope.Auth, tm.Envelope.Header...,
@@ -353,23 +354,60 @@ func (edge *Server) StartCluster() (err error) {
 	}
 
 	edge.cluster.Start()
+	log.Info("Edge Server:: Cluster Started",
+		zap.ByteString("ServerID", edge.serverID),
+		zap.String("Cluster", edge.cluster.Addr()),
+	)
+
 	return
 }
 
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
+	if edge.gateway == nil {
+		return ErrGatewayNotSet
+	}
 	edge.gateway.Start()
+
+	log.Info("Edge Server:: Gateway Started",
+		zap.ByteString("ServerID", edge.serverID),
+		zap.String("Protocol", string(edge.gatewayProtocol)),
+		zap.Strings("Addr", edge.gateway.Addr()),
+	)
+
 	if edge.cluster != nil {
 		return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
 	}
 
-	log.Info("Edge Server Started",
+	return nil
+}
+
+// StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
+func (edge *Server) StartTunnel() error {
+	if edge.tunnel == nil {
+		return ErrTunnelNotSet
+	}
+	edge.tunnel.Start()
+
+	log.Info("Edge Server:: Tunnel Started",
 		zap.ByteString("ServerID", edge.serverID),
-		zap.String("Gateway", string(edge.gatewayProtocol)),
-		zap.Bool("Cluster", edge.cluster != nil),
+		zap.Strings("Addr", edge.tunnel.Addr()),
 	)
 
+	if edge.cluster != nil {
+		return edge.cluster.SetTunnelAddrs(edge.tunnel.Addr())
+	}
+
 	return nil
+}
+
+// Start is a helper function which tries to start all three parts of the edge server
+// This function does not return any error, if you need to make sure all the parts are started with
+// no error, then you must start each section separately.
+func (edge *Server) Start() {
+	_ = edge.StartCluster()
+	_ = edge.StartGateway()
+	_ = edge.StartTunnel()
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster
@@ -414,6 +452,8 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 
 var (
 	ErrClusterNotSet   = errors.New("cluster is not set")
+	ErrGatewayNotSet   = errors.New("gateway is not set")
+	ErrTunnelNotSet    = errors.New("tunnel is not set")
 	ErrEmptyMemberList = errors.New("member list is empty")
 	ErrMemberNotFound  = errors.New("member not found")
 	ErrNoTunnelAddrs   = errors.New("tunnel address does not found")

@@ -89,6 +89,7 @@ type Gateway struct {
 	cntWrites          uint64
 }
 
+
 // New
 func New(config Config) (*Gateway, error) {
 	var (

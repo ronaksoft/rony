@@ -25,6 +25,7 @@ require (
 	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/panjf2000/ants/v2 v2.4.3
+	github.com/panjf2000/gnet v1.3.2
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/scylladb/gocqlx/v2 v2.2.0
 	github.com/sirupsen/logrus v1.6.0 // indirect
@@ -32,7 +33,6 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
-	github.com/tidwall/evio v1.0.8
 	github.com/valyala/fasthttp v1.18.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0

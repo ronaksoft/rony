@@ -83,7 +83,10 @@ type UdpTunnelConfig udpTunnel.Config
 // edge servers.
 func WithUdpTunnel(config UdpTunnelConfig) Option {
 	return func(edge *Server) {
-		tunnelUDP := udpTunnel.New(udpTunnel.Config(config))
+		tunnelUDP, err := udpTunnel.New(udpTunnel.Config(config))
+		if err != nil {
+			panic(err)
+		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
 	}

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"net"
 	"reflect"
@@ -31,6 +34,19 @@ const (
 	ReplicaMessage
 	TunnelMessage
 )
+
+func (c ContextKind) String() string {
+	switch c {
+	case GatewayMessage:
+		return "GatewayMessage"
+	case ReplicaMessage:
+		return "ReplicaMessage"
+	case TunnelMessage:
+		return "TunnelMessage"
+	default:
+		panic("BUG!! invalid context kind")
+	}
+}
 
 // Conn defines the Connection interface
 type Conn interface {
@@ -74,6 +90,10 @@ func (ctx *DispatchCtx) reset() {
 		delete(ctx.kv, k)
 	}
 	ctx.buf.Reset()
+}
+
+func (ctx *DispatchCtx) ServerID() string {
+	return string(ctx.serverID)
 }
 
 func (ctx *DispatchCtx) Debug() {
@@ -351,36 +371,43 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 		return ErrNoTunnelAddrs
 	}
 
-	return tools.Try(10, time.Millisecond*10, func() error {
-		conn, err := net.Dial("udp", target.TunnelAddr()[0])
-		if err != nil {
-			return err
-		}
-		tmOut := rony.PoolTunnelMessage.Get()
-		defer rony.PoolTunnelMessage.Put(tmOut)
-		tmIn := rony.PoolTunnelMessage.Get()
-		defer rony.PoolTunnelMessage.Put(tmIn)
-		tmOut.SenderID = ctx.dispatchCtx.serverID
-		tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
-		tmOut.Envelope = req
-		mo := proto.MarshalOptions{UseCachedSize: true}
-		b := pools.Bytes.GetCap(mo.Size(tmOut))
-		b, _ = mo.MarshalAppend(b, tmOut)
-		n, err := conn.Write(b)
-		if err != nil {
-			return err
-		}
-		b = b[:0]
-		n, err = bufio.NewReader(conn).Read(b)
-		if err != nil {
-			return err
-		}
 
-		err = tmIn.Unmarshal(b[:n])
-		if err != nil {
-			return err
-		}
-		tmIn.Envelope.DeepCopy(res)
-		return nil
-	})
+	conn, err := net.Dial("udp", target.TunnelAddr()[0])
+	if err != nil {
+		return err
+	}
+	tmOut := rony.PoolTunnelMessage.Get()
+	defer rony.PoolTunnelMessage.Put(tmOut)
+	tmIn := rony.PoolTunnelMessage.Get()
+	defer rony.PoolTunnelMessage.Put(tmIn)
+	tmOut.SenderID = ctx.dispatchCtx.serverID
+	tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
+	tmOut.Envelope = req
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	b := pools.Bytes.GetCap(mo.Size(tmOut))
+	b, _ = mo.MarshalAppend(b, tmOut)
+
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
+	n, err := conn.Write(b)
+	if err != nil {
+		return err
+	}
+	pools.Bytes.Put(b)
+
+
+	b = pools.Bytes.GetLen(4096)
+	n, err = bufio.NewReader(conn).Read(b)
+	if err != nil || n == 0 {
+		return err
+	}
+
+	err = tmIn.Unmarshal(b[:n])
+	if err != nil {
+		return err
+	}
+	log.Info("Response", zap.String("C", registry.ConstructorName(tmIn.Envelope.Constructor)))
+	pools.Bytes.Put(b)
+	tmIn.Envelope.DeepCopy(res)
+	return nil
+
 }

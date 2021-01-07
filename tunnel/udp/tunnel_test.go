@@ -31,11 +31,12 @@ func init() {
 func TestNewTunnel(t *testing.T) {
 	Convey("Tunnel", t, func(c C) {
 		hostPort := "127.0.0.1:8080"
-		t := udpTunnel.New(udpTunnel.Config{
+		t, err := udpTunnel.New(udpTunnel.Config{
 			Concurrency:   0,
 			ListenAddress: hostPort,
 			ExternalAddrs: []string{hostPort},
 		})
+		c.So(err, ShouldBeNil)
 		t.MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage) {
 			b, _ := tm.Marshal()
 			err := conn.SendBinary(0, b)

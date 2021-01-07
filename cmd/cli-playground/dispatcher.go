@@ -19,10 +19,9 @@ func (d dispatcher) OnClose(conn rony.Conn) {
 }
 
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
+	// log.Info("OnMessage", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
 	if ctx.Conn() != nil {
-		mo := proto.MarshalOptions{
-			UseCachedSize: true,
-		}
+		mo := proto.MarshalOptions{UseCachedSize: true}
 		protoBytes := pools.Bytes.GetCap(mo.Size(envelope))
 		protoBytes, _ = mo.MarshalAppend(protoBytes, envelope)
 		err := ctx.Conn().SendBinary(ctx.StreamID(), protoBytes)

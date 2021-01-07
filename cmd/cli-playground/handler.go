@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"github.com/ronaksoft/rony/tools"
@@ -31,6 +32,23 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp
 	res.ServerID = h.es.GetServerID()
+
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), pb.C_Echo, req)
+	err := ctx.ExecuteRemote(req.ReplicaSet, true, out, in)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		return
+	}
+	switch in.Constructor {
+	case pb.C_EchoResponse:
+		_ = res.Unmarshal(in.Message)
+	default:
+		ctx.PushError(rony.ErrCodeInternal, "invalid constructor in response")
+	}
 }
 
 func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {

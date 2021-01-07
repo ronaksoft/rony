@@ -1,9 +1,9 @@
 package udpTunnel
 
 import (
+	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
-	"github.com/tidwall/evio"
 	"sync"
 )
 
@@ -18,14 +18,14 @@ import (
 
 type udpConn struct {
 	id  uint64
-	c   evio.Conn
+	c   gnet.Conn
 	buf *tools.LinkedList
 	// KV Store
 	mtx sync.RWMutex
 	kv  map[string]interface{}
 }
 
-func newConn(connID uint64, c evio.Conn) *udpConn {
+func newConn(connID uint64, c gnet.Conn) *udpConn {
 	uc := &udpConn{
 		id:  connID,
 		c:   c,

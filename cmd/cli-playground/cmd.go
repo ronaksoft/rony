@@ -36,7 +36,7 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		BatchStartCmd, StartCmd, BenchCmd, ListCmd, Members,
-		EchoCmd, EchoLeaderOnlyCmd,
+		EchoCmd, EchoLeaderOnlyCmd, EchoTunnelCmd,
 		Trace, MemProf,
 	)
 
@@ -114,36 +114,36 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 		)
 
 		if replicaSet != 0 {
-			opts = append(opts, edge.WithGossipCluster(edge.GossipClusterConfig{
-				ServerID:   []byte(serverID),
-				Bootstrap:  bootstrap,
-				RaftPort:   port * 10,
-				ReplicaSet: replicaSet,
-				Mode:       mode,
-				GossipPort: port,
-				DataPath:   fmt.Sprintf("./_hdd/%s", serverID),
-			}))
+			opts = append(opts,
+				edge.WithGossipCluster(edge.GossipClusterConfig{
+					ServerID:   []byte(serverID),
+					Bootstrap:  bootstrap,
+					RaftPort:   port * 10,
+					ReplicaSet: replicaSet,
+					Mode:       mode,
+					GossipPort: port,
+					DataPath:   fmt.Sprintf("./_hdd/%s", serverID),
+				}),
+				edge.WithUdpTunnel(edge.UdpTunnelConfig{
+					Concurrency:   10,
+					ListenAddress: "0.0.0.0:0",
+					MaxBodySize:   4096,
+				}),
+			)
 		}
 
 		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
 		pb.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
 
-		err := Edges[serverID].StartCluster()
-		if err != nil {
-			cmd.Println(err)
-			delete(Edges, serverID)
-			return
-		}
-		Edges[serverID].StartGateway()
+		Edges[serverID].Start()
 		for _, e := range Edges {
 			if e.GetServerID() != serverID {
-				_, err = Edges[serverID].JoinCluster(e.Stats().Address)
+				_, err := Edges[serverID].JoinCluster(e.Stats().Address)
 				if err != nil {
 					cmd.Println("Error On Join", err)
 				}
 				break
 			}
-
 		}
 	}
 }
@@ -287,6 +287,68 @@ var EchoLeaderOnlyCmd = &cobra.Command{
 			wg.Add(1)
 			go func() {
 				res, err := c.EchoLeaderOnly(req)
+				switch err {
+				case nil:
+					atomic.AddInt64(&cnt, 1)
+					cmd.Println(res)
+				default:
+					cmd.Println("Error:", err)
+				}
+
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		cmd.Println("N:", cnt)
+	},
+}
+
+var EchoTunnelCmd = &cobra.Command{
+	Use: "echo-tunnel",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
+		n, _ := cmd.Flags().GetInt("n")
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+			return
+		}
+		e1 := Edges[serverID]
+		if e1 == nil {
+			cmd.Println("Invalid Args")
+			return
+		}
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			cmd.Println("No Gateway Addr", gatewayAddrs)
+			return
+		}
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			Handler: func(m *rony.MessageEnvelope) {
+				cmd.Print(m)
+			},
+			Secure:         false,
+			ContextTimeout: time.Second * 3,
+		})
+		err := ec.Start()
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		defer ec.Close()
+		c := pb.NewSampleClient(ec)
+		req := pb.PoolEchoRequest.Get()
+		defer pb.PoolEchoRequest.Put(req)
+		req.Int = tools.RandomInt64(0)
+		req.Timestamp = tools.NanoTime()
+		req.ReplicaSet = replicaSet
+		var cnt int64
+		wg := sync.WaitGroup{}
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func() {
+				res, err := c.EchoTunnel(req)
 				switch err {
 				case nil:
 					atomic.AddInt64(&cnt, 1)

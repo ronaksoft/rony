@@ -4,16 +4,17 @@ option go_package = ".;pb";
 import "options.proto";
 
 service Sample {
-    rpc Echo (EchoRequest) returns (EchoResponse);
-    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse){
+    rpc Echo (EchoRequest) returns (EchoResponse){
         option (follower_ok) = true;
-    }
+    };
+    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);
 }
 
 message EchoRequest {
     int64 Int = 1;
     int64 Timestamp = 3;
+    uint64 ReplicaSet = 4;
 }
 
 message EchoResponse {
