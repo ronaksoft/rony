@@ -1,11 +1,14 @@
 package edge
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
+	"net"
 	"reflect"
 	"sync"
 	"time"
@@ -322,4 +325,62 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 		LocalTemplateItems: localItems,
 	})
 	ctx.stop = true
+}
+
+func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+	var target cluster.Member
+	members := ctx.dispatchCtx.cluster.RaftMembers(replicaSet)
+	if len(members) == 0 {
+		return ErrEmptyMemberList
+	}
+	for idx := range members {
+		if onlyLeader {
+			if members[idx].RaftState() == rony.RaftState_Leader {
+				target = members[idx]
+				break
+			}
+		} else {
+			target = members[idx]
+		}
+	}
+
+	if target == nil {
+		return ErrMemberNotFound
+	}
+	if len(target.TunnelAddr()) == 0 {
+		return ErrNoTunnelAddrs
+	}
+
+	return tools.Try(10, time.Millisecond*10, func() error {
+		conn, err := net.Dial("udp", target.TunnelAddr()[0])
+		if err != nil {
+			return err
+		}
+		tmOut := rony.PoolTunnelMessage.Get()
+		defer rony.PoolTunnelMessage.Put(tmOut)
+		tmIn := rony.PoolTunnelMessage.Get()
+		defer rony.PoolTunnelMessage.Put(tmIn)
+		tmOut.SenderID = ctx.dispatchCtx.serverID
+		tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
+		tmOut.Envelope = req
+		mo := proto.MarshalOptions{UseCachedSize: true}
+		b := pools.Bytes.GetCap(mo.Size(tmOut))
+		b, _ = mo.MarshalAppend(b, tmOut)
+		n, err := conn.Write(b)
+		if err != nil {
+			return err
+		}
+		b = b[:0]
+		n, err = bufio.NewReader(conn).Read(b)
+		if err != nil {
+			return err
+		}
+
+		err = tmIn.Unmarshal(b[:n])
+		if err != nil {
+			return err
+		}
+		tmIn.Envelope.DeepCopy(res)
+		return nil
+	})
 }
