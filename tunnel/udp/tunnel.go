@@ -61,7 +61,7 @@ func (t *Tunnel) onData(c evio.Conn, in []byte) (out []byte, action evio.Action)
 	if atomic.LoadInt32(&t.shutdown) == 1 {
 		return nil, evio.Shutdown
 	}
-
+	log.Info("OnData", zap.Int("L", len(in)), zap.Any("AddrIndex", c.AddrIndex()))
 	if len(in) > 0 {
 		req := rony.PoolTunnelMessage.Get()
 		defer rony.PoolTunnelMessage.Put(req)

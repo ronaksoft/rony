@@ -36,7 +36,7 @@ func newConn(connID uint64, c evio.Conn) *udpConn {
 }
 
 func (u *udpConn) Push(data []byte) {
-	d := pools.BytesBuffer.GetLen(len(data))
+	d := pools.BytesBuffer.GetCap(len(data))
 	d.Fill(data)
 	u.buf.Append(d)
 }
