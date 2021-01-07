@@ -307,7 +307,7 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
-func (edge *Server) onGatewayConnect(conn gateway.Conn, kvs ...gateway.KeyValue) {
+func (edge *Server) onGatewayConnect(conn gateway.Conn, kvs ...*rony.KeyValue) {
 	edge.gatewayDispatcher.OnOpen(conn, kvs...)
 }
 func (edge *Server) onGatewayClose(conn gateway.Conn) {

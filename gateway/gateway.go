@@ -1,5 +1,9 @@
 package gateway
 
+import (
+	"github.com/ronaksoft/rony"
+)
+
 /*
    Creation Time: 2019 - Aug - 31
    Created by:  (ehsan)
@@ -40,10 +44,6 @@ type Gateway interface {
 	Addr() []string
 }
 
-type ConnectHandler func(c Conn, kvs ...KeyValue)
+type ConnectHandler func(c Conn, kvs ...*rony.KeyValue)
 type MessageHandler func(c Conn, streamID int64, data []byte)
 type CloseHandler func(c Conn)
-type KeyValue struct {
-	Key   string
-	Value string
-}

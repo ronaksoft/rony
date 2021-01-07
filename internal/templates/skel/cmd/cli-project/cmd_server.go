@@ -81,7 +81,7 @@ func (s *Server) Done(ctx *edge.DispatchCtx) {
 	panic("implement me")
 }
 
-func (s *Server) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
+func (s *Server) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
 	panic("implement me")
 }
 

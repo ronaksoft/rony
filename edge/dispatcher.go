@@ -30,7 +30,7 @@ type GatewayDispatcher interface {
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
 	// This will be called when a new connection has been opened
-	OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue)
+	OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue)
 	// This will be called when a connection is closed
 	OnClose(conn gateway.Conn)
 }
@@ -61,7 +61,7 @@ func (s *SimpleDispatcher) Done(ctx *DispatchCtx) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
+func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
 	// Do nothing
 }
 

@@ -3,7 +3,7 @@ package udpTunnel_test
 import (
 	"bufio"
 	"fmt"
-	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
+	udpTunnel "github.com/ronaksoft/rony/tunnel/udp"
 	. "github.com/smartystreets/goconvey/convey"
 	"net"
 	"testing"

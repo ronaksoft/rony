@@ -11,7 +11,7 @@ import (
 
 type dispatcher struct{}
 
-func (d dispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
+func (d dispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
 
 }
 

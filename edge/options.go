@@ -2,11 +2,11 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
+	gossipCluster "github.com/ronaksoft/rony/cluster/gossip"
 	"github.com/ronaksoft/rony/gateway"
-	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
-	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
-	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
-	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
+	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
+	udpTunnel "github.com/ronaksoft/rony/tunnel/udp"
 )
 
 /*

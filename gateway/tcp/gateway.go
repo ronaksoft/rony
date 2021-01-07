@@ -5,8 +5,9 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway"
-	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
+	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -127,7 +128,7 @@ func New(config Config) (*Gateway, error) {
 	// set handlers
 	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
 	g.CloseHandler = func(c gateway.Conn) {}
-	g.ConnectHandler = func(c gateway.Conn, kvs ...gateway.KeyValue) {}
+	g.ConnectHandler = func(c gateway.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -290,7 +291,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	}
 
 	var (
-		kvs            = make([]gateway.KeyValue, 0, 4)
+		kvs            = make([]*rony.KeyValue, 0, 4)
 		clientIP       string
 		clientType     string
 		clientDetected bool
@@ -310,10 +311,10 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			clientType = string(value)
 		default:
 			if !ignoredHeaders[tools.ByteToStr(key)] {
-				kvs = append(kvs, gateway.KeyValue{
-					Key:   string(key),
-					Value: string(value),
-				})
+				kv := rony.PoolKeyValue.Get()
+				kv.Value = string(key)
+				kv.Value = string(value)
+				kvs = append(kvs, kv)
 			}
 		}
 	})
@@ -351,12 +352,15 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	conn.SetClientType(tools.StrToByte(clientType))
 
 	g.ConnectHandler(conn, kvs...)
+	for _, kv := range kvs {
+		rony.PoolKeyValue.Put(kv)
+	}
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
 }
 
-func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs ...gateway.KeyValue) {
+func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs ...*rony.KeyValue) {
 	defer g.waitGroupAcceptors.Done()
 	if atomic.LoadInt32(&g.stop) == 1 {
 		return
@@ -384,6 +388,9 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 	}
 
 	g.ConnectHandler(wsConn, kvs...)
+	for _, kv := range kvs {
+		rony.PoolKeyValue.Put(kv)
+	}
 
 	err = wsConn.registerDesc()
 	if err != nil {

@@ -31,7 +31,7 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) OnOpen(conn gateway.Conn, kvs ...gateway.KeyValue) {
+func (t testDispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
 
 }
 

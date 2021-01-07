@@ -2,8 +2,7 @@ package edgetest
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/gateway"
-	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
+	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"sync"
@@ -108,15 +107,15 @@ func (c *conn) ErrorHandler(f func(constructor int64, e *rony.Error)) *conn {
 	return c
 }
 
-func (c *conn) RunShort(kvs ...gateway.KeyValue) error {
+func (c *conn) RunShort(kvs ...*rony.KeyValue) error {
 	return c.Run(time.Second*10, kvs...)
 }
 
-func (c *conn) RunLong(kvs ...gateway.KeyValue) error {
+func (c *conn) RunLong(kvs ...*rony.KeyValue) error {
 	return c.Run(time.Minute, kvs...)
 }
 
-func (c *conn) Run(timeout time.Duration, kvs ...gateway.KeyValue) error {
+func (c *conn) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
 	// Open Connection
 	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
 		defer func() {
