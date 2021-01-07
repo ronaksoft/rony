@@ -31,12 +31,13 @@ func init() {
 
 func TestGateway(t *testing.T) {
 	rony.SetLogLevel(0)
+	hostPort := "127.0.0.1:8080"
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
-		ListenAddress: "0.0.0.0:1088",
+		ListenAddress: hostPort,
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
-		ExternalAddrs: []string{"127.0.0.1:1088"},
+		ExternalAddrs: []string{hostPort},
 	})
 
 	if err != nil {
@@ -57,7 +58,7 @@ func TestGateway(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func() {
-					wsc, _, _, err := ws.Dial(context.Background(), "ws://127.0.0.1:1088")
+					wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
 					if err != nil {
 						c.Println(err)
 					}
