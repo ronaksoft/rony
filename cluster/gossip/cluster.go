@@ -36,6 +36,7 @@ type Member struct {
 	replicaSet  uint64
 	ShardRange  [2]uint32
 	gatewayAddr []string
+	tunnelAddr  []string
 	ClusterAddr net.IP
 	ClusterPort uint16
 	raftPort    int
@@ -57,6 +58,10 @@ func (m *Member) ReplicaSet() uint64 {
 
 func (m *Member) GatewayAddr() []string {
 	return m.gatewayAddr
+}
+
+func (m *Member) TunnelAddr() []string {
+	return m.tunnelAddr
 }
 
 func (m *Member) RaftPort() int {
@@ -90,6 +95,7 @@ func convertMember(sm *memberlist.Node) *Member {
 		replicaSet:  edgeNode.GetReplicaSet(),
 		ShardRange:  [2]uint32{edgeNode.ShardRangeMin, edgeNode.ShardRangeMax},
 		gatewayAddr: edgeNode.GatewayAddr,
+		tunnelAddr:  edgeNode.TunnelAddr,
 		raftPort:    int(edgeNode.GetRaftPort()),
 		raftState:   edgeNode.GetRaftState(),
 		ClusterAddr: sm.Addr,
@@ -116,6 +122,7 @@ type Cluster struct {
 	mtx              sync.RWMutex
 	localServerID    []byte
 	localGatewayAddr []string
+	localTunnelAddr  []string
 	localShardRange  [2]uint32
 	replicaLeaderID  string
 	replicaMembers   map[uint64]map[string]*Member
@@ -420,8 +427,13 @@ func (c *Cluster) RaftConfigs() raft.ConfigurationFuture {
 	return c.raft.GetConfiguration()
 }
 
-func (c *Cluster) SetGatewayAddrs(addrs []string) error {
-	c.localGatewayAddr = addrs
+func (c *Cluster) SetGatewayAddrs(hostPorts []string) error {
+	c.localGatewayAddr = hostPorts
+	return c.updateCluster(gossipUpdateTimeout)
+}
+
+func (c *Cluster) SetTunnelAddrs(hostPorts []string) error {
+	c.localTunnelAddr = hostPorts
 	return c.updateCluster(gossipUpdateTimeout)
 }
 

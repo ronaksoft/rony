@@ -31,7 +31,8 @@ type Cluster interface {
 	Join(addr ...string) (int, error)
 	Shutdown()
 	ReplicaSet() uint64
-	SetGatewayAddrs(addrs []string) error
+	SetGatewayAddrs(hostPorts []string) error
+	SetTunnelAddrs(hostPorts []string) error
 	Addr() string
 }
 
@@ -40,7 +41,6 @@ type Raft interface {
 	RaftState() raft.RaftState
 	RaftApply(cmd []byte) raft.ApplyFuture
 	RaftLeaderID() string
-	RaftConfigs() raft.ConfigurationFuture
 }
 
 type Member interface {
@@ -49,5 +49,6 @@ type Member interface {
 	RaftState() rony.RaftState
 	ReplicaSet() uint64
 	GatewayAddr() []string
+	TunnelAddr() []string
 	RaftPort() int
 }

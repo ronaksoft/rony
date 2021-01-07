@@ -158,6 +158,7 @@ func (d *clusterDelegate) NodeMeta(limit int) []byte {
 		ReplicaSet:    d.c.cfg.ReplicaSet,
 		RaftPort:      uint32(d.c.cfg.RaftPort),
 		GatewayAddr:   d.c.localGatewayAddr,
+		TunnelAddr:    d.c.localTunnelAddr,
 		RaftState:     *rony.RaftState_None.Enum(),
 	}
 

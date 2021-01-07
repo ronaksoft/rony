@@ -39,11 +39,8 @@ func (edge *Server) Stats() *Stats {
 		s.ReplicaSet = edge.cluster.ReplicaSet()
 		s.Address = edge.cluster.Addr()
 		s.Members = len(edge.cluster.Members())
+		s.RaftMembers = len(edge.cluster.RaftMembers(s.ReplicaSet))
 		s.RaftState = edge.cluster.RaftState().String()
-		f := edge.cluster.RaftConfigs()
-		if f.Error() == nil {
-			s.RaftMembers = len(f.Configuration().Servers)
-		}
 	}
 
 	return &s
