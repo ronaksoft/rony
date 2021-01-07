@@ -7,7 +7,6 @@ import (
 	"github.com/ronaksoft/rony/tunnel"
 	"github.com/tidwall/evio"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 	"sync/atomic"
 )
 
@@ -35,6 +34,7 @@ type Tunnel struct {
 	cfg      Config
 	addrs    []string
 	shutdown int32 // atomic shutdown flag
+	connID   uint64
 }
 
 func New(config Config) *Tunnel {
@@ -53,29 +53,39 @@ func New(config Config) *Tunnel {
 	return t
 }
 
+func (t *Tunnel) nextID() uint64 {
+	return atomic.AddUint64(&t.connID, 1)
+}
+
 func (t *Tunnel) onData(c evio.Conn, in []byte) (out []byte, action evio.Action) {
 	if atomic.LoadInt32(&t.shutdown) == 1 {
 		return nil, evio.Shutdown
 	}
 
-	req := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(req)
-	res := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(res)
+	if len(in) > 0 {
+		req := rony.PoolTunnelMessage.Get()
+		defer rony.PoolTunnelMessage.Put(req)
 
-	err := req.Unmarshal(in)
-	if err != nil {
-		log.Warn("Error On Tunnel's data received", zap.Error(err))
-		return nil, evio.Close
+		err := req.Unmarshal(in)
+		if err != nil {
+			log.Warn("Error On Tunnel's data received", zap.Error(err))
+			return nil, evio.Close
+		}
+
+		conn := newConn(t.nextID(), c)
+		t.MessageHandler(conn, req)
 	}
 
-	t.MessageHandler(req, res)
+	uc, _ := c.Context().(*udpConn)
+	if uc == nil {
+		return nil, evio.None
+	}
 
-	// Marshal the response and send to connection
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	out, _ = mo.MarshalAppend(in[:0], res)
-
-	return out, evio.None
+	bb := uc.Pop()
+	if bb == nil {
+		return nil, evio.None
+	}
+	return *bb.Bytes(), evio.None
 }
 
 func (t *Tunnel) Start() {

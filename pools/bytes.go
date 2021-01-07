@@ -111,6 +111,10 @@ func (bb *ByteBuffer) SetBytes(b *[]byte) {
 	bb.b = *b
 }
 
+func (bb *ByteBuffer) Fill(data []byte) {
+	bb.b = append(bb.b, data...)
+}
+
 // byteBufferPool. contains logic of reusing objects distinguishable by size in generic
 // way.
 type byteBufferPool struct {

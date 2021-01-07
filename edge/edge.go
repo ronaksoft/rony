@@ -313,14 +313,14 @@ func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
 func (edge *Server) onGatewayClose(conn rony.Conn) {
 	edge.gatewayDispatcher.OnClose(conn)
 }
-func (edge *Server) onTunnelMessage(tmIn, tmOut *rony.TunnelMessage) {
+func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, tmIn.SenderID, ReplicaMessage)
+	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, ReplicaMessage)
 	dispatchCtx.FillEnvelope(
-		tmIn.Envelope.GetRequestID(), tmIn.Envelope.GetConstructor(), tmIn.Envelope.Message,
-		tmIn.Envelope.Auth, tmIn.Envelope.Header...,
+		tm.Envelope.GetRequestID(), tm.Envelope.GetConstructor(), tm.Envelope.Message,
+		tm.Envelope.Auth, tm.Envelope.Header...,
 	)
 
 	err, isLeader := edge.executePrepare(dispatchCtx)
