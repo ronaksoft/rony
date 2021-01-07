@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/testEnv"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	udpTunnel "github.com/ronaksoft/rony/tunnel/udp"
 	. "github.com/smartystreets/goconvey/convey"
@@ -69,6 +70,80 @@ func TestNewTunnel(t *testing.T) {
 			err = conn.Close()
 			c.So(err, ShouldBeNil)
 			time.Sleep(time.Second * 2)
+		})
+		Convey("Send Concurrent Connection", func(c C) {
+			wg := pools.AcquireWaitGroup()
+			for i := 0; i < 200; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					conn, err := net.Dial("udp", hostPort)
+					c.So(err, ShouldBeNil)
+
+					req := &rony.TunnelMessage{
+						SenderID:         []byte("SomeSender"),
+						SenderReplicaSet: tools.RandomUint64(1000),
+						Store:            nil,
+						Envelope:         nil,
+					}
+					res := &rony.TunnelMessage{}
+					out, _ := req.Marshal()
+					n, err := conn.Write(out)
+					c.So(err, ShouldBeNil)
+					c.So(n, ShouldEqual, len(out))
+					p := make([]byte, 2048)
+					n, err = bufio.NewReader(conn).Read(p)
+					c.So(err, ShouldBeNil)
+					c.So(n, ShouldEqual, len(out))
+					err = res.Unmarshal(p[:n])
+					c.So(err, ShouldBeNil)
+					c.So(res.SenderID, ShouldResemble, req.SenderID)
+					c.So(res.SenderReplicaSet, ShouldEqual, req.SenderReplicaSet)
+					err = conn.Close()
+					c.So(err, ShouldBeNil)
+				}()
+			}
+			wg.Wait()
+			pools.ReleaseWaitGroup(wg)
+
+		})
+		Convey("Send Concurrent Connection and Data", func(c C) {
+			wg := pools.AcquireWaitGroup()
+			for i := 0; i < 200; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					conn, err := net.Dial("udp", hostPort)
+					c.So(err, ShouldBeNil)
+
+					for j := 0; j < 10; j++ {
+						req := &rony.TunnelMessage{
+							SenderID:         []byte("SomeSender"),
+							SenderReplicaSet: tools.RandomUint64(1000),
+							Store:            nil,
+							Envelope:         nil,
+						}
+						res := &rony.TunnelMessage{}
+						out, _ := req.Marshal()
+						n, err := conn.Write(out)
+						c.So(err, ShouldBeNil)
+						c.So(n, ShouldEqual, len(out))
+						p := make([]byte, 2048)
+						n, err = bufio.NewReader(conn).Read(p)
+						c.So(err, ShouldBeNil)
+						c.So(n, ShouldEqual, len(out))
+						err = res.Unmarshal(p[:n])
+						c.So(err, ShouldBeNil)
+						c.So(res.SenderID, ShouldResemble, req.SenderID)
+						c.So(res.SenderReplicaSet, ShouldEqual, req.SenderReplicaSet)
+					}
+					err = conn.Close()
+					c.So(err, ShouldBeNil)
+				}()
+			}
+			wg.Wait()
+			pools.ReleaseWaitGroup(wg)
+
 		})
 	})
 }
