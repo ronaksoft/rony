@@ -88,7 +88,7 @@ func (g *Gateway) Shutdown() {
 	// Do nothing
 }
 
-func (g *Gateway) GetConn(connID uint64) gateway.Conn {
+func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	g.connsMtx.RLock()
 	conn := g.conns[connID]
 	g.connsMtx.RUnlock()

@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
 
 type dispatcher struct{}
 
-func (d dispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
+func (d dispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 
 }
 
-func (d dispatcher) OnClose(conn gateway.Conn) {
+func (d dispatcher) OnClose(conn rony.Conn) {
 
 }
 

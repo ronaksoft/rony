@@ -2,7 +2,6 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
@@ -16,8 +15,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// GatewayDispatcher
-type GatewayDispatcher interface {
+// Dispatcher
+type Dispatcher interface {
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
 	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
@@ -30,12 +29,12 @@ type GatewayDispatcher interface {
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
 	// This will be called when a new connection has been opened
-	OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue)
+	OnOpen(conn rony.Conn, kvs ...*rony.KeyValue)
 	// This will be called when a connection is closed
-	OnClose(conn gateway.Conn)
+	OnClose(conn rony.Conn)
 }
 
-// SimpleDispatcher is a naive implementation of GatewayDispatcher. You only need to set OnMessageFunc with
+// SimpleDispatcher is a naive implementation of Dispatcher. You only need to set OnMessageFunc with
 type SimpleDispatcher struct {
 	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
 }
@@ -61,20 +60,10 @@ func (s *SimpleDispatcher) Done(ctx *DispatchCtx) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
+func (s *SimpleDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnClose(conn gateway.Conn) {
+func (s *SimpleDispatcher) OnClose(conn rony.Conn) {
 	// Do nothing
-}
-
-// TunnelDispatcher
-type TunnelDispatcher interface {
-	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
-	// async functions, make sure to hard copy (clone) it before sending it.
-	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
-	// This will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
-	// messages and updates in one go.
-	Done(ctx *DispatchCtx)
 }

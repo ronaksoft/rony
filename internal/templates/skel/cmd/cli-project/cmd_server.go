@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/spf13/cobra"
 	"os"
 	"time"
@@ -81,10 +80,10 @@ func (s *Server) Done(ctx *edge.DispatchCtx) {
 	panic("implement me")
 }
 
-func (s *Server) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
+func (s *Server) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 	panic("implement me")
 }
 
-func (s *Server) OnClose(conn gateway.Conn) {
+func (s *Server) OnClose(conn rony.Conn) {
 	panic("implement me")
 }

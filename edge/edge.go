@@ -48,17 +48,17 @@ type Server struct {
 	// Gateway's Configs
 	gatewayProtocol   gateway.Protocol
 	gateway           gateway.Gateway
-	gatewayDispatcher GatewayDispatcher
+	gatewayDispatcher Dispatcher
 
 	// Cluster Configs
 	cluster cluster.Cluster
 
 	// Tunnel Configs
 	tunnel           tunnel.Tunnel
-	tunnelDispatcher GatewayDispatcher
+	tunnelDispatcher Dispatcher
 }
 
-func NewServer(serverID string, dispatcher GatewayDispatcher, opts ...Option) *Server {
+func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
 	edgeServer := &Server{
 		handlers:          make(map[int64][]Handler),
 		readonlyHandlers:  make(map[int64]struct{}),
@@ -286,7 +286,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	releaseDispatchCtx(dispatchCtx)
 	return nil
 }
-func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
+func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 
@@ -307,10 +307,10 @@ func (edge *Server) onGatewayMessage(conn gateway.Conn, streamID int64, data []b
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
-func (edge *Server) onGatewayConnect(conn gateway.Conn, kvs ...*rony.KeyValue) {
+func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
 	edge.gatewayDispatcher.OnOpen(conn, kvs...)
 }
-func (edge *Server) onGatewayClose(conn gateway.Conn) {
+func (edge *Server) onGatewayClose(conn rony.Conn) {
 	edge.gatewayDispatcher.OnClose(conn)
 }
 func (edge *Server) onTunnelMessage(tmIn, tmOut *rony.TunnelMessage) {
@@ -408,7 +408,7 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 }
 
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.
-func (edge *Server) GetGatewayConn(connID uint64) gateway.Conn {
+func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
 }
 

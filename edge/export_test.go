@@ -1,7 +1,7 @@
 package edge
 
 import (
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/gateway/tcp"
 )
 
@@ -15,7 +15,7 @@ import (
 */
 
 // OnGatewayMessage is exposed only for test packages
-func (edge *Server) OnGatewayMessage(conn gateway.Conn, streamID int64, data []byte) {
+func (edge *Server) OnGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
 	edge.onGatewayMessage(conn, streamID, data)
 }
 

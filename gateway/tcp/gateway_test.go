@@ -6,7 +6,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edgec"
-	"github.com/ronaksoft/rony/gateway"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
@@ -48,7 +47,7 @@ func TestGateway(t *testing.T) {
 	defer gw.Shutdown()
 	Convey("Gateway Test", t, func(c C) {
 		Convey("Websocket / With Normal Handler", func(c C) {
-			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
+			gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
 				err := c.SendBinary(streamID, data)
 				if err != nil {
 					fmt.Println("MessageHandler:", err.Error())
@@ -79,7 +78,7 @@ func TestGateway(t *testing.T) {
 			c.Println("Total Connections", gw.TotalConnections())
 		})
 		Convey("Http With Normal Handler", func(c C) {
-			gw.MessageHandler = func(c gateway.Conn, streamID int64, data []byte) {
+			gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
 				e := &rony.MessageEnvelope{}
 				_ = e.Unmarshal(data)
 				out, _ := e.Marshal()

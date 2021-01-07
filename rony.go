@@ -8,3 +8,13 @@ package rony
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+// Conn defines the Connection interface
+type Conn interface {
+	ConnID() uint64
+	ClientIP() string
+	SendBinary(streamID int64, data []byte) error
+	Persistent() bool
+	Get(key string) interface{}
+	Set(key string, val interface{})
+}

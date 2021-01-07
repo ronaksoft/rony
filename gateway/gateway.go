@@ -24,26 +24,16 @@ const (
 	UDP       Protocol = "udp"
 )
 
-// Conn defines the Connection interface
-type Conn interface {
-	ConnID() uint64
-	ClientIP() string
-	SendBinary(streamID int64, data []byte) error
-	Persistent() bool
-	Get(key string) interface{}
-	Set(key string, val interface{})
-}
-
 // Gateway defines the gateway interface where clients could connect
 // and communicate with the edge server
 type Gateway interface {
 	Start()
 	Run()
 	Shutdown()
-	GetConn(connID uint64) Conn
+	GetConn(connID uint64) rony.Conn
 	Addr() []string
 }
 
-type ConnectHandler func(c Conn, kvs ...*rony.KeyValue)
-type MessageHandler func(c Conn, streamID int64, data []byte)
-type CloseHandler func(c Conn)
+type ConnectHandler func(c rony.Conn, kvs ...*rony.KeyValue)
+type MessageHandler func(c rony.Conn, streamID int64, data []byte)
+type CloseHandler func(c rony.Conn)

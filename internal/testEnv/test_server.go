@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"
@@ -31,11 +30,11 @@ var (
 type testDispatcher struct {
 }
 
-func (t testDispatcher) OnOpen(conn gateway.Conn, kvs ...*rony.KeyValue) {
+func (t testDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 
 }
 
-func (t testDispatcher) OnClose(conn gateway.Conn) {
+func (t testDispatcher) OnClose(conn rony.Conn) {
 
 }
 

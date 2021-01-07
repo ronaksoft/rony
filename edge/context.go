@@ -46,8 +46,8 @@ type DispatchCtx struct {
 	conn              Conn
 	req               *rony.MessageEnvelope
 	cluster           cluster.Cluster
-	gatewayDispatcher GatewayDispatcher
-	tunnelDispatcher  TunnelDispatcher
+	gatewayDispatcher Dispatcher
+	tunnelDispatcher  Dispatcher
 	kind              ContextKind
 	buf               *tools.LinkedList
 	// KeyValue Store Parameters

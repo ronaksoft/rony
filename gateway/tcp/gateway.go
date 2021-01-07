@@ -126,9 +126,9 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c gateway.Conn, streamID int64, date []byte) {}
-	g.CloseHandler = func(c gateway.Conn) {}
-	g.ConnectHandler = func(c gateway.Conn, kvs ...*rony.KeyValue) {}
+	g.MessageHandler = func(c rony.Conn, streamID int64, date []byte) {}
+	g.CloseHandler = func(c rony.Conn) {}
+	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			log.Warn("Error On NetPoller Wait",
@@ -265,7 +265,7 @@ func (g *Gateway) Addr() []string {
 }
 
 // GetConn returns the connection identified by connID
-func (g *Gateway) GetConn(connID uint64) gateway.Conn {
+func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	c := g.getConnection(connID)
 	if c == nil {
 		return nil
