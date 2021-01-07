@@ -29,10 +29,11 @@ func init() {
 
 func TestNewTunnel(t *testing.T) {
 	Convey("Tunnel", t, func(c C) {
+		hostPort := "127.0.0.1:8080"
 		t := udpTunnel.New(udpTunnel.Config{
 			Concurrency:   0,
-			ListenAddress: "127.0.0.1:2374",
-			ExternalAddrs: []string{"127.0.0.1:2374"},
+			ListenAddress: hostPort,
+			ExternalAddrs: []string{hostPort},
 		})
 		t.MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage) {
 			b, _ := tm.Marshal()
@@ -43,7 +44,7 @@ func TestNewTunnel(t *testing.T) {
 		defer t.Shutdown()
 
 		Convey("Send Data", func(c C) {
-			conn, err := net.Dial("udp", "127.0.0.1:2374")
+			conn, err := net.Dial("udp", hostPort)
 			c.So(err, ShouldBeNil)
 
 			req := &rony.TunnelMessage{
