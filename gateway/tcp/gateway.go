@@ -447,8 +447,8 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 
 func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 	defer g.waitGroupWriters.Done()
-	wr.wc.Lock()
-	defer wr.wc.Unlock()
+	wr.wc.mtx.Lock()
+	defer wr.wc.mtx.Unlock()
 
 	if wr.wc.closed {
 		return

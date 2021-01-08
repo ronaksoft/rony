@@ -1,7 +1,6 @@
 package edgec
 
 import (
-	"context"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
@@ -110,14 +109,12 @@ func (c *Websocket) newConn(id string, replicaSet uint64, hostPorts ...string) *
 func (c *Websocket) initConn() error {
 	initConn := c.newConn("", 0, c.cfg.SeedHostPort)
 	initConn.connect()
-	ctx, cf := context.WithTimeout(context.Background(), c.cfg.ContextTimeout)
-	defer cf()
 	req := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(req)
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(c.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
-	sessionReplica, err := initConn.send(ctx, req, res, true, requestRetry, requestTimeout)
+	sessionReplica, err := initConn.send(req, res, true, requestRetry, requestTimeout)
 	if err != nil {
 		return err
 	}
@@ -158,19 +155,12 @@ func (c *Websocket) initConn() error {
 }
 
 func (c *Websocket) Send(req, res *rony.MessageEnvelope, leaderOnly bool) (err error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), c.cfg.ContextTimeout)
-	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout, leaderOnly)
-	cancelFunc()
-	return
-}
-
-func (c *Websocket) SendWithContext(ctx context.Context, req, res *rony.MessageEnvelope, leaderOnly bool) (err error) {
-	err = c.SendWithDetails(ctx, req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout, leaderOnly)
+	err = c.SendWithDetails(req, res, true, c.cfg.RequestMaxRetry, c.cfg.RequestTimeout, leaderOnly)
 	return
 }
 
 func (c *Websocket) SendWithDetails(
-	ctx context.Context, req, res *rony.MessageEnvelope,
+	req, res *rony.MessageEnvelope,
 	waitToConnect bool, retry int, timeout time.Duration,
 	leaderOnly bool,
 ) (err error) {
@@ -189,7 +179,7 @@ func (c *Websocket) SendWithDetails(
 	}
 
 SendLoop:
-	rs, err = wsc.send(ctx, req, res, waitToConnect, retry, timeout)
+	rs, err = wsc.send(req, res, waitToConnect, retry, timeout)
 	switch err {
 	case nil:
 		return nil

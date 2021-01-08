@@ -28,13 +28,13 @@ import (
 
 // websocketConn
 type websocketConn struct {
-	sync.Mutex
+	mtx      sync.Mutex
 	connID   uint64
 	clientIP []byte
 
 	// KV Store
-	mtx sync.RWMutex
-	kv  map[string]interface{}
+	kvLock tools.SpinLock
+	kv     map[string]interface{}
 
 	// Internals
 	gateway      *Gateway
@@ -107,7 +107,7 @@ func (wc *websocketConn) release(reason int) {
 		)
 	}
 
-	wc.Lock()
+	wc.mtx.Lock()
 	if wc.desc != nil {
 		_ = g.poller.Stop(wc.desc)
 		_ = wc.desc.Close()
@@ -118,7 +118,7 @@ func (wc *websocketConn) release(reason int) {
 		g.CloseHandler(wc)
 		wc.closed = true
 	}
-	wc.Unlock()
+	wc.mtx.Unlock()
 	releaseWebsocketConn(wc)
 }
 
@@ -155,16 +155,16 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 }
 
 func (wc *websocketConn) Get(key string) interface{} {
-	wc.mtx.RLock()
+	wc.kvLock.Lock()
 	v := wc.kv[key]
-	wc.mtx.RUnlock()
+	wc.kvLock.Unlock()
 	return v
 }
 
 func (wc *websocketConn) Set(key string, val interface{}) {
-	wc.mtx.Lock()
+	wc.kvLock.Lock()
 	wc.kv[key] = val
-	wc.mtx.Unlock()
+	wc.kvLock.Unlock()
 }
 
 func (wc *websocketConn) ConnID() uint64 {

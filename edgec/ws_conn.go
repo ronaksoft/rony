@@ -125,16 +125,14 @@ func (c *wsConn) reconnect() {
 	_ = c.conn.SetReadDeadline(time.Now())
 }
 
-func (c *wsConn) waitUntilConnect(ctx context.Context) error {
+func (c *wsConn) waitUntilConnect(retry int) error {
 	step := time.Duration(10)
 	for !c.stop {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
 		if c.isConnected() {
 			break
+		}
+		if retry--; retry < 0 {
+			return rony.ErrRetriesExceeded(ErrNoConnection)
 		}
 		time.Sleep(time.Millisecond * step)
 		if step < 1000 {
@@ -219,7 +217,7 @@ func (c *wsConn) close() error {
 	return c.conn.SetReadDeadline(time.Now())
 }
 
-func (c *wsConn) send(ctx context.Context, req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (replicaSet uint64, err error) {
+func (c *wsConn) send(req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (replicaSet uint64, err error) {
 	replicaSet = c.replicaSet
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(req))
@@ -234,14 +232,6 @@ func (c *wsConn) send(ctx context.Context, req, res *rony.MessageEnvelope, waitT
 	defer pools.ReleaseTimer(t)
 
 SendLoop:
-	// Check if context is canceled on each loop
-	select {
-	case <-ctx.Done():
-		err = ctx.Err()
-		return
-	default:
-	}
-
 	// If we exceeds the maximum retry then we return
 	if retry--; retry < 0 {
 		err = rony.ErrRetriesExceeded(err)
@@ -251,7 +241,7 @@ SendLoop:
 	// If it is required to wait until the connection is established before try sending the
 	// request over the wire
 	if waitToConnect {
-		err = c.waitUntilConnect(ctx)
+		err = c.waitUntilConnect(retry)
 		if err != nil {
 			return
 		}
