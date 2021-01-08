@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
-	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"net"
 	"reflect"
@@ -350,22 +347,7 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 }
 
 func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	var target cluster.Member
-	members := ctx.dispatchCtx.cluster.RaftMembers(replicaSet)
-	if len(members) == 0 {
-		return ErrEmptyMemberList
-	}
-	for idx := range members {
-		if onlyLeader {
-			if members[idx].RaftState() == rony.RaftState_Leader {
-				target = members[idx]
-				break
-			}
-		} else {
-			target = members[idx]
-		}
-	}
-
+	target := ctx.getReplicaMember(replicaSet, onlyLeader)
 	if target == nil {
 		return ErrMemberNotFound
 	}
@@ -378,6 +360,7 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 		return err
 	}
 
+	// Get a rony.TunnelMessage from pool and put it back into the pool when we are done
 	tmOut := rony.PoolTunnelMessage.Get()
 	defer rony.PoolTunnelMessage.Put(tmOut)
 	tmIn := rony.PoolTunnelMessage.Get()
@@ -385,33 +368,49 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 	tmOut.SenderID = ctx.dispatchCtx.serverID
 	tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
 	tmOut.Envelope = req
+
+	// Marshal and send over the wire
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	b := pools.Bytes.GetCap(mo.Size(tmOut))
 	b, _ = mo.MarshalAppend(b, tmOut)
 
-	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
 	n, err := conn.Write(b)
 	if err != nil {
 		return err
 	}
 	pools.Bytes.Put(b)
 
+	// Wait for response and unmarshal it
 	b = pools.Bytes.GetLen(4096)
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
 	n, err = bufio.NewReader(conn).Read(b)
 	if err != nil || n == 0 {
 		return err
 	}
-
 	err = tmIn.Unmarshal(b[:n])
 	if err != nil {
 		return err
 	}
-	log.Info("Response",
-		zap.Int("L", n),
-		zap.String("C", registry.ConstructorName(tmIn.Envelope.Constructor)),
-	)
 	pools.Bytes.Put(b)
+
+	// deep copy
 	tmIn.Envelope.DeepCopy(res)
 	return nil
-
+}
+func (ctx *RequestCtx) getReplicaMember(replicaSet uint64, onlyLeader bool) (target cluster.Member) {
+	members := ctx.dispatchCtx.cluster.RaftMembers(replicaSet)
+	if len(members) == 0 {
+		return nil
+	}
+	for idx := range members {
+		if onlyLeader {
+			if members[idx].RaftState() == rony.RaftState_Leader {
+				target = members[idx]
+				break
+			}
+		} else {
+			target = members[idx]
+		}
+	}
+	return
 }
