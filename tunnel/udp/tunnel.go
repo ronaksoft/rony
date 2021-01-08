@@ -6,7 +6,6 @@ import (
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ronaksoft/rony/tunnel"
 	"go.uber.org/zap"
@@ -181,15 +180,6 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	if uc == nil {
 		return nil, gnet.Close
 	}
-
-	// res.SenderReplicaSet = req.
-
-	log.Info("Tunnel On Data",
-		zap.String("ServerID", t.cfg.ServerID),
-		zap.String("Remote", c.RemoteAddr().String()),
-		zap.String("Req", registry.ConstructorName(req.Envelope.Constructor)),
-		zap.Int("ResLen", len(uc.buf)),
-	)
 
 	return uc.buf, gnet.None
 }
