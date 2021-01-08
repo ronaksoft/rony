@@ -64,6 +64,7 @@ func init() {
 	registry.RegisterConstructor(3073810188, "Echo")
 	registry.RegisterConstructor(27569121, "EchoLeaderOnly")
 	registry.RegisterConstructor(3809767204, "EchoTunnel")
+	registry.RegisterConstructor(3639218737, "EchoDelay")
 }
 
 func (x *EchoRequest) DeepCopy(z *EchoRequest) {
@@ -107,11 +108,13 @@ func (x *EchoResponse) Unmarshal(b []byte) error {
 const C_Echo int64 = 3073810188
 const C_EchoLeaderOnly int64 = 27569121
 const C_EchoTunnel int64 = 3809767204
+const C_EchoDelay int64 = 3639218737
 
 type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoLeaderOnly(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
+	EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 }
 
 type SampleWrapper struct {
@@ -129,6 +132,7 @@ func (sw *SampleWrapper) Register(e *edge.Server) {
 	e.SetHandlers(C_Echo, false, sw.EchoWrapper)
 	e.SetHandlers(C_EchoLeaderOnly, true, sw.EchoLeaderOnlyWrapper)
 	e.SetHandlers(C_EchoTunnel, true, sw.EchoTunnelWrapper)
+	e.SetHandlers(C_EchoDelay, true, sw.EchoDelayWrapper)
 }
 
 func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
@@ -177,6 +181,23 @@ func (sw *SampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	}
 
 	sw.h.EchoTunnel(ctx, req, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_EchoResponse, res)
+	}
+}
+
+func (sw *SampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	res := PoolEchoResponse.Get()
+	defer PoolEchoResponse.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	sw.h.EchoDelay(ctx, req, res)
 	if !ctx.Stopped() {
 		ctx.PushMessage(C_EchoResponse, res)
 	}
@@ -246,6 +267,30 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_EchoTunnel, req, kvs...)
+	err := c.c.Send(out, in, true)
+	if err != nil {
+		return nil, err
+	}
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		x := &EchoResponse{}
+		_ = proto.Unmarshal(in.Message, x)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = proto.Unmarshal(in.Message, x)
+		return nil, fmt.Errorf("%s:%s", x.GetCode(), x.GetItems())
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
+	}
+}
+
+func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(c.c.GetRequestID(), C_EchoDelay, req, kvs...)
 	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err

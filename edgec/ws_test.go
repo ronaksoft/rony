@@ -76,6 +76,20 @@ func TestClient_Connect(t *testing.T) {
 				time.Sleep(time.Second * 3)
 			}
 		})
+		Convey("One Connection With Slow Request", func(c C) {
+			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
+				SeedHostPort: "127.0.0.1:8081",
+			})
+			clnt := pb.NewSampleClient(wsc)
+			err = wsc.Start()
+			c.So(err, ShouldBeNil)
+
+			for i := 0; i < 5; i++ {
+				res, err := clnt.EchoDelay(&pb.EchoRequest{Int: 123})
+				c.So(err, ShouldBeNil)
+				c.So(res.Int, ShouldEqual, 123)
+			}
+		})
 
 	})
 

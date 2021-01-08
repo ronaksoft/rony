@@ -66,8 +66,8 @@ func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency in
 		edge.WithDispatcher(&testDispatcher{}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
-			MaxIdleTime:   time.Second,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
+			MaxIdleTime:   time.Second,
 			ExternalAddrs: []string{fmt.Sprintf("127.0.0.1:%d", listenPort)},
 		}),
 	)

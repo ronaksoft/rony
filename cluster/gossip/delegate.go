@@ -73,15 +73,7 @@ func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 	d.c.addMember(cm)
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
-		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeAlive)"); ce != nil {
-				ce.Write(
-					zap.ByteString("This", d.c.localServerID),
-					zap.String("NodeID", cm.serverID),
-					zap.Error(err),
-				)
-			}
-		} else {
+		if err == nil {
 			log.Info("Join Raft (NodeAlive)",
 				zap.ByteString("This", d.c.localServerID),
 				zap.String("NodeID", cm.serverID),

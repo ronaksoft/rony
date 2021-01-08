@@ -15,9 +15,8 @@ import (
 */
 
 type udpConn struct {
-	id  uint64
-	c   gnet.Conn
-	buf []byte
+	id uint64
+	c  gnet.Conn
 	// KV Store
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -41,8 +40,7 @@ func (u *udpConn) ClientIP() string {
 }
 
 func (u *udpConn) SendBinary(streamID int64, data []byte) error {
-	u.buf = data
-	return nil
+	return u.c.SendTo(data)
 }
 
 func (u *udpConn) Persistent() bool {

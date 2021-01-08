@@ -37,7 +37,7 @@ type wsConn struct {
 	mtx        sync.Mutex
 	hostPorts  []string
 	secure     bool
-	pendingMtx sync.RWMutex
+	pendingMtx tools.SpinLock
 	pending    map[uint64]chan *rony.MessageEnvelope
 }
 
@@ -165,8 +165,7 @@ func (c *wsConn) receiver() {
 			switch ms[idx].OpCode {
 			case ws.OpBinary, ws.OpText:
 				e := rony.PoolMessageEnvelope.Get()
-				uo := proto.UnmarshalOptions{}
-				_ = uo.Unmarshal(ms[idx].Payload, e)
+				_ = e.Unmarshal(ms[idx].Payload)
 				c.extractor(e)
 				rony.PoolMessageEnvelope.Put(e)
 			default:
@@ -277,6 +276,7 @@ SendLoop:
 		}
 		e.DeepCopy(res)
 	case <-t.C:
+		log.Warn("Timeout, will retry", zap.Error(err), zap.Int("Retry", retry))
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()

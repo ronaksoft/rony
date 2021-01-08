@@ -148,3 +148,56 @@ func TestNewTunnel(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkNew(b *testing.B) {
+	t, err := udpTunnel.New(udpTunnel.Config{
+		ServerID:      "",
+		Concurrency:   1000,
+		ListenAddress: "127.0.0.1:2374",
+		MaxBodySize:   1000,
+		ExternalAddrs: nil,
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	tm := &rony.TunnelMessage{
+		SenderID:         []byte("Something"),
+		SenderReplicaSet: 123,
+		Store:            nil,
+		Envelope: &rony.MessageEnvelope{
+			Constructor: 2193123,
+			RequestID:   42342342,
+			Message:     []byte("something"),
+			Auth:        nil,
+			Header:      nil,
+		},
+	}
+	tmb, _ := tm.Marshal()
+	t.MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage) {
+		err := conn.SendBinary(0, tmb)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	t.Start()
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			c, err := net.Dial("udp", "127.0.0.1:2374")
+			if err != nil {
+				b.Fatal(err)
+			}
+			_, err = c.Write(tmb)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_, err = c.Read(tmb)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = c.Close()
+		}
+	})
+}

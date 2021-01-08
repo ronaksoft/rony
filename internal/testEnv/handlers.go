@@ -3,6 +3,7 @@ package testEnv
 import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"time"
 )
 
 /*
@@ -23,6 +24,14 @@ func (h *Handlers) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoR
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+}
+
+func (h *Handlers) EchoDelay(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+	res.ServerID = h.ServerID
+	res.Timestamp = req.Timestamp
+	res.Int = req.Int
+	res.Responder = h.ServerID
+	time.Sleep(time.Second * 3)
 }
 
 func (h *Handlers) EchoLeaderOnly(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {

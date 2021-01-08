@@ -32,15 +32,9 @@ func TestMain(m *testing.M) {
 		&testEnv.Handlers{
 			ServerID: edgeServer.GetServerID(),
 		}, edgeServer)
-	err := edgeServer.StartCluster()
-	if err != nil && err != edge.ErrClusterNotSet {
-		panic(err)
-	}
 
-	err = edgeServer.StartGateway()
-	if err != nil {
-		panic(err)
-	}
+	edgeServer.Start()
+
 	flag.Parse()
 	code := m.Run()
 	edgeServer.Shutdown()

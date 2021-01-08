@@ -9,6 +9,7 @@ service Sample {
     };
     rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);
+    rpc EchoDelay(EchoRequest) returns (EchoResponse);
 }
 
 message EchoRequest {

@@ -188,14 +188,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
 	defer edge.recoverPanic(requestCtx, in)
 
-	var startTime int64
-	if ce := log.Check(log.DebugLevel, "Execute (Start)"); ce != nil {
-		startTime = tools.CPUTicks()
-		ce.Write(
-			zap.String("C", registry.ConstructorName(in.GetConstructor())),
-			zap.Uint64("ReqID", in.GetRequestID()),
-		)
-	}
+	startTime := tools.CPUTicks()
 
 	// Set the context request
 	requestCtx.reqID = in.RequestID
@@ -247,11 +240,16 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		requestCtx.StopExecution()
 	}
 
-	if ce := log.Check(log.DebugLevel, "Execute (Finished)"); ce != nil {
-		ce.Write(
-			zap.Uint64("ReqID", in.GetRequestID()),
-			zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
-		)
+	if ce := log.Check(log.DebugLevel, "Request Executed"); ce != nil {
+		if requestCtx.Kind() != ReplicaMessage {
+			ce.Write(
+				zap.String("ServerID", edge.GetServerID()),
+				zap.String("Kind", requestCtx.Kind().String()),
+				zap.Uint64("ReqID", in.GetRequestID()),
+				zap.String("C", registry.ConstructorName(in.GetConstructor())),
+				zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
+			)
+		}
 	}
 
 	return
@@ -344,7 +342,8 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 		tm.SenderID = edge.serverID
 		tm.Envelope = ctx.BufferPop()
 	default:
-
+		// TODO:: implement it
+		panic("not implemented, handle multiple tunnel message")
 	}
 
 	mo := proto.MarshalOptions{UseCachedSize: true}

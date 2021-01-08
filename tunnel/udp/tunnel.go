@@ -1,11 +1,11 @@
 package udpTunnel
 
 import (
-	"encoding/binary"
 	"fmt"
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ronaksoft/rony/tunnel"
 	"go.uber.org/zap"
@@ -35,30 +35,15 @@ type Config struct {
 // Tunnel
 type Tunnel struct {
 	tunnel.MessageHandler
-	cfg       Config
-	addrs     []string
-	shutdown  int32 // atomic shutdown flag
-	connID    uint64
-	encConfig gnet.EncoderConfig
-	decConfig gnet.DecoderConfig
+	cfg      Config
+	addrs    []string
+	shutdown int32 // atomic shutdown flag
+	connID   uint64
 }
 
 func New(config Config) (*Tunnel, error) {
 	t := &Tunnel{
 		cfg: config,
-	}
-	t.encConfig = gnet.EncoderConfig{
-		ByteOrder:                       binary.BigEndian,
-		LengthFieldLength:               4,
-		LengthAdjustment:                0,
-		LengthIncludesLengthFieldLength: false,
-	}
-	t.decConfig = gnet.DecoderConfig{
-		ByteOrder:           binary.BigEndian,
-		LengthFieldOffset:   0,
-		LengthFieldLength:   4,
-		LengthAdjustment:    0,
-		InitialBytesToStrip: 0,
 	}
 
 	var hosts []string
@@ -119,7 +104,6 @@ func (t *Tunnel) Run() {
 		gnet.WithMulticore(true),
 		gnet.WithLockOSThread(true),
 		gnet.WithNumEventLoop(t.cfg.Concurrency),
-		gnet.WithCodec(gnet.NewLengthFieldBasedFrameCodec(t.encConfig, t.decConfig)),
 	)
 
 	if err != nil {
@@ -165,8 +149,6 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	}
 
 	req := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(req)
-
 	err := req.Unmarshal(frame)
 	if err != nil {
 		log.Warn("Error On Tunnel's data received", zap.Error(err))
@@ -174,14 +156,12 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	}
 
 	conn := newConn(t.nextID(), c)
-	t.MessageHandler(conn, req)
+	pools.Go(func() {
+		t.MessageHandler(conn, req)
+		rony.PoolTunnelMessage.Put(req)
+	})
 
-	uc, _ := c.Context().(*udpConn)
-	if uc == nil {
-		return nil, gnet.Close
-	}
-
-	return uc.buf, gnet.None
+	return
 }
 
 func (t *Tunnel) Tick() (delay time.Duration, action gnet.Action) {

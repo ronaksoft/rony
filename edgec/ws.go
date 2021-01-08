@@ -80,6 +80,11 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 			c: c,
 		}
 	}
+	if c.cfg.Handler == nil {
+		c.cfg.Handler = func(m *rony.MessageEnvelope) {
+
+		}
+	}
 
 	return c
 }
@@ -188,7 +193,16 @@ SendLoop:
 		wsc = c.pool.getConn(rs, leaderOnly)
 	case ErrReplicaSetSession, ErrReplicaSetRequest:
 		rs = c.sessionReplica
+	default:
+		return err
 	}
+
+	// If we exceeds the maximum retry then we return
+	if retry--; retry < 0 {
+		err = rony.ErrRetriesExceeded(err)
+		return
+	}
+
 	goto SendLoop
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv/pb"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
@@ -206,7 +207,7 @@ var EchoCmd = &cobra.Command{
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
-				cmd.Print(m)
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
@@ -266,7 +267,7 @@ var EchoLeaderOnlyCmd = &cobra.Command{
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
-				cmd.Print(m)
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
@@ -327,7 +328,7 @@ var EchoTunnelCmd = &cobra.Command{
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
 			Handler: func(m *rony.MessageEnvelope) {
-				cmd.Print(m)
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
 			Secure:         false,
 			ContextTimeout: time.Second * 3,
@@ -353,7 +354,7 @@ var EchoTunnelCmd = &cobra.Command{
 				switch err {
 				case nil:
 					atomic.AddInt64(&cnt, 1)
-					cmd.Println(res)
+					cmd.Println("Res:", res)
 				default:
 					cmd.Println("Error:", err)
 				}
