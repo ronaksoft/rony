@@ -51,7 +51,8 @@ type Server struct {
 
 func NewServer(serverID string, opts ...edge.Option) *Server {
 	s := &Server{}
-	s.e = edge.NewServer(serverID, s, opts...)
+	opts = append(opts, edge.WithDispatcher(s))
+	s.e = edge.NewServer(serverID, opts...)
 	return s
 }
 

@@ -2,8 +2,6 @@ package udpTunnel
 
 import (
 	"github.com/panjf2000/gnet"
-	"github.com/ronaksoft/rony/pools"
-	"github.com/ronaksoft/rony/tools"
 	"sync"
 )
 
@@ -19,7 +17,7 @@ import (
 type udpConn struct {
 	id  uint64
 	c   gnet.Conn
-	buf *tools.LinkedList
+	buf []byte
 	// KV Store
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -27,26 +25,11 @@ type udpConn struct {
 
 func newConn(connID uint64, c gnet.Conn) *udpConn {
 	uc := &udpConn{
-		id:  connID,
-		c:   c,
-		buf: tools.NewLinkedList(),
+		id: connID,
+		c:  c,
 	}
 	c.SetContext(uc)
 	return uc
-}
-
-func (u *udpConn) Push(data []byte) {
-	d := pools.BytesBuffer.GetCap(len(data))
-	d.Fill(data)
-	u.buf.Append(d)
-}
-
-func (u *udpConn) Pop() *pools.ByteBuffer {
-	v := u.buf.PickHeadData()
-	if v != nil {
-		return v.(*pools.ByteBuffer)
-	}
-	return nil
 }
 
 func (u *udpConn) ConnID() uint64 {
@@ -58,8 +41,7 @@ func (u *udpConn) ClientIP() string {
 }
 
 func (u *udpConn) SendBinary(streamID int64, data []byte) error {
-	u.Push(data)
-	u.c.Wake()
+	u.buf = data
 	return nil
 }
 

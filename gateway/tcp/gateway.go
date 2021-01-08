@@ -49,6 +49,7 @@ type UnsafeConn interface {
 
 // Config
 type Config struct {
+	serverID      string
 	Concurrency   int
 	ListenAddress string
 	MaxBodySize   int
@@ -88,7 +89,6 @@ type Gateway struct {
 	cntReads           uint64
 	cntWrites          uint64
 }
-
 
 // New
 func New(config Config) (*Gateway, error) {

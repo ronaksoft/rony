@@ -66,7 +66,6 @@ type DispatchCtx struct {
 	req               *rony.MessageEnvelope
 	cluster           cluster.Cluster
 	gatewayDispatcher Dispatcher
-	tunnelDispatcher  Dispatcher
 	kind              ContextKind
 	buf               *tools.LinkedList
 	// KeyValue Store Parameters
@@ -78,7 +77,6 @@ func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
 		cluster:           edge.cluster,
 		gatewayDispatcher: edge.gatewayDispatcher,
-		tunnelDispatcher:  edge.tunnelDispatcher,
 		req:               &rony.MessageEnvelope{},
 		kv:                make(map[string]interface{}, 3),
 		buf:               tools.NewLinkedList(),
@@ -163,6 +161,10 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 	}
 }
 
+func (ctx *DispatchCtx) Kind() ContextKind {
+	return ctx.kind
+}
+
 func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
 	v, ok := ctx.Get(key).(int64)
 	if ok {
@@ -183,20 +185,20 @@ func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
 	return proto.Unmarshal(data, ctx.req)
 }
 
-func (ctx *DispatchCtx) Kind() ContextKind {
-	return ctx.kind
-}
-
-func (ctx *DispatchCtx) Push(m *rony.MessageEnvelope) {
+func (ctx *DispatchCtx) BufferPush(m *rony.MessageEnvelope) {
 	ctx.buf.Append(m)
 }
 
-func (ctx *DispatchCtx) Pop() *rony.MessageEnvelope {
+func (ctx *DispatchCtx) BufferPop() *rony.MessageEnvelope {
 	v := ctx.buf.PickHeadData()
 	if v != nil {
 		return v.(*rony.MessageEnvelope)
 	}
 	return nil
+}
+
+func (ctx *DispatchCtx) BufferSize() int32 {
+	return ctx.buf.Size()
 }
 
 // RequestCtx
@@ -240,7 +242,7 @@ func (ctx *RequestCtx) ServerID() string {
 }
 
 func (ctx *RequestCtx) Kind() ContextKind {
-	return ctx.dispatchCtx.Kind()
+	return ctx.dispatchCtx.kind
 }
 
 func (ctx *RequestCtx) StopExecution() {
@@ -325,7 +327,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 	case GatewayMessage:
 		ctx.dispatchCtx.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
 	case TunnelMessage:
-		ctx.dispatchCtx.tunnelDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}
 
 	releaseMessageEnvelope(envelope)
@@ -371,11 +373,11 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 		return ErrNoTunnelAddrs
 	}
 
-
 	conn, err := net.Dial("udp", target.TunnelAddr()[0])
 	if err != nil {
 		return err
 	}
+
 	tmOut := rony.PoolTunnelMessage.Get()
 	defer rony.PoolTunnelMessage.Put(tmOut)
 	tmIn := rony.PoolTunnelMessage.Get()
@@ -394,7 +396,6 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 	}
 	pools.Bytes.Put(b)
 
-
 	b = pools.Bytes.GetLen(4096)
 	n, err = bufio.NewReader(conn).Read(b)
 	if err != nil || n == 0 {
@@ -405,7 +406,10 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 	if err != nil {
 		return err
 	}
-	log.Info("Response", zap.String("C", registry.ConstructorName(tmIn.Envelope.Constructor)))
+	log.Info("Response",
+		zap.Int("L", n),
+		zap.String("C", registry.ConstructorName(tmIn.Envelope.Constructor)),
+	)
 	pools.Bytes.Put(b)
 	tmIn.Envelope.DeepCopy(res)
 	return nil

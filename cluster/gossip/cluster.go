@@ -236,11 +236,6 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 		}
 	}
 
-	log.Info("Raft",
-		zap.String("Bind", raftBind),
-		zap.String("Advertise", raftAdvertiseAddr.String()),
-	)
-
 	raftTransport, err := raft.NewTCPTransport(raftBind, raftAdvertiseAddr, 3, 10*time.Second, os.Stdout)
 	if err != nil {
 		return err

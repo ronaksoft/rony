@@ -20,7 +20,8 @@ func (d dispatcher) OnClose(conn rony.Conn) {
 
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	// log.Info("OnMessage", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
-	if ctx.Conn() != nil {
+	switch ctx.Kind() {
+	case edge.GatewayMessage, edge.TunnelMessage:
 		mo := proto.MarshalOptions{UseCachedSize: true}
 		protoBytes := pools.Bytes.GetCap(mo.Size(envelope))
 		protoBytes, _ = mo.MarshalAppend(protoBytes, envelope)
@@ -30,7 +31,6 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 		}
 		pools.Bytes.Put(protoBytes)
 	}
-
 }
 
 func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {

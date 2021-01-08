@@ -34,17 +34,10 @@ type Dispatcher interface {
 	OnClose(conn rony.Conn)
 }
 
-// SimpleDispatcher is a naive implementation of Dispatcher. You only need to set OnMessageFunc with
-type SimpleDispatcher struct {
-	OnMessageFunc func(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
-}
+// defaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
+type defaultDispatcher struct{}
 
-func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
-	if s.OnMessageFunc != nil {
-		s.OnMessageFunc(ctx, envelope)
-		return
-	}
-
+func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	eb := pools.Bytes.GetCap(mo.Size(envelope))
 	eb, _ = mo.MarshalAppend(eb, envelope)
@@ -52,18 +45,18 @@ func (s *SimpleDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnv
 	pools.Bytes.Put(eb)
 }
 
-func (s *SimpleDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {
+func (s *defaultDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {
 	return ctx.UnmarshalEnvelope(data)
 }
 
-func (s *SimpleDispatcher) Done(ctx *DispatchCtx) {
+func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
+func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 	// Do nothing
 }
 
-func (s *SimpleDispatcher) OnClose(conn rony.Conn) {
+func (s *defaultDispatcher) OnClose(conn rony.Conn) {
 	// Do nothing
 }

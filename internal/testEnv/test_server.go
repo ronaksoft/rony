@@ -63,6 +63,7 @@ func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
 func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
+		edge.WithDispatcher(&testDispatcher{}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
 			MaxIdleTime:   time.Second,
@@ -70,7 +71,7 @@ func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency in
 			ExternalAddrs: []string{fmt.Sprintf("127.0.0.1:%d", listenPort)},
 		}),
 	)
-	edgeServer := edge.NewServer(serverID, &testDispatcher{}, opts...)
+	edgeServer := edge.NewServer(serverID, opts...)
 
 	return edgeServer
 }

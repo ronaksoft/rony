@@ -132,7 +132,8 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 			)
 		}
 
-		Edges[serverID] = edge.NewServer(serverID, &dispatcher{}, opts...)
+		opts = append(opts, edge.WithDispatcher(&dispatcher{}))
+		Edges[serverID] = edge.NewServer(serverID, opts...)
 		pb.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
 
 		Edges[serverID].Start()

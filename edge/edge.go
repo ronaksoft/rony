@@ -54,17 +54,15 @@ type Server struct {
 	cluster cluster.Cluster
 
 	// Tunnel Configs
-	tunnel           tunnel.Tunnel
-	tunnelDispatcher Dispatcher
+	tunnel tunnel.Tunnel
 }
 
-func NewServer(serverID string, dispatcher Dispatcher, opts ...Option) *Server {
+func NewServer(serverID string, opts ...Option) *Server {
 	edgeServer := &Server{
 		handlers:          make(map[int64][]Handler),
 		readonlyHandlers:  make(map[int64]struct{}),
 		serverID:          []byte(serverID),
-		gatewayDispatcher: dispatcher,
-		tunnelDispatcher:  dispatcher,
+		gatewayDispatcher: &defaultDispatcher{},
 	}
 
 	for _, opt := range opts {
@@ -202,7 +200,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	// Set the context request
 	requestCtx.reqID = in.RequestID
 
-	if !isLeader && requestCtx.Kind() != ReplicaMessage {
+	if !isLeader && requestCtx.dispatchCtx.kind != ReplicaMessage {
 		_, ok := edge.readonlyHandlers[in.GetConstructor()]
 		if !ok {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
@@ -330,19 +328,39 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		edge.tunnelDispatcher.Done(dispatchCtx)
+		edge.onTunnelDone(dispatchCtx)
 	}
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
-func (edge *Server) onError(dispatchCtx *DispatchCtx, code, item string) {
+func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
+	tm := rony.PoolTunnelMessage.Get()
+	defer rony.PoolTunnelMessage.Put(tm)
+	switch ctx.BufferSize() {
+	case 0:
+		return
+	case 1:
+		tm.SenderReplicaSet = edge.cluster.ReplicaSet()
+		tm.SenderID = edge.serverID
+		tm.Envelope = ctx.BufferPop()
+	default:
+
+	}
+
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	b := pools.Bytes.GetCap(mo.Size(tm))
+	b, _ = mo.MarshalAppend(b, tm)
+	_ = ctx.Conn().SendBinary(ctx.streamID, b)
+}
+
+func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	envelope := acquireMessageEnvelope()
-	rony.ErrorMessage(envelope, dispatchCtx.req.GetRequestID(), code, item)
-	switch dispatchCtx.kind {
+	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
+	switch ctx.kind {
 	case GatewayMessage:
-		edge.gatewayDispatcher.OnMessage(dispatchCtx, envelope)
+		edge.gatewayDispatcher.OnMessage(ctx, envelope)
 	case TunnelMessage:
-		edge.tunnelDispatcher.OnMessage(dispatchCtx, envelope)
+		ctx.BufferPush(envelope.Clone())
 	}
 	releaseMessageEnvelope(envelope)
 }

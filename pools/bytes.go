@@ -115,6 +115,10 @@ func (bb *ByteBuffer) Fill(data []byte) {
 	bb.b = append(bb.b, data...)
 }
 
+func (bb *ByteBuffer) Len() int {
+	return len(bb.b)
+}
+
 // byteBufferPool. contains logic of reusing objects distinguishable by size in generic
 // way.
 type byteBufferPool struct {

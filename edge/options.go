@@ -21,6 +21,13 @@ import (
 // Option
 type Option func(edge *Server)
 
+// WithDispatcher enables custom dispatcher to write your specific event handlers.
+func WithDispatcher(d Dispatcher) Option {
+	return func(edge *Server) {
+		edge.gatewayDispatcher = d
+	}
+}
+
 type GossipClusterConfig gossipCluster.Config
 
 // WithGossipCluster enables the cluster in gossip mode. This mod is eventually consistent mode but there is
@@ -83,6 +90,7 @@ type UdpTunnelConfig udpTunnel.Config
 // edge servers.
 func WithUdpTunnel(config UdpTunnelConfig) Option {
 	return func(edge *Server) {
+		config.ServerID = string(edge.serverID)
 		tunnelUDP, err := udpTunnel.New(udpTunnel.Config(config))
 		if err != nil {
 			panic(err)
