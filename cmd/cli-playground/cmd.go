@@ -44,7 +44,7 @@ func init() {
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
 	RootCmd.PersistentFlags().String(FlagTargetID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
-	RootCmd.PersistentFlags().String(FlagReplicaMode, string(cluster.NoReplica), "")
+	RootCmd.PersistentFlags().String(FlagReplicaMode, string(cluster.MultiReplica), "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 	RootCmd.PersistentFlags().Int("n", 5, "")

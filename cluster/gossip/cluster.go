@@ -319,30 +319,32 @@ func (c *Cluster) removeMember(m *Member) {
 }
 
 func (c *Cluster) Start() {
-	notifyChan := make(chan bool, 1)
-	err := c.startRaft(notifyChan)
+	err := c.startGossip()
 	if err != nil {
-		log.Warn("Error On Starting Raft", zap.Error(err))
 		return
 	}
 
-	err = c.startGossip()
-	if err != nil {
-		return
-	}
-	go func() {
-		for range notifyChan {
-			err := tools.Try(10, time.Millisecond, func() error {
-				return c.updateCluster(gossipUpdateTimeout)
-			})
-			if err != nil {
-				log.Warn("Rony got error on updating the cluster",
-					zap.Error(err),
-					zap.ByteString("ID", c.localServerID),
-				)
-			}
+	if c.cfg.Mode == cluster.MultiReplica {
+		notifyChan := make(chan bool, 1)
+		err := c.startRaft(notifyChan)
+		if err != nil {
+			log.Warn("Error On Starting Raft", zap.Error(err))
+			return
 		}
-	}()
+		go func() {
+			for range notifyChan {
+				err := tools.Try(10, time.Millisecond, func() error {
+					return c.updateCluster(gossipUpdateTimeout)
+				})
+				if err != nil {
+					log.Warn("Rony got error on updating the cluster",
+						zap.Error(err),
+						zap.ByteString("ID", c.localServerID),
+					)
+				}
+			}
+		}()
+	}
 
 }
 
@@ -351,37 +353,37 @@ func (c *Cluster) Join(addr ...string) (int, error) {
 }
 
 func (c *Cluster) Shutdown() {
-	// Second shutdown raft, if it is enabled
-	if f := c.raft.Snapshot(); f.Error() != nil {
-		if f.Error() != raft.ErrNothingNewToSnapshot {
-			log.Warn("Error On Shutdown (Raft Snapshot)",
-				zap.Error(f.Error()),
-				zap.ByteString("ServerID", c.localServerID),
-			)
-		} else {
-			log.Info("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
+	//  shutdown raft, if it is enabled
+	if c.cfg.Mode == cluster.MultiReplica {
+		if f := c.raft.Snapshot(); f.Error() != nil {
+			if f.Error() != raft.ErrNothingNewToSnapshot {
+				log.Warn("Error On Shutdown (Raft Snapshot)",
+					zap.Error(f.Error()),
+					zap.ByteString("ServerID", c.localServerID),
+				)
+			} else {
+				log.Info("Error On Shutdown (Raft Snapshot)", zap.Error(f.Error()))
+			}
+
+		}
+		if f := c.raft.Shutdown(); f.Error() != nil {
+			log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(f.Error()))
 		}
 
-	}
-	if f := c.raft.Shutdown(); f.Error() != nil {
-		log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(f.Error()))
-	}
-
-	err := c.badgerStore.Close()
-	if err != nil {
-		log.Warn("Error On Shutdown (Close Raft Badger)", zap.Error(err))
+		err := c.badgerStore.Close()
+		if err != nil {
+			log.Warn("Error On Shutdown (Close Raft Badger)", zap.Error(err))
+		}
 	}
 
 	// Shutdown gossip
-	if c.gossip != nil {
-		err := c.gossip.Leave(gossipLeaveTimeout)
-		if err != nil {
-			log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
-		}
-		err = c.gossip.Shutdown()
-		if err != nil {
-			log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
-		}
+	err := c.gossip.Leave(gossipLeaveTimeout)
+	if err != nil {
+		log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
+	}
+	err = c.gossip.Shutdown()
+	if err != nil {
+		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
 	}
 
 }
@@ -396,11 +398,21 @@ func (c *Cluster) Members() []cluster.Member {
 	return members
 }
 
+func (c *Cluster) RaftEnabled() bool {
+	return c.raft != nil
+}
+
 func (c *Cluster) RaftState() raft.RaftState {
+	if c.cfg.Mode != cluster.MultiReplica {
+		return raft.Leader
+	}
 	return c.raft.State()
 }
 
 func (c *Cluster) RaftApply(cmd []byte) raft.ApplyFuture {
+	if c.cfg.Mode != cluster.MultiReplica {
+		return nil
+	}
 	return c.raft.Apply(cmd, raftApplyTimeout)
 }
 
@@ -416,10 +428,6 @@ func (c *Cluster) RaftMembers(replicaSet uint64) []cluster.Member {
 
 func (c *Cluster) RaftLeaderID() string {
 	return c.replicaLeaderID
-}
-
-func (c *Cluster) RaftConfigs() raft.ConfigurationFuture {
-	return c.raft.GetConfiguration()
 }
 
 func (c *Cluster) SetGatewayAddrs(hostPorts []string) error {

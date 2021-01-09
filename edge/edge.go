@@ -125,7 +125,7 @@ func (edge *Server) ClusterMembers() []cluster.Member {
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {
 	// If server is standalone then we are the leader anyway
 	isLeader = true
-	if edge.cluster == nil {
+	if edge.cluster == nil || !edge.cluster.RaftEnabled() {
 		return
 	}
 

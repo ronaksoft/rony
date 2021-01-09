@@ -84,6 +84,9 @@ func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 }
 
 func joinRaft(c *Cluster, nodeID, addr string) error {
+	if c.raft == nil {
+		return nil
+	}
 	if c.raft.State() != raft.Leader {
 		return rony.ErrNotRaftLeader
 	}
@@ -120,6 +123,10 @@ func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 }
 
 func leaveRaft(c *Cluster, nodeID, addr string) error {
+	if c.raft == nil {
+		return nil
+	}
+
 	if c.raft.State() != raft.Leader {
 		return rony.ErrNotRaftLeader
 	}
@@ -154,7 +161,9 @@ func (d *clusterDelegate) NodeMeta(limit int) []byte {
 		RaftState:     *rony.RaftState_None.Enum(),
 	}
 
-	n.RaftState = *rony.RaftState(d.c.raft.State() + 1).Enum()
+	if d.c.raft != nil {
+		n.RaftState = *rony.RaftState(d.c.raft.State() + 1).Enum()
+	}
 
 	b, _ := proto.Marshal(&n)
 	if len(b) > limit {

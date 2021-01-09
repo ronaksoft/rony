@@ -19,9 +19,10 @@ type ReplicaMessageHandler func(raftCmd *rony.RaftCommand) error
 type Mode string
 
 const (
-	NoReplica     Mode = "noReplica"
+	// SingleReplica if set then each replica set is only one node. i.e. raft is OFF.
 	SingleReplica Mode = "singleReplica"
-	MultiReplica  Mode = "multiReplica"
+	// MultiReplica if set then each replica set is a raft cluster
+	MultiReplica Mode = "multiReplica"
 )
 
 type Cluster interface {
@@ -37,6 +38,7 @@ type Cluster interface {
 }
 
 type Raft interface {
+	RaftEnabled() bool
 	RaftMembers(replicaSet uint64) []Member
 	RaftState() raft.RaftState
 	RaftApply(cmd []byte) raft.ApplyFuture
