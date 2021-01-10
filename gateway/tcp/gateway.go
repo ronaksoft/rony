@@ -119,7 +119,6 @@ func New(config Config) (*Gateway, error) {
 	if config.Protocol != "" {
 		g.transportMode = config.Protocol
 	}
-	http.StatusNotAcceptable
 
 	// initialize websocket upgrade handler
 	g.upgradeHandler = ws.DefaultUpgrader
