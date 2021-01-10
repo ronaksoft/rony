@@ -2,20 +2,11 @@
 
 go version
 
-skipedPackages=(
-  "salt"
-)
 packages=$(go list -mod vendor ./...);
 
 
 for pkg in ${packages}; do
   skipTest=false;
-  for spkg in "${skipedPackages[@]}"; do
-    x=$(echo "$pkg" | grep -c "$spkg");
-    if [[ "$x" -eq 1 ]]; then
-      skipTest=true
-    fi
-  done
   if [[ ${skipTest} = false ]]; then
     x=$(go test -mod=vendor -v "$pkg");
     # shellcheck disable=SC2181
