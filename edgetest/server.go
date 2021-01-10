@@ -3,6 +3,8 @@ package edgetest
 import (
 	"github.com/ronaksoft/rony/edge"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	"github.com/ronaksoft/rony/pools"
+	"time"
 )
 
 /*
@@ -17,6 +19,7 @@ import (
 type Server struct {
 	edge *edge.Server
 	gw   *dummyGateway.Gateway
+	ctxs []*context
 }
 
 func NewServer(serverID string, d edge.Dispatcher) *Server {
@@ -56,6 +59,30 @@ func (s *Server) SetPostHandlers(h ...edge.Handler) {
 	s.edge.SetPostHandlers(h...)
 }
 
-func (s *Server) Context() *conn {
-	return newConn(s.gw)
+func (s *Server) Context() *context {
+	return newContext(s.gw)
+}
+
+func (s *Server) AppendContext() *context {
+	ctx := newContext(s.gw)
+	s.ctxs = append(s.ctxs, ctx)
+	return ctx
+}
+
+func (s *Server) RunAll(timeout time.Duration) error {
+	mErr := &multiError{}
+	wg := pools.AcquireWaitGroup()
+	for _, ctx := range s.ctxs {
+		wg.Add(1)
+		go func(ctx *context) {
+			err := ctx.Run(timeout)
+			mErr.AddError(err)
+			wg.Done()
+		}(ctx)
+	}
+	wg.Wait()
+	if mErr.HasError() {
+		return mErr
+	}
+	return nil
 }

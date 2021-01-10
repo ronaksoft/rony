@@ -25,7 +25,7 @@ var (
 	connID uint64 = 1
 )
 
-type conn struct {
+type context struct {
 	mtx    sync.Mutex
 	id     uint64
 	reqC   int64
@@ -36,10 +36,11 @@ type conn struct {
 	err    error
 	errH   func(constructor int64, e *rony.Error)
 	doneCh chan struct{}
+	kvs    []*rony.KeyValue
 }
 
-func newConn(gw *dummyGateway.Gateway) *conn {
-	c := &conn{
+func newContext(gw *dummyGateway.Gateway) *context {
+	c := &context{
 		id:     atomic.AddUint64(&connID, 1),
 		expect: make(map[int64]CheckFunc),
 		gw:     gw,
@@ -49,7 +50,7 @@ func newConn(gw *dummyGateway.Gateway) *conn {
 }
 
 // Request set the request you wish to send to the server
-func (c *conn) Request(constructor int64, p proto.Message, kv ...*rony.KeyValue) *conn {
+func (c *context) Request(constructor int64, p proto.Message, kv ...*rony.KeyValue) *context {
 	data, _ := proto.Marshal(p)
 	c.reqID = tools.RandomUint64(0)
 	e := &rony.MessageEnvelope{
@@ -66,16 +67,16 @@ func (c *conn) Request(constructor int64, p proto.Message, kv ...*rony.KeyValue)
 
 // Expect let you set what you expect to receive. If cf is set, then you can do more checks on the response and return error
 // if the response was not fully acceptable
-func (c *conn) Expect(constructor int64, cf CheckFunc) *conn {
+func (c *context) Expect(constructor int64, cf CheckFunc) *context {
 	c.expect[constructor] = cf
 	return c
 }
 
-func (c *conn) ExpectConstructor(constructor int64) *conn {
+func (c *context) ExpectConstructor(constructor int64) *context {
 	return c.Expect(constructor, nil)
 }
 
-func (c *conn) check(e *rony.MessageEnvelope) {
+func (c *context) check(e *rony.MessageEnvelope) {
 	c.mtx.Lock()
 	f, ok := c.expect[e.Constructor]
 	c.mtx.Unlock()
@@ -95,27 +96,34 @@ func (c *conn) check(e *rony.MessageEnvelope) {
 	c.mtx.Unlock()
 }
 
-func (c *conn) expectCount() int {
+func (c *context) expectCount() int {
 	c.mtx.Lock()
 	n := len(c.expect)
 	c.mtx.Unlock()
 	return n
 }
 
-func (c *conn) ErrorHandler(f func(constructor int64, e *rony.Error)) *conn {
+func (c *context) ErrorHandler(f func(constructor int64, e *rony.Error)) *context {
 	c.errH = f
 	return c
 }
 
-func (c *conn) RunShort(kvs ...*rony.KeyValue) error {
-	return c.Run(time.Second*10, kvs...)
+func (c *context) SetRunParameters(kvs ...*rony.KeyValue) *context {
+	c.kvs = kvs
+	return c
 }
 
-func (c *conn) RunLong(kvs ...*rony.KeyValue) error {
-	return c.Run(time.Minute, kvs...)
+func (c *context) RunShort(kvs ...*rony.KeyValue) error {
+	c.SetRunParameters(kvs...)
+	return c.Run(time.Second * 10)
 }
 
-func (c *conn) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
+func (c *context) RunLong(kvs ...*rony.KeyValue) error {
+	c.SetRunParameters(kvs...)
+	return c.Run(time.Minute)
+}
+
+func (c *context) Run(timeout time.Duration) error {
 	// Open Connection
 	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
 		defer func() {
@@ -139,7 +147,7 @@ func (c *conn) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
 		default:
 			c.check(e)
 		}
-	}, kvs...)
+	}, c.kvs...)
 
 	// Send the Request
 	c.gw.SendToConn(c.id, 0, c.req)
