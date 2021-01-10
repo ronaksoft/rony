@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"github.com/ronaksoft/rony"
 	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
@@ -60,7 +63,19 @@ func fillModel(m *protogen.Message) {
 		}
 	)
 
-	t, err := parse.Parse(string(m.Desc.Name()), string(m.Comments.Leading))
+	modelDesc := strings.Builder{}
+	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+	if model := proto.GetExtension(opt, rony.E_Model).(string); model != "" {
+		modelDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", model))
+	}
+	if tab := proto.GetExtension(opt, rony.E_Table).(string); tab != "" {
+		modelDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
+	}
+	if view := proto.GetExtension(opt, rony.E_View).(string); view != "" {
+		modelDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+	}
+
+	t, err := parse.Parse(string(m.Desc.Name()), modelDesc.String())
 	if err != nil {
 		panic(err)
 	}

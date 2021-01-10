@@ -1,6 +1,7 @@
 package packageName
 
 import (
+	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	cql "github.com/ronaksoft/rony/repo/cql"
@@ -30,12 +31,6 @@ func (p *poolMessage1) Put(x *Message1) {
 	if x.M2 != nil {
 		PoolMessage2.Put(x.M2)
 		x.M2 = nil
-	}
-	for idx := range x.M2S {
-		if x.M2S[idx] != nil {
-			PoolMessage2.Put(x.M2S[idx])
-			x.M2S = nil
-		}
 	}
 	x.M2S = x.M2S[:0]
 	p.pool.Put(x)
@@ -127,6 +122,96 @@ func init() {
 	registry.RegisterConstructor(3802219577, "Model2")
 }
 
+func (x *Message1) DeepCopy(z *Message1) {
+	z.Param1 = x.Param1
+	z.Param2 = x.Param2
+	if x.M2 != nil {
+		z.M2 = PoolMessage2.Get()
+		x.M2.DeepCopy(z.M2)
+	}
+	for idx := range x.M2S {
+		if x.M2S[idx] != nil {
+			xx := PoolMessage2.Get()
+			x.M2S[idx].DeepCopy(xx)
+			z.M2S = append(z.M2S, xx)
+		}
+	}
+}
+
+func (x *Message2) DeepCopy(z *Message2) {
+	z.Param1 = x.Param1
+	z.P2 = append(z.P2[:0], x.P2...)
+	z.P3 = append(z.P3[:0], x.P3...)
+	if x.M1 != nil {
+		z.M1 = PoolMessage1.Get()
+		x.M1.DeepCopy(z.M1)
+	}
+}
+
+func (x *Model1) DeepCopy(z *Model1) {
+	z.ID = x.ID
+	z.ShardKey = x.ShardKey
+	z.P1 = x.P1
+	z.P2 = append(z.P2[:0], x.P2...)
+	z.P5 = x.P5
+}
+
+func (x *Model2) DeepCopy(z *Model2) {
+	z.ID = x.ID
+	z.ShardKey = x.ShardKey
+	z.P1 = x.P1
+	z.P2 = append(z.P2[:0], x.P2...)
+	z.P5 = x.P5
+}
+
+func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Message1, x)
+}
+
+func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Message2, x)
+}
+
+func (x *Model1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Model1, x)
+}
+
+func (x *Model2) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Model2, x)
+}
+
+func (x *Message1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Message2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Model1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Model2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Message1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Message2) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Model1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Model2) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
 // Tables
 const (
 	TableModel1          = "model_1"
@@ -138,8 +223,8 @@ const (
 func init() {
 	cql.AddCqlQuery(`
 CREATE TABLE IF NOT EXISTS model_1 (
-shard_key 	 int,
 id 	 int,
+shard_key 	 int,
 data 	 blob,
 PRIMARY KEY (id, shard_key)
 ) WITH CLUSTERING ORDER BY (shard_key ASC);
@@ -174,7 +259,7 @@ PRIMARY KEY (p_1, shard_key, id)
 
 var _Model1InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {
 	return qb.Insert(TableModel1).
-		Columns("shard_key", "id", "data").
+		Columns("id", "shard_key", "data").
 		Query(cql.Session())
 })
 
@@ -191,7 +276,7 @@ func Model1Insert(x *Model1) (err error) {
 		return err
 	}
 
-	q.Bind(x.ShardKey, x.ID, b)
+	q.Bind(x.ID, x.ShardKey, b)
 	err = cql.Exec(q)
 	return err
 }

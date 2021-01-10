@@ -5,3 +5,9 @@ option go_package = "github.com/ronaksoft/rony";
 extend google.protobuf.MethodOptions {
     optional bool follower_ok = 50001;
 }
+
+extend google.protobuf.MessageOptions {
+    optional string model = 50001;
+    optional string table = 50002;
+    optional string view = 50003;
+}
