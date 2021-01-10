@@ -119,6 +119,7 @@ func New(config Config) (*Gateway, error) {
 	if config.Protocol != "" {
 		g.transportMode = config.Protocol
 	}
+	http.StatusNotAcceptable
 
 	// initialize websocket upgrade handler
 	g.upgradeHandler = ws.DefaultUpgrader
@@ -325,7 +326,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 
 	// If this is a Http Upgrade then we handle websocket
 	if req.Request.Header.ConnectionUpgrade() {
-		if g.transportMode == gateway.Websocket {
+		if g.transportMode == gateway.Http {
 			req.SetConnectionClose()
 			req.SetStatusCode(http.StatusNotAcceptable)
 			return
@@ -344,7 +345,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 
 	// This is going to be an HTTP request
 	req.SetConnectionClose()
-	if g.transportMode == gateway.Http {
+	if g.transportMode == gateway.Websocket {
 		req.SetStatusCode(http.StatusNotAcceptable)
 		return
 	}
