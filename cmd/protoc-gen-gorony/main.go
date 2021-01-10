@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/cqlgen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"strings"
 )
@@ -38,9 +40,9 @@ func main() {
 			}
 
 			// reset the global model and fill with the new data
-			resetModels()
+			model.ResetModels()
 			for _, m := range f.Messages {
-				fillModel(m)
+				model.FillModel(m)
 			}
 
 			// Generate Pools
@@ -50,12 +52,14 @@ func main() {
 			GenPushToContext(f, g1)
 			GenMarshal(f, g1)
 			GenUnmarshal(f, g1)
-			if len(getModels()) > 0 {
-				// Generate Model's repo functionality
-				GenCql(f, g1)
+
+			// Generate Model's repo functionality
+			if len(model.GetModels()) > 0 {
+				cqlgen.Generate(f, g1)
 			}
+
+			// Generate RPCs if there is any service definition in the file
 			if len(f.Services) > 0 {
-				// Generate RPCs
 				GenRPC(f, g1)
 			}
 
