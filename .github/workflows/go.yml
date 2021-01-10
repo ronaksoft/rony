@@ -24,5 +24,8 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Download Vendor Packages
+      run: go mod vendor
+
     - name: Test
       run: sh gotest.sh
