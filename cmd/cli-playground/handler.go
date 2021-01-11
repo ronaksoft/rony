@@ -36,21 +36,10 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res
 
 	switch ctx.Kind() {
 	case edge.GatewayMessage:
-		out := rony.PoolMessageEnvelope.Get()
-		defer rony.PoolMessageEnvelope.Put(out)
-		in := rony.PoolMessageEnvelope.Get()
-		defer rony.PoolMessageEnvelope.Put(in)
-		out.Fill(ctx.ReqID(), pb.C_EchoTunnel, req)
-		err := ctx.ExecuteRemote(req.ReplicaSet, true, out, in)
+		err := pb.ExecuteRemoteEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
 			ctx.PushError(rony.ErrCodeInternal, err.Error())
 			return
-		}
-		switch in.Constructor {
-		case pb.C_EchoResponse:
-			_ = res.Unmarshal(in.Message)
-		default:
-			ctx.PushError(rony.ErrCodeInternal, "invalid constructor in response")
 		}
 	default:
 		return
