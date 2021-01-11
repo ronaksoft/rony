@@ -81,9 +81,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		}
 	}
 	if c.cfg.Handler == nil {
-		c.cfg.Handler = func(m *rony.MessageEnvelope) {
-
-		}
+		c.cfg.Handler = func(m *rony.MessageEnvelope) {}
 	}
 
 	return c

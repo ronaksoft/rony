@@ -313,7 +313,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		default:
 			if !ignoredHeaders[tools.ByteToStr(key)] {
 				kv := rony.PoolKeyValue.Get()
-				kv.Value = string(key)
+				kv.Key = string(key)
 				kv.Value = string(value)
 				kvs = append(kvs, kv)
 			}
