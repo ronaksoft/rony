@@ -153,7 +153,7 @@ You must install the following protoc plugins which generate the appropriate cod
 > 1. protoc-gen-gorony
 
 ```
-go get -u github.com/ronaksoft/rony/cmd/protoc-gen-rony
+go get -u github.com/ronaksoft/rony/cmd/protoc-gen-gorony
 
 This is a protoc pluging which could generate codes based on the protobuf. In addition to
 protobuffer syntax there are directive commands available which let the user generate more
