@@ -69,7 +69,8 @@ func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency in
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
 			MaxIdleTime:   time.Second,
 			ExternalAddrs: []string{fmt.Sprintf("127.0.0.1:%d", listenPort)},
-		}),
+		},
+		),
 	)
 	edgeServer := edge.NewServer(serverID, opts...)
 
