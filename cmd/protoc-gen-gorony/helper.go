@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -14,6 +15,24 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+func constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	p, t := descName(file, g, desc)
+	if p == "" {
+		return fmt.Sprintf("C_%s", t)
+	} else {
+		return fmt.Sprintf("%s.C_%s", p, t)
+	}
+}
+
+func name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	p, t := descName(file, g, desc)
+	if p == "" {
+		return fmt.Sprintf("%s", t)
+	} else {
+		return fmt.Sprintf("%s.%s", p, t)
+	}
+}
 
 // descName returns the package and ident name
 func descName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {

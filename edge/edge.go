@@ -468,10 +468,11 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 }
 
 var (
-	ErrClusterNotSet   = errors.New("cluster is not set")
-	ErrGatewayNotSet   = errors.New("gateway is not set")
-	ErrTunnelNotSet    = errors.New("tunnel is not set")
-	ErrEmptyMemberList = errors.New("member list is empty")
-	ErrMemberNotFound  = errors.New("member not found")
-	ErrNoTunnelAddrs   = errors.New("tunnel address does not found")
+	ErrClusterNotSet            = errors.New("cluster is not set")
+	ErrGatewayNotSet            = errors.New("gateway is not set")
+	ErrTunnelNotSet             = errors.New("tunnel is not set")
+	ErrUnexpectedTunnelResponse = errors.New("unexpected tunnel response")
+	ErrEmptyMemberList          = errors.New("member list is empty")
+	ErrMemberNotFound           = errors.New("member not found")
+	ErrNoTunnelAddrs            = errors.New("tunnel address does not found")
 )

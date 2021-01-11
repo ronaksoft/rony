@@ -1,6 +1,7 @@
 package rony
 
 import (
+	"fmt"
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
@@ -84,4 +85,8 @@ func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *Messag
 	x.SenderReplicaSet = senderReplicaSet
 	x.Store = append(x.Store[:0], kvs...)
 	e.DeepCopy(x.Envelope)
+}
+
+func (x *Error) Error() string {
+	return fmt.Sprintf("%s:%s", x.Code, x.Items)
 }

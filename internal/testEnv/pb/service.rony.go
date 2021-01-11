@@ -334,9 +334,9 @@ PRIMARY KEY (shard_key, id)
 `)
 	cql.AddCqlQuery(`
 CREATE TABLE IF NOT EXISTS model_2 (
+id 	 bigint,
 shard_key 	 int,
 p_1 	 blob,
-id 	 bigint,
 data 	 blob,
 PRIMARY KEY ((id, shard_key), p_1)
 ) WITH CLUSTERING ORDER BY (p_1 DESC);
@@ -437,7 +437,7 @@ func Model1ListByShardKey(shardKey int32, limit int32, f func(x *Model1) bool) e
 
 var _Model2InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {
 	return qb.Insert(TableModel2).
-		Columns("shard_key", "p_1", "id", "data").
+		Columns("id", "shard_key", "p_1", "data").
 		Query(cql.Session())
 })
 
@@ -454,7 +454,7 @@ func Model2Insert(x *Model2) (err error) {
 		return err
 	}
 
-	q.Bind(x.ShardKey, x.P1, x.ID, b)
+	q.Bind(x.ID, x.ShardKey, x.P1, b)
 	err = cql.Exec(q)
 	return err
 }
@@ -613,6 +613,102 @@ func (sw *SampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	sw.h.EchoDelay(ctx, req, res)
 	if !ctx.Stopped() {
 		ctx.PushMessage(C_EchoResponse, res)
+	}
+}
+
+func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	err := ctx.ExecuteRemote(replicaSet, false, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
+	}
+}
+
+func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
+	}
+}
+
+func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
+	}
+}
+
+func ExecuteRemoteEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
 	}
 }
 
