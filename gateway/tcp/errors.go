@@ -12,6 +12,7 @@ import "errors"
 */
 
 var (
+	ErrUnsupportedProtocol  = errors.New("gateway protocol is not supported")
 	ErrWriteToClosedConn    = errors.New("write to closed conn")
 	ErrUnexpectedSocketRead = errors.New("unexpected socket read")
 	ErrOpCloseReceived      = errors.New("close operation received")

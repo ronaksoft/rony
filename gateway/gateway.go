@@ -21,7 +21,6 @@ const (
 	Dummy     Protocol = "dummy"
 	Websocket Protocol = "ws"
 	Http      Protocol = "http"
-	UDP       Protocol = "udp"
 )
 
 // Gateway defines the gateway interface where clients could connect

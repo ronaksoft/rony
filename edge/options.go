@@ -56,7 +56,7 @@ func WithTcpGateway(config TcpGatewayConfig) Option {
 		gatewayTcp.MessageHandler = edge.onGatewayMessage
 		gatewayTcp.ConnectHandler = edge.onGatewayConnect
 		gatewayTcp.CloseHandler = edge.onGatewayClose
-		edge.gatewayProtocol = gateway.TCP
+		edge.gatewayProtocol = config.Protocol
 		edge.gateway = gatewayTcp
 		return
 	}

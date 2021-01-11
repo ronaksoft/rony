@@ -120,6 +120,12 @@ func New(config Config) (*Gateway, error) {
 		g.transportMode = config.Protocol
 	}
 
+	switch g.transportMode {
+	case gateway.Websocket, gateway.Http, gateway.TCP:
+	default:
+		return nil, ErrUnsupportedProtocol
+	}
+
 	// initialize websocket upgrade handler
 	g.upgradeHandler = ws.DefaultUpgrader
 
