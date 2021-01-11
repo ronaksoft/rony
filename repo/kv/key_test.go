@@ -19,12 +19,11 @@ func BenchmarkBulkKey_GenKey(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			bk := NewBulkKey()
-			d := bk.GenKey(tools.RandomInt64(100), tools.RandomID(10), 3, 125)
-			if len(d) != 34 {
+			d := bk.GenKey(tools.FastRand(), "tools.RandomID(10)", 3, 125)
+			if len(d) != 38 {
 				b.Fatal("invalid size", len(d))
 			}
 			bk.ReleaseAll()
 		}
-
 	})
 }

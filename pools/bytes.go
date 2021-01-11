@@ -111,8 +111,8 @@ func (bb *ByteBuffer) SetBytes(b *[]byte) {
 	bb.b = *b
 }
 
-func (bb *ByteBuffer) Fill(data []byte) {
-	bb.b = append(bb.b, data...)
+func (bb *ByteBuffer) Fill(data []byte, start, end int) {
+	copy(bb.b[start:end], data)
 }
 
 func (bb *ByteBuffer) Len() int {

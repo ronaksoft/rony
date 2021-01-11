@@ -3,6 +3,7 @@ package kv
 import (
 	"encoding/binary"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/tools"
 )
 
 /*
@@ -15,7 +16,7 @@ import (
 */
 
 type BulkKey struct {
-	keys [][]byte
+	keys []*pools.ByteBuffer
 }
 
 func NewBulkKey() *BulkKey {
@@ -23,33 +24,40 @@ func NewBulkKey() *BulkKey {
 }
 
 func (bk *BulkKey) GenKey(v ...interface{}) []byte {
-	b := pools.TinyBytes.GetLen(getSize(v...))
+	b := pools.BytesBuffer.GetLen(getSize(v...))
+	var buf [8]byte
 	idx := 0
 	for _, x := range v {
 		switch x := x.(type) {
 		case int:
-			binary.BigEndian.PutUint64(b[idx:idx+8], uint64(x))
+			binary.BigEndian.PutUint64(buf[:], uint64(x))
+			b.Fill(buf[:], idx, idx+8)
 			idx += 8
 		case uint:
-			binary.BigEndian.PutUint64(b[idx:idx+8], uint64(x))
+			binary.BigEndian.PutUint64(buf[:], uint64(x))
+			b.Fill(buf[:], idx, idx+8)
 			idx += 8
 		case int64:
-			binary.BigEndian.PutUint64(b[idx:idx+8], uint64(x))
+			binary.BigEndian.PutUint64(buf[:], uint64(x))
+			b.Fill(buf[:], idx, idx+8)
 			idx += 8
 		case uint64:
-			binary.BigEndian.PutUint64(b[idx:idx+8], x)
+			binary.BigEndian.PutUint64(buf[:], x)
+			b.Fill(buf[:], idx, idx+8)
 			idx += 8
 		case int32:
-			binary.BigEndian.PutUint32(b[idx:idx+4], uint32(x))
+			binary.BigEndian.PutUint32(buf[:4], uint32(x))
+			b.Fill(buf[:4], idx, idx+4)
 			idx += 4
 		case uint32:
-			binary.BigEndian.PutUint32(b[idx:idx+4], x)
+			binary.BigEndian.PutUint32(buf[:4], x)
+			b.Fill(buf[:4], idx, idx+4)
 			idx += 4
 		case []byte:
-			copy(b[idx:], x)
+			b.Fill(x, idx, idx+len(x))
 			idx += len(x)
 		case string:
-			copy(b[idx:], x)
+			b.Fill(tools.StrToByte(x), idx, idx+len(x))
 			idx += len(x)
 		default:
 			panic("unsupported type")
@@ -57,12 +65,12 @@ func (bk *BulkKey) GenKey(v ...interface{}) []byte {
 	}
 
 	bk.keys = append(bk.keys, b)
-	return b
+	return *b.Bytes()
 }
 
 func (bk *BulkKey) ReleaseAll() {
 	for _, b := range bk.keys {
-		pools.TinyBytes.Put(b)
+		pools.BytesBuffer.Put(b)
 	}
 }
 
