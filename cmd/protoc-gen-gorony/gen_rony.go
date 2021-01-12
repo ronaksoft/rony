@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -57,7 +58,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
 		for _, ft := range mt.Fields {
 			ftName := ft.Desc.Name()
-			ftPkg, _ := descName(file, g, ft.Desc.Message())
+			ftPkg := z.PackageName(file, g, ft.Desc.Message())
 			switch ft.Desc.Cardinality() {
 			case protoreflect.Repeated:
 				g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
@@ -77,7 +78,7 @@ func GenPools(file *protogen.File, g *protogen.GeneratedFile) {
 					g.P("x.", ftName, " = nil")
 					g.P("}")
 				default:
-					g.P(fmt.Sprintf("x.%s = %s", ftName, zeroValue(ft.Desc.Kind())))
+					g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc.Kind())))
 
 				}
 			}
@@ -108,7 +109,7 @@ func GenDeepCopy(file *protogen.File, g *protogen.GeneratedFile) {
 		g.P("func (x *", mtName, ") DeepCopy(z *", mtName, ") {")
 		for _, ft := range mt.Fields {
 			ftName := ft.Desc.Name()
-			ftPkg, ftType := descName(file, g, ft.Desc.Message())
+			ftPkg, ftType := z.DescName(file, g, ft.Desc.Message())
 			switch ft.Desc.Cardinality() {
 			case protoreflect.Repeated:
 				switch ft.Desc.Kind() {
@@ -236,16 +237,8 @@ func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
 func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("type I", s.Desc.Name(), " interface {")
 	for _, m := range s.Methods {
-		inputPkg, inputType := descName(file, g, m.Desc.Input())
-		outputPkg, outputType := descName(file, g, m.Desc.Output())
-		inputName := inputType
-		if inputPkg != "" {
-			inputName = fmt.Sprintf("%s.%s", inputPkg, inputType)
-		}
-		outputName := outputType
-		if outputPkg != "" {
-			outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
-		}
+		inputName := z.Name(file, g, m.Desc.Input())
+		outputName := z.Name(file, g, m.Desc.Output())
 		g.P(m.Desc.Name(), "(ctx *edge.RequestCtx, req *", inputName, ", res *", outputName, ")")
 	}
 	g.P("}")
@@ -276,8 +269,8 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	g.P("}")
 	g.P()
 	for _, m := range s.Methods {
-		inputPkg, inputType := descName(file, g, m.Desc.Input())
-		outputPkg, outputType := descName(file, g, m.Desc.Output())
+		inputPkg, inputType := z.DescName(file, g, m.Desc.Input())
+		outputPkg, outputType := z.DescName(file, g, m.Desc.Output())
 
 		g.P("func (sw *", s.Desc.Name(), "Wrapper) ", m.Desc.Name(), "Wrapper (ctx *edge.RequestCtx, in *rony.MessageEnvelope) {")
 		if inputPkg == "" {
@@ -326,16 +319,9 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	g.P("}")
 	g.P()
 	for _, m := range s.Methods {
-		inputPkg, inputType := descName(file, g, m.Desc.Input())
-		outputPkg, outputType := descName(file, g, m.Desc.Output())
-		inputName := inputType
-		if inputPkg != "" {
-			inputName = fmt.Sprintf("%s.%s", inputPkg, inputType)
-		}
-		outputName := outputType
-		if outputPkg != "" {
-			outputName = fmt.Sprintf("%s.%s", outputPkg, outputType)
-		}
+		inputName := z.Name(file, g, m.Desc.Input())
+		outputName := z.Name(file, g, m.Desc.Output())
+		outputPkg, outputType := z.DescName(file, g, m.Desc.Output())
 
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
@@ -386,10 +372,10 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 			leaderOnlyText = "false"
 		}
 
-		inputName := name(file, g, m.Desc.Input())
-		inputC := constructor(file, g, m.Desc.Input())
-		outputName := name(file, g, m.Desc.Output())
-		outputC := constructor(file, g, m.Desc.Output())
+		inputName := z.Name(file, g, m.Desc.Input())
+		inputC := z.Constructor(file, g, m.Desc.Input())
+		outputName := z.Name(file, g, m.Desc.Output())
+		outputC := z.Constructor(file, g, m.Desc.Output())
 
 		g.P("func ExecuteRemote", m.Desc.Name(), "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ") error {")
 		g.P("out := rony.PoolMessageEnvelope.Get()")

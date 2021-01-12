@@ -37,6 +37,32 @@ type Model struct {
 	FieldsGo   map[string]string
 }
 
+func (m *Model) FuncArgs(pk PrimaryKey) string {
+	sb := strings.Builder{}
+	for idx, k := range pk.Keys() {
+		if idx != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(k)
+		sb.WriteRune(' ')
+		sb.WriteString(m.FieldsGo[k])
+	}
+	return sb.String()
+}
+
+func (m *Model) FuncArgsPKs(pk PrimaryKey) string {
+	sb := strings.Builder{}
+	for idx, k := range pk.PKs {
+		if idx != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(k)
+		sb.WriteRune(' ')
+		sb.WriteString(m.FieldsGo[k])
+	}
+	return sb.String()
+}
+
 type PrimaryKey struct {
 	PKs    []string
 	CKs    []string
@@ -48,6 +74,29 @@ func (pk *PrimaryKey) Keys() []string {
 	keys = append(keys, pk.PKs...)
 	keys = append(keys, pk.CKs...)
 	return keys
+}
+
+func (pk *PrimaryKey) StringKeys(keyPrefix string) string {
+	sb := strings.Builder{}
+	for idx, k := range pk.Keys() {
+		if idx != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(keyPrefix)
+		sb.WriteString(k)
+	}
+	return sb.String()
+}
+
+func (pk *PrimaryKey) StringPKs() string {
+	sb := strings.Builder{}
+	for idx, k := range pk.PKs {
+		if idx != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(k)
+	}
+	return sb.String()
 }
 
 // ResetModels reset the internal data

@@ -29,6 +29,8 @@ func main() {
 			switch path {
 			case "github.com/scylladb/gocqlx":
 				return "github.com/scylladb/gocqlx/v2"
+			case "github.com/dgraph-io/badger":
+				return "github.com/dgraph-io/badger/v2"
 			}
 			return path
 		},

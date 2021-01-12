@@ -1,4 +1,4 @@
-package main
+package z
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 /*
-   Creation Time: 2020 - Aug - 31
+   Creation Time: 2021 - Jan - 12
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -16,8 +16,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := descName(file, g, desc)
+func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	p, t := DescName(file, g, desc)
 	if p == "" {
 		return fmt.Sprintf("C_%s", t)
 	} else {
@@ -25,8 +25,8 @@ func constructor(file *protogen.File, g *protogen.GeneratedFile, desc protorefle
 	}
 }
 
-func name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := descName(file, g, desc)
+func Name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	p, t := DescName(file, g, desc)
 	if p == "" {
 		return fmt.Sprintf("%s", t)
 	} else {
@@ -34,8 +34,13 @@ func name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.Mess
 	}
 }
 
+func PackageName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	pkg, _ := DescName(file, g, desc)
+	return pkg
+}
+
 // descName returns the package and ident name
-func descName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
+func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
 	if desc == nil {
 		return "", ""
 	}
@@ -51,7 +56,7 @@ func descName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.
 }
 
 // zeroValue returns the equal zero value based on the input type
-func zeroValue(t protoreflect.Kind) string {
+func ZeroValue(t protoreflect.Kind) string {
 	switch t {
 	case protoreflect.BoolKind:
 		return "false"

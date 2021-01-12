@@ -1,8 +1,10 @@
 package model
 
 import (
+	badger "github.com/dgraph-io/badger/v2"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
+	kv "github.com/ronaksoft/rony/repo/kv"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -148,4 +150,147 @@ func (x *Model1) Unmarshal(b []byte) error {
 
 func (x *Model2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func CreateHook(m *Hook) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		b := alloc.GenValue(m)
+		err := txn.Set(alloc.GenKey(C_Hook, m.ClientID, m.ID), b)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func ReadHook(m *Hook) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(alloc.GenKey(C_Hook, m.ClientID, m.ID))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return m.Unmarshal(val)
+		})
+	})
+}
+
+func DeleteHook(m *Hook) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		err := txn.Delete(alloc.GenKey(C_Hook, m.ClientID, m.ID))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func CreateModel1(m *Model1) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		b := alloc.GenValue(m)
+		err := txn.Set(alloc.GenKey(C_Model1, m.ID, m.ShardKey), b)
+		if err != nil {
+			return err
+		}
+
+		err = txn.Set(alloc.GenKey(C_Model1, 3113976552, m.ShardKey, m.ID), b)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func ReadModel1(m *Model1) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(alloc.GenKey(C_Model1, m.ID, m.ShardKey))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return m.Unmarshal(val)
+		})
+	})
+}
+
+func DeleteModel1(m *Model1) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		err := txn.Delete(alloc.GenKey(C_Model1, m.ID, m.ShardKey))
+		if err != nil {
+			return err
+		}
+
+		err = txn.Delete(alloc.GenKey(C_Model1, 3113976552, m.ShardKey, m.ID))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func CreateModel2(m *Model2) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		b := alloc.GenValue(m)
+		err := txn.Set(alloc.GenKey(C_Model2, m.ID, m.ShardKey, m.P1), b)
+		if err != nil {
+			return err
+		}
+
+		err = txn.Set(alloc.GenKey(C_Model2, 3495323833, m.P1, m.ShardKey, m.ID), b)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func ReadModel2(m *Model2) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(alloc.GenKey(C_Model2, m.ID, m.ShardKey, m.P1))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return m.Unmarshal(val)
+		})
+	})
+}
+
+func DeleteModel2(m *Model2) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.Update(func(txn *badger.Txn) error {
+		err := txn.Delete(alloc.GenKey(C_Model2, m.ID, m.ShardKey, m.P1))
+		if err != nil {
+			return err
+		}
+
+		err = txn.Delete(alloc.GenKey(C_Model2, 3495323833, m.P1, m.ShardKey, m.ID))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

@@ -6,6 +6,7 @@ import "options.proto";
 
 message Hook {
     option (rony_model) = true;
+    option (rony_table) = "(ClientID, ID)";
     string ClientID = 1;
     string ID = 2;
     string Timestamp = 3; // UTC unix epoch time
