@@ -152,7 +152,7 @@ func (x *Model2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func CreateHook(m *Hook) error {
+func SaveHook(m *Hook) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
 	return kv.Update(func(txn *badger.Txn) error {
@@ -193,7 +193,7 @@ func DeleteHook(m *Hook) error {
 	})
 }
 
-func CreateModel1(m *Model1) error {
+func SaveModel1(m *Model1) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
 	return kv.Update(func(txn *badger.Txn) error {
@@ -226,6 +226,20 @@ func ReadModel1(m *Model1) error {
 	})
 }
 
+func ReadModel1ByShardKeyAndID(m *Model1) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(alloc.GenKey(C_Model1, 3113976552, m.ShardKey, m.ID))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return m.Unmarshal(val)
+		})
+	})
+}
+
 func DeleteModel1(m *Model1) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -244,7 +258,7 @@ func DeleteModel1(m *Model1) error {
 	})
 }
 
-func CreateModel2(m *Model2) error {
+func SaveModel2(m *Model2) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
 	return kv.Update(func(txn *badger.Txn) error {
@@ -268,6 +282,20 @@ func ReadModel2(m *Model2) error {
 	defer alloc.ReleaseAll()
 	return kv.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(alloc.GenKey(C_Model2, m.ID, m.ShardKey, m.P1))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return m.Unmarshal(val)
+		})
+	})
+}
+
+func ReadModel2ByP1AndShardKeyAndID(m *Model2) error {
+	alloc := kv.NewAllocator()
+	defer alloc.ReleaseAll()
+	return kv.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(alloc.GenKey(C_Model2, 3495323833, m.P1, m.ShardKey, m.ID))
 		if err != nil {
 			return err
 		}

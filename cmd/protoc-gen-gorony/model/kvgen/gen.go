@@ -29,13 +29,13 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		funcCreate(mm, g)
+		funcSave(mm, g)
 		funcRead(mm, g)
 		funcDelete(mm, g)
 	}
 }
-func funcCreate(mm *model.Model, g *protogen.GeneratedFile) {
-	g.P("func Create", mm.Name, "(m *", mm.Name, ") error {")
+func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
+	g.P("func Save", mm.Name, "(m *", mm.Name, ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
@@ -72,6 +72,22 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("})")
 	g.P("}")
 	g.P()
+	for _, pk := range mm.Views {
+		g.P("func Read", mm.Name, pk.Name("By"), "(m *", mm.Name, ") error {")
+		g.P("alloc := kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P("return kv.View(func(txn *badger.Txn) error {")
+		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",", crc32.ChecksumIEEE(tools.StrToByte(pk.StringKeys("m."))), ",", pk.StringKeys("m."), "))")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}")
+		g.P("return item.Value(func (val []byte) error {")
+		g.P("return m.Unmarshal(val)")
+		g.P("})")
+		g.P("})")
+		g.P("}")
+		g.P()
+	}
 }
 func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("func Delete", mm.Name, "(m *", mm.Name, ") error {")

@@ -99,6 +99,18 @@ func (pk *PrimaryKey) StringPKs() string {
 	return sb.String()
 }
 
+func (pk *PrimaryKey) Name(prefix string) string {
+	sb := strings.Builder{}
+	sb.WriteString(prefix)
+	for idx, k := range pk.Keys() {
+		if idx != 0 {
+			sb.WriteString("And")
+		}
+		sb.WriteString(k)
+	}
+	return sb.String()
+}
+
 // ResetModels reset the internal data
 func ResetModels() {
 	loadedModels = map[string]*Model{}
