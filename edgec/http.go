@@ -111,8 +111,8 @@ func (h *Http) newConn(id string, replicaSet uint64, hostPorts ...string) *httpC
 	}
 }
 
-func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) error {
-	return h.SendWithDetails(req, res, h.cfg.ContextTimeout, true)
+func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope, leaderOnly bool) error {
+	return h.SendWithDetails(req, res, h.cfg.ContextTimeout, leaderOnly)
 }
 
 // Send implements Client interface
