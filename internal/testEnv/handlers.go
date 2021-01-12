@@ -31,7 +31,7 @@ func (h *Handlers) EchoDelay(ctx *edge.RequestCtx, req *service.EchoRequest, res
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 1)
 }
 
 func (h *Handlers) EchoLeaderOnly(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {

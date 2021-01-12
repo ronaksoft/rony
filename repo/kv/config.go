@@ -13,6 +13,11 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+const (
+	defaultConflictRetries = 100
+	defaultMaxInterval     = time.Millisecond
+)
+
 type Config struct {
 	DirPath             string
 	ConflictRetries     int

@@ -42,6 +42,12 @@ func Init(config Config) error {
 	}
 	_Index = idx
 	_DB = db
+	if config.ConflictRetries == 0 {
+		config.ConflictRetries = defaultConflictRetries
+	}
+	if config.ConflictMaxInterval == 0 {
+		config.ConflictMaxInterval = defaultMaxInterval
+	}
 	_ConflictRetry = config.ConflictRetries
 	_ConflictRetryInterval = config.ConflictMaxInterval
 	return nil
