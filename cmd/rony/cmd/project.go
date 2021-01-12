@@ -110,9 +110,7 @@ func setupSkeleton(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
 	projectName := config.GetString("project.name")
 
-	cmd := exec.Command("mkdir", "-p", projectPath)
-	cmd.Env = os.Environ()
-	g.Command(cmd)
+	_ = os.Mkdir(projectPath, os.ModePerm)
 
 	pathPrefix := skeletonPath + "/skel"
 	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
