@@ -14,3 +14,9 @@ extend google.protobuf.MessageOptions {
     optional string table = 50002;
     optional string view = 50003;
 }
+
+extend google.protobuf.FieldOptions {
+    optional bool index = 50001;
+    optional bool unique_index = 50002;
+    optional bool primary_key = 50003;
+}
