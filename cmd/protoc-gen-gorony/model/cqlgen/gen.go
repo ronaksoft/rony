@@ -17,7 +17,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Generate generates the repo functions for messages which are identified as model with {{@model cql}}
+// Generate generates the repo functions for messages which are identified as model with {{@entity cql}}
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/cql"})

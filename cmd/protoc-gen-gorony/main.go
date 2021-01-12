@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/cqlgen"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/kvgen"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 )
 
@@ -55,7 +59,14 @@ func main() {
 
 			// Generate Model's repo functionality
 			if len(model.GetModels()) > 0 {
-				cqlgen.Generate(f, g1)
+				opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
+				storage := proto.GetExtension(opt, rony.E_Storage).(string)
+				switch strings.ToLower(storage) {
+				case "local":
+					kvgen.Generate(f, g1)
+				case "cql":
+					cqlgen.Generate(f, g1)
+				}
 			}
 
 			// Generate RPCs if there is any service definition in the file

@@ -67,9 +67,6 @@ func FillModel(m *protogen.Message) {
 
 	modelDesc := strings.Builder{}
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	if entity := proto.GetExtension(opt, rony.E_Entity).(string); entity != "" {
-		modelDesc.WriteString(fmt.Sprintf("{{@entity %s}}\n", entity))
-	}
 	if tab := proto.GetExtension(opt, rony.E_Table).(string); tab != "" {
 		modelDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
 	}
