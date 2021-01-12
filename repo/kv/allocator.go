@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
+	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -15,15 +16,17 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type BulkKey struct {
-	keys []*pools.ByteBuffer
+type Allocator struct {
+	blocks []*pools.ByteBuffer
 }
 
-func NewBulkKey() *BulkKey {
-	return &BulkKey{}
+func NewAllocator() *Allocator {
+	return &Allocator{
+		blocks: make([]*pools.ByteBuffer, 0, 8),
+	}
 }
 
-func (bk *BulkKey) GenKey(v ...interface{}) []byte {
+func (bk *Allocator) GenKey(v ...interface{}) []byte {
 	b := pools.BytesBuffer.GetLen(getSize(v...))
 	var buf [8]byte
 	idx := 0
@@ -64,12 +67,21 @@ func (bk *BulkKey) GenKey(v ...interface{}) []byte {
 		}
 	}
 
-	bk.keys = append(bk.keys, b)
+	bk.blocks = append(bk.blocks, b)
 	return *b.Bytes()
 }
 
-func (bk *BulkKey) ReleaseAll() {
-	for _, b := range bk.keys {
+func (bk *Allocator) GenValue(m proto.Message) []byte {
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	bb := pools.BytesBuffer.GetCap(mo.Size(m))
+	b, _ := mo.MarshalAppend(*bb.Bytes(), m)
+	bb.SetBytes(&b)
+	bk.blocks = append(bk.blocks, bb)
+	return *bb.Bytes()
+}
+
+func (bk *Allocator) ReleaseAll() {
+	for _, b := range bk.blocks {
 		pools.BytesBuffer.Put(b)
 	}
 }

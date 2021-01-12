@@ -115,8 +115,16 @@ func (bb *ByteBuffer) Fill(data []byte, start, end int) {
 	copy(bb.b[start:end], data)
 }
 
+func (bb *ByteBuffer) Append(data []byte) {
+	bb.b = append(bb.b, data...)
+}
+
 func (bb *ByteBuffer) Len() int {
 	return len(bb.b)
+}
+
+func (bb ByteBuffer) Cap() int {
+	return cap(bb.b)
 }
 
 // byteBufferPool. contains logic of reusing objects distinguishable by size in generic

@@ -334,9 +334,9 @@ PRIMARY KEY (shard_key, id)
 `)
 	cql.AddCqlQuery(`
 CREATE TABLE IF NOT EXISTS model_2 (
+p_1 	 blob,
 id 	 bigint,
 shard_key 	 int,
-p_1 	 blob,
 data 	 blob,
 PRIMARY KEY ((id, shard_key), p_1)
 ) WITH CLUSTERING ORDER BY (p_1 DESC);
@@ -437,7 +437,7 @@ func Model1ListByShardKey(shardKey int32, limit int32, f func(x *Model1) bool) e
 
 var _Model2InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {
 	return qb.Insert(TableModel2).
-		Columns("id", "shard_key", "p_1", "data").
+		Columns("p_1", "id", "shard_key", "data").
 		Query(cql.Session())
 })
 
@@ -454,7 +454,7 @@ func Model2Insert(x *Model2) (err error) {
 		return err
 	}
 
-	q.Bind(x.ID, x.ShardKey, x.P1, b)
+	q.Bind(x.P1, x.ID, x.ShardKey, b)
 	err = cql.Exec(q)
 	return err
 }
