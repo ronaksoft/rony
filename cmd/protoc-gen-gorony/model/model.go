@@ -67,8 +67,8 @@ func FillModel(m *protogen.Message) {
 
 	modelDesc := strings.Builder{}
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	if model := proto.GetExtension(opt, rony.E_Model).(string); model != "" {
-		modelDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", model))
+	if entity := proto.GetExtension(opt, rony.E_Entity).(string); entity != "" {
+		modelDesc.WriteString(fmt.Sprintf("{{@entity %s}}\n", entity))
 	}
 	if tab := proto.GetExtension(opt, rony.E_Table).(string); tab != "" {
 		modelDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
@@ -84,8 +84,8 @@ func FillModel(m *protogen.Message) {
 	fields := make(map[string]struct{})
 	for _, n := range t.Root.Nodes {
 		switch n.Type() {
-		case parse.NodeModel:
-			nn := n.(*parse.ModelNode)
+		case parse.NodeEntity:
+			nn := n.(*parse.EntityNode)
 			mm.Type = nn.Text
 			isModel = true
 		case parse.NodeTable:

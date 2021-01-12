@@ -2,7 +2,7 @@ package testEnv
 
 import (
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"time"
 )
 
@@ -19,14 +19,14 @@ type Handlers struct {
 	ServerID string
 }
 
-func (h *Handlers) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *Handlers) Echo(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
 }
 
-func (h *Handlers) EchoDelay(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *Handlers) EchoDelay(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
@@ -34,14 +34,14 @@ func (h *Handlers) EchoDelay(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.
 	time.Sleep(time.Second * 3)
 }
 
-func (h *Handlers) EchoLeaderOnly(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *Handlers) EchoLeaderOnly(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
 }
 
-func (h *Handlers) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *Handlers) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int

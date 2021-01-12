@@ -6,7 +6,7 @@ import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"os"
 	"testing"
 	"time"
@@ -28,7 +28,7 @@ var (
 func TestMain(m *testing.M) {
 	edgeServer = testEnv.InitEdgeServerWithWebsocket("Adam", 8080, 1000)
 
-	pb.RegisterSample(
+	service.RegisterSample(
 		&testEnv.Handlers{
 			ServerID: edgeServer.GetServerID(),
 		}, edgeServer)
@@ -55,7 +55,7 @@ func BenchmarkSingleClient(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	echoRequest := pb.EchoRequest{
+	echoRequest := service.EchoRequest{
 		Int:       100,
 		Timestamp: 32809238402,
 	}
@@ -67,7 +67,7 @@ func BenchmarkSingleClient(b *testing.B) {
 		for p.Next() {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
+			req.Fill(edgeClient.GetRequestID(), service.C_Echo, &echoRequest)
 			_ = edgeClient.Send(req, res, true)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)
@@ -76,7 +76,7 @@ func BenchmarkSingleClient(b *testing.B) {
 }
 
 func BenchmarkMultiClient(b *testing.B) {
-	echoRequest := pb.EchoRequest{
+	echoRequest := service.EchoRequest{
 		Int:       100,
 		Timestamp: 32809238402,
 	}
@@ -100,7 +100,7 @@ func BenchmarkMultiClient(b *testing.B) {
 		for p.Next() {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), pb.C_Echo, &echoRequest)
+			req.Fill(edgeClient.GetRequestID(), service.C_Echo, &echoRequest)
 			_ = edgeClient.Send(req, res, true)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)

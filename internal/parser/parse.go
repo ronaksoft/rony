@@ -208,12 +208,12 @@ func (t *Tree) parse() {
 }
 
 // Action:
-//	model, table, view, counter , ...
+//	entity, table, view, counter , ...
 // Left delim is past. Now get actions.
 func (t *Tree) action() (n Node) {
 	switch item := t.nextNonSpace(); item.tok {
-	case MODEL:
-		n = t.model(item.pos)
+	case ENTITY:
+		n = t.entity(item.pos)
 	case TABLE:
 		n = t.table(item.pos)
 	case VIEW:
@@ -229,12 +229,12 @@ func (t *Tree) action() (n Node) {
 	return
 }
 
-func (t *Tree) model(pos Pos) (n Node) {
+func (t *Tree) entity(pos Pos) (n Node) {
 	switch item := t.nextNonSpace(); item.tok {
 	case IDENT:
 		return t.newModel(pos, item.val)
 	default:
-		t.unexpected(item, "model")
+		t.unexpected(item, "entity")
 	}
 
 	panic("unreachable code")

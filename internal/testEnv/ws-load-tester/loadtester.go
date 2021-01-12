@@ -7,7 +7,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"net"
@@ -122,12 +122,12 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 		}
 	}()
 
-	echoRequest := pb.EchoRequest{
+	echoRequest := service.EchoRequest{
 		Int:       21313,
 		Timestamp: 42342342342,
 	}
 	req := rony.PoolMessageEnvelope.Get()
-	req.Fill(tools.RandomUint64(0), pb.C_Echo, &echoRequest)
+	req.Fill(tools.RandomUint64(0), service.C_Echo, &echoRequest)
 	reqBytes, _ := req.Marshal()
 	for i := 0; i < m; i++ {
 		err := wsutil.WriteClientMessage(c, ws.OpBinary, reqBytes)

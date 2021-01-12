@@ -4,7 +4,7 @@ import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	. "github.com/smartystreets/goconvey/convey"
 	"sync"
 	"testing"
@@ -27,7 +27,7 @@ func init() {
 func TestClient_Connect(t *testing.T) {
 	Convey("Websocket Client Tests", t, func(c C) {
 		e := testEnv.InitEdgeServerWithWebsocket("Test.01", 8081, 10)
-		pb.RegisterSample(&testEnv.Handlers{
+		service.RegisterSample(&testEnv.Handlers{
 			ServerID: e.GetServerID(),
 		}, e)
 
@@ -43,7 +43,7 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
-			clnt := pb.NewSampleClient(wsc)
+			clnt := service.NewSampleClient(wsc)
 			err = wsc.Start()
 			c.So(err, ShouldBeNil)
 
@@ -52,7 +52,7 @@ func TestClient_Connect(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					res, err := clnt.Echo(&pb.EchoRequest{Int: 123})
+					res, err := clnt.Echo(&service.EchoRequest{Int: 123})
 					c.So(err, ShouldBeNil)
 					c.So(res.Int, ShouldEqual, 123)
 				}()
@@ -65,12 +65,12 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
-			clnt := pb.NewSampleClient(wsc)
+			clnt := service.NewSampleClient(wsc)
 			err = wsc.Start()
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {
-				res, err := clnt.Echo(&pb.EchoRequest{Int: 123})
+				res, err := clnt.Echo(&service.EchoRequest{Int: 123})
 				c.So(err, ShouldBeNil)
 				c.So(res.Int, ShouldEqual, 123)
 				time.Sleep(time.Second * 3)
@@ -80,12 +80,12 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
-			clnt := pb.NewSampleClient(wsc)
+			clnt := service.NewSampleClient(wsc)
 			err = wsc.Start()
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {
-				res, err := clnt.EchoDelay(&pb.EchoRequest{Int: 123})
+				res, err := clnt.EchoDelay(&service.EchoRequest{Int: 123})
 				c.So(err, ShouldBeNil)
 				c.So(res.Int, ShouldEqual, 123)
 			}

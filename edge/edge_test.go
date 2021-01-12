@@ -3,7 +3,7 @@ package edge_test
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/testEnv"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/registry"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -22,20 +22,20 @@ import (
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
 		s := testEnv.InitTestServer("TestServer")
-		pb.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
+		service.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
 		s.Start()
 		defer s.Shutdown()
 
 		err := s.Context().
-			Request(pb.C_Echo, &pb.EchoRequest{
+			Request(service.C_Echo, &service.EchoRequest{
 				Int:       100,
 				Timestamp: 123,
 			}).
 			ErrorHandler(func(constructor int64, e *rony.Error) {
 				c.Println(registry.ConstructorName(constructor), "-->", e.Code, e.Items, e.Template)
 			}).
-			Expect(pb.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
-				x := &pb.EchoResponse{}
+			Expect(service.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
+				x := &service.EchoResponse{}
 				err := x.Unmarshal(b)
 				c.So(err, ShouldBeNil)
 				c.So(x.Int, ShouldEqual, 100)

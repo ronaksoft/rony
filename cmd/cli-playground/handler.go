@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/tools"
 	"time"
 )
@@ -21,14 +21,14 @@ type SampleServer struct {
 	es *edge.Server
 }
 
-func (h *SampleServer) EchoLeaderOnly(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *SampleServer) EchoLeaderOnly(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp
 	res.ServerID = h.es.GetServerID()
 }
 
-func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp
@@ -36,7 +36,7 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res
 
 	switch ctx.Kind() {
 	case edge.GatewayMessage:
-		err := pb.ExecuteRemoteEchoTunnel(ctx, req.ReplicaSet, req, res)
+		err := service.ExecuteRemoteEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
 			ctx.PushError(rony.ErrCodeInternal, err.Error())
 			return
@@ -48,14 +48,14 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *pb.EchoRequest, res
 
 }
 
-func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *SampleServer) Echo(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp
 	res.ServerID = h.es.GetServerID()
 }
 
-func (h *SampleServer) EchoDelay(ctx *edge.RequestCtx, req *pb.EchoRequest, res *pb.EchoResponse) {
+func (h *SampleServer) EchoDelay(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()
 	res.Delay = res.Timestamp - req.Timestamp

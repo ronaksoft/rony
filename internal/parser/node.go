@@ -51,7 +51,7 @@ func (t NodeType) Type() NodeType {
 const (
 	NodeList NodeType = iota // a list of Nodes
 	NodeText
-	NodeModel
+	NodeEntity
 	NodeTable
 	NodeView
 	NodeCounter
@@ -134,32 +134,32 @@ func (t *TextNode) Copy() Node {
 	return &TextNode{tr: t.tr, NodeType: NodeText, Pos: t.Pos, Text: t.Text}
 }
 
-// ModelNode holds model
-type ModelNode struct {
+// EntityNode holds entity
+type EntityNode struct {
 	NodeType
 	Pos
 	tr   *Tree
 	Text string // The text; may span newlines.
 }
 
-func (t *Tree) newModel(pos Pos, text string) *ModelNode {
-	return &ModelNode{tr: t, NodeType: NodeModel, Pos: pos, Text: text}
+func (t *Tree) newModel(pos Pos, text string) *EntityNode {
+	return &EntityNode{tr: t, NodeType: NodeEntity, Pos: pos, Text: text}
 }
 
-func (t *ModelNode) String() string {
+func (t *EntityNode) String() string {
 	return fmt.Sprintf(textFormat, t.Text)
 }
 
-func (t *ModelNode) writeTo(sb *strings.Builder) {
+func (t *EntityNode) writeTo(sb *strings.Builder) {
 	sb.WriteString(t.String())
 }
 
-func (t *ModelNode) tree() *Tree {
+func (t *EntityNode) tree() *Tree {
 	return t.tr
 }
 
-func (t *ModelNode) Copy() Node {
-	return &ModelNode{tr: t.tr, NodeType: NodeModel, Pos: t.Pos, Text: t.Text}
+func (t *EntityNode) Copy() Node {
+	return &EntityNode{tr: t.tr, NodeType: NodeEntity, Pos: t.Pos, Text: t.Text}
 }
 
 // TableNode holds table
@@ -220,7 +220,7 @@ func (t *ViewNode) Copy() Node {
 	return &ViewNode{tr: t.tr, NodeType: NodeView, Pos: t.Pos, PartitionKeys: t.PartitionKeys, ClusteringKeys: t.ClusteringKeys}
 }
 
-// CounterNode holds model
+// CounterNode holds entity
 type CounterNode struct {
 	NodeType
 	Pos

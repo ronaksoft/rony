@@ -32,10 +32,10 @@ func (i tokenItem) String() string {
 }
 
 var key = map[string]token{
-	"model": MODEL,
-	"tab":   TABLE,
-	"view":  VIEW,
-	"cnt":   COUNTER,
+	"entity": ENTITY,
+	"tab":    TABLE,
+	"view":   VIEW,
+	"cnt":    COUNTER,
 }
 
 // state functions

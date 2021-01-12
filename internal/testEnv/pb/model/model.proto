@@ -1,0 +1,39 @@
+syntax = "proto3";
+package model;
+option go_package = ".;model";
+import "options.proto";
+
+message Hook {
+//    option (model) = "local";
+    string ClientID = 1;
+    string ID = 2;
+    string Timestamp = 3; // UTC unix epoch time
+    string HookUrl = 4;
+    bool Fired = 5;
+    bool Success = 6;
+}
+
+
+message Model1 {
+    option (entity) = "cqlgen";
+    option (table) = "(ID, ShardKey)";
+    option (view) = "(ShardKey, ID)";
+    int32 ID = 1;
+    int32 ShardKey = 2;
+    string P1 = 3;
+    repeated string P2 = 4;
+    uint64 P5 = 5;
+}
+
+message Model2 {
+    option (entity) = "cqlgen";
+    option (table) = "((ID, ShardKey), -P1)";
+    option (view) = "(P1, ShardKey, ID)";
+    int64 ID = 1;
+    int32 ShardKey = 2;
+    string P1 = 3;
+    repeated string P2 = 4;
+    uint64 P5 = 5;
+}
+
+

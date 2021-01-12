@@ -6,7 +6,7 @@ import (
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
-	"github.com/ronaksoft/rony/internal/testEnv/pb"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
@@ -135,7 +135,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 
 		opts = append(opts, edge.WithDispatcher(&dispatcher{}))
 		Edges[serverID] = edge.NewServer(serverID, opts...)
-		pb.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
+		service.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
 
 		Edges[serverID].Start()
 		for _, e := range Edges {
@@ -218,9 +218,9 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		defer ec.Close()
-		c := pb.NewSampleClient(ec)
-		req := pb.PoolEchoRequest.Get()
-		defer pb.PoolEchoRequest.Put(req)
+		c := service.NewSampleClient(ec)
+		req := service.PoolEchoRequest.Get()
+		defer service.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Timestamp = tools.NanoTime()
 		var cnt int64
@@ -278,9 +278,9 @@ var EchoLeaderOnlyCmd = &cobra.Command{
 			return
 		}
 		defer ec.Close()
-		c := pb.NewSampleClient(ec)
-		req := pb.PoolEchoRequest.Get()
-		defer pb.PoolEchoRequest.Put(req)
+		c := service.NewSampleClient(ec)
+		req := service.PoolEchoRequest.Get()
+		defer service.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Timestamp = tools.NanoTime()
 		var cnt int64
@@ -339,9 +339,9 @@ var EchoTunnelCmd = &cobra.Command{
 			return
 		}
 		defer ec.Close()
-		c := pb.NewSampleClient(ec)
-		req := pb.PoolEchoRequest.Get()
-		defer pb.PoolEchoRequest.Put(req)
+		c := service.NewSampleClient(ec)
+		req := service.PoolEchoRequest.Get()
+		defer service.PoolEchoRequest.Put(req)
 		req.Int = tools.RandomInt64(0)
 		req.Timestamp = tools.NanoTime()
 		req.ReplicaSet = replicaSet
@@ -426,15 +426,15 @@ var BenchCmd = &cobra.Command{
 					cmd.Println(err)
 					return
 				}
-				c := pb.NewSampleClient(ec)
+				c := service.NewSampleClient(ec)
 				for i := 0; i < 10; i++ {
 					startTime := tools.CPUTicks()
-					req := pb.PoolEchoRequest.Get()
+					req := service.PoolEchoRequest.Get()
 					req.Int = tools.RandomInt64(0)
 					req.Timestamp = tools.CPUTicks()
 					atomic.AddInt64(&reqCnt, 1)
 					_, err := c.Echo(req)
-					pb.PoolEchoRequest.Put(req)
+					service.PoolEchoRequest.Put(req)
 					if err != nil {
 						cmd.Println("Error:", idx, i, err)
 						continue
