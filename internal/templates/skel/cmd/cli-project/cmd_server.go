@@ -1,14 +1,17 @@
 package main
 
 import (
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
 	"os"
-	"time"
+	"runtime"
 )
+
+var edgeServer *edge.Server
 
 var ServerCmd = &cobra.Command{
 	Use: "server",
@@ -18,73 +21,41 @@ var ServerCmd = &cobra.Command{
 			return err
 		}
 
-		s := NewServer(
-			config.GetString("server.id"),
+		// Instantiate the edge server
+		edgeServer = edge.NewServer(
+			config.GetString("serverID"),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
-				Concurrency:   100,
-				ListenAddress: ":80",
-				MaxBodySize:   0,
-				MaxIdleTime:   time.Minute,
+				Concurrency:   runtime.NumCPU() * 100,
+				ListenAddress: config.GetString("gatewayListen"),
+				MaxIdleTime:   config.GetDuration("idleTime"),
+				Protocol:      gateway.Http,
+				ExternalAddrs: config.GetStringSlice("gatewayAdvertiseUrl"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{
-				Bootstrap:  config.GetBool("replica.bootstrap"),
-				GossipPort: config.GetInt("gossip.port"),
-				RaftPort:   config.GetInt("replica.port"),
-				ReplicaSet: config.GetUint64("replica.set"),
-				Mode:       cluster.Mode(config.GetString("replica.mode")),
+				ServerID:   tools.StrToByte(config.GetString("serverID")),
+				Bootstrap:  config.GetBool("bootstrap"),
+				RaftPort:   config.GetInt("raftPort"),
+				ReplicaSet: config.GetUint64("replicaSet"),
+				Mode:       cluster.MultiReplica,
+				GossipPort: config.GetInt("gossipPort"),
+				DataPath:   config.GetString("dataPath"),
+			}),
+			edge.WithUdpTunnel(edge.UdpTunnelConfig{
+				ServerID:      config.GetString("serverID"),
+				Concurrency:   runtime.NumCPU() * 100,
+				ListenAddress: config.GetString("tunnelListen"),
+				ExternalAddrs: config.GetStringSlice("tunnelAdvertiseUrl"),
 			}),
 		)
-		err = s.Start()
-		if err != nil {
-			panic(err)
-		}
 
-		// Wait for Kill or Interrupt signal to shutdown the server gracefully
-		s.Shutdown(os.Kill, os.Interrupt)
+		// Register the implemented service into the edge server
+		// service.RegisterSampleService(&service.SampleService{}, edgeServer)
+
+		// Start the edge server components
+		edgeServer.Start()
+
+		// Wait until a shutdown signal received.
+		edgeServer.ShutdownWithSignal(os.Kill, os.Interrupt)
 		return nil
 	},
-}
-
-type Server struct {
-	e *edge.Server
-}
-
-func NewServer(serverID string, opts ...edge.Option) *Server {
-	s := &Server{}
-	opts = append(opts, edge.WithDispatcher(s))
-	s.e = edge.NewServer(serverID, opts...)
-	return s
-}
-
-func (s *Server) Start() error {
-	err := s.e.StartCluster()
-	if err != nil {
-		return err
-	}
-	s.e.StartGateway()
-	return nil
-}
-
-func (s *Server) Shutdown(signals ...os.Signal) {
-	s.e.ShutdownWithSignal(signals...)
-}
-
-func (s *Server) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
-	panic("implement me")
-}
-
-func (s *Server) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
-	panic("implement me")
-}
-
-func (s *Server) Done(ctx *edge.DispatchCtx) {
-	panic("implement me")
-}
-
-func (s *Server) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
-	panic("implement me")
-}
-
-func (s *Server) OnClose(conn rony.Conn) {
-	panic("implement me")
 }

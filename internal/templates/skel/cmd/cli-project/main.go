@@ -1,30 +1,47 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ronaksoft/rony/config"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 func main() {
-	// Initialize the config package to hold configurable parameters
-	_ = config.Init("")
+	// Initialize the config package
+	err := config.Init("<%= projectName() %>")
+	if err != nil {
+		fmt.Println("config initialization had error:", err)
+	}
 
 	// Define the configs if this executable is running as a server instance
+	// Set the flags as config parameters
 	config.SetCmdFlags(ServerCmd,
-		config.StringFlag("server.id", "YourServerID", "a unique id for this server instance in the whole cluster"),
-		config.IntFlag("gossip.port", 2374, "the port server listen for gossip protocol"),
-		config.UInt64Flag("replica.set", 1, "the replica set"),
-		config.IntFlag("replica.port", 2000, "the port server listen for raft protocol"),
-		config.BoolFlag("replica.bootstrap", true, "if this server is the first node of the replica set"),
+		config.StringFlag("serverID", tools.RandomID(12), ""),
+		config.StringFlag("gatewayListen", "0.0.0.0:80", ""),
+		config.StringSliceFlag("gatewayAdvertiseUrl", nil, ""),
+		config.StringFlag("tunnelListen", "0.0.0.0:81", ""),
+		config.StringSliceFlag("tunnelAdvertiseUrl", nil, ""),
+		config.DurationFlag("idleTime", time.Minute, ""),
+		config.IntFlag("raftPort", 7080, ""),
+		config.UInt64Flag("replicaSet", 1, ""),
+		config.IntFlag("gossipPort", 7081, ""),
+		config.StringFlag("dataPath", "./_hdd", ""),
+		config.BoolFlag("bootstrap", false, ""),
 	)
 
 	// Define the configs if this executable is running as a server instance
 	config.SetCmdFlags(ClientCmd,
-		config.StringFlag("server.hostport", "localhost:8080", "the host:port of the seed server"),
+		config.StringFlag("host", "127.0.0.1", "the host of the seed server"),
+		config.IntFlag("port", 80, "the port of the seed server"),
 	)
 
 	RootCmd.AddCommand(ServerCmd, ClientCmd)
-	_ = RootCmd.Execute()
+	err = RootCmd.Execute()
+	if err != nil {
+		fmt.Println("we got error:", err)
+	}
 }
 
 var RootCmd = &cobra.Command{

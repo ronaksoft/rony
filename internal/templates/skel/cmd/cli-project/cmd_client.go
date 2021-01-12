@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
+	"github.com/ronaksoft/rony/edgec"
+	"github.com/ronaksoft/rony/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -14,15 +18,22 @@ var ClientCmd = &cobra.Command{
 		}
 
 		// Sample code for creating a client
-		/**
-			c := service.NewSampleServiceClient(
-				edgec.NewWebsocket(
-					edgec.Config{
-						HostPort: config.GetString("server.hostport"),
-					},
-				),
-			)
-		 **/
+		// Instantiate a websocket connection, to use http connection we could use edgec.NewHttp
+		wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
+			Handler: func(m *rony.MessageEnvelope) {
+				fmt.Println(m.RequestID, registry.ConstructorName(m.Constructor))
+			},
+		})
+
+		// Start the websocket connection manager
+		err = wsc.Start()
+		if err != nil {
+			return err
+		}
+
+		// Instantiate the client stub code and set its underlying client connection
+		// c := service.NewSampleServiceClient(wsc)
 
 		return nil
 	},
