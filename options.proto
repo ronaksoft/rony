@@ -3,7 +3,7 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
 extend google.protobuf.FileOptions {
-    optional string storage = 500001;
+    optional string rony_storage = 50001;
 }
 
 extend google.protobuf.MethodOptions {
@@ -11,8 +11,9 @@ extend google.protobuf.MethodOptions {
 }
 
 extend google.protobuf.MessageOptions {
-    optional string table = 50002;
-    optional string view = 50003;
+    optional bool rony_model = 50001;
+    optional string rony_table = 50002;
+    optional string rony_view = 50003;
 }
 
 extend google.protobuf.FieldOptions {

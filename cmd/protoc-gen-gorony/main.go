@@ -60,7 +60,7 @@ func main() {
 			// Generate Model's repo functionality
 			if len(model.GetModels()) > 0 {
 				opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
-				storage := proto.GetExtension(opt, rony.E_Storage).(string)
+				storage := proto.GetExtension(opt, rony.E_RonyStorage).(string)
 				switch strings.ToLower(storage) {
 				case "local":
 					kvgen.Generate(f, g1)

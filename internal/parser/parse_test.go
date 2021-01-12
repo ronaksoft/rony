@@ -14,7 +14,7 @@ import (
 */
 
 var input = `
-{{ @entity cql }}
+{{ @model cql }}
 {{ @tab (x1, x2, x3) }}
 {{ @view (x3, x1, x2) }}
 {{ @view ((x1, x2), x3) }}

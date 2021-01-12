@@ -1,6 +1,7 @@
 package kvgen
 
 import (
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
@@ -17,11 +18,69 @@ import (
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/kv"})
-	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
-	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/qb"})
-	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/dgraph-io/badger/v2"})
 
-	// constTables(file, g)
-	// initCqlQueries(file, g)
-	// funcsAndFactories(file, g)
+	genFuncs(file, g)
+}
+func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
+	for _, m := range file.Messages {
+		mm := model.GetModels()[string(m.Desc.Name())]
+		if mm == nil {
+			continue
+		}
+		funcCreate(mm, g)
+		funcRead(mm, g)
+		funcDelete(mm, g)
+	}
+}
+func funcCreate(mm *model.Model, g *protogen.GeneratedFile) {
+	g.P("func Create", mm.Name, "(m *", mm.Name, ") error {")
+	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("return create", mm.Name, "(txn, alloc, m)")
+	g.P("})")
+	g.P("}")
+	g.P("func create", mm.Name, "(txn *badger.Txn, alloc *kv.Allocator, m *", mm.Name, ") error {")
+	g.P("return txn.Set(alloc.GenKey(m.ID), alloc.GenValue(m))")
+	g.P("}")
+}
+func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
+	g.P("func Read", mm.Name, "(m *", mm.Name, ") error {")
+	g.P("return kv.View(func(txn *badger.Txn) error {")
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("return read", mm.Name, "(txn, alloc, m)")
+	g.P("})")
+	g.P("}")
+	g.P("func read", mm.Name, "(txn *badger.Txn, alloc *kv.Allocator, m *", mm.Name, ") error {")
+	g.P("item, err := txn.Get(alloc.GenKey(h.ID))")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}")
+	g.P("return item.Value(func (val []byte) error {")
+	g.P("return m.Unmarshal(val)")
+	g.P("})")
+	g.P("}")
+}
+func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
+	g.P("func Delete", mm.Name, "(m *", mm.Name, ") error {")
+	g.P("return kv.View(func(txn *badger.Txn) error {")
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("return read", mm.Name, "(txn, alloc, m)")
+	g.P("})")
+	g.P("}")
+	g.P("func read", mm.Name, "(txn *badger.Txn, alloc *kv.Allocator, m *", mm.Name, ") error {")
+	g.P("item, err := txn.Get(alloc.GenKey(h.ID))")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}")
+	g.P("return item.Value(func (val []byte) error {")
+	g.P("return m.Unmarshal(val)")
+	g.P("})")
+	g.P("}")
 }

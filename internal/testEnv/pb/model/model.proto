@@ -1,10 +1,11 @@
 syntax = "proto3";
 package model;
 option go_package = ".;model";
-option (storage) = "local";
+option (rony_storage) = "local";
 import "options.proto";
 
 message Hook {
+    option (rony_model) = true;
     string ClientID = 1;
     string ID = 2;
     string Timestamp = 3; // UTC unix epoch time
@@ -15,18 +16,20 @@ message Hook {
 
 
 message Model1 {
-    option (table) = "(ID, ShardKey)";
-    option (view) = "(ShardKey, ID)";
-    int32 ID = 1;
+    option (rony_model) = true;
+    option (rony_table) = "(ID, ShardKey)";
+    option (rony_view) = "(ShardKey, ID)";
+    int32 ID = 1 [(primary_key) = true];
     int32 ShardKey = 2;
-    string P1 = 3;
+    string P1 = 3 [(index) = true];
     repeated string P2 = 4;
-    uint64 P5 = 5;
+    uint64 P5 = 5 [(unique_index) = true];
 }
 
 message Model2 {
-    option (table) = "((ID, ShardKey), -P1)";
-    option (view) = "(P1, ShardKey, ID)";
+    option (rony_model) = true;
+    option (rony_table) = "((ID, ShardKey), -P1)";
+    option (rony_view) = "(P1, ShardKey, ID)";
     int64 ID = 1;
     int32 ShardKey = 2;
     string P1 = 3;

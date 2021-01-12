@@ -33,7 +33,7 @@ const (
 	operator_end
 
 	keyword_beg
-	ENTITY
+	MODEL
 	TABLE
 	VIEW
 	COUNTER
