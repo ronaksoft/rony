@@ -107,7 +107,7 @@ func TestGateway(t *testing.T) {
 							Header:      nil,
 						}
 						res := &rony.MessageEnvelope{}
-						err := httpc.Send(req, res)
+						err := httpc.Send(req, res, true)
 						if err != nil {
 							c.Println(err)
 						}

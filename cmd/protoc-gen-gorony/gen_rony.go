@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
+	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -195,44 +196,16 @@ func GenMarshal(file *protogen.File, g *protogen.GeneratedFile) {
 }
 
 // GenRPC generates the server and client interfaces if any proto service has been defined
-func GenRPC(file *protogen.File, g *protogen.GeneratedFile) {
-	if len(file.Services) > 0 {
-		g.QualifiedGoIdent(protogen.GoIdent{
-			GoName:       "",
-			GoImportPath: "github.com/ronaksoft/rony/edge",
-		})
-		g.QualifiedGoIdent(protogen.GoIdent{
-			GoName:       "",
-			GoImportPath: "google.golang.org/protobuf/proto",
-		})
-		g.QualifiedGoIdent(protogen.GoIdent{
-			GoName:       "",
-			GoImportPath: "fmt",
-		})
-		if file.GoPackageName != "rony" {
-			g.QualifiedGoIdent(protogen.GoIdent{
-				GoName:       "",
-				GoImportPath: "github.com/ronaksoft/rony",
-			})
-		}
-		g.QualifiedGoIdent(protogen.GoIdent{
-			GoName:       "Client",
-			GoImportPath: "github.com/ronaksoft/rony/edgec",
-		})
+func GenRPC(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
+	for _, m := range s.Methods {
+		constructor := crc32.ChecksumIEEE([]byte(m.Desc.Name()))
+		g.P("const C_", m.Desc.Name(), " int64 = ", fmt.Sprintf("%d", constructor))
 	}
+	g.P()
 
-	// Generate Server
-	for _, s := range file.Services {
-		for _, m := range s.Methods {
-			constructor := crc32.ChecksumIEEE([]byte(m.Desc.Name()))
-			g.P("const C_", m.Desc.Name(), " int64 = ", fmt.Sprintf("%d", constructor))
-		}
-		g.P()
-
-		genServerRPC(file, g, s)
-		genExecuteRemoteRPC(file, g, s)
-		genClientRPC(file, g, s)
-	}
+	genServerRPC(file, g, s)
+	genExecuteRemoteRPC(file, g, s)
+	genClientRPC(file, g, s)
 }
 func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("type I", s.Desc.Name(), " interface {")
@@ -401,5 +374,45 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 		g.P("}")
 		g.P("}")
 		g.P()
+	}
+}
+
+func GenCobraCmd(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
+	serviceName := string(s.Desc.Name())
+	for _, m := range s.Methods {
+		methodName := string(m.Desc.Name())
+		g.P("var ", tools.ToLowerCamel(methodName), " = &cobra.Command{")
+		g.P("Use: \"", methodName, "\",")
+		g.P("RunE: func(cmd *cobra.Command, args []string) error {")
+		g.P("// Bind the current flags to registered flags in config package")
+		g.P("err := config.BindCmdFlags(cmd)")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}")
+		g.P()
+		g.P("httpC := edgec.NewHttp(edgec.HttpConfig{")
+		g.P("Name: \"\",")
+		g.P("HostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
+		g.P("Header: map[string]string{")
+		g.P("\"APIKEY\":", "\"\"")
+		g.P("},")
+		g.P()
+		g.P("_ = service.New", serviceName, "Client(httpC)")
+		g.P("")
+		g.P("return nil")
+		g.P("}")
+		//
+		// 	cli := service.NewClockClient(httpC)
+		// 	req := &service.HookSetRequest{
+		// 		UniqueID:  "",
+		// 		Timestamp: "",
+		// 		HookUrl:   "",
+		// 	}
+		// 	res, err := cli.HookSet(req)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	cmd.Println("Response:", res.Successful)
+		// 	return nil
 	}
 }

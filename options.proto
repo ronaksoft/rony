@@ -2,6 +2,10 @@ syntax = "proto2";
 import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
+extend google.protobuf.ServiceOptions {
+    optional bool rony_cobra_cmd = 50001;
+}
+
 extend google.protobuf.FileOptions {
     optional string rony_storage = 50001;
 }
@@ -14,10 +18,4 @@ extend google.protobuf.MessageOptions {
     optional bool rony_model = 50001;
     optional string rony_table = 50002;
     optional string rony_view = 50003;
-}
-
-extend google.protobuf.FieldOptions {
-    optional bool index = 50001;
-    optional bool unique_index = 50002;
-    optional bool primary_key = 50003;
 }

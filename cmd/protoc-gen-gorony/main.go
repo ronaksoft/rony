@@ -73,7 +73,37 @@ func main() {
 
 			// Generate RPCs if there is any service definition in the file
 			if len(f.Services) > 0 {
-				GenRPC(f, g1)
+				g1.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       "",
+					GoImportPath: "github.com/ronaksoft/rony/edge",
+				})
+				g1.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       "",
+					GoImportPath: "google.golang.org/protobuf/proto",
+				})
+				g1.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       "",
+					GoImportPath: "fmt",
+				})
+				if f.GoPackageName != "rony" {
+					g1.QualifiedGoIdent(protogen.GoIdent{
+						GoName:       "",
+						GoImportPath: "github.com/ronaksoft/rony",
+					})
+				}
+				g1.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       "Client",
+					GoImportPath: "github.com/ronaksoft/rony/edgec",
+				})
+
+				for _, s := range f.Services {
+					GenRPC(f, s, g1)
+					opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
+					if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
+						GenCobraCmd(f, s, g1)
+					}
+				}
+
 			}
 
 		}

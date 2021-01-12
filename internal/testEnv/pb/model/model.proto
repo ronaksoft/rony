@@ -20,11 +20,11 @@ message Model1 {
     option (rony_model) = true;
     option (rony_table) = "(ID, ShardKey)";
     option (rony_view) = "(ShardKey, ID)";
-    int32 ID = 1 [(primary_key) = true];
+    int32 ID = 1;
     int32 ShardKey = 2;
-    string P1 = 3 [(index) = true];
+    string P1 = 3;
     repeated string P2 = 4;
-    uint64 P5 = 5 [(unique_index) = true];
+    uint64 P5 = 5;
 }
 
 message Model2 {
