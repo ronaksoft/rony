@@ -32,9 +32,10 @@ type Cluster interface {
 	Join(addr ...string) (int, error)
 	Shutdown()
 	ReplicaSet() uint64
+	TotalReplicas() int
+	Addr() string
 	SetGatewayAddrs(hostPorts []string) error
 	SetTunnelAddrs(hostPorts []string) error
-	Addr() string
 }
 
 type Raft interface {

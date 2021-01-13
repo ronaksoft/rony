@@ -398,6 +398,10 @@ func (c *Cluster) Members() []cluster.Member {
 	return members
 }
 
+func (c *Cluster) TotalReplicas() int {
+	return len(c.replicaMembers)
+}
+
 func (c *Cluster) RaftEnabled() bool {
 	return c.raft != nil
 }

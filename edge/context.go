@@ -303,7 +303,11 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 	}
 }
 
-func (ctx *RequestCtx) PushRedirectShard(shard uint32, wait time.Duration) {
+func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64, wait time.Duration) {
+	// TODO:: implement it
+}
+
+func (ctx *RequestCtx) PushRedirectRequest(replicaSet uint64) {
 	// TODO:: implement it
 }
 
@@ -344,6 +348,10 @@ func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems 
 		LocalTemplateItems: localItems,
 	})
 	ctx.stop = true
+}
+
+func (ctx *RequestCtx) Cluster() cluster.Cluster {
+	return ctx.dispatchCtx.cluster
 }
 
 func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
