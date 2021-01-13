@@ -36,10 +36,16 @@ func (u *udpConn) ConnID() uint64 {
 }
 
 func (u *udpConn) ClientIP() string {
+	if u == nil || u.c == nil {
+		return ""
+	}
 	return u.c.RemoteAddr().String()
 }
 
 func (u *udpConn) SendBinary(streamID int64, data []byte) error {
+	if u == nil || u.c == nil {
+		return nil
+	}
 	return u.c.SendTo(data)
 }
 
