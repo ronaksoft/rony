@@ -4,6 +4,7 @@ option go_package = ".;service";
 import "options.proto";
 
 service Sample {
+    option (rony_cobra_cmd) = true;
     rpc Echo (EchoRequest) returns (EchoResponse){
         option (follower_ok) = true;
     };

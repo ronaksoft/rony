@@ -1,8 +1,9 @@
 syntax = "proto3";
 package model;
+import "options.proto";
 option go_package = ".;model";
 option (rony_storage) = "local";
-import "options.proto";
+
 
 message Hook {
     option (rony_model) = true;

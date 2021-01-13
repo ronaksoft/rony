@@ -22,7 +22,7 @@ import (
 // HttpConfig holds the configurations for the Http client.
 type HttpConfig struct {
 	Name           string
-	HostPort       string
+	SeedHostPort   string
 	Header         map[string]string
 	ReadTimeout    time.Duration
 	WriteTimeout   time.Duration
@@ -109,6 +109,10 @@ func (h *Http) newConn(id string, replicaSet uint64, hostPorts ...string) *httpC
 		hostPorts:  hostPorts,
 		secure:     h.cfg.Secure,
 	}
+}
+
+func (h *Http) Start() error {
+	return nil
 }
 
 func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope, leaderOnly bool) error {

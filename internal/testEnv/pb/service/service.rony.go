@@ -3,9 +3,11 @@ package service
 import (
 	fmt "fmt"
 	rony "github.com/ronaksoft/rony"
+	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
 	registry "github.com/ronaksoft/rony/registry"
+	cobra "github.com/spf13/cobra"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -223,25 +225,25 @@ type ISample interface {
 	EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 }
 
-type SampleWrapper struct {
+type sampleWrapper struct {
 	h ISample
 }
 
 func RegisterSample(h ISample, e *edge.Server) {
-	w := SampleWrapper{
+	w := sampleWrapper{
 		h: h,
 	}
 	w.Register(e)
 }
 
-func (sw *SampleWrapper) Register(e *edge.Server) {
+func (sw *sampleWrapper) Register(e *edge.Server) {
 	e.SetHandlers(C_Echo, false, sw.EchoWrapper)
 	e.SetHandlers(C_EchoLeaderOnly, true, sw.EchoLeaderOnlyWrapper)
 	e.SetHandlers(C_EchoTunnel, true, sw.EchoTunnelWrapper)
 	e.SetHandlers(C_EchoDelay, true, sw.EchoDelayWrapper)
 }
 
-func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -258,7 +260,7 @@ func (sw *SampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	}
 }
 
-func (sw *SampleWrapper) EchoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) EchoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -275,7 +277,7 @@ func (sw *SampleWrapper) EchoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.Me
 	}
 }
 
-func (sw *SampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -292,7 +294,7 @@ func (sw *SampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	}
 }
 
-func (sw *SampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -509,4 +511,106 @@ func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*Echo
 	default:
 		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
 	}
+}
+
+func prepareSampleCommand(cmd *cobra.Command) (*SampleClient, error) {
+	// Bind the current flags to registered flags in config package
+	err := config.BindCmdFlags(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	httpC := edgec.NewHttp(edgec.HttpConfig{
+		Name:         "",
+		SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
+	})
+
+	err = httpC.Start()
+	if err != nil {
+		return nil, err
+	}
+	return NewSampleClient(httpC), nil
+}
+
+var echoCmd = &cobra.Command{
+	Use: "echo",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cli, err := prepareSampleCommand(cmd)
+		_ = cli
+		if err != nil {
+			return err
+		}
+		req := &EchoRequest{
+			// int64
+			// int64
+			// uint64
+		}
+		_ = req
+		return nil
+	},
+}
+var echoLeaderOnlyCmd = &cobra.Command{
+	Use: "echoLeaderOnly",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cli, err := prepareSampleCommand(cmd)
+		_ = cli
+		if err != nil {
+			return err
+		}
+		req := &EchoRequest{
+			// int64
+			// int64
+			// uint64
+		}
+		_ = req
+		return nil
+	},
+}
+var echoTunnelCmd = &cobra.Command{
+	Use: "echoTunnel",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cli, err := prepareSampleCommand(cmd)
+		_ = cli
+		if err != nil {
+			return err
+		}
+		req := &EchoRequest{
+			// int64
+			// int64
+			// uint64
+		}
+		_ = req
+		return nil
+	},
+}
+var echoDelayCmd = &cobra.Command{
+	Use: "echoDelay",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cli, err := prepareSampleCommand(cmd)
+		_ = cli
+		if err != nil {
+			return err
+		}
+		req := &EchoRequest{
+			// int64
+			// int64
+			// uint64
+		}
+		_ = req
+		return nil
+	},
+}
+
+type ISampleCli interface {
+	Echo(cli edgec.Client, cmd *cobra.Command, args []string) error
+	EchoLeaderOnly(cli edgec.Client, cmd *cobra.Command, args []string) error
+	EchoTunnel(cli edgec.Client, cmd *cobra.Command, args []string) error
+	EchoDelay(cli edgec.Client, cmd *cobra.Command, args []string) error
+}
+
+func RegisterSampleCli(h ISampleCli, rootCmd *cobra.Command) {
+	rootCmd.AddCommand(echoCmd)
+	rootCmd.AddCommand(echoLeaderOnlyCmd)
+	rootCmd.AddCommand(echoTunnelCmd)
+	rootCmd.AddCommand(echoDelayCmd)
 }

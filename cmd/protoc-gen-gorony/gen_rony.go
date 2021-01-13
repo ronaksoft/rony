@@ -208,6 +208,7 @@ func GenRPC(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile)
 	genClientRPC(file, g, s)
 }
 func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
+	serviceName := string(s.Desc.Name())
 	g.P("type I", s.Desc.Name(), " interface {")
 	for _, m := range s.Methods {
 		inputName := z.Name(file, g, m.Desc.Input())
@@ -217,18 +218,18 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	g.P("}")
 	g.P()
 	g.P()
-	g.P("type ", s.Desc.Name(), "Wrapper struct {")
+	g.P("type ", tools.ToLowerCamel(serviceName), "Wrapper struct {")
 	g.P("h I", s.Desc.Name())
 	g.P("}")
 	g.P()
 	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server) {")
-	g.P("w := ", s.Desc.Name(), "Wrapper{")
+	g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
 	g.P("h: h,")
 	g.P("}")
 	g.P("w.Register(e)")
 	g.P("}")
 	g.P()
-	g.P("func (sw *", s.Desc.Name(), "Wrapper) Register (e *edge.Server) {")
+	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server) {")
 	for _, m := range s.Methods {
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
@@ -245,7 +246,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		inputPkg, inputType := z.DescName(file, g, m.Desc.Input())
 		outputPkg, outputType := z.DescName(file, g, m.Desc.Output())
 
-		g.P("func (sw *", s.Desc.Name(), "Wrapper) ", m.Desc.Name(), "Wrapper (ctx *edge.RequestCtx, in *rony.MessageEnvelope) {")
+		g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ", m.Desc.Name(), "Wrapper (ctx *edge.RequestCtx, in *rony.MessageEnvelope) {")
 		if inputPkg == "" {
 			g.P("req := Pool", inputType, ".Get()")
 			g.P("defer Pool", inputType, ".Put(req)")
@@ -378,41 +379,83 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 }
 
 func GenCobraCmd(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
+	genPrepareFunc(s, g)
+	genMethodCmdFunc(s, g)
+	genClientCliInterface(file, s, g)
+}
+func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
+	serviceName := string(s.Desc.Name())
+	opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
+	clientProto := proto.GetExtension(opt, rony.E_RonyCobraCmdProtocol).(string)
+	g.P("func prepare", serviceName, "Command(cmd *cobra.Command) (*", serviceName, "Client, error) {")
+	g.P("// Bind the current flags to registered flags in config package")
+	g.P("err := config.BindCmdFlags(cmd)")
+	g.P("if err != nil {")
+	g.P("return nil, err")
+	g.P("}")
+	g.P()
+	switch strings.ToLower(clientProto) {
+	case "ws":
+		g.P("wsC := edgec.NewWebsocket(edgec.WebsocketConfig{")
+		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
+		g.P("})")
+		g.P("err = wsC.Start()")
+		g.P("if err != nil {")
+		g.P("return nil, err")
+		g.P("}")
+		g.P("return New", serviceName, "Client(wsC), nil")
+	default:
+		g.P("httpC := edgec.NewHttp(edgec.HttpConfig{")
+		g.P("Name: \"\",")
+		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
+		g.P("})")
+		g.P()
+		g.P("err = httpC.Start()")
+		g.P("if err != nil {")
+		g.P("return nil, err")
+		g.P("}")
+		g.P("return New", serviceName, "Client(httpC), nil")
+	}
+	g.P("}")
+}
+func genMethodCmdFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 	serviceName := string(s.Desc.Name())
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
-		g.P("var ", tools.ToLowerCamel(methodName), " = &cobra.Command{")
-		g.P("Use: \"", methodName, "\",")
+		g.P("var ", tools.ToLowerCamel(methodName), "Cmd = &cobra.Command{")
+		g.P("Use: \"", tools.ToLowerCamel(methodName), "\",")
 		g.P("RunE: func(cmd *cobra.Command, args []string) error {")
-		g.P("// Bind the current flags to registered flags in config package")
-		g.P("err := config.BindCmdFlags(cmd)")
+		g.P("cli, err := prepare", serviceName, "Command(cmd)")
+		g.P("_ = cli")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
-		g.P()
-		g.P("httpC := edgec.NewHttp(edgec.HttpConfig{")
-		g.P("Name: \"\",")
-		g.P("HostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
-		g.P("Header: map[string]string{")
-		g.P("\"APIKEY\":", "\"\"")
-		g.P("},")
-		g.P()
-		g.P("_ = service.New", serviceName, "Client(httpC)")
-		g.P("")
-		g.P("return nil")
+		g.P("req := &", m.Input.Desc.Name(), "{")
+		for _, f := range m.Input.Fields {
+			switch f.Desc.Kind() {
+			default:
+				g.P("// ", f.Desc.Kind().String())
+			}
+		}
 		g.P("}")
-		//
-		// 	cli := service.NewClockClient(httpC)
-		// 	req := &service.HookSetRequest{
-		// 		UniqueID:  "",
-		// 		Timestamp: "",
-		// 		HookUrl:   "",
-		// 	}
-		// 	res, err := cli.HookSet(req)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	cmd.Println("Response:", res.Successful)
-		// 	return nil
+		g.P("_ = req")
+		g.P("return nil")
+		g.P("},")
+		g.P("}")
 	}
+}
+func genClientCliInterface(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
+	g.P("type I", s.Desc.Name(), "Cli interface {")
+	for _, m := range s.Methods {
+		g.P(m.Desc.Name(), "(cli edgec.Client, cmd *cobra.Command, args []string) error")
+	}
+	g.P("}")
+	g.P()
+	g.P("func Register", s.Desc.Name(), "Cli (h I", s.Desc.Name(), "Cli, rootCmd *cobra.Command) {")
+	for _, m := range s.Methods {
+		methodName := string(m.Desc.Name())
+		g.P("rootCmd.AddCommand(", tools.ToLowerCamel(methodName), "Cmd)")
+	}
+
+	g.P("}")
 }

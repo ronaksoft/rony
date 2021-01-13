@@ -93,8 +93,8 @@ func TestGateway(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				httpc := edgec.NewHttp(edgec.HttpConfig{
-					HostPort: "127.0.0.1:1088",
-					Header:   nil,
+					SeedHostPort: "127.0.0.1:1088",
+					Header:       nil,
 				})
 				for i := 0; i < 1000; i++ {
 					wg.Add(1)

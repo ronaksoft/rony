@@ -100,6 +100,15 @@ func main() {
 					GenRPC(f, s, g1)
 					opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 					if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
+						g1.QualifiedGoIdent(protogen.GoIdent{
+							GoName:       "",
+							GoImportPath: "github.com/spf13/cobra",
+						})
+						g1.QualifiedGoIdent(protogen.GoIdent{
+							GoName:       "",
+							GoImportPath: "github.com/ronaksoft/rony/config",
+						})
+
 						GenCobraCmd(f, s, g1)
 					}
 				}
