@@ -374,6 +374,7 @@ func (edge *Server) StartCluster() (err error) {
 	log.Info("Edge Server:: Cluster Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Cluster", edge.cluster.Addr()),
+		zap.Uint64("ReplicaSet", edge.cluster.ReplicaSet()),
 	)
 
 	return
