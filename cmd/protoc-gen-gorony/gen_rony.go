@@ -337,7 +337,6 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	}
 }
 func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
-
 	for _, m := range s.Methods {
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
@@ -347,7 +346,6 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 		}
 
 		inputName := z.Name(file, g, m.Desc.Input())
-		inputC := z.Constructor(file, g, m.Desc.Input())
 		outputName := z.Name(file, g, m.Desc.Output())
 		outputC := z.Constructor(file, g, m.Desc.Output())
 
@@ -356,7 +354,7 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 		g.P("defer rony.PoolMessageEnvelope.Put(out)")
 		g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(in)")
-		g.P("out.Fill(ctx.ReqID(), ", inputC, ", req)")
+		g.P("out.Fill(ctx.ReqID(), C_", m.Desc.Name(), ", req)")
 		g.P("err := ctx.ExecuteRemote(replicaSet, ", leaderOnlyText, ", out, in)")
 		g.P("if err != nil {")
 		g.P("return err")
