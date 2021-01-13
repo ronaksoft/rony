@@ -160,7 +160,7 @@ var ListCmd = &cobra.Command{
 func listFunc(cmd *cobra.Command) {
 	var rows []string
 	rows = append(rows,
-		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Membership Score | Gateway ",
+		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Tunnel | Gateway ",
 		"------- | ----------- | ------ | ------ | -------- | ------- | ------",
 	)
 
@@ -174,9 +174,10 @@ func listFunc(cmd *cobra.Command) {
 	for _, s := range ea {
 		edgeStats := s.Stats()
 		rows = append(rows,
-			fmt.Sprintf("%s | %d | %d | %s | %d | %d | %s(%s)", s.GetServerID(),
+			fmt.Sprintf("%s | %d | %d | %s | %d | %s | %s(%s)", s.GetServerID(),
 				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
-				edgeStats.Members, edgeStats.MembershipScore,
+				edgeStats.Members,
+				edgeStats.TunnelAddr,
 				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
 			),
 		)

@@ -21,6 +21,7 @@ type Stats struct {
 	ReplicaSet      uint64
 	Members         int
 	MembershipScore int
+	TunnelAddr      []string
 	GatewayProtocol gateway.Protocol
 	GatewayAddr     []string
 }
@@ -33,6 +34,10 @@ func (edge *Server) Stats() *Stats {
 
 	if edge.gateway != nil {
 		s.GatewayAddr = edge.gateway.Addr()
+	}
+
+	if edge.tunnel != nil {
+		s.TunnelAddr = edge.tunnel.Addr()
 	}
 
 	if edge.cluster != nil {

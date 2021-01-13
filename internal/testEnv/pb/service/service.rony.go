@@ -311,12 +311,12 @@ func (sw *sampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	out.Fill(ctx.ReqID(), C_Echo, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, false, out, in)
 	if err != nil {
 		return err
@@ -335,12 +335,12 @@ func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest
 	}
 }
 
-func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	out.Fill(ctx.ReqID(), C_EchoLeaderOnly, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
@@ -359,12 +359,12 @@ func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *E
 	}
 }
 
-func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	out.Fill(ctx.ReqID(), C_EchoTunnel, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
@@ -383,12 +383,12 @@ func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	}
 }
 
-func ExecuteRemoteEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse) error {
+func ExecuteRemoteEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoRequest, req)
+	out.Fill(ctx.ReqID(), C_EchoDelay, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
