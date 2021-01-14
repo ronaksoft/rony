@@ -38,9 +38,10 @@ func init() {
 	RootCmd.AddCommand(
 		BatchStartCmd, StartCmd, BenchCmd, ListCmd, Members,
 		EchoCmd, EchoLeaderOnlyCmd, EchoTunnelCmd,
-		Trace, MemProf,
+		Trace, MemProf, LogLevel,
 	)
 
+	RootCmd.PersistentFlags().Int(FlagLogLevel, 0, "")
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
 	RootCmd.PersistentFlags().String(FlagTargetID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
@@ -55,13 +56,14 @@ var BatchStartCmd = &cobra.Command{
 	Use: "demo_cluster_start",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		n := 1
 		serverID := "A"
 		replicaSet := uint64(1)
 		gossipPort := 700
-		for i := 0; i < 3; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+		for i := 0; i < n; i++ {
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
 			gossipPort++
-			if i == 0 {
+			if i == 0 && i < n-1 {
 				time.Sleep(time.Second * 3)
 			}
 		}
@@ -69,10 +71,10 @@ var BatchStartCmd = &cobra.Command{
 		serverID = "B"
 		replicaSet = uint64(2)
 		gossipPort = 800
-		for i := 0; i < 3; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+		for i := 0; i < n; i++ {
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
 			gossipPort++
-			if i == 0 {
+			if i == 0 && i < n-1 {
 				time.Sleep(time.Second * 3)
 			}
 		}
@@ -80,10 +82,10 @@ var BatchStartCmd = &cobra.Command{
 		serverID = "C"
 		replicaSet = uint64(3)
 		gossipPort = 900
-		for i := 0; i < 3; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.MultiReplica)
+		for i := 0; i < n; i++ {
+			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
 			gossipPort++
-			if i == 0 {
+			if i == 0 && i < n-1 {
 				time.Sleep(time.Second * 3)
 			}
 		}
@@ -498,6 +500,14 @@ var Trace = &cobra.Command{
 		time.Sleep(time.Second * 10)
 		trace.Stop()
 		_ = f.Close()
+	},
+}
+
+var LogLevel = &cobra.Command{
+	Use: "log-level",
+	Run: func(cmd *cobra.Command, args []string) {
+		level, _ := cmd.Flags().GetInt(FlagLogLevel)
+		rony.SetLogLevel(level)
 	},
 }
 

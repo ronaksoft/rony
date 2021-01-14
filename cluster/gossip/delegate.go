@@ -74,10 +74,12 @@ func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err == nil {
-			log.Info("Join Raft (NodeAlive)",
-				zap.ByteString("This", d.c.localServerID),
-				zap.String("NodeID", cm.serverID),
-			)
+			if ce := log.Check(log.DebugLevel, "Join Raft (NodeAlive)"); ce != nil {
+				ce.Write(
+					zap.ByteString("This", d.c.localServerID),
+					zap.String("NodeID", cm.serverID),
+				)
+			}
 		}
 	}
 	return nil
@@ -158,7 +160,7 @@ func (d *clusterDelegate) NodeMeta(limit int) []byte {
 		RaftPort:      uint32(d.c.cfg.RaftPort),
 		GatewayAddr:   d.c.localGatewayAddr,
 		TunnelAddr:    d.c.localTunnelAddr,
-		RaftState:     *rony.RaftState_None.Enum(),
+		RaftState:     *rony.RaftState_Leader.Enum(),
 	}
 
 	if d.c.raft != nil {

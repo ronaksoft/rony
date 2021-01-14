@@ -11,6 +11,7 @@ package main
 
 // Flag Names
 const (
+	FlagLogLevel    = "logLevel"
 	FlagServerID    = "serverID"
 	FlagTargetID    = "targetID"
 	FlagReplicaSet  = "replicaSet"

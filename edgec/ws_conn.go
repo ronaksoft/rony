@@ -66,7 +66,8 @@ func (c *wsConn) createDialer(timeout time.Duration) {
 					return
 				}
 			}
-			return nil, fmt.Errorf("no connection")
+
+			return nil, ErrNoConnection
 		},
 		OnStatusError: nil,
 		OnHeader:      nil,
@@ -211,6 +212,10 @@ func (c *wsConn) handler(e *rony.MessageEnvelope) {
 func (c *wsConn) close() error {
 	// by setting the stop flag, we are making sure no reconnection will happen
 	c.stop = true
+
+	c.mtx.Lock()
+	_ = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpClose, nil)
+	c.mtx.Unlock()
 
 	// by setting the read deadline we make the receiver() routine stops
 	return c.conn.SetReadDeadline(time.Now())
@@ -386,4 +391,15 @@ func (cp *connPool) getConn(replicaSet uint64, onlyLeader bool) *wsConn {
 		}
 	}
 	return nil
+}
+
+func (cp *connPool) closeAll() {
+	cp.mtx.RLock()
+	defer cp.mtx.RUnlock()
+
+	for  _, conns := range cp.pool {
+		for _, c := range conns {
+			_ = c.close()
+		}
+	}
 }

@@ -32,7 +32,7 @@ func TestNewTunnel(t *testing.T) {
 	Convey("Tunnel", t, func(c C) {
 		hostPort := "127.0.0.1:8080"
 		t, err := udpTunnel.New(udpTunnel.Config{
-			Concurrency:   0,
+			Concurrency:   10,
 			ListenAddress: hostPort,
 			ExternalAddrs: []string{hostPort},
 		})
@@ -46,31 +46,33 @@ func TestNewTunnel(t *testing.T) {
 		defer t.Shutdown()
 
 		Convey("Send Data", func(c C) {
-			conn, err := net.Dial("udp", hostPort)
-			c.So(err, ShouldBeNil)
+			for i := 0; i < 10; i++ {
+				conn, err := net.Dial("udp", hostPort)
+				c.So(err, ShouldBeNil)
 
-			req := &rony.TunnelMessage{
-				SenderID:         []byte("SomeSender"),
-				SenderReplicaSet: tools.RandomUint64(1000),
-				Store:            nil,
-				Envelope:         nil,
+				req := &rony.TunnelMessage{
+					SenderID:         []byte("SomeSender"),
+					SenderReplicaSet: tools.RandomUint64(1000),
+					Store:            nil,
+					Envelope:         nil,
+				}
+				res := &rony.TunnelMessage{}
+				out, _ := req.Marshal()
+				n, err := conn.Write(out)
+				c.So(err, ShouldBeNil)
+				c.So(n, ShouldEqual, len(out))
+				p := make([]byte, 2048)
+				n, err = bufio.NewReader(conn).Read(p)
+				c.So(err, ShouldBeNil)
+				c.So(n, ShouldEqual, len(out))
+				err = res.Unmarshal(p[:n])
+				c.So(err, ShouldBeNil)
+				c.So(res.SenderID, ShouldResemble, req.SenderID)
+				c.So(res.SenderReplicaSet, ShouldEqual, req.SenderReplicaSet)
+				err = conn.Close()
+				c.So(err, ShouldBeNil)
+				time.Sleep(time.Second)
 			}
-			res := &rony.TunnelMessage{}
-			out, _ := req.Marshal()
-			n, err := conn.Write(out)
-			c.So(err, ShouldBeNil)
-			c.So(n, ShouldEqual, len(out))
-			p := make([]byte, 2048)
-			n, err = bufio.NewReader(conn).Read(p)
-			c.So(err, ShouldBeNil)
-			c.So(n, ShouldEqual, len(out))
-			err = res.Unmarshal(p[:n])
-			c.So(err, ShouldBeNil)
-			c.So(res.SenderID, ShouldResemble, req.SenderID)
-			c.So(res.SenderReplicaSet, ShouldEqual, req.SenderReplicaSet)
-			err = conn.Close()
-			c.So(err, ShouldBeNil)
-			time.Sleep(time.Second * 2)
 		})
 		Convey("Send Concurrent Connection", func(c C) {
 			wg := pools.AcquireWaitGroup()
@@ -108,7 +110,7 @@ func TestNewTunnel(t *testing.T) {
 			pools.ReleaseWaitGroup(wg)
 
 		})
-		Convey("Send Concurrent Connection and Data", func(c C) {
+		SkipConvey("Send Concurrent Connection and Data", func(c C) {
 			wg := pools.AcquireWaitGroup()
 			for i := 0; i < 200; i++ {
 				wg.Add(1)

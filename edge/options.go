@@ -49,6 +49,9 @@ func WithTcpGateway(config TcpGatewayConfig) Option {
 		if edge.gatewayProtocol != gateway.Undefined {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
+		if config.Protocol == gateway.Undefined {
+			config.Protocol = gateway.TCP
+		}
 		gatewayTcp, err := tcpGateway.New(tcpGateway.Config(config))
 		if err != nil {
 			panic(err)

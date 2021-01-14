@@ -128,6 +128,14 @@ func (c *Websocket) initConn() error {
 		_ = x.Unmarshal(res.Message)
 		found := false
 		for _, n := range x.Nodes {
+			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
+				ce.Write(
+					zap.String("ServerID", n.ServerID),
+					zap.Uint64("RS", n.ReplicaSet),
+					zap.Bool("Leader", n.Leader),
+					zap.Strings("HostPorts", n.HostPorts),
+				)
+			}
 			wsc := c.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
 			if !found {
 				for _, hp := range n.HostPorts {
@@ -205,9 +213,8 @@ SendLoop:
 }
 
 func (c *Websocket) Close() error {
-
 	// by setting the read deadline we make the receiver() routine stops
-	// TODO:: close all the connections
+	c.pool.closeAll()
 	return nil
 }
 
