@@ -444,7 +444,6 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 		default:
 			log.Warn("Unknown OpCode")
 		}
-		pools.Bytes.Put(ms[idx].Payload)
 	}
 	waitGroup.Wait()
 	pools.ReleaseWaitGroup(waitGroup)

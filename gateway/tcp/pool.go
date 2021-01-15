@@ -103,14 +103,15 @@ func releaseWebsocketConn(wc *websocketConn) {
 
 var websocketMessagePool sync.Pool
 
-func acquireWebsocketMessage() []wsutil.Message {
-	x, ok := websocketMessagePool.Get().([]wsutil.Message)
+func acquireWebsocketMessage() *[]wsutil.Message {
+	x, ok := websocketMessagePool.Get().(*[]wsutil.Message)
 	if !ok {
-		return make([]wsutil.Message, 0, 8)
+		arr := make([]wsutil.Message, 0, 8)
+		return &arr
 	}
 	return x
 }
 
-func releaseWebsocketMessage(x []wsutil.Message) {
+func releaseWebsocketMessage(x *[]wsutil.Message) {
 	websocketMessagePool.Put(x)
 }

@@ -138,7 +138,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 
 		err := goPoolNB.Submit(func() {
 			ms := acquireWebsocketMessage()
-			err := wc.gateway.websocketReadPump(wc, ms)
+			err := wc.gateway.websocketReadPump(wc, *ms)
 			releaseWebsocketMessage(ms)
 			if err != nil {
 				wc.release(3)
