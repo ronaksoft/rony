@@ -1,6 +1,7 @@
 package edgec
 
 import (
+	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/valyala/fasthttp"
@@ -112,6 +113,61 @@ func (h *Http) newConn(id string, replicaSet uint64, hostPorts ...string) *httpC
 }
 
 func (h *Http) Start() error {
+	err := h.initConn()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *Http) initConn() error {
+	initConn := h.newConn("", 0, h.cfg.SeedHostPort)
+	req := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(req)
+	res := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(res)
+	req.Fill(h.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
+	sessionReplica, err := initConn.send(req, res, requestTimeout)
+	if err != nil {
+		return err
+	}
+	h.sessionReplica = sessionReplica
+	switch res.Constructor {
+	case rony.C_NodeInfoMany:
+		x := &rony.NodeInfoMany{}
+		_ = x.Unmarshal(res.Message)
+		found := false
+		for _, n := range x.Nodes {
+			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
+				ce.Write(
+					zap.String("ServerID", n.ServerID),
+					zap.Uint64("RS", n.ReplicaSet),
+					zap.Bool("Leader", n.Leader),
+					zap.Strings("HostPorts", n.HostPorts),
+				)
+			}
+			httpc := h.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
+			if !found {
+				for _, hp := range n.HostPorts {
+					if hp == initConn.hostPorts[0] {
+						httpc = initConn
+						httpc.hostPorts = n.HostPorts
+						found = true
+					}
+				}
+			}
+
+			// h.pool.addConn(n.ServerID, n.ReplicaSet, n.Leader, httpc)
+			if n.Leader {
+				h.sessionReplica = n.ReplicaSet
+			}
+		}
+	default:
+		fmt.Println(res)
+		return ErrUnknownResponse
+
+	}
+
 	return nil
 }
 

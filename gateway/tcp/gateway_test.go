@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/edgec"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
-	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/valyala/fasthttp"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -30,7 +30,7 @@ func init() {
 }
 
 func TestGateway(t *testing.T) {
-	rony.SetLogLevel(0)
+	// rony.SetLogLevel(-1)
 	hostPort := "127.0.0.1:8080"
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
@@ -39,21 +39,20 @@ func TestGateway(t *testing.T) {
 		MaxIdleTime:   0,
 		ExternalAddrs: []string{hostPort},
 	})
-
 	if err != nil {
 		t.Fatal(err)
+	}
+	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
+		err := c.SendBinary(streamID, data)
+		if err != nil {
+			fmt.Println("MessageHandler:", err.Error())
+		}
 	}
 
 	gw.Start()
 	defer gw.Shutdown()
 	Convey("Gateway Test", t, func(c C) {
 		Convey("Websocket / With Normal Handler", func(c C) {
-			gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
-				err := c.SendBinary(streamID, data)
-				if err != nil {
-					fmt.Println("MessageHandler:", err.Error())
-				}
-			}
 			wg := pools.AcquireWaitGroup()
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
@@ -79,47 +78,30 @@ func TestGateway(t *testing.T) {
 			c.Println("Total Connections", gw.TotalConnections())
 		})
 		Convey("Http With Normal Handler", func(c C) {
-			gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
-				e := &rony.MessageEnvelope{}
-				_ = e.Unmarshal(data)
-				out, _ := e.Marshal()
-				err := c.SendBinary(streamID, out)
-				if err != nil {
-					fmt.Println("MessageHandler:", err.Error())
-				}
-			}
-
 			wg := pools.AcquireWaitGroup()
 			wg.Add(1)
 			go func() {
-				httpc := edgec.NewHttp(edgec.HttpConfig{
-					SeedHostPort: "127.0.0.1:1088",
-					Header:       nil,
-				})
-				for i := 0; i < 1000; i++ {
+				httpc := &fasthttp.Client{}
+				c.So(err, ShouldBeNil)
+				for i := 0; i < 400; i++ {
 					wg.Add(1)
 					go func() {
-						req := &rony.MessageEnvelope{
-							Constructor: tools.RandomInt64(0),
-							RequestID:   httpc.GetRequestID(),
-							Message:     tools.StrToByte(tools.RandomID(32)),
-							Auth:        nil,
-							Header:      nil,
-						}
-						res := &rony.MessageEnvelope{}
-						err := httpc.Send(req, res, true)
+						req := fasthttp.AcquireRequest()
+						defer fasthttp.ReleaseRequest(req)
+						res := fasthttp.AcquireResponse()
+						defer fasthttp.ReleaseResponse(res)
+						req.SetHost(hostPort)
+						req.Header.SetMethod(http.MethodPost)
+						req.SetBody([]byte{1, 2, 3, 4})
+						err := httpc.Do(req, res)
 						if err != nil {
 							c.Println(err)
 						}
-						c.So(res.Constructor, ShouldEqual, req.Constructor)
-						c.So(res.RequestID, ShouldEqual, req.RequestID)
-						c.So(res.Message, ShouldResemble, req.Message)
 						c.So(err, ShouldBeNil)
+						c.So(res.Body(), ShouldResemble, []byte{1, 2, 3, 4})
 						wg.Done()
 					}()
 				}
-				err = httpc.Close()
-				c.So(err, ShouldBeNil)
 				wg.Done()
 			}()
 
