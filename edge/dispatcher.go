@@ -39,10 +39,10 @@ type defaultDispatcher struct{}
 
 func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	eb := pools.Bytes.GetCap(mo.Size(envelope))
-	eb, _ = mo.MarshalAppend(eb, envelope)
+	buf := pools.Buffer.GetCap(mo.Size(envelope))
+	eb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
 	_ = ctx.Conn().SendBinary(ctx.StreamID(), eb)
-	pools.Bytes.Put(eb)
+	pools.Buffer.Put(buf)
 }
 
 func (s *defaultDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {

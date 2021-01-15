@@ -44,13 +44,13 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageE
 			UseCachedSize: true,
 		}
 
-		b := pools.Bytes.GetCap(mo.Size(envelope))
-		b, _ = mo.MarshalAppend(b, envelope)
+		buf := pools.Buffer.GetCap(mo.Size(envelope))
+		b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
 		err := ctx.Conn().SendBinary(ctx.StreamID(), b)
 		if err != nil {
 			log.Warn("Error On SendBinary", zap.Error(err))
 		}
-		pools.Bytes.Put(b)
+		pools.Buffer.Put(buf)
 	}
 	atomic.AddInt32(&receivedMessages, 1)
 }

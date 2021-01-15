@@ -133,14 +133,15 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 		raftCmd := acquireRaftCommand()
 		raftCmd.Fill(edge.serverID, dispatchCtx.req)
 		mo := proto.MarshalOptions{UseCachedSize: true}
-		raftCmdBytes := pools.Bytes.GetCap(mo.Size(raftCmd))
-		raftCmdBytes, err = mo.MarshalAppend(raftCmdBytes, raftCmd)
+		buf := pools.Buffer.GetCap(mo.Size(raftCmd))
+		var raftCmdBytes []byte
+		raftCmdBytes, err = mo.MarshalAppend(*buf.Bytes(), raftCmd)
 		if err != nil {
 			return
 		}
 		f := edge.cluster.RaftApply(raftCmdBytes)
 		err = f.Error()
-		pools.Bytes.Put(raftCmdBytes)
+		pools.Buffer.Put(buf)
 		releaseRaftCommand(raftCmd)
 		if err != nil {
 			return

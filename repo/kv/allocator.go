@@ -27,7 +27,7 @@ func NewAllocator() *Allocator {
 }
 
 func (bk *Allocator) GenKey(v ...interface{}) []byte {
-	b := pools.BytesBuffer.GetLen(getSize(v...))
+	b := pools.Buffer.GetLen(getSize(v...))
 	var buf [8]byte
 	idx := 0
 	for _, x := range v {
@@ -73,7 +73,7 @@ func (bk *Allocator) GenKey(v ...interface{}) []byte {
 
 func (bk *Allocator) GenValue(m proto.Message) []byte {
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	bb := pools.BytesBuffer.GetCap(mo.Size(m))
+	bb := pools.Buffer.GetCap(mo.Size(m))
 	b, _ := mo.MarshalAppend(*bb.Bytes(), m)
 	bb.SetBytes(&b)
 	bk.blocks = append(bk.blocks, bb)
@@ -82,7 +82,7 @@ func (bk *Allocator) GenValue(m proto.Message) []byte {
 
 func (bk *Allocator) ReleaseAll() {
 	for _, b := range bk.blocks {
-		pools.BytesBuffer.Put(b)
+		pools.Buffer.Put(b)
 	}
 }
 

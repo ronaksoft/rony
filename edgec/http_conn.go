@@ -32,10 +32,10 @@ func (c *httpConn) send(req, res *rony.MessageEnvelope, timeout time.Duration) (
 	replicaSet = c.replicaSet
 
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Bytes.GetCap(mo.Size(req))
-	defer pools.Bytes.Put(b)
+	buf := pools.Buffer.GetCap(mo.Size(req))
+	defer pools.Buffer.Put(buf)
 
-	b, err = mo.MarshalAppend(b, req)
+	b, err := mo.MarshalAppend(*buf.Bytes(), req)
 	if err != nil {
 		return
 	}

@@ -23,13 +23,15 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 	switch ctx.Kind() {
 	case edge.GatewayMessage, edge.TunnelMessage:
 		mo := proto.MarshalOptions{UseCachedSize: true}
-		protoBytes := pools.Bytes.GetCap(mo.Size(envelope))
-		protoBytes, _ = mo.MarshalAppend(protoBytes, envelope)
-		err := ctx.Conn().SendBinary(ctx.StreamID(), protoBytes)
+
+		buf := pools.Buffer.GetCap(mo.Size(envelope))
+		b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
+		buf.SetBytes(&b)
+		err := ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
 		if err != nil {
 			fmt.Println("Error On SendBinary", err)
 		}
-		pools.Bytes.Put(protoBytes)
+		pools.Buffer.Put(buf)
 	}
 }
 

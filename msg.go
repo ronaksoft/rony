@@ -55,10 +55,10 @@ func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message,
 	mo := proto.MarshalOptions{
 		UseCachedSize: true,
 	}
-	b := pools.Bytes.GetCap(mo.Size(p))
-	b, _ = mo.MarshalAppend(b, p)
+	buf := pools.Buffer.GetCap(mo.Size(p))
+	b, _ := mo.MarshalAppend(*buf.Bytes(), p)
 	x.Message = append(x.Message[:0], b...)
-	pools.Bytes.Put(b)
+	pools.Buffer.Put(buf)
 }
 
 func (x *MessageEnvelope) Get(key, defaultVal string) string {

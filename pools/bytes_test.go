@@ -112,8 +112,8 @@ func BenchmarkPool(b *testing.B) {
 			b.ReportAllocs()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					p := BytesBuffer.GetLen(size)
-					BytesBuffer.Put(p)
+					p := Buffer.GetLen(size)
+					Buffer.Put(p)
 				}
 			})
 		})

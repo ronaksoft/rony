@@ -15,7 +15,7 @@ import (
 
 var TinyBytes = NewByteSlice(4, 128)
 var Bytes = NewByteSlice(32, 64<<10)
-var BytesBuffer = NewByteBuffer(4, 64<<10)
+var Buffer = NewByteBuffer(4, 64<<10)
 
 const (
 	bitSize       = 32 << (^uint(0) >> 63)

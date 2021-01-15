@@ -379,27 +379,27 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 
 	// Marshal and send over the wire
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Bytes.GetCap(mo.Size(tmOut))
-	b, _ = mo.MarshalAppend(b, tmOut)
-
-	n, err := conn.Write(b)
+	buf := pools.Buffer.GetCap(mo.Size(tmOut))
+	b, _ := mo.MarshalAppend(*buf.Bytes(), tmOut)
+	buf.SetBytes(&b)
+	n, err := conn.Write(*buf.Bytes())
 	if err != nil {
 		return err
 	}
-	pools.Bytes.Put(b)
+	pools.Buffer.Put(buf)
 
 	// Wait for response and unmarshal it
-	b = pools.Bytes.GetLen(4096)
+	buf = pools.Buffer.GetLen(4096)
 	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
-	n, err = bufio.NewReader(conn).Read(b)
+	n, err = bufio.NewReader(conn).Read(*buf.Bytes())
 	if err != nil || n == 0 {
 		return err
 	}
-	err = tmIn.Unmarshal(b[:n])
+	err = tmIn.Unmarshal((*buf.Bytes())[:n])
 	if err != nil {
 		return err
 	}
-	pools.Bytes.Put(b)
+	pools.Buffer.Put(buf)
 
 	// deep copy
 	tmIn.Envelope.DeepCopy(res)

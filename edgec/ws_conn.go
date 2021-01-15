@@ -224,10 +224,10 @@ func (c *wsConn) close() error {
 func (c *wsConn) send(req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (replicaSet uint64, err error) {
 	replicaSet = c.replicaSet
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Bytes.GetCap(mo.Size(req))
-	defer pools.Bytes.Put(b)
+	buf := pools.Buffer.GetCap(mo.Size(req))
+	defer pools.Buffer.Put(buf)
 
-	b, err = mo.MarshalAppend(b, req)
+	b, err := mo.MarshalAppend(*buf.Bytes(), req)
 	if err != nil {
 		return
 	}
