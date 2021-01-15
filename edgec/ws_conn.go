@@ -397,7 +397,7 @@ func (cp *connPool) closeAll() {
 	cp.mtx.RLock()
 	defer cp.mtx.RUnlock()
 
-	for  _, conns := range cp.pool {
+	for _, conns := range cp.pool {
 		for _, c := range conns {
 			_ = c.close()
 		}
