@@ -2,10 +2,10 @@ package wsutil
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony/pools"
 	"io"
 
 	"github.com/gobwas/pool"
-	"github.com/gobwas/pool/pbytes"
 	"github.com/gobwas/ws"
 )
 
@@ -435,12 +435,10 @@ func writeFrame(w io.Writer, s ws.State, op ws.OpCode, fin bool, p []byte) error
 	var frame ws.Frame
 	if s.ClientSide() {
 		// Should copy bytes to prevent corruption of caller data.
-		payload := pbytes.GetLen(len(p))
-		defer pbytes.Put(payload)
-
-		copy(payload, p)
-
-		frame = ws.NewFrame(op, fin, payload)
+		buf := pools.Buffer.GetLen(len(p))
+		defer pools.Buffer.Put(buf)
+		buf.Copy(p)
+		frame = ws.NewFrame(op, fin, *buf.Bytes())
 		frame = ws.MaskFrameInPlace(frame)
 	} else {
 		frame = ws.NewFrame(op, fin, p)

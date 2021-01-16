@@ -115,6 +115,10 @@ func (bb *ByteBuffer) Fill(data []byte, start, end int) {
 	copy(bb.b[start:end], data)
 }
 
+func (bb *ByteBuffer) Copy(data []byte) {
+	copy(bb.b, data)
+}
+
 func (bb *ByteBuffer) Append(data []byte) {
 	bb.b = append(bb.b, data...)
 }

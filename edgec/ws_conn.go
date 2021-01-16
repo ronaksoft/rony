@@ -193,7 +193,7 @@ func (c *wsConn) handler(e *rony.MessageEnvelope) {
 	defaultHandler := c.ws.cfg.Handler
 	if e.GetRequestID() == 0 {
 		if defaultHandler != nil {
-			defaultHandler(e.Clone())
+			defaultHandler(e)
 		}
 		return
 	}
@@ -205,7 +205,7 @@ func (c *wsConn) handler(e *rony.MessageEnvelope) {
 	if h != nil {
 		h <- e.Clone()
 	} else {
-		defaultHandler(e.Clone())
+		defaultHandler(e)
 	}
 }
 
@@ -280,6 +280,7 @@ SendLoop:
 			return
 		}
 		e.DeepCopy(res)
+		rony.PoolMessageEnvelope.Put(e)
 	case <-t.C:
 		log.Warn("Timeout, will retry", zap.Error(err), zap.Int("Retry", retry))
 		c.pendingMtx.Lock()
