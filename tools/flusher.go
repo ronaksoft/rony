@@ -45,31 +45,33 @@ func (e *entry) Value() interface{} {
 
 type FlusherFunc func(targetID string, entries []FlushEntry)
 
-type flusherPool struct {
-	poolSize    int32
+type FlusherPool struct {
+	maxWorkers  int32
 	batchSize   int32
 	flusherFunc FlusherFunc
 	poolMtx     SpinLock
 	pool        map[string]*flusher
 }
 
-func NewFlusherPool(poolSize, batchSize int32, f FlusherFunc) *flusherPool {
-	fp := &flusherPool{
-		poolSize:    poolSize,
+// NewFlusherPool creates a pool of flusher funcs. By calling Enter or EnterAndWait you add
+// the item into the flusher which identified by 'targetID'.
+func NewFlusherPool(maxWorkers, batchSize int32, f FlusherFunc) *FlusherPool {
+	fp := &FlusherPool{
+		maxWorkers:  maxWorkers,
 		batchSize:   batchSize,
 		flusherFunc: f,
-		pool:        make(map[string]*flusher),
+		pool:        make(map[string]*flusher, 16),
 	}
 	return fp
 }
 
-func (fp *flusherPool) getFlusher(targetID string) *flusher {
+func (fp *FlusherPool) getFlusher(targetID string) *flusher {
 	fp.poolMtx.Lock()
 	f := fp.pool[targetID]
 	fp.poolMtx.Unlock()
 	if f == nil {
 		f = &flusher{
-			readyWorkers: fp.poolSize,
+			readyWorkers: fp.maxWorkers,
 			batchSize:    fp.batchSize,
 			flusherFunc:  fp.flusherFunc,
 			entryChan:    make(chan FlushEntry, fp.batchSize),
@@ -82,11 +84,11 @@ func (fp *flusherPool) getFlusher(targetID string) *flusher {
 	return f
 }
 
-func (fp *flusherPool) Enter(targetID string, entry FlushEntry) {
+func (fp *FlusherPool) Enter(targetID string, entry FlushEntry) {
 	fp.getFlusher(targetID).enter(entry)
 }
 
-func (fp *flusherPool) EnterAndWait(targetID string, entry FlushEntry) {
+func (fp *FlusherPool) EnterAndWait(targetID string, entry FlushEntry) {
 	fp.getFlusher(targetID).enterAndWait(entry)
 }
 

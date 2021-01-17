@@ -16,12 +16,16 @@ import (
 const (
 	defaultConflictRetries = 100
 	defaultMaxInterval     = time.Millisecond
+	defaultBatchWorkers    = 16
+	defaultBatchSize       = 256
 )
 
 type Config struct {
 	DirPath             string
 	ConflictRetries     int
 	ConflictMaxInterval time.Duration
+	BatchWorkers        int
+	BatchSize           int
 }
 
 var (
@@ -29,5 +33,7 @@ var (
 		DirPath:             "./_hdd",
 		ConflictRetries:     100,
 		ConflictMaxInterval: time.Millisecond,
+		BatchSize:           defaultBatchSize,
+		BatchWorkers:        defaultBatchWorkers,
 	}
 )
