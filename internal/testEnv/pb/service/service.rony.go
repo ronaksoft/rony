@@ -35,6 +35,24 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 
 var PoolEchoRequest = poolEchoRequest{}
 
+func (x *EchoRequest) DeepCopy(z *EchoRequest) {
+	z.Int = x.Int
+	z.Timestamp = x.Timestamp
+	z.ReplicaSet = x.ReplicaSet
+}
+
+func (x *EchoRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *EchoRequest) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoRequest, x)
+}
+
 const C_EchoResponse int64 = 4192619139
 
 type poolEchoResponse struct {
@@ -59,6 +77,26 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 }
 
 var PoolEchoResponse = poolEchoResponse{}
+
+func (x *EchoResponse) DeepCopy(z *EchoResponse) {
+	z.Int = x.Int
+	z.Responder = x.Responder
+	z.Timestamp = x.Timestamp
+	z.Delay = x.Delay
+	z.ServerID = x.ServerID
+}
+
+func (x *EchoResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *EchoResponse) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoResponse, x)
+}
 
 const C_Message1 int64 = 3131464828
 
@@ -87,6 +125,34 @@ func (p *poolMessage1) Put(x *Message1) {
 
 var PoolMessage1 = poolMessage1{}
 
+func (x *Message1) DeepCopy(z *Message1) {
+	z.Param1 = x.Param1
+	z.Param2 = x.Param2
+	if x.M2 != nil {
+		z.M2 = PoolMessage2.Get()
+		x.M2.DeepCopy(z.M2)
+	}
+	for idx := range x.M2S {
+		if x.M2S[idx] != nil {
+			xx := PoolMessage2.Get()
+			x.M2S[idx].DeepCopy(xx)
+			z.M2S = append(z.M2S, xx)
+		}
+	}
+}
+
+func (x *Message1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Message1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Message1, x)
+}
+
 const C_Message2 int64 = 598674886
 
 type poolMessage2 struct {
@@ -114,47 +180,6 @@ func (p *poolMessage2) Put(x *Message2) {
 
 var PoolMessage2 = poolMessage2{}
 
-func init() {
-	registry.RegisterConstructor(1904100324, "EchoRequest")
-	registry.RegisterConstructor(4192619139, "EchoResponse")
-	registry.RegisterConstructor(3131464828, "Message1")
-	registry.RegisterConstructor(598674886, "Message2")
-	registry.RegisterConstructor(3073810188, "Echo")
-	registry.RegisterConstructor(27569121, "EchoLeaderOnly")
-	registry.RegisterConstructor(3809767204, "EchoTunnel")
-	registry.RegisterConstructor(3639218737, "EchoDelay")
-}
-
-func (x *EchoRequest) DeepCopy(z *EchoRequest) {
-	z.Int = x.Int
-	z.Timestamp = x.Timestamp
-	z.ReplicaSet = x.ReplicaSet
-}
-
-func (x *EchoResponse) DeepCopy(z *EchoResponse) {
-	z.Int = x.Int
-	z.Responder = x.Responder
-	z.Timestamp = x.Timestamp
-	z.Delay = x.Delay
-	z.ServerID = x.ServerID
-}
-
-func (x *Message1) DeepCopy(z *Message1) {
-	z.Param1 = x.Param1
-	z.Param2 = x.Param2
-	if x.M2 != nil {
-		z.M2 = PoolMessage2.Get()
-		x.M2.DeepCopy(z.M2)
-	}
-	for idx := range x.M2S {
-		if x.M2S[idx] != nil {
-			xx := PoolMessage2.Get()
-			x.M2S[idx].DeepCopy(xx)
-			z.M2S = append(z.M2S, xx)
-		}
-	}
-}
-
 func (x *Message2) DeepCopy(z *Message2) {
 	z.Param1 = x.Param1
 	z.P2 = append(z.P2[:0], x.P2...)
@@ -165,58 +190,33 @@ func (x *Message2) DeepCopy(z *Message2) {
 	}
 }
 
-func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_EchoRequest, x)
-}
-
-func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_EchoResponse, x)
-}
-
-func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Message1, x)
-}
-
-func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Message2, x)
-}
-
-func (x *EchoRequest) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *EchoResponse) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *Message1) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Message2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
-}
-
-func (x *EchoRequest) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *EchoResponse) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *Message1) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
 func (x *Message2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Message2, x)
+}
+
 const C_Echo int64 = 3073810188
 const C_EchoLeaderOnly int64 = 27569121
 const C_EchoTunnel int64 = 3809767204
 const C_EchoDelay int64 = 3639218737
+
+func init() {
+	registry.RegisterConstructor(1904100324, "EchoRequest")
+	registry.RegisterConstructor(4192619139, "EchoResponse")
+	registry.RegisterConstructor(3131464828, "Message1")
+	registry.RegisterConstructor(598674886, "Message2")
+	registry.RegisterConstructor(3073810188, "Echo")
+	registry.RegisterConstructor(27569121, "EchoLeaderOnly")
+	registry.RegisterConstructor(3809767204, "EchoTunnel")
+	registry.RegisterConstructor(3639218737, "EchoDelay")
+}
 
 type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
@@ -229,21 +229,7 @@ type sampleWrapper struct {
 	h ISample
 }
 
-func RegisterSample(h ISample, e *edge.Server) {
-	w := sampleWrapper{
-		h: h,
-	}
-	w.Register(e)
-}
-
-func (sw *sampleWrapper) Register(e *edge.Server) {
-	e.SetHandlers(C_Echo, false, sw.EchoWrapper)
-	e.SetHandlers(C_EchoLeaderOnly, true, sw.EchoLeaderOnlyWrapper)
-	e.SetHandlers(C_EchoTunnel, true, sw.EchoTunnelWrapper)
-	e.SetHandlers(C_EchoDelay, true, sw.EchoDelayWrapper)
-}
-
-func (sw *sampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -260,7 +246,7 @@ func (sw *sampleWrapper) EchoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	}
 }
 
-func (sw *sampleWrapper) EchoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) echoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -277,7 +263,7 @@ func (sw *sampleWrapper) EchoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.Me
 	}
 }
 
-func (sw *sampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) echoTunnelWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -294,7 +280,7 @@ func (sw *sampleWrapper) EchoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	}
 }
 
-func (sw *sampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
@@ -309,6 +295,20 @@ func (sw *sampleWrapper) EchoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	if !ctx.Stopped() {
 		ctx.PushMessage(C_EchoResponse, res)
 	}
+}
+
+func (sw *sampleWrapper) Register(e *edge.Server) {
+	e.SetHandlers(C_Echo, false, sw.echoWrapper)
+	e.SetHandlers(C_EchoLeaderOnly, true, sw.echoLeaderOnlyWrapper)
+	e.SetHandlers(C_EchoTunnel, true, sw.echoTunnelWrapper)
+	e.SetHandlers(C_EchoDelay, true, sw.echoDelayWrapper)
+}
+
+func RegisterSample(h ISample, e *edge.Server) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e)
 }
 
 func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
@@ -532,85 +532,92 @@ func prepareSampleCommand(cmd *cobra.Command) (*SampleClient, error) {
 	return NewSampleClient(httpC), nil
 }
 
-var echoCmd = &cobra.Command{
-	Use: "echo",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cli, err := prepareSampleCommand(cmd)
-		_ = cli
-		if err != nil {
-			return err
-		}
-		req := &EchoRequest{
-			// int64
-			// int64
-			// uint64
-		}
-		_ = req
-		return nil
-	},
+var genEchoCmd = func(h ISampleCli) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "echo",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cli, err := prepareSampleCommand(cmd)
+			if err != nil {
+				return err
+			}
+			return h.Echo(cli, cmd, args)
+		},
+	}
+	config.SetFlags(cmd,
+		config.Int64Flag("int", 0, ""),
+		config.Int64Flag("timestamp", 0, ""),
+		config.Uint64Flag("replicaSet", 0, ""),
+	)
+	return cmd
 }
-var echoLeaderOnlyCmd = &cobra.Command{
-	Use: "echoLeaderOnly",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cli, err := prepareSampleCommand(cmd)
-		_ = cli
-		if err != nil {
-			return err
-		}
-		req := &EchoRequest{
-			// int64
-			// int64
-			// uint64
-		}
-		_ = req
-		return nil
-	},
+
+var genEchoLeaderOnlyCmd = func(h ISampleCli) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "echo-leader-only",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cli, err := prepareSampleCommand(cmd)
+			if err != nil {
+				return err
+			}
+			return h.EchoLeaderOnly(cli, cmd, args)
+		},
+	}
+	config.SetFlags(cmd,
+		config.Int64Flag("int", 0, ""),
+		config.Int64Flag("timestamp", 0, ""),
+		config.Uint64Flag("replicaSet", 0, ""),
+	)
+	return cmd
 }
-var echoTunnelCmd = &cobra.Command{
-	Use: "echoTunnel",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cli, err := prepareSampleCommand(cmd)
-		_ = cli
-		if err != nil {
-			return err
-		}
-		req := &EchoRequest{
-			// int64
-			// int64
-			// uint64
-		}
-		_ = req
-		return nil
-	},
+
+var genEchoTunnelCmd = func(h ISampleCli) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "echo-tunnel",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cli, err := prepareSampleCommand(cmd)
+			if err != nil {
+				return err
+			}
+			return h.EchoTunnel(cli, cmd, args)
+		},
+	}
+	config.SetFlags(cmd,
+		config.Int64Flag("int", 0, ""),
+		config.Int64Flag("timestamp", 0, ""),
+		config.Uint64Flag("replicaSet", 0, ""),
+	)
+	return cmd
 }
-var echoDelayCmd = &cobra.Command{
-	Use: "echoDelay",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cli, err := prepareSampleCommand(cmd)
-		_ = cli
-		if err != nil {
-			return err
-		}
-		req := &EchoRequest{
-			// int64
-			// int64
-			// uint64
-		}
-		_ = req
-		return nil
-	},
+
+var genEchoDelayCmd = func(h ISampleCli) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "echo-delay",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cli, err := prepareSampleCommand(cmd)
+			if err != nil {
+				return err
+			}
+			return h.EchoDelay(cli, cmd, args)
+		},
+	}
+	config.SetFlags(cmd,
+		config.Int64Flag("int", 0, ""),
+		config.Int64Flag("timestamp", 0, ""),
+		config.Uint64Flag("replicaSet", 0, ""),
+	)
+	return cmd
 }
 
 type ISampleCli interface {
-	Echo(cli edgec.Client, cmd *cobra.Command, args []string) error
-	EchoLeaderOnly(cli edgec.Client, cmd *cobra.Command, args []string) error
-	EchoTunnel(cli edgec.Client, cmd *cobra.Command, args []string) error
-	EchoDelay(cli edgec.Client, cmd *cobra.Command, args []string) error
+	Echo(cli *SampleClient, cmd *cobra.Command, args []string) error
+	EchoLeaderOnly(cli *SampleClient, cmd *cobra.Command, args []string) error
+	EchoTunnel(cli *SampleClient, cmd *cobra.Command, args []string) error
+	EchoDelay(cli *SampleClient, cmd *cobra.Command, args []string) error
 }
 
 func RegisterSampleCli(h ISampleCli, rootCmd *cobra.Command) {
-	rootCmd.AddCommand(echoCmd)
-	rootCmd.AddCommand(echoLeaderOnlyCmd)
-	rootCmd.AddCommand(echoTunnelCmd)
-	rootCmd.AddCommand(echoDelayCmd)
+	rootCmd.AddCommand(
+		genEchoCmd(h), genEchoLeaderOnlyCmd(h), genEchoTunnelCmd(h),
+		genEchoDelayCmd(h),
+	)
 }

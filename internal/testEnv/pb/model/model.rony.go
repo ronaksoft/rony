@@ -35,6 +35,27 @@ func (p *poolHook) Put(x *Hook) {
 
 var PoolHook = poolHook{}
 
+func (x *Hook) DeepCopy(z *Hook) {
+	z.ClientID = x.ClientID
+	z.ID = x.ID
+	z.Timestamp = x.Timestamp
+	z.HookUrl = x.HookUrl
+	z.Fired = x.Fired
+	z.Success = x.Success
+}
+
+func (x *Hook) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Hook) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Hook) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Hook, x)
+}
+
 const C_Model1 int64 = 2074613123
 
 type poolModel1 struct {
@@ -59,6 +80,26 @@ func (p *poolModel1) Put(x *Model1) {
 }
 
 var PoolModel1 = poolModel1{}
+
+func (x *Model1) DeepCopy(z *Model1) {
+	z.ID = x.ID
+	z.ShardKey = x.ShardKey
+	z.P1 = x.P1
+	z.P2 = append(z.P2[:0], x.P2...)
+	z.P5 = x.P5
+}
+
+func (x *Model1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *Model1) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Model1) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_Model1, x)
+}
 
 const C_Model2 int64 = 3802219577
 
@@ -85,29 +126,6 @@ func (p *poolModel2) Put(x *Model2) {
 
 var PoolModel2 = poolModel2{}
 
-func init() {
-	registry.RegisterConstructor(74116203, "Hook")
-	registry.RegisterConstructor(2074613123, "Model1")
-	registry.RegisterConstructor(3802219577, "Model2")
-}
-
-func (x *Hook) DeepCopy(z *Hook) {
-	z.ClientID = x.ClientID
-	z.ID = x.ID
-	z.Timestamp = x.Timestamp
-	z.HookUrl = x.HookUrl
-	z.Fired = x.Fired
-	z.Success = x.Success
-}
-
-func (x *Model1) DeepCopy(z *Model1) {
-	z.ID = x.ID
-	z.ShardKey = x.ShardKey
-	z.P1 = x.P1
-	z.P2 = append(z.P2[:0], x.P2...)
-	z.P5 = x.P5
-}
-
 func (x *Model2) DeepCopy(z *Model2) {
 	z.ID = x.ID
 	z.ShardKey = x.ShardKey
@@ -116,40 +134,22 @@ func (x *Model2) DeepCopy(z *Model2) {
 	z.P5 = x.P5
 }
 
-func (x *Hook) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Hook, x)
+func (x *Model2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-func (x *Model1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Model1, x)
+func (x *Model2) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
 func (x *Model2) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Model2, x)
 }
 
-func (x *Hook) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *Model1) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *Model2) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *Hook) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *Model1) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *Model2) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+func init() {
+	registry.RegisterConstructor(74116203, "Hook")
+	registry.RegisterConstructor(2074613123, "Model1")
+	registry.RegisterConstructor(3802219577, "Model2")
 }
 
 func SaveHook(m *Hook) error {

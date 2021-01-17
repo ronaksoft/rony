@@ -33,6 +33,30 @@ func (p *poolTunnelMessage) Put(x *TunnelMessage) {
 
 var PoolTunnelMessage = poolTunnelMessage{}
 
+func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
+	z.SenderID = append(z.SenderID[:0], x.SenderID...)
+	z.SenderReplicaSet = x.SenderReplicaSet
+	for idx := range x.Store {
+		if x.Store[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Store[idx].DeepCopy(xx)
+			z.Store = append(z.Store, xx)
+		}
+	}
+	if x.Envelope != nil {
+		z.Envelope = PoolMessageEnvelope.Get()
+		x.Envelope.DeepCopy(z.Envelope)
+	}
+}
+
+func (x *TunnelMessage) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *TunnelMessage) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
 const C_RaftCommand int64 = 2919813429
 
 type poolRaftCommand struct {
@@ -58,6 +82,29 @@ func (p *poolRaftCommand) Put(x *RaftCommand) {
 }
 
 var PoolRaftCommand = poolRaftCommand{}
+
+func (x *RaftCommand) DeepCopy(z *RaftCommand) {
+	z.Sender = append(z.Sender[:0], x.Sender...)
+	for idx := range x.Store {
+		if x.Store[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Store[idx].DeepCopy(xx)
+			z.Store = append(z.Store, xx)
+		}
+	}
+	if x.Envelope != nil {
+		z.Envelope = PoolMessageEnvelope.Get()
+		x.Envelope.DeepCopy(z.Envelope)
+	}
+}
+
+func (x *RaftCommand) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *RaftCommand) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
 
 const C_EdgeNode int64 = 999040174
 
@@ -87,43 +134,6 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 
 var PoolEdgeNode = poolEdgeNode{}
 
-func init() {
-	registry.RegisterConstructor(3271476222, "TunnelMessage")
-	registry.RegisterConstructor(2919813429, "RaftCommand")
-	registry.RegisterConstructor(999040174, "EdgeNode")
-}
-
-func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
-	z.SenderID = append(z.SenderID[:0], x.SenderID...)
-	z.SenderReplicaSet = x.SenderReplicaSet
-	for idx := range x.Store {
-		if x.Store[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.Store[idx].DeepCopy(xx)
-			z.Store = append(z.Store, xx)
-		}
-	}
-	if x.Envelope != nil {
-		z.Envelope = PoolMessageEnvelope.Get()
-		x.Envelope.DeepCopy(z.Envelope)
-	}
-}
-
-func (x *RaftCommand) DeepCopy(z *RaftCommand) {
-	z.Sender = append(z.Sender[:0], x.Sender...)
-	for idx := range x.Store {
-		if x.Store[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.Store[idx].DeepCopy(xx)
-			z.Store = append(z.Store, xx)
-		}
-	}
-	if x.Envelope != nil {
-		z.Envelope = PoolMessageEnvelope.Get()
-		x.Envelope.DeepCopy(z.Envelope)
-	}
-}
-
 func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.ServerID = append(z.ServerID[:0], x.ServerID...)
 	z.ReplicaSet = x.ReplicaSet
@@ -135,26 +145,16 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.TunnelAddr = append(z.TunnelAddr[:0], x.TunnelAddr...)
 }
 
-func (x *TunnelMessage) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *RaftCommand) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EdgeNode) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 
-func (x *TunnelMessage) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *RaftCommand) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 func (x *EdgeNode) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func init() {
+	registry.RegisterConstructor(3271476222, "TunnelMessage")
+	registry.RegisterConstructor(2919813429, "RaftCommand")
+	registry.RegisterConstructor(999040174, "EdgeNode")
 }

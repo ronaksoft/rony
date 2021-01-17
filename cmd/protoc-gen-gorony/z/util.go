@@ -56,8 +56,8 @@ func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.
 }
 
 // zeroValue returns the equal zero value based on the input type
-func ZeroValue(t protoreflect.Kind) string {
-	switch t {
+func ZeroValue(f protoreflect.FieldDescriptor) string {
+	switch f.Kind() {
 	case protoreflect.BoolKind:
 		return "false"
 	case protoreflect.StringKind:

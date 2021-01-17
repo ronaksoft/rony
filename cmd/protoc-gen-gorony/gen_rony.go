@@ -70,25 +70,24 @@ func GenHelpers(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P()
 }
 func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builder, g *protogen.GeneratedFile) {
-	mtName := mt.Desc.Name()
-	constructor := crc32.ChecksumIEEE([]byte(mt.Desc.Name()))
-	g.P(fmt.Sprintf("const C_%s int64 = %d", mtName, constructor))
-	initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, mt.Desc.Name()))
-	g.P(fmt.Sprintf("type pool%s struct{", mtName))
+	messageName := mt.Desc.Name()
+	constructor := crc32.ChecksumIEEE([]byte(messageName))
+	g.P(fmt.Sprintf("const C_%s int64 = %d", messageName, constructor))
+	initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, messageName))
+	g.P(fmt.Sprintf("type pool%s struct{", messageName))
 	g.P("pool sync.Pool")
-	g.P("}")
-	g.P(fmt.Sprintf("func (p *pool%s) Get() *%s {", mtName, mtName))
-	g.P(fmt.Sprintf("x, ok := p.pool.Get().(*%s)", mtName))
+	g.P("}") // end of pool struct
+	g.P(fmt.Sprintf("func (p *pool%s) Get() *%s {", messageName, messageName))
+	g.P(fmt.Sprintf("x, ok := p.pool.Get().(*%s)", messageName))
 	g.P("if !ok {")
-	g.P(fmt.Sprintf("return &%s{}", mtName))
-	g.P("}")
+	g.P(fmt.Sprintf("return &%s{}", messageName))
+	g.P("}") // end of if clause
 	g.P("return x")
-	g.P("}")
-	g.P("", "")
-	g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", mtName, mtName))
+	g.P("}") // end of func Get()
+	g.P()
+	g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", messageName, messageName))
 	for _, ft := range mt.Fields {
 		ftName := ft.Desc.Name()
-		ftPkg := z.PackageName(file, g, ft.Desc.Message())
 		switch ft.Desc.Cardinality() {
 		case protoreflect.Repeated:
 			g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
@@ -100,7 +99,9 @@ func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builde
 				// If it is message we check if is nil then we leave it
 				// If it is from same package use Pool
 				g.P(fmt.Sprintf("if x.%s != nil {", ftName))
-				if ftPkg != "" {
+
+				ftPkg := string(ft.Desc.Message().FullName().Parent())
+				if ftPkg != string(file.GoPackageName) {
 					g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
 				} else {
 					g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
@@ -108,16 +109,16 @@ func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builde
 				g.P("x.", ftName, " = nil")
 				g.P("}")
 			default:
-				g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc.Kind())))
+				g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc)))
 
 			}
 		}
 	}
 	g.P("p.pool.Put(x)")
-	g.P("}")
-	g.P("")
-	g.P(fmt.Sprintf("var Pool%s = pool%s{}", mtName, mtName))
-	g.P("")
+	g.P("}") // end of func Put()
+	g.P()
+	g.P(fmt.Sprintf("var Pool%s = pool%s{}", messageName, messageName))
+	g.P()
 }
 func genDeepCopy(file *protogen.File, mt *protogen.Message, g *protogen.GeneratedFile) {
 	mtName := mt.Desc.Name()
@@ -189,8 +190,6 @@ func genMarshal(mt *protogen.Message, g *protogen.GeneratedFile) {
 	g.P()
 }
 
-
-
 // GenRPC generates the server and client interfaces if any proto service has been defined
 func GenRPC(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
 	genServerRPC(file, g, s)
@@ -246,8 +245,8 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		} else {
 			g.P("ctx.PushMessage(", outputPkg, ".C_", outputType, ", res)")
 		}
-		g.P("}") 	// end of if block
-		g.P("}")	// end of func block
+		g.P("}") // end of if block
+		g.P("}") // end of func block
 		g.P()
 	}
 	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server) {")

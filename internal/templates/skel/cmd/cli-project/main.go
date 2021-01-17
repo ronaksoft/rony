@@ -25,7 +25,7 @@ func main() {
 		config.StringSliceFlag("tunnelAdvertiseUrl", nil, ""),
 		config.DurationFlag("idleTime", time.Minute, ""),
 		config.IntFlag("raftPort", 7080, ""),
-		config.UInt64Flag("replicaSet", 1, ""),
+		config.Uint64Flag("replicaSet", 1, ""),
 		config.IntFlag("gossipPort", 7081, ""),
 		config.StringFlag("dataPath", "./_hdd", ""),
 		config.BoolFlag("bootstrap", false, ""),
