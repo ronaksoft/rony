@@ -37,11 +37,7 @@ func main() {
 	}
 	pgo.Run(func(plugin *protogen.Plugin) error {
 		for _, f := range plugin.Files {
-			if !f.Generate {
-				continue
-			}
-
-			if f.Proto.GetPackage() == "google.protobuf" {
+			if !f.Generate || f.Proto.GetPackage() == "google.protobuf" {
 				continue
 			}
 
@@ -51,15 +47,11 @@ func main() {
 				model.FillModel(m)
 			}
 
-			// Generate Pools
+			// Create the generator func and generate all the helper functions
 			g1 := plugin.NewGeneratedFile(fmt.Sprintf("%s.rony.go", f.GeneratedFilenamePrefix), f.GoImportPath)
-			GenPools(f, g1)
-			GenDeepCopy(f, g1)
-			GenPushToContext(f, g1)
-			GenMarshal(f, g1)
-			GenUnmarshal(f, g1)
+			GenHelpers(f, g1)
 
-			// Generate Model's repo functionality
+			// Generate Model's repo functionality based on the 'rony_storage' option
 			if len(model.GetModels()) > 0 {
 				opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
 				storage := proto.GetExtension(opt, rony.E_RonyStorage).(string)
@@ -85,16 +77,16 @@ func main() {
 					GoName:       "",
 					GoImportPath: "fmt",
 				})
+				g1.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       "",
+					GoImportPath: "github.com/ronaksoft/rony/edgec",
+				})
 				if f.GoPackageName != "rony" {
 					g1.QualifiedGoIdent(protogen.GoIdent{
 						GoName:       "",
 						GoImportPath: "github.com/ronaksoft/rony",
 					})
 				}
-				g1.QualifiedGoIdent(protogen.GoIdent{
-					GoName:       "Client",
-					GoImportPath: "github.com/ronaksoft/rony/edgec",
-				})
 
 				for _, s := range f.Services {
 					GenRPC(f, s, g1)

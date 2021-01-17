@@ -51,7 +51,7 @@ func Int32Flag(name string, value int32, usage string) FlagOption {
 	}
 }
 
-func UInt32Flag(name string, value uint32, usage string) FlagOption {
+func Uint32Flag(name string, value uint32, usage string) FlagOption {
 	return func(fs *pflag.FlagSet) {
 		fs.Uint32(name, value, usage)
 	}
@@ -63,7 +63,7 @@ func Int64Flag(name string, value int64, usage string) FlagOption {
 	}
 }
 
-func UInt64Flag(name string, value uint64, usage string) FlagOption {
+func Uint64Flag(name string, value uint64, usage string) FlagOption {
 	return func(fs *pflag.FlagSet) {
 		fs.Uint64(name, value, usage)
 	}

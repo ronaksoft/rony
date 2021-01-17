@@ -69,4 +69,48 @@ func ZeroValue(t protoreflect.Kind) string {
 	default:
 		return "0"
 	}
+
+}
+
+func GoKind(d protoreflect.FieldDescriptor) string {
+	switch d.Kind() {
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
+		return "int32"
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "uint32"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
+		return "int64"
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64"
+	case protoreflect.DoubleKind:
+		return "float64"
+	case protoreflect.FloatKind:
+		return "float32"
+	case protoreflect.StringKind:
+		return "string"
+	case protoreflect.BytesKind:
+		return "[]byte"
+	case protoreflect.BoolKind:
+		return "bool"
+	}
+	return "unsupported"
+}
+
+func CqlKind(d protoreflect.FieldDescriptor) string {
+	switch d.Kind() {
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "int"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "bigint"
+	case protoreflect.DoubleKind:
+		return "double"
+	case protoreflect.FloatKind:
+		return "float"
+	case protoreflect.BytesKind, protoreflect.StringKind:
+		return "blob"
+	case protoreflect.BoolKind:
+		return "boolean"
+	}
+	return "unsupported"
+	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
 }

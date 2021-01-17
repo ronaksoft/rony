@@ -3,11 +3,11 @@ package model
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 )
@@ -188,8 +188,8 @@ func FillModel(m *protogen.Message) {
 	}
 	if isModel {
 		for _, f := range m.Fields {
-			mm.FieldsCql[f.GoName] = kindCql(f.Desc.Kind())
-			mm.FieldsGo[f.GoName] = kindGo(f.Desc.Kind())
+			mm.FieldsCql[f.GoName] = z.CqlKind(f.Desc)
+			mm.FieldsGo[f.GoName] = z.GoKind(f.Desc)
 		}
 		mm.Name = string(m.Desc.Name())
 		loadedModels[mm.Name] = &mm
@@ -199,50 +199,4 @@ func FillModel(m *protogen.Message) {
 // GetModels
 func GetModels() map[string]*Model {
 	return loadedModels
-}
-
-// kindCql converts the proto buffer type to cql types
-func kindCql(k protoreflect.Kind) string {
-	switch k {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "int"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "bigint"
-	case protoreflect.DoubleKind:
-		return "double"
-	case protoreflect.FloatKind:
-		return "float"
-	case protoreflect.BytesKind, protoreflect.StringKind:
-		return "blob"
-	case protoreflect.BoolKind:
-		return "boolean"
-	}
-	return "unsupported"
-	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
-}
-
-// kindGo converts proto buffer types to golang types
-func kindGo(k protoreflect.Kind) string {
-	switch k {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
-		return "int32"
-	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "uint32"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
-		return "int64"
-	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "uint64"
-	case protoreflect.DoubleKind:
-		return "float64"
-	case protoreflect.FloatKind:
-		return "float32"
-	case protoreflect.StringKind:
-		return "string"
-	case protoreflect.BytesKind:
-		return "[]byte"
-	case protoreflect.BoolKind:
-		return "bool"
-	}
-	return "unsupported"
-	// panic(fmt.Sprintf("unsupported kindGo: %v", k.String()))
 }

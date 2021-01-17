@@ -84,6 +84,7 @@ func (bk *Allocator) ReleaseAll() {
 	for _, b := range bk.blocks {
 		pools.Buffer.Put(b)
 	}
+	bk.blocks = bk.blocks[:0]
 }
 
 func getSize(v ...interface{}) int {
