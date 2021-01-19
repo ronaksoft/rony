@@ -157,7 +157,7 @@ func (h *Http) initConn() error {
 				}
 			}
 
-			// h.pool.addConn(n.ServerID, n.ReplicaSet, n.Leader, httpc)
+			h.addConn(n.ServerID, n.ReplicaSet, n.Leader, httpc)
 			if n.Leader {
 				h.sessionReplica = n.ReplicaSet
 			}

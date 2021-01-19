@@ -484,6 +484,10 @@ func genClientCliInterface(s *protogen.Service, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 	g.P("func Register", s.Desc.Name(), "Cli (h I", s.Desc.Name(), "Cli, rootCmd *cobra.Command) {")
+	g.P("config.SetPersistentFlags(rootCmd, ")
+	g.P("config.StringFlag(\"host\", \"127.0.0.1\", \"the seed host's address\"),")
+	g.P("config.StringFlag(\"port\", \"80\", \"the seed host's port\"),")
+	g.P(")") // end of SetPersistentFlags
 	g.P("rootCmd.AddCommand(")
 	var names []string
 	for _, m := range s.Methods {

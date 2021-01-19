@@ -616,6 +616,10 @@ type ISampleCli interface {
 }
 
 func RegisterSampleCli(h ISampleCli, rootCmd *cobra.Command) {
+	config.SetPersistentFlags(rootCmd,
+		config.StringFlag("host", "127.0.0.1", "the seed host's address"),
+		config.StringFlag("port", "80", "the seed host's port"),
+	)
 	rootCmd.AddCommand(
 		genEchoCmd(h), genEchoLeaderOnlyCmd(h), genEchoTunnelCmd(h),
 		genEchoDelayCmd(h),

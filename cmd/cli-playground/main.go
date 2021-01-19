@@ -17,7 +17,6 @@ func main() {
 	p.Run()
 }
 
-
 var RootCmd = &cobra.Command{
 	Use: "Root",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
