@@ -22,15 +22,15 @@ import (
 
 // HttpConfig holds the configurations for the Http client.
 type HttpConfig struct {
-	Name           string
-	SeedHostPort   string
-	Header         map[string]string
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	ContextTimeout time.Duration
-	Retries        int
-	Router         Router
-	Secure         bool
+	Name            string
+	SeedHostPort    string
+	Header          map[string]string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	ContextTimeout  time.Duration
+	RequestMaxRetry int
+	Router          Router
+	Secure          bool
 }
 
 // Http connects to edge servers with HTTP transport.
@@ -54,11 +54,19 @@ func NewHttp(config HttpConfig) *Http {
 			WriteTimeout:              config.WriteTimeout,
 			MaxResponseBodySize:       0,
 		},
+		hosts:   make(map[uint64]map[string]*httpConn, 32),
+		leaders: make(map[uint64]string, 32),
 	}
 	if h.cfg.Router == nil {
 		h.cfg.Router = &httpRouter{
 			c: h,
 		}
+	}
+	if h.cfg.RequestMaxRetry == 0 {
+		h.cfg.RequestMaxRetry = requestRetry
+	}
+	if h.cfg.ContextTimeout == 0 {
+		h.cfg.ContextTimeout = requestTimeout
 	}
 
 	return h
@@ -172,26 +180,27 @@ func (h *Http) initConn() error {
 }
 
 func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope, leaderOnly bool) error {
-	return h.SendWithDetails(req, res, h.cfg.ContextTimeout, leaderOnly)
+	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout, leaderOnly)
 }
 
 // Send implements Client interface
-func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, timeout time.Duration, leaderOnly bool) (err error) {
+func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, retry int, timeout time.Duration, leaderOnly bool) (err error) {
 	rs := h.cfg.Router.GetRoute(req)
 	hc := h.getConn(rs, leaderOnly)
-	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
-		ce.Write(
-			zap.Uint64("ReqID", req.RequestID),
-			zap.Uint64("RS", rs),
-			zap.Bool("LeaderOnly", leaderOnly),
-		)
-	}
-
 	if hc == nil {
 		return ErrNoConnection
 	}
 
 SendLoop:
+	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
+		ce.Write(
+			zap.Uint64("ReqID", req.RequestID),
+			zap.Uint64("RS", rs),
+			zap.Bool("LeaderOnly", leaderOnly),
+			zap.Int("Retry", retry),
+		)
+	}
+
 	rs, err = hc.send(req, res, timeout)
 	switch err {
 	case nil:
@@ -202,6 +211,13 @@ SendLoop:
 	case ErrReplicaSetSession, ErrReplicaSetRequest:
 		rs = h.sessionReplica
 	}
+
+	// If we exceeds the maximum retry then we return
+	if retry--; retry < 0 {
+		err = rony.ErrRetriesExceeded(err)
+		return
+	}
+
 	goto SendLoop
 }
 

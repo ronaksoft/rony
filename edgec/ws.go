@@ -177,19 +177,20 @@ func (c *Websocket) SendWithDetails(
 ) (err error) {
 	rs := c.cfg.Router.GetRoute(req)
 	wsc := c.pool.getConn(rs, leaderOnly)
-	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
-		ce.Write(
-			zap.Uint64("ReqID", req.GetRequestID()),
-			zap.Uint64("RS", rs),
-			zap.Bool("LeaderOnly", leaderOnly),
-		)
-	}
-
 	if wsc == nil {
 		return ErrNoConnection
 	}
 
 SendLoop:
+	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
+		ce.Write(
+			zap.Uint64("ReqID", req.GetRequestID()),
+			zap.Uint64("RS", rs),
+			zap.Bool("LeaderOnly", leaderOnly),
+			zap.Int("Retry", retry),
+		)
+	}
+
 	rs, err = wsc.send(req, res, waitToConnect, retry, timeout)
 	switch err {
 	case nil:
