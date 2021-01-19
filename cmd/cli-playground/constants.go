@@ -11,12 +11,14 @@ package main
 
 // Flag Names
 const (
-	FlagLogLevel    = "logLevel"
-	FlagServerID    = "serverID"
-	FlagTargetID    = "targetID"
-	FlagReplicaSet  = "replicaSet"
-	FlagReplicaMode = "replicaMode"
-	FlagBootstrap   = "bootstrap"
-	FlagGossipPort  = "port"
-	FlagConcurrency = "concurrency"
+	FlagLogLevel          = "logLevel"
+	FlagServerID          = "serverID"
+	FlagTargetID          = "targetID"
+	FlagReplicaSet        = "replicaSet"
+	FlagReplicaMode       = "replicaMode"
+	FlagBootstrap         = "bootstrap"
+	FlagGossipPort        = "port"
+	FlagConcurrency       = "concurrency"
+	FlagDemoReplicaFactor = "demoRF"
+	FlagDemoReplica       = "demoR"
 )

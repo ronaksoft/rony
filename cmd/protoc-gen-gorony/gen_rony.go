@@ -80,8 +80,39 @@ func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builde
 	g.P(fmt.Sprintf("func (p *pool%s) Get() *%s {", messageName, messageName))
 	g.P(fmt.Sprintf("x, ok := p.pool.Get().(*%s)", messageName))
 	g.P("if !ok {")
+	// sb := strings.Builder{}
+	// found := false
+	// for _, ft := range mt.Fields {
+	// 	switch ft.Desc.Kind() {
+	// 	case protoreflect.MessageKind:
+	// 		found = true
+	// 		ftPkg := string(ft.Desc.Message().FullName().Parent())
+	// 		if ftPkg != string(file.GoPackageName) {
+	// 			sb.WriteString(fmt.Sprintf("%s: %s.%s{},", ft.Desc.Message().Name(), ftPkg, ft.Desc.Message().Name()))
+	// 		} else {
+	// 			sb.WriteString(fmt.Sprintf("%s: %s{},", ftPkg, ft.Desc.Message().Name()))
+	// 		}
+	// 	}
+	// }
+	// if found {
+	// 	g.P(fmt.Sprintf("return &%s{", messageName))
+	// 	g.P(sb.String())
+	// 	g.P("}")
+	// } else {
 	g.P(fmt.Sprintf("return &%s{}", messageName))
+	// }
 	g.P("}") // end of if clause
+	// for _, ft := range mt.Fields {
+	// 	switch ft.Desc.Kind() {
+	// 	case protoreflect.MessageKind:
+	// 		ftPkg := string(ft.Desc.Message().FullName().Parent())
+	// 		if ftPkg != string(file.GoPackageName) {
+	// 			g.P("x.", ft.Desc.Message().Name(), "=", ftPkg, ".Pool", ft.Desc.Message().Name(), ".Get()")
+	// 		} else {
+	// 			g.P("x.", ft.Desc.Message().Name(), "= Pool", ft.Desc.Message().Name(), ".Get()")
+	// 		}
+	// 	}
+	// }
 	g.P("return x")
 	g.P("}") // end of func Get()
 	g.P()
@@ -99,7 +130,6 @@ func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builde
 				// If it is message we check if is nil then we leave it
 				// If it is from same package use Pool
 				g.P(fmt.Sprintf("if x.%s != nil {", ftName))
-
 				ftPkg := string(ft.Desc.Message().FullName().Parent())
 				if ftPkg != string(file.GoPackageName) {
 					g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
@@ -107,7 +137,7 @@ func genPool(file *protogen.File, mt *protogen.Message, initFunc *strings.Builde
 					g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
 				}
 				g.P("x.", ftName, " = nil")
-				g.P("}")
+				g.P("}") // end of if
 			default:
 				g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc)))
 

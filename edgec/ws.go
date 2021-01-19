@@ -179,7 +179,7 @@ func (c *Websocket) SendWithDetails(
 	wsc := c.pool.getConn(rs, leaderOnly)
 	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
 		ce.Write(
-			zap.Uint64("ReqID", req.RequestID),
+			zap.Uint64("ReqID", req.GetRequestID()),
 			zap.Uint64("RS", rs),
 			zap.Bool("LeaderOnly", leaderOnly),
 		)

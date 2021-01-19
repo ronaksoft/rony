@@ -375,7 +375,8 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 	defer rony.PoolTunnelMessage.Put(tmIn)
 	tmOut.SenderID = ctx.dispatchCtx.serverID
 	tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
-	tmOut.Envelope = req
+	tmOut.Envelope = rony.PoolMessageEnvelope.Get()
+	req.DeepCopy(tmOut.Envelope)
 
 	// Marshal and send over the wire
 	mo := proto.MarshalOptions{UseCachedSize: true}

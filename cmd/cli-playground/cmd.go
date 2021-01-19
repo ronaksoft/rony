@@ -36,7 +36,7 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		BatchStartCmd, StartCmd, BenchCmd, ListCmd, Members,
+		DemoStartCmd, StartCmd, BenchCmd, ListCmd, Members,
 		EchoCmd, EchoLeaderOnlyCmd, EchoTunnelCmd,
 		Trace, MemProf, LogLevel,
 	)
@@ -50,44 +50,39 @@ func init() {
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 	RootCmd.PersistentFlags().Int("n", 5, "")
 	RootCmd.PersistentFlags().Int(FlagConcurrency, 1000, "")
+	RootCmd.PersistentFlags().Int(FlagDemoReplicaFactor, 1, "")
+	RootCmd.PersistentFlags().Int(FlagDemoReplica, 3, "")
+
 }
 
-var BatchStartCmd = &cobra.Command{
+var DemoStartCmd = &cobra.Command{
 	Use: "demo_cluster_start",
 	Run: func(cmd *cobra.Command, args []string) {
+		n, _ := cmd.Flags().GetInt(FlagDemoReplicaFactor)
+		s, _ := cmd.Flags().GetInt(FlagDemoReplica)
+		cm := cluster.SingleReplica
+		if n > 1 {
+			cm = cluster.MultiReplica
+		}
+		if s < 1 {
+			s = 1
+		}
+		if s > 28 {
+			s = 28
+		}
 
-		n := 1
-		serverID := "A"
-		replicaSet := uint64(1)
+		a := 'A'
 		gossipPort := 700
-		for i := 0; i < n; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
-			gossipPort++
-			if i == 0 && i < n-1 {
-				time.Sleep(time.Second * 3)
+		for i := 0; i < s; i++ {
+			replicaSet := uint64(i + 1)
+			for j := 0; j < n; j++ {
+				startFunc(cmd, fmt.Sprintf("%c.%d", a, j), replicaSet, gossipPort, j == 0, cm)
+				gossipPort += 10
+				if j == 0 && j < n-1 {
+					time.Sleep(time.Second * 3)
+				}
 			}
-		}
-
-		serverID = "B"
-		replicaSet = uint64(2)
-		gossipPort = 800
-		for i := 0; i < n; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
-			gossipPort++
-			if i == 0 && i < n-1 {
-				time.Sleep(time.Second * 3)
-			}
-		}
-
-		serverID = "C"
-		replicaSet = uint64(3)
-		gossipPort = 900
-		for i := 0; i < n; i++ {
-			startFunc(cmd, fmt.Sprintf("%s.%d", serverID, i), replicaSet, gossipPort, i == 0, cluster.SingleReplica)
-			gossipPort++
-			if i == 0 && i < n-1 {
-				time.Sleep(time.Second * 3)
-			}
+			a++
 		}
 	},
 }
@@ -121,7 +116,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 				edge.WithGossipCluster(edge.GossipClusterConfig{
 					ServerID:   []byte(serverID),
 					Bootstrap:  bootstrap,
-					RaftPort:   port * 10,
+					RaftPort:   port + 1,
 					ReplicaSet: replicaSet,
 					Mode:       mode,
 					GossipPort: port,
@@ -333,8 +328,9 @@ var EchoTunnelCmd = &cobra.Command{
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
-			Secure:         false,
-			ContextTimeout: time.Second * 3,
+			Secure:          false,
+			RequestTimeout:  time.Second * 10,
+			RequestMaxRetry: 1,
 		})
 		err := ec.Start()
 		if err != nil {
@@ -343,16 +339,17 @@ var EchoTunnelCmd = &cobra.Command{
 		}
 		defer ec.Close()
 		c := service.NewSampleClient(ec)
-		req := service.PoolEchoRequest.Get()
-		defer service.PoolEchoRequest.Put(req)
-		req.Int = tools.RandomInt64(0)
-		req.Timestamp = tools.NanoTime()
-		req.ReplicaSet = replicaSet
+
 		var cnt int64
 		wg := sync.WaitGroup{}
 		for i := 0; i < n; i++ {
 			wg.Add(1)
 			go func() {
+				req := service.PoolEchoRequest.Get()
+				defer service.PoolEchoRequest.Put(req)
+				req.Int = tools.RandomInt64(0)
+				req.Timestamp = tools.NanoTime()
+				req.ReplicaSet = replicaSet
 				res, err := c.EchoTunnel(req)
 				switch err {
 				case nil:
@@ -361,7 +358,6 @@ var EchoTunnelCmd = &cobra.Command{
 				default:
 					cmd.Println("Error:", err)
 				}
-
 				wg.Done()
 			}()
 		}
