@@ -424,7 +424,7 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 		g.P("return New", serviceName, "Client(wsC), nil")
 	default:
 		g.P("httpC := edgec.NewHttp(edgec.HttpConfig{")
-		g.P("Name: \"\",")
+		g.P("Name: \"Rony Client\",")
 		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
 		g.P("})")
 		g.P()
