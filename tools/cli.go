@@ -154,7 +154,10 @@ func PromptExecutor(rootCmd *cobra.Command) func(s string) {
 			return
 		}
 		rootCmd.SetArgs(strings.Fields(s))
-		_ = rootCmd.Execute()
+		err := rootCmd.Execute()
+		if err != nil {
+			fmt.Println(rootCmd.Name(), "returned with error: ", err)
+		}
 	}
 
 }
