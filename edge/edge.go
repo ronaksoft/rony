@@ -130,7 +130,8 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 	}
 
 	if edge.cluster.RaftState() == raft.Leader {
-		raftCmd := acquireRaftCommand()
+		raftCmd := rony.PoolRaftCommand.Get()
+		raftCmd.Envelope = rony.PoolMessageEnvelope.Get()
 		raftCmd.Fill(edge.serverID, dispatchCtx.req)
 		mo := proto.MarshalOptions{UseCachedSize: true}
 		buf := pools.Buffer.GetCap(mo.Size(raftCmd))
@@ -142,7 +143,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 		f := edge.cluster.RaftApply(raftCmdBytes)
 		err = f.Error()
 		pools.Buffer.Put(buf)
-		releaseRaftCommand(raftCmd)
+		rony.PoolRaftCommand.Put(raftCmd)
 		if err != nil {
 			return
 		}
@@ -152,7 +153,7 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 	return
 }
 func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error) {
-	waitGroup := acquireWaitGroup()
+	waitGroup := pools.AcquireWaitGroup()
 	switch dispatchCtx.req.GetConstructor() {
 	case rony.C_MessageContainer:
 		x := &rony.MessageContainer{}
@@ -183,7 +184,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 		releaseRequestCtx(ctx)
 	}
 	waitGroup.Wait()
-	releaseWaitGroup(waitGroup)
+	pools.ReleaseWaitGroup(waitGroup)
 	return nil
 }
 func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
@@ -354,7 +355,7 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 }
 
 func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
-	envelope := acquireMessageEnvelope()
+	envelope := rony.PoolMessageEnvelope.Get()
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
@@ -362,7 +363,7 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	case TunnelMessage:
 		ctx.BufferPush(envelope.Clone())
 	}
-	releaseMessageEnvelope(envelope)
+	rony.PoolMessageEnvelope.Put(envelope)
 }
 
 // StartCluster is non-blocking function which runs the gossip and raft if it is set

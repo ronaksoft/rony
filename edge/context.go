@@ -320,7 +320,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 		return
 	}
 
-	envelope := acquireMessageEnvelope()
+	envelope := rony.PoolMessageEnvelope.Get()
 	envelope.Fill(requestID, constructor, proto)
 	envelope.Header = append(envelope.Header[:0], kvs...)
 
@@ -331,7 +331,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}
 
-	releaseMessageEnvelope(envelope)
+	rony.PoolMessageEnvelope.Put(envelope)
 }
 
 func (ctx *RequestCtx) PushError(code, item string) {

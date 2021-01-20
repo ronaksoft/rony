@@ -1,7 +1,6 @@
 package edge
 
 import (
-	"github.com/ronaksoft/rony"
 	"sync"
 )
 
@@ -13,83 +12,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-var messageEnvelopePool sync.Pool
-
-func acquireMessageEnvelope() *rony.MessageEnvelope {
-	v := messageEnvelopePool.Get()
-	if v == nil {
-		return &rony.MessageEnvelope{}
-	}
-	return v.(*rony.MessageEnvelope)
-}
-
-func releaseMessageEnvelope(x *rony.MessageEnvelope) {
-	x.Message = x.Message[:0]
-	x.Constructor = 0
-	x.RequestID = 0
-	x.Header = x.Header[:0]
-	x.Auth = x.Auth[:0]
-	messageEnvelopePool.Put(x)
-}
-
-var tunnelMessagePool sync.Pool
-
-func acquireTunnelMessage() *rony.TunnelMessage {
-	v := tunnelMessagePool.Get()
-	if v == nil {
-		return &rony.TunnelMessage{
-			Envelope: &rony.MessageEnvelope{},
-		}
-	}
-	return v.(*rony.TunnelMessage)
-}
-
-func releaseTunnelMessage(x *rony.TunnelMessage) {
-	x.Store = x.Store[:0]
-	x.SenderID = x.SenderID[:0]
-	x.SenderReplicaSet = 0
-	x.Envelope.Constructor = 0
-	x.Envelope.Message = x.Envelope.Message[:0]
-	x.Envelope.RequestID = 0
-	tunnelMessagePool.Put(x)
-}
-
-var raftCommandPool sync.Pool
-
-func acquireRaftCommand() *rony.RaftCommand {
-	v := raftCommandPool.Get()
-	if v == nil {
-		return &rony.RaftCommand{
-			Envelope: &rony.MessageEnvelope{},
-		}
-	}
-	return v.(*rony.RaftCommand)
-}
-
-func releaseRaftCommand(x *rony.RaftCommand) {
-	x.Sender = x.Sender[:0]
-	x.Store = x.Store[:0]
-	x.Envelope.Message = x.Envelope.Message[:0]
-	x.Envelope.RequestID = 0
-	x.Envelope.Constructor = 0
-	raftCommandPool.Put(x)
-}
-
-var waitGroupPool sync.Pool
-
-func acquireWaitGroup() *sync.WaitGroup {
-	wgv := waitGroupPool.Get()
-	if wgv == nil {
-		return &sync.WaitGroup{}
-	}
-
-	return wgv.(*sync.WaitGroup)
-}
-
-func releaseWaitGroup(wg *sync.WaitGroup) {
-	waitGroupPool.Put(wg)
-}
 
 var requestCtxPool = sync.Pool{}
 

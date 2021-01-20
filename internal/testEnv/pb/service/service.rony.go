@@ -521,7 +521,7 @@ func prepareSampleCommand(cmd *cobra.Command) (*SampleClient, error) {
 	}
 
 	httpC := edgec.NewHttp(edgec.HttpConfig{
-		Name:         "",
+		Name:         "Rony Client",
 		SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
 	})
 
