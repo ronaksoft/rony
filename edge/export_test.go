@@ -19,6 +19,7 @@ func (edge *Server) OnGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	edge.onGatewayMessage(conn, streamID, data)
 }
 
+// GatewayConns is exposed only for test packages
 func (edge *Server) GatewayConns() int {
 	g, _ := edge.gateway.(*tcpGateway.Gateway)
 	if g == nil {

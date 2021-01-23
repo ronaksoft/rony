@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	parse "github.com/ronaksoft/rony/internal/parser"
+	"github.com/ronaksoft/rony/tools"
 	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -37,26 +38,17 @@ type Model struct {
 	FieldsGo   map[string]string
 }
 
-func (m *Model) FuncArgs(pk PrimaryKey) string {
+func (m *Model) FuncArgs(pk PrimaryKey, onlyPKs bool) string {
 	sb := strings.Builder{}
-	for idx, k := range pk.Keys() {
-		if idx != 0 {
-			sb.WriteRune(',')
-		}
-		sb.WriteString(k)
-		sb.WriteRune(' ')
-		sb.WriteString(m.FieldsGo[k])
+	keys := pk.PKs
+	if !onlyPKs {
+		keys = pk.Keys()
 	}
-	return sb.String()
-}
-
-func (m *Model) FuncArgsPKs(pk PrimaryKey) string {
-	sb := strings.Builder{}
-	for idx, k := range pk.PKs {
+	for idx, k := range keys {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(k)
+		sb.WriteString(tools.ToLowerCamel(k))
 		sb.WriteRune(' ')
 		sb.WriteString(m.FieldsGo[k])
 	}
@@ -76,30 +68,30 @@ func (pk *PrimaryKey) Keys() []string {
 	return keys
 }
 
-func (pk *PrimaryKey) StringKeys(keyPrefix string) string {
+func (pk *PrimaryKey) String(keyPrefix string, onlyPKs bool, lowerCamel bool) string {
 	sb := strings.Builder{}
-	for idx, k := range pk.Keys() {
+	keys := pk.PKs
+	if !onlyPKs {
+		keys = pk.Keys()
+	}
+
+	for idx, k := range keys {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
 		sb.WriteString(keyPrefix)
-		sb.WriteString(k)
-	}
-	return sb.String()
-}
-
-func (pk *PrimaryKey) StringPKs() string {
-	sb := strings.Builder{}
-	for idx, k := range pk.PKs {
-		if idx != 0 {
-			sb.WriteRune(',')
+		if lowerCamel {
+			sb.WriteString(tools.ToLowerCamel(k))
+		} else {
+			sb.WriteString(k)
 		}
-		sb.WriteString(k)
+
 	}
 	return sb.String()
 }
 
-func (pk *PrimaryKey) Name(prefix string) string {
+
+func (pk *PrimaryKey) FuncName(prefix string) string {
 	sb := strings.Builder{}
 	sb.WriteString(prefix)
 	for idx, k := range pk.Keys() {

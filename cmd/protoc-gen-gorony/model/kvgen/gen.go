@@ -40,13 +40,19 @@ func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
 	g.P("b := alloc.GenValue(m)")
-	g.P("err := txn.Set(alloc.GenKey(C_", mm.Name, ",", mm.Table.StringKeys("m."), "), b)")
+	g.P("err := txn.Set(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("m.", false, false), "), b)")
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("err = txn.Set(alloc.GenKey(C_", mm.Name, ",", crc32.ChecksumIEEE(tools.StrToByte(pk.StringKeys("m."))), ",", pk.StringKeys("m."), "), b)")
+		g.P(
+			"err = txn.Set(alloc.GenKey(C_", mm.Name, ",",
+			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
+			",",
+			pk.String("m.", false, true),
+			"), b)",
+		)
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
@@ -58,11 +64,14 @@ func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P()
 }
 func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
-	g.P("func Read", mm.Name, "(m *", mm.Name, ") error {")
+	g.P("func Read", mm.Name, "(", mm.FuncArgs(mm.Table, false), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
-	g.P("return kv.View(func(txn *badger.Txn) error {")
-	g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",", mm.Table.StringKeys("m."), "))")
+	g.P("if m == nil {")
+	g.P("m = &", mm.Name, "{}")
+	g.P("}")
+	g.P("err := kv.View(func(txn *badger.Txn) error {")
+	g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
@@ -70,37 +79,52 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("return m.Unmarshal(val)")
 	g.P("})")
 	g.P("})")
+	g.P("return m, err")
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("func Read", mm.Name, pk.Name("By"), "(m *", mm.Name, ") error {")
+		g.P("func Read", mm.Name, pk.FuncName("By"), "(", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
 		g.P("alloc := kv.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
-		g.P("return kv.View(func(txn *badger.Txn) error {")
-		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",", crc32.ChecksumIEEE(tools.StrToByte(pk.StringKeys("m."))), ",", pk.StringKeys("m."), "))")
+		g.P("if m == nil {")
+		g.P("m = &", mm.Name, "{}")
+		g.P("}")
+		g.P("err := kv.View(func(txn *badger.Txn) error {")
+		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
+			crc32.ChecksumIEEE(tools.StrToByte(pk.String("", false, true))),
+			",",
+			pk.String("m.", false, true),
+			"))",
+		)
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
 		g.P("return item.Value(func (val []byte) error {")
 		g.P("return m.Unmarshal(val)")
+		g.P("})") // end of item.Value
 		g.P("})")
-		g.P("})")
+		g.P("return m, err")
 		g.P("}")
 		g.P()
 	}
 }
 func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
-	g.P("func Delete", mm.Name, "(m *", mm.Name, ") error {")
+	g.P("func Delete", mm.Name, "(", mm.FuncArgs(mm.Table, false), ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
-	g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.StringKeys("m."), "))")
+	g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",", crc32.ChecksumIEEE(tools.StrToByte(pk.StringKeys("m."))), ",", pk.StringKeys("m."), "))")
+		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",",
+			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, true))),
+			",",
+			pk.String("m.", false, true),
+			"))",
+		)
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
