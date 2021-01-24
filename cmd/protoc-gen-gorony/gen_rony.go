@@ -466,7 +466,7 @@ func genMethodGenerators(s *protogen.Service, g *protogen.GeneratedFile) {
 			case "uint32":
 				g.P("config.Uint32Flag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
 			case "bool":
-				g.P("config.BoolFlag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
+				g.P("config.BoolFlag(\"", tools.ToLowerCamel(fieldName), "\",false, \"\"),")
 			default:
 			}
 		}

@@ -50,7 +50,7 @@ func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
 			"err = txn.Set(alloc.GenKey(C_", mm.Name, ",",
 			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
 			",",
-			pk.String("m.", false, true),
+			pk.String("m.", false, false),
 			"), b)",
 		)
 		g.P("if err != nil {")
@@ -91,9 +91,9 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P("err := kv.View(func(txn *badger.Txn) error {")
 		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(pk.String("", false, true))),
+			crc32.ChecksumIEEE(tools.StrToByte(pk.String("", false, false))),
 			",",
-			pk.String("m.", false, true),
+			pk.String("m.", false, false),
 			"))",
 		)
 		g.P("if err != nil {")
@@ -113,16 +113,32 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
-	g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+	if len(mm.Views) > 0 {
+		g.P("m := &", mm.Name, "{}")
+		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ", ", mm.Table.String("", false, true), "))")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}")
+		g.P("err = item.Value(func(val []byte) error {")
+		g.P("return m.Unmarshal(val)")
+		g.P("})")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}")
+		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+	} else {
+		g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+	}
+
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
 		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, true))),
+			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
 			",",
-			pk.String("m.", false, true),
+			pk.String("m.", false, false),
 			"))",
 		)
 		g.P("if err != nil {")
