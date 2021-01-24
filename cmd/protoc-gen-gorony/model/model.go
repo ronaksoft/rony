@@ -55,6 +55,23 @@ func (m *Model) FuncArgs(pk PrimaryKey, onlyPKs bool) string {
 	return sb.String()
 }
 
+func (m *Model) FuncArgsWithPrefix(prefix string, pk PrimaryKey, onlyPKs bool) string {
+	sb := strings.Builder{}
+	keys := pk.PKs
+	if !onlyPKs {
+		keys = pk.Keys()
+	}
+	for idx, k := range keys {
+		if idx != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, k)))
+		sb.WriteRune(' ')
+		sb.WriteString(m.FieldsGo[k])
+	}
+	return sb.String()
+}
+
 type PrimaryKey struct {
 	PKs    []string
 	CKs    []string
@@ -89,7 +106,6 @@ func (pk *PrimaryKey) String(keyPrefix string, onlyPKs bool, lowerCamel bool) st
 	}
 	return sb.String()
 }
-
 
 func (pk *PrimaryKey) FuncName(prefix string) string {
 	sb := strings.Builder{}

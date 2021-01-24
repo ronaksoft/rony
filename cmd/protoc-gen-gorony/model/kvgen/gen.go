@@ -32,6 +32,7 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		funcSave(mm, g)
 		funcRead(mm, g)
 		funcDelete(mm, g)
+		funcList(mm, g)
 	}
 }
 func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
@@ -150,4 +151,41 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("})")
 	g.P("}")
 	g.P()
+}
+func funcList(mm *model.Model, g *protogen.GeneratedFile) {
+	g.P("func List", mm.Name, "(")
+	g.P(mm.FuncArgsWithPrefix("offset", mm.Table, true), ", offset int32, limit int32, cond func(m *", mm.Name, ") bool, ")
+	g.P(") ([]*", mm.Name, ", error) {")
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("res := make([]*", mm.Name, ", 0, limit)")
+	g.P("err := kv.View(func(txn *badger.Txn) error {")
+	g.P("opt := badger.DefaultIteratorOptions")
+	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ")")
+	g.P("osk := alloc.GenKey(C_", mm.Name, ",", mm.Table.String("offset", true, false), ")")
+	g.P("iter := txn.NewIterator(opt)")
+	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+	g.P("if offset--; offset >= 0 {")
+	g.P("continue")
+	g.P("}")
+	g.P("if limit--; limit < 0 {")
+	g.P("break")
+	g.P("}")
+	g.P("_ = iter.Item().Value(func (val []byte) error {")
+	g.P("m := &", mm.Name, "{}")
+	g.P("err := m.Unmarshal(val)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}") // end of if
+	g.P("if cond(m) {")
+	g.P("res = append(res, m)")
+	g.P("}") // end of if cond
+	g.P("return nil")
+	g.P("})") // end of iter.Value func
+	g.P("}") // end of for
+	g.P("return nil")
+	g.P("})")	// end of View
+	g.P("return res, err")
+	g.P("}") // end of func List
 }
