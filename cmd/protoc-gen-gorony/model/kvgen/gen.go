@@ -184,6 +184,7 @@ func funcList(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("return nil")
 	g.P("})") // end of iter.Value func
 	g.P("}") // end of for
+	g.P("iter.Close()")
 	g.P("return nil")
 	g.P("})")	// end of View
 	g.P("return res, err")

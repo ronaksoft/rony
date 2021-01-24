@@ -123,8 +123,6 @@ func Update(fn func(txn *badger.Txn) error) (err error) {
 	for retry := _ConflictRetry; retry > 0; retry-- {
 		err = _DB.Update(fn)
 		switch err {
-		case nil:
-			return nil
 		case badger.ErrConflict:
 		default:
 			return
@@ -140,8 +138,6 @@ func View(fn func(txn *badger.Txn) error) (err error) {
 	for retry := _ConflictRetry; retry > 0; retry-- {
 		err = _DB.View(fn)
 		switch err {
-		case nil:
-			return nil
 		case badger.ErrConflict:
 		default:
 			return
