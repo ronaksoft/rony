@@ -41,7 +41,12 @@ func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
 	g.P("b := alloc.GenValue(m)")
-	g.P("err := txn.Set(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("m.", false, false), "), b)")
+	g.P("err := txn.Set(alloc.GenKey(C_", mm.Name, ",",
+		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
+		",",
+		mm.Table.String("m.", false, false),
+		"), b)",
+	)
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
@@ -72,7 +77,12 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("m = &", mm.Name, "{}")
 	g.P("}")
 	g.P("err := kv.View(func(txn *badger.Txn) error {")
-	g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+	g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
+		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
+		",",
+		mm.Table.String("", false, true),
+		"))",
+	)
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
@@ -126,7 +136,12 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
-		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",",
+			crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
+			",",
+			mm.Table.String("", false, true),
+			"))",
+		)
 	} else {
 		g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
 	}
@@ -162,8 +177,13 @@ func funcList(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("res := make([]*", mm.Name, ", 0, limit)")
 	g.P("err := kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ")")
-	g.P("osk := alloc.GenKey(C_", mm.Name, ",", mm.Table.String("offset", true, false), ")")
+	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))), ")")
+	g.P("osk := alloc.GenKey(C_", mm.Name, ",",
+		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
+		",",
+		mm.Table.String("offset", true, false),
+		")",
+	)
 	g.P("iter := txn.NewIterator(opt)")
 	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 	g.P("if offset--; offset >= 0 {")
