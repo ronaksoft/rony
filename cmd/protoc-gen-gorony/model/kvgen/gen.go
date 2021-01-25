@@ -104,7 +104,7 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
 			crc32.ChecksumIEEE(tools.StrToByte(pk.String("", false, false))),
 			",",
-			pk.String("m.", false, false),
+			pk.String("", false, true),
 			"))",
 		)
 		g.P("if err != nil {")
