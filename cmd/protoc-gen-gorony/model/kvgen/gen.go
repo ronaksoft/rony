@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
 )
 
@@ -33,6 +34,7 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		funcRead(mm, g)
 		funcDelete(mm, g)
 		funcList(mm, g)
+		funcHasField(m, mm, g)
 	}
 }
 func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
@@ -245,4 +247,24 @@ func funcList(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("return res, err")
 	g.P("}") // end of func List
 	g.P()
+}
+func funcHasField(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+	for _, f := range m.Fields {
+		switch f.Desc.Cardinality() {
+		case protoreflect.Repeated:
+			if f.Desc.Kind() == protoreflect.MessageKind {
+				break
+			}
+			mtName := m.Desc.Name()
+			g.P("func (x *", mtName, ") Has", f.Desc.Name(),"(xx ",mm.FieldsGo[f.GoName], ") bool {")
+			g.P("for idx := range x.", f.Desc.Name(), "{")
+			g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+			g.P("return true")
+			g.P("}")	// end of if
+			g.P("}")	// end of for
+			g.P("return false")
+			g.P("}")	// end of func
+			g.P()
+		}
+	}
 }

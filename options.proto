@@ -20,3 +20,9 @@ extend google.protobuf.MessageOptions {
     optional string rony_table = 50002;
     optional string rony_view = 50003;
 }
+
+extend google.protobuf.FieldOptions {
+    optional string many_to_many = 50001;
+    optional string one_to_many = 50002;
+    optional string one_to_one = 50003;
+}
