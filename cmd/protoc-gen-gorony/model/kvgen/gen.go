@@ -1,10 +1,14 @@
 package kvgen
 
 import (
+	"fmt"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"hash/crc32"
 )
 
@@ -30,14 +34,15 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		funcSave(mm, g)
+		funcSave(m, mm, g)
 		funcRead(mm, g)
 		funcDelete(mm, g)
 		funcList(mm, g)
 		funcHasField(m, mm, g)
 	}
 }
-func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
+func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+	// SaveWithTxn func
 	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") error {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
@@ -68,10 +73,48 @@ func funcSave(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("}")
 		g.P()
 	}
+	for _, f := range mt.Fields {
+		ftName := string(f.Desc.Name())
+		opt, _ := f.Desc.Options().(*descriptorpb.MethodOptions)
+		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+		if index {
+			switch f.Desc.Kind() {
+			case protoreflect.MessageKind:
+				// TODO:: support index on message fields
+			default:
+				g.Annotate(string(f.Desc.FullName()), f.Location)
+				switch f.Desc.Cardinality() {
+				case protoreflect.Repeated:
+					g.P("for idx := range m.", ftName, "{")
+					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
+						fmt.Sprintf("%q", ftName), ", m.", ftName, "[idx],",
+						mm.Table.String("m.", false, false),
+						")",
+					)
+					g.P("if err != nil {")
+					g.P("return err")
+					g.P("}")
+					g.P("}") // end of for
+				default:
+					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
+						ftName, ", m.", ftName, ",",
+						mm.Table.String("m.", false, false),
+						")",
+					)
+					g.P("if err != nil {")
+					g.P("return err")
+					g.P("}")
+				}
+			}
+
+		}
+	}
 	g.P("return nil")
 	g.P()
 	g.P("}") // end of SaveWithTxn func
 	g.P()
+
+	// Save func
 	g.P("func Save", mm.Name, "(m *", mm.Name, ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -136,7 +179,7 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("return m.Unmarshal(val)")
 		g.P("})") // end of item.Value
 		g.P("return m, err")
-		g.P("}")  // end of Read func
+		g.P("}") // end of Read func
 		g.P()
 		g.P("func Read", mm.Name, pk.FuncName("By"), "(", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
 		g.P("alloc := kv.NewAllocator()")
@@ -256,14 +299,14 @@ func funcHasField(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFil
 				break
 			}
 			mtName := m.Desc.Name()
-			g.P("func (x *", mtName, ") Has", f.Desc.Name(),"(xx ",mm.FieldsGo[f.GoName], ") bool {")
+			g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
 			g.P("for idx := range x.", f.Desc.Name(), "{")
 			g.P("if x.", f.Desc.Name(), "[idx] == xx {")
 			g.P("return true")
-			g.P("}")	// end of if
-			g.P("}")	// end of for
+			g.P("}") // end of if
+			g.P("}") // end of for
 			g.P("return false")
-			g.P("}")	// end of func
+			g.P("}") // end of func
 			g.P()
 		}
 	}

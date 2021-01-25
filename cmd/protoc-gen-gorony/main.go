@@ -41,7 +41,6 @@ func main() {
 				continue
 			}
 
-
 			// reset the global model and fill with the new data
 			model.ResetModels()
 			for _, m := range f.Messages {

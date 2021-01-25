@@ -22,7 +22,5 @@ extend google.protobuf.MessageOptions {
 }
 
 extend google.protobuf.FieldOptions {
-    optional string many_to_many = 50001;
-    optional string one_to_many = 50002;
-    optional string one_to_one = 50003;
+    optional bool rony_index = 50001;
 }

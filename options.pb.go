@@ -82,6 +82,14 @@ var file_options_proto_extTypes = []protoimpl.ExtensionInfo{
 		Tag:           "bytes,50003,opt,name=rony_view",
 		Filename:      "options.proto",
 	},
+	{
+		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
+		ExtensionType: (*bool)(nil),
+		Field:         50001,
+		Name:          "rony_index",
+		Tag:           "varint,50001,opt,name=rony_index",
+		Filename:      "options.proto",
+	},
 }
 
 // Extension fields to descriptorpb.ServiceOptions.
@@ -112,6 +120,12 @@ var (
 	E_RonyTable = &file_options_proto_extTypes[5]
 	// optional string rony_view = 50003;
 	E_RonyView = &file_options_proto_extTypes[6]
+)
+
+// Extension fields to descriptorpb.FieldOptions.
+var (
+	// optional bool rony_index = 50001;
+	E_RonyIndex = &file_options_proto_extTypes[7]
 )
 
 var File_options_proto protoreflect.FileDescriptor
@@ -150,7 +164,11 @@ var file_options_proto_rawDesc = []byte{
 	0x0a, 0x09, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x76, 0x69, 0x65, 0x77, 0x12, 0x1f, 0x2e, 0x67, 0x6f,
 	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd3, 0x86, 0x03,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x6f, 0x6e, 0x79, 0x56, 0x69, 0x65, 0x77, 0x42, 0x1b,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x6f, 0x6e, 0x79, 0x56, 0x69, 0x65, 0x77, 0x3a, 0x3e,
+	0x0a, 0x0a, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x1d, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x46,
+	0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd1, 0x86, 0x03, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x09, 0x72, 0x6f, 0x6e, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x42, 0x1b,
 	0x5a, 0x19, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x6f, 0x6e,
 	0x61, 0x6b, 0x73, 0x6f, 0x66, 0x74, 0x2f, 0x72, 0x6f, 0x6e, 0x79,
 }
@@ -160,6 +178,7 @@ var file_options_proto_goTypes = []interface{}{
 	(*descriptorpb.FileOptions)(nil),    // 1: google.protobuf.FileOptions
 	(*descriptorpb.MethodOptions)(nil),  // 2: google.protobuf.MethodOptions
 	(*descriptorpb.MessageOptions)(nil), // 3: google.protobuf.MessageOptions
+	(*descriptorpb.FieldOptions)(nil),   // 4: google.protobuf.FieldOptions
 }
 var file_options_proto_depIdxs = []int32{
 	0, // 0: rony_cobra_cmd:extendee -> google.protobuf.ServiceOptions
@@ -169,10 +188,11 @@ var file_options_proto_depIdxs = []int32{
 	3, // 4: rony_model:extendee -> google.protobuf.MessageOptions
 	3, // 5: rony_table:extendee -> google.protobuf.MessageOptions
 	3, // 6: rony_view:extendee -> google.protobuf.MessageOptions
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	0, // [0:7] is the sub-list for extension extendee
+	4, // 7: rony_index:extendee -> google.protobuf.FieldOptions
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	0, // [0:8] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
 }
 
@@ -188,7 +208,7 @@ func file_options_proto_init() {
 			RawDescriptor: file_options_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   0,
-			NumExtensions: 7,
+			NumExtensions: 8,
 			NumServices:   0,
 		},
 		GoTypes:           file_options_proto_goTypes,

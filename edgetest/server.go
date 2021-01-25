@@ -44,16 +44,16 @@ func (s *Server) RealEdge() *edge.Server {
 	return s.edge
 }
 
-func (s *Server) SetPreHandlers(h ...edge.Handler) {
-	s.edge.SetPreHandlers(h...)
+func (s *Server) SetGlolablPreHandlers(h ...edge.Handler) {
+	s.edge.SetGlobalPreHandlers(h...)
 }
 
 func (s *Server) SetHandlers(constructor int64, h ...edge.Handler) {
 	s.edge.SetHandlers(constructor, true, h...)
 }
 
-func (s *Server) SetPostHandlers(h ...edge.Handler) {
-	s.edge.SetPostHandlers(h...)
+func (s *Server) SetGlobalPostHandlers(h ...edge.Handler) {
+	s.edge.SetGlobalPostHandlers(h...)
 }
 
 func (s *Server) Context() *context {
