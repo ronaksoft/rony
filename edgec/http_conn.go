@@ -46,6 +46,9 @@ func (c *httpConn) send(req, res *rony.MessageEnvelope, timeout time.Duration) (
 	httpReq.Header.SetMethod(http.MethodPost)
 	httpReq.SetHost(c.hostPorts[0])
 	httpReq.SetBody(b)
+	for k, v := range c.h.cfg.Header {
+		httpReq.Header.Set(k, v)
+	}
 
 	httpRes := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(httpRes)
