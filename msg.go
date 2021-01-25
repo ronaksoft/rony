@@ -88,5 +88,9 @@ func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *Messag
 }
 
 func (x *Error) Error() string {
-	return fmt.Sprintf("%s:%s", x.Code, x.Items)
+	if len(x.Template) > 0 {
+		return fmt.Sprintf("%s:%s (%s %s)", x.Code, x.Items, x.Template, x.Items)
+	} else {
+		return fmt.Sprintf("%s:%s", x.Code, x.Items)
+	}
 }
