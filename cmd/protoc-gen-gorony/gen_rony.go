@@ -405,7 +405,7 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 	serviceName := string(s.Desc.Name())
 	opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 	clientProto := proto.GetExtension(opt, rony.E_RonyCobraCmdProtocol).(string)
-	g.P("func prepare", serviceName, "Command(cmd *cobra.Command) (*", serviceName, "Client, error) {")
+	g.P("func prepare", serviceName, "Command(cmd *cobra.Command, header map[string]string) (*", serviceName, "Client, error) {")
 	g.P("// Bind the current flags to registered flags in config package")
 	g.P("err := config.BindCmdFlags(cmd)")
 	g.P("if err != nil {")
@@ -416,6 +416,7 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 	case "ws":
 		g.P("wsC := edgec.NewWebsocket(edgec.WebsocketConfig{")
 		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
+		g.P("Header: header,")
 		g.P("})")
 		g.P("err = wsC.Start()")
 		g.P("if err != nil {")
@@ -426,6 +427,7 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 		g.P("httpC := edgec.NewHttp(edgec.HttpConfig{")
 		g.P("Name: \"Rony Client\",")
 		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
+		g.P("Header: header,")
 		g.P("})")
 		g.P()
 		g.P("err = httpC.Start()")
@@ -440,11 +442,11 @@ func genMethodGenerators(s *protogen.Service, g *protogen.GeneratedFile) {
 	serviceName := string(s.Desc.Name())
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
-		g.P("var gen", methodName, "Cmd = func(h I", serviceName, "Cli) *cobra.Command {")
+		g.P("var gen", methodName, "Cmd = func(h I", serviceName, "Cli, header map[string]string) *cobra.Command {")
 		g.P("cmd := &cobra.Command {")
 		g.P("Use: \"", tools.ToKebab(methodName), "\",")
 		g.P("RunE: func(cmd *cobra.Command, args []string) error {")
-		g.P("cli, err := prepare", serviceName, "Command(cmd)")
+		g.P("cli, err := prepare", serviceName, "Command(cmd, header)")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}") // end if if clause
@@ -483,7 +485,7 @@ func genClientCliInterface(s *protogen.Service, g *protogen.GeneratedFile) {
 	}
 	g.P("}")
 	g.P()
-	g.P("func Register", s.Desc.Name(), "Cli (h I", s.Desc.Name(), "Cli, rootCmd *cobra.Command) {")
+	g.P("func Register", s.Desc.Name(), "Cli (h I", s.Desc.Name(), "Cli, header map[string]string, rootCmd *cobra.Command) {")
 	g.P("config.SetPersistentFlags(rootCmd, ")
 	g.P("config.StringFlag(\"host\", \"127.0.0.1\", \"the seed host's address\"),")
 	g.P("config.StringFlag(\"port\", \"80\", \"the seed host's port\"),")
@@ -492,7 +494,7 @@ func genClientCliInterface(s *protogen.Service, g *protogen.GeneratedFile) {
 	var names []string
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
-		names = append(names, fmt.Sprintf("gen%sCmd(h)", methodName))
+		names = append(names, fmt.Sprintf("gen%sCmd(h, header)", methodName))
 		if len(names) == 3 {
 			sb := strings.Builder{}
 			for _, name := range names {
