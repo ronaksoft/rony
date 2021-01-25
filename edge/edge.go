@@ -81,17 +81,17 @@ func (edge *Server) GetServerID() string {
 	return string(edge.serverID)
 }
 
-// SetPreHandlers set the handler which will be called before executing any request. These pre handlers are like middlewares
+// SetGlobalPreHandlers set the handler which will be called before executing any request. These pre handlers are like middlewares
 // which will be automatically triggered for each request. If you want to set pre handler for specific request the your must
 // use SetHandlers, PrependHandlers or AppendHandlers
-func (edge *Server) SetPreHandlers(handlers ...Handler) {
+func (edge *Server) SetGlobalPreHandlers(handlers ...Handler) {
 	edge.preHandlers = handlers
 }
 
-// SetPreHandlers set the handler which will be called after executing any request. These pre handlers are like middlewares
+// SetGlobalPostHandlers set the handler which will be called after executing any request. These pre handlers are like middlewares
 // which will be automatically triggered for each request. If you want to set post handler for specific request the your must
 // use SetHandlers, PrependHandlers or AppendHandlers
-func (edge *Server) SetPostHandlers(handlers ...Handler) {
+func (edge *Server) SetGlobalPostHandlers(handlers ...Handler) {
 	edge.postHandlers = handlers
 }
 
@@ -112,9 +112,26 @@ func (edge *Server) AppendHandlers(constructor int64, handlers ...Handler) {
 	edge.handlers[constructor] = append(edge.handlers[constructor], handlers...)
 }
 
+// BulkAppendHandlers appends the handlers for all the constructors. This method is useful when you
+// a fixed set of pre-handlers for many of your rpc.it appends the handlers for the constructor in order.
+// So handlers[n] will be called before handlers[n+1]
+func (edge *Server) BulkAppendHandlers(handlers []Handler, constructors ...int64) {
+	for _, c := range constructors {
+		edge.handlers[c] = append(edge.handlers[c], handlers...)
+	}
+}
+
 // PrependHandlers prepends the handlers for the constructor in order.
 func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
 	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
+}
+
+// BulkPrependHandlers prepends the handlers for all the constructors. This method is useful when you
+// a fixed set of post-handlers for many of your rpc.it appends the handlers for the constructor in order.
+func (edge *Server) BulkPrependHandlers(handlers []Handler, constructors ...int64) {
+	for _, c := range constructors {
+		edge.handlers[c] = append(handlers, edge.handlers[c]...)
+	}
 }
 
 // ClusterMembers returns a list of all the discovered nodes in the cluster
