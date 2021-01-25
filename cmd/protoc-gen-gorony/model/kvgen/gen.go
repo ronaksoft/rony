@@ -1,7 +1,7 @@
 package kvgen
 
 import (
-	"fmt"
+	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
 	"github.com/ronaksoft/rony/tools"
@@ -39,6 +39,7 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		funcDelete(mm, g)
 		funcList(mm, g)
 		funcHasField(m, mm, g)
+		funcListByIndex(m, mm, g)
 	}
 }
 func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
@@ -75,7 +76,7 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 	}
 	for _, f := range mt.Fields {
 		ftName := string(f.Desc.Name())
-		opt, _ := f.Desc.Options().(*descriptorpb.MethodOptions)
+		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
 		if index {
 			switch f.Desc.Kind() {
@@ -87,9 +88,9 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 				case protoreflect.Repeated:
 					g.P("for idx := range m.", ftName, "{")
 					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
-						fmt.Sprintf("%q", ftName), ", m.", ftName, "[idx],",
+						crc32.ChecksumIEEE([]byte(ftName)), ", m.", ftName, "[idx],",
 						mm.Table.String("m.", false, false),
-						")",
+						"), alloc.GenKey(", mm.Table.String("m.", false, false), "))",
 					)
 					g.P("if err != nil {")
 					g.P("return err")
@@ -97,16 +98,15 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 					g.P("}") // end of for
 				default:
 					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
-						ftName, ", m.", ftName, ",",
+						crc32.ChecksumIEEE([]byte(ftName)), ", m.", ftName, ",",
 						mm.Table.String("m.", false, false),
-						")",
+						")", "alloc.GenKey(", mm.Table.String("m.", false, false), "))",
 					)
 					g.P("if err != nil {")
 					g.P("return err")
 					g.P("}")
 				}
 			}
-
 		}
 	}
 	g.P("return nil")
@@ -308,6 +308,25 @@ func funcHasField(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFil
 			g.P("return false")
 			g.P("}") // end of func
 			g.P()
+		}
+	}
+}
+func funcListByIndex(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+	for _, f := range m.Fields {
+		ftName := string(f.Desc.Name())
+		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
+		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+		if index {
+			switch f.Desc.Kind() {
+			case protoreflect.MessageKind:
+				// TODO:: support index on message fields
+			default:
+				ftNameS := inflection.Singular(ftName)
+				g.P("func List", mm.Name, "By", ftNameS, "() ([]*", mm.Name, ", error) {")
+				g.P("return nil, nil")
+				g.P("}")
+				g.P()
+			}
 		}
 	}
 }

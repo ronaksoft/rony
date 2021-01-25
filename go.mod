@@ -21,6 +21,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/memberlist v0.2.2
 	github.com/hashicorp/raft v1.2.0
+	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.54
