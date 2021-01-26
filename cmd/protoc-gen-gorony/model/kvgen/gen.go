@@ -1,6 +1,7 @@
 package kvgen
 
 import (
+	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
@@ -28,6 +29,20 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 
 	genFuncs(file, g)
 }
+func genDbKey(mm *model.Model, pk model.Key, prefix string) string {
+	lowerCamel := prefix == ""
+	return fmt.Sprintf("C_%s, %d, %s",
+		mm.Name,
+		pk.Checksum(),
+		pk.String(prefix, ",", lowerCamel),
+	)
+}
+func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
+	lower := prefix == ""
+	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
+		mm.Name, crc32.ChecksumIEEE([]byte(fieldName)), prefix, fieldName, postfix, mm.Table.String(prefix, ",", lower),
+	)
+}
 func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
 		mm := model.GetModels()[string(m.Desc.Name())]
@@ -51,24 +66,15 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 	g.P("}") // end of if block
 	g.P()
 	g.P("b := alloc.GenValue(m)")
-	g.P("err := txn.Set(alloc.GenKey(C_", mm.Name, ",",
-		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
-		",",
-		mm.Table.String("m.", false, false),
-		"), b)",
-	)
+	g.P("key := alloc.GenKey(", genDbKey(mm, mm.Table, "m."), ")")
+	g.P("err := txn.Set(key, b)")
+
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
-		g.P(
-			"err = txn.Set(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
-			",",
-			pk.String("m.", false, false),
-			"), b)",
-		)
+		g.P("err = txn.Set(alloc.GenKey(", genDbKey(mm, pk, "m."), "), b)")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
@@ -87,21 +93,13 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 				switch f.Desc.Cardinality() {
 				case protoreflect.Repeated:
 					g.P("for idx := range m.", ftName, "{")
-					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
-						crc32.ChecksumIEEE([]byte(ftName)), ", m.", ftName, "[idx],",
-						mm.Table.String("m.", false, false),
-						"), alloc.GenKey(", mm.Table.String("m.", false, false), "))",
-					)
+					g.P("err = txn.Set(alloc.GenKey(", genDbIndexKey(mm, ftName, "m.", "[idx]"), "), key)")
 					g.P("if err != nil {")
 					g.P("return err")
 					g.P("}")
 					g.P("}") // end of for
 				default:
-					g.P("err = txn.Set(alloc.GenKey(\"IDX\", C_", mm.Name, ",",
-						crc32.ChecksumIEEE([]byte(ftName)), ", m.", ftName, ",",
-						mm.Table.String("m.", false, false),
-						")", "alloc.GenKey(", mm.Table.String("m.", false, false), "))",
-					)
+					g.P("err = txn.Set(alloc.GenKey(", genDbIndexKey(mm, ftName, "m.", ""), "), key)")
 					g.P("if err != nil {")
 					g.P("return err")
 					g.P("}")
@@ -131,12 +129,7 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
-	g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
-		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
-		",",
-		mm.Table.String("", false, true),
-		"))",
-	)
+	g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
 	g.P("if err != nil {")
 	g.P("return nil, err")
 	g.P("}")
@@ -149,29 +142,29 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("func Read", mm.Name, "(", mm.FuncArgs(mm.Table, false), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
+	g.P()
 	g.P("if m == nil {")
 	g.P("m = &", mm.Name, "{}")
 	g.P("}")
+	g.P()
 	g.P("err := kv.View(func(txn *badger.Txn) (err error) {")
-	g.P("m, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", false, true), ", m)")
+	g.P("m, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ", m)")
 	g.P("return err")
 	g.P("})") // end of View func
 	g.P("return m, err")
 	g.P("}") // end of Read func
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("func Read", mm.Name, pk.FuncName("By"), "WithTxn(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
+		g.P("func Read", mm.Name, "By", pk.String("", "And", false), "WithTxn(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *",
+			mm.Name,
+			", "+
+				"error) {")
 		g.P("if alloc == nil {")
 		g.P("alloc = kv.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("}") // end of if block
 		g.P()
-		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
-			",",
-			pk.String("", false, true),
-			"))",
-		)
+		g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, pk, ""), "))")
 		g.P("if err != nil {")
 		g.P("return nil, err")
 		g.P("}")
@@ -181,14 +174,14 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("return m, err")
 		g.P("}") // end of Read func
 		g.P()
-		g.P("func Read", mm.Name, pk.FuncName("By"), "(", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
+		g.P("func Read", mm.Name, "By", pk.String("", "And", false), "(", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
 		g.P("alloc := kv.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("if m == nil {")
 		g.P("m = &", mm.Name, "{}")
 		g.P("}")
 		g.P("err := kv.View(func(txn *badger.Txn) (err error) {")
-		g.P("m, err = Read", mm.Name, pk.FuncName("By"), "WithTxn (txn, alloc,", pk.String("", false, true), ", m)")
+		g.P("m, err = Read", mm.Name, "By", pk.String("", "And", false), "WithTxn (txn, alloc,", pk.String("", ",", true), ", m)")
 		g.P("return err")
 		g.P("})") // end of View func
 		g.P("return m, err")
@@ -200,10 +193,11 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("func Delete", mm.Name, "(", mm.FuncArgs(mm.Table, false), ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
+	g.P()
 	g.P("return kv.Update(func(txn *badger.Txn) error {")
 	if len(mm.Views) > 0 {
 		g.P("m := &", mm.Name, "{}")
-		g.P("item, err := txn.Get(alloc.GenKey(C_", mm.Name, ", ", mm.Table.String("", false, true), "))")
+		g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
@@ -213,14 +207,9 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
-		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
-			",",
-			mm.Table.String("", false, true),
-			"))",
-		)
+		g.P("err = txn.Delete(alloc.GenKey(", genDbKey(mm, mm.Table, "m."), "))")
 	} else {
-		g.P("err := txn.Delete(alloc.GenKey(C_", mm.Name, ",", mm.Table.String("", false, true), "))")
+		g.P("err := txn.Delete(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
 	}
 
 	g.P("if err != nil {")
@@ -228,12 +217,7 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("err = txn.Delete(alloc.GenKey(C_", mm.Name, ",",
-			crc32.ChecksumIEEE(tools.StrToByte(pk.String("m.", false, false))),
-			",",
-			pk.String("m.", false, false),
-			"))",
-		)
+		g.P("err = txn.Delete(alloc.GenKey(", genDbKey(mm, pk, "m."), "))")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}")
@@ -254,16 +238,8 @@ func funcList(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("res := make([]*", mm.Name, ", 0, limit)")
 	g.P("err := kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",",
-		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
-		")",
-	)
-	g.P("osk := alloc.GenKey(C_", mm.Name, ",",
-		crc32.ChecksumIEEE(tools.StrToByte(mm.Table.String("m.", false, false))),
-		",",
-		mm.Table.String("offset", true, false),
-		")",
-	)
+	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
+	g.P("osk := alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ",", mm.Table.StringPKs("offset", ",", false), ")")
 	g.P("iter := txn.NewIterator(opt)")
 	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 	g.P("if offset--; offset >= 0 {")
@@ -322,9 +298,46 @@ func funcListByIndex(m *protogen.Message, mm *model.Model, g *protogen.Generated
 				// TODO:: support index on message fields
 			default:
 				ftNameS := inflection.Singular(ftName)
-				g.P("func List", mm.Name, "By", ftNameS, "() ([]*", mm.Name, ", error) {")
-				g.P("return nil, nil")
+				g.P("func List", mm.Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", mm.FieldsGo[ftName], ",offset, limit int32) ([]*", mm.Name, ", error) {")
+				g.P("alloc := kv.NewAllocator()")
+				g.P("defer alloc.ReleaseAll()")
+				g.P()
+				g.P("res := make([]*", mm.Name, ", 0, limit)")
+				g.P("err := kv.View(func(txn *badger.Txn) error {")
+				g.P("opt := badger.DefaultIteratorOptions")
+				g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mm.Name, ",",
+					crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS),
+					")",
+				)
+				g.P("iter := txn.NewIterator(opt)")
+				g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+				g.P("if offset--; offset >= 0 {")
+				g.P("continue")
 				g.P("}")
+				g.P("if limit--; limit < 0 {")
+				g.P("break")
+				g.P("}")
+				g.P("_ = iter.Item().Value(func (val []byte) error {")
+				g.P("item, err := txn.Get(val)")
+				g.P("if err != nil {")
+				g.P("return err")
+				g.P("}") // end of if
+				g.P("return item.Value(func (val []byte) error {")
+				g.P("m := &", mm.Name, "{}")
+				g.P("err := m.Unmarshal(val)")
+				g.P("if err != nil {")
+				g.P("return err")
+				g.P("}") // end of if
+				g.P("res = append(res, m)")
+				g.P("return nil")
+				g.P("})") // end of item.Value
+				g.P("})") // end of iter.Value func
+				g.P("}")  // end of for
+				g.P("iter.Close()")
+				g.P("return nil")
+				g.P("})") // end of View
+				g.P("return res, err")
+				g.P("}") // end of func List
 				g.P()
 			}
 		}

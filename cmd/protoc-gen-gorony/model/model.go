@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"hash/crc32"
 	"strings"
 )
 
@@ -30,19 +31,19 @@ var loadedFields = map[string]struct{}{}
 type Model struct {
 	Type       string
 	Name       string
-	Table      PrimaryKey
-	Views      []PrimaryKey
+	Table      Key
+	Views      []Key
 	ViewParams []string
 	FieldNames []string
 	FieldsCql  map[string]string
 	FieldsGo   map[string]string
 }
 
-func (m *Model) FuncArgs(pk PrimaryKey, onlyPKs bool) string {
+func (m *Model) FuncArgs(key Key, onlyPKs bool) string {
 	sb := strings.Builder{}
-	keys := pk.PKs
+	keys := key.PKs
 	if !onlyPKs {
-		keys = pk.Keys()
+		keys = key.Keys()
 	}
 	for idx, k := range keys {
 		if idx != 0 {
@@ -55,7 +56,7 @@ func (m *Model) FuncArgs(pk PrimaryKey, onlyPKs bool) string {
 	return sb.String()
 }
 
-func (m *Model) FuncArgsWithPrefix(prefix string, pk PrimaryKey, onlyPKs bool) string {
+func (m *Model) FuncArgsWithPrefix(prefix string, pk Key, onlyPKs bool) string {
 	sb := strings.Builder{}
 	keys := pk.PKs
 	if !onlyPKs {
@@ -72,31 +73,26 @@ func (m *Model) FuncArgsWithPrefix(prefix string, pk PrimaryKey, onlyPKs bool) s
 	return sb.String()
 }
 
-type PrimaryKey struct {
+type Key struct {
 	PKs    []string
 	CKs    []string
 	Orders []string
 }
 
-func (pk *PrimaryKey) Keys() []string {
-	keys := make([]string, 0, len(pk.PKs)+len(pk.CKs))
-	keys = append(keys, pk.PKs...)
-	keys = append(keys, pk.CKs...)
+func (k *Key) Keys() []string {
+	keys := make([]string, 0, len(k.PKs)+len(k.CKs))
+	keys = append(keys, k.PKs...)
+	keys = append(keys, k.CKs...)
 	return keys
 }
 
-func (pk *PrimaryKey) String(keyPrefix string, onlyPKs bool, lowerCamel bool) string {
+func (k *Key) StringPKs(prefix string, sep string, lowerCamel bool) string {
 	sb := strings.Builder{}
-	keys := pk.PKs
-	if !onlyPKs {
-		keys = pk.Keys()
-	}
-
-	for idx, k := range keys {
+	for idx, k := range k.PKs {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(keyPrefix)
+		sb.WriteString(prefix)
 		if lowerCamel {
 			sb.WriteString(tools.ToLowerCamel(k))
 		} else {
@@ -107,16 +103,29 @@ func (pk *PrimaryKey) String(keyPrefix string, onlyPKs bool, lowerCamel bool) st
 	return sb.String()
 }
 
-func (pk *PrimaryKey) FuncName(prefix string) string {
+func (k *Key) ChecksumPKs(keyPrefix string, sep string, lowerCamel bool) uint32 {
+	return crc32.ChecksumIEEE(tools.StrToByte(k.StringPKs(keyPrefix, sep, lowerCamel)))
+}
+
+func (k *Key) String(prefix string, sep string, lowerCamel bool) string {
 	sb := strings.Builder{}
-	sb.WriteString(prefix)
-	for idx, k := range pk.Keys() {
+	for idx, k := range k.Keys() {
 		if idx != 0 {
-			sb.WriteString("And")
+			sb.WriteString(sep)
 		}
-		sb.WriteString(k)
+		sb.WriteString(prefix)
+		if lowerCamel {
+			sb.WriteString(tools.ToLowerCamel(k))
+		} else {
+			sb.WriteString(k)
+		}
+
 	}
 	return sb.String()
+}
+
+func (k *Key) Checksum() uint32 {
+	return crc32.ChecksumIEEE(tools.StrToByte(k.String("", ",", false)))
 }
 
 // ResetModels reset the internal data
@@ -158,7 +167,7 @@ func FillModel(m *protogen.Message) {
 			mm.Type = nn.Text
 			isModel = true
 		case parse.NodeTable:
-			pk := PrimaryKey{}
+			pk := Key{}
 			nn := n.(*parse.TableNode)
 			for _, k := range nn.PartitionKeys {
 				fields[k] = struct{}{}
@@ -172,7 +181,7 @@ func FillModel(m *protogen.Message) {
 			}
 			mm.Table = pk
 		case parse.NodeView:
-			pk := PrimaryKey{}
+			pk := Key{}
 			nn := n.(*parse.ViewNode)
 			sb := strings.Builder{}
 			for _, k := range nn.PartitionKeys {
