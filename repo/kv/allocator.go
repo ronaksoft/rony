@@ -2,9 +2,11 @@ package kv
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
+	"reflect"
 )
 
 /*
@@ -31,37 +33,46 @@ func (bk *Allocator) GenKey(v ...interface{}) []byte {
 	var buf [8]byte
 	idx := 0
 	for _, x := range v {
-		switch x := x.(type) {
-		case int:
-			binary.BigEndian.PutUint64(buf[:], uint64(x))
+		t := reflect.TypeOf(x)
+		switch t.Kind() {
+		case reflect.Int:
+			binary.BigEndian.PutUint64(buf[:], uint64(reflect.ValueOf(x).Int()))
 			b.Fill(buf[:], idx, idx+8)
 			idx += 8
-		case uint:
-			binary.BigEndian.PutUint64(buf[:], uint64(x))
+		case reflect.Uint:
+			binary.BigEndian.PutUint64(buf[:], reflect.ValueOf(x).Uint())
 			b.Fill(buf[:], idx, idx+8)
 			idx += 8
-		case int64:
-			binary.BigEndian.PutUint64(buf[:], uint64(x))
+		case reflect.Int64:
+			binary.BigEndian.PutUint64(buf[:], uint64(reflect.ValueOf(x).Int()))
 			b.Fill(buf[:], idx, idx+8)
 			idx += 8
-		case uint64:
-			binary.BigEndian.PutUint64(buf[:], x)
+		case reflect.Uint64:
+			binary.BigEndian.PutUint64(buf[:], reflect.ValueOf(x).Uint())
 			b.Fill(buf[:], idx, idx+8)
 			idx += 8
-		case int32:
-			binary.BigEndian.PutUint32(buf[:4], uint32(x))
+		case reflect.Int32:
+			binary.BigEndian.PutUint32(buf[:4], uint32(reflect.ValueOf(x).Int()))
 			b.Fill(buf[:4], idx, idx+4)
 			idx += 4
-		case uint32:
-			binary.BigEndian.PutUint32(buf[:4], x)
+		case reflect.Uint32:
+			binary.BigEndian.PutUint32(buf[:4], uint32(reflect.ValueOf(x).Uint()))
 			b.Fill(buf[:4], idx, idx+4)
 			idx += 4
-		case []byte:
-			b.Fill(x, idx, idx+len(x))
-			idx += len(x)
-		case string:
-			b.Fill(tools.StrToByte(x), idx, idx+len(x))
-			idx += len(x)
+		case reflect.Slice:
+			switch t.Elem().Kind() {
+			case reflect.Uint8:
+				xb := reflect.ValueOf(x).Bytes()
+				b.Fill(reflect.ValueOf(x).Bytes(), idx, idx+len(xb))
+				idx += len(xb)
+			default:
+				panic(fmt.Sprintf("unsupported slice type: %s", t.Elem().Kind().String()))
+			}
+
+		case reflect.String:
+			xb := tools.StrToByte(reflect.ValueOf(x).String())
+			b.Fill(xb, idx, idx+len(xb))
+			idx += len(xb)
 		default:
 			panic("unsupported type")
 		}
@@ -90,17 +101,26 @@ func (bk *Allocator) ReleaseAll() {
 func getSize(v ...interface{}) int {
 	s := 0
 	for _, x := range v {
-		switch x := x.(type) {
-		case int64, uint64, int, uint:
+		t := reflect.TypeOf(x)
+		switch t.Kind() {
+		case reflect.Int64, reflect.Uint64, reflect.Int, reflect.Uint:
 			s += 8
-		case int32, uint32:
+		case reflect.Int32, reflect.Uint32:
 			s += 4
-		case []byte:
-			s += len(x)
-		case string:
-			s += len(x)
+		case reflect.Slice:
+			switch t.Elem().Kind() {
+			case reflect.Uint8:
+				xb := reflect.ValueOf(x).Bytes()
+				s += len(xb)
+			default:
+				panic(fmt.Sprintf("unsupported slice type: %s", t.Elem().Kind().String()))
+			}
+
+		case reflect.String:
+			xb := tools.StrToByte(reflect.ValueOf(x).String())
+			s += len(xb)
 		default:
-			panic("unsupported type")
+			panic(fmt.Sprintf("unsupported type: %s", reflect.TypeOf(x).Kind()))
 		}
 	}
 	return s

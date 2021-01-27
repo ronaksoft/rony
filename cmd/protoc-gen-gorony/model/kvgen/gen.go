@@ -67,7 +67,6 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 	g.P("}") // end of if block
 	g.P()
 
-
 	var hasIndexedField bool
 	for _, f := range mt.Fields {
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
@@ -145,7 +144,6 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 		}
 		g.P("}")
 	}
-
 
 	g.P("b := alloc.GenValue(m)")
 	g.P("key := alloc.GenKey(", genDbKey(mm, mm.Table, "m."), ")")

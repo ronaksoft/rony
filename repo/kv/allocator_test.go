@@ -3,6 +3,7 @@ package kv
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
+	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
 	"testing"
 )
@@ -16,6 +17,30 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type Alias int32
+
+const (
+	Alias_A1 Alias = iota + 1
+	Alias_A2
+	Alias_A3
+)
+
+func TestNewAllocator(t *testing.T) {
+	Convey("Allocator", t, func(c C) {
+		alloc := NewAllocator()
+		b := alloc.GenKey(Alias_A2)
+		c.So(b, ShouldHaveLength, 4)
+		b = alloc.GenKey(Alias_A2, Alias_A1)
+		c.So(b, ShouldHaveLength, 8)
+		b = alloc.GenKey(Alias_A1, "TXT1")
+		c.So(b, ShouldHaveLength, 8)
+		b = alloc.GenKey(Alias_A1, 3232)
+		c.So(b, ShouldHaveLength, 12)
+		b = alloc.GenKey(Alias_A1, 3232, []byte("TXT1"))
+		c.So(b, ShouldHaveLength, 16)
+		alloc.ReleaseAll()
+	})
+}
 func BenchmarkBulkKey_GenKey(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {

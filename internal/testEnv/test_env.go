@@ -2,6 +2,8 @@ package testEnv
 
 import (
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/repo/kv"
+	"os"
 )
 
 /*
@@ -32,5 +34,15 @@ func Init() {
 		SentryLevel: log.WarnLevel,
 		Release:     "",
 		Environment: "",
+	})
+
+	_ = os.RemoveAll("./_hdd")
+	_ = os.MkdirAll("./_hdd", os.ModePerm)
+	kv.MustInit(kv.Config{
+		DirPath:             "./_hdd",
+		ConflictRetries:     0,
+		ConflictMaxInterval: 0,
+		BatchWorkers:        0,
+		BatchSize:           0,
 	})
 }
