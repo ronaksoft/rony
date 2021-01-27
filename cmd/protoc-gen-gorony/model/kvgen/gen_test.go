@@ -30,15 +30,15 @@ func TestGenerate(t *testing.T) {
 
 func save(c C) {
 	m1 := &model.Model1{
-		ID:       int32(tools.RandomInt64(1000)),
-		ShardKey: 100,
+		ID:       100,
+		ShardKey: 1000,
 		P1:       tools.RandomID(10),
 		P2:       []string{"1", "2", "3"},
 		P5:       tools.RandomUint64(0),
 		Enum:     model.Enum_Something,
 	}
 	m2 := &model.Model1{
-		ID:       int32(tools.RandomInt64(1000)),
+		ID:       100,
 		ShardKey: 1001,
 		P1:       tools.RandomID(10),
 		P2:       []string{"3", "4"},
@@ -46,8 +46,24 @@ func save(c C) {
 		Enum:     model.Enum_Something,
 	}
 	m3 := &model.Model1{
-		ID:       int32(tools.RandomInt64(1000)),
+		ID:       101,
 		ShardKey: 1001,
+		P1:       tools.RandomID(10),
+		P2:       []string{"3", "4", "5"},
+		P5:       tools.RandomUint64(0),
+		Enum:     model.Enum_Else,
+	}
+	m4 := &model.Model1{
+		ID:       100,
+		ShardKey: 1004,
+		P1:       tools.RandomID(10),
+		P2:       []string{"3", "4", "5"},
+		P5:       tools.RandomUint64(0),
+		Enum:     model.Enum_Else,
+	}
+	m5 := &model.Model1{
+		ID:       100,
+		ShardKey: 1005,
 		P1:       tools.RandomID(10),
 		P2:       []string{"3", "4", "5"},
 		P5:       tools.RandomUint64(0),
@@ -60,20 +76,23 @@ func save(c C) {
 	c.So(err, ShouldBeNil)
 	err = model.SaveModel1(m3)
 	c.So(err, ShouldBeNil)
+	err = model.SaveModel1(m4)
+	c.So(err, ShouldBeNil)
+	err = model.SaveModel1(m5)
+	c.So(err, ShouldBeNil)
 	res, err := model.ListModel1ByEnum(model.Enum_Else, kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
-	c.So(res, ShouldHaveLength, 1)
-	c.So(res[0].ID, ShouldEqual, m3.ID)
+	c.So(res, ShouldHaveLength, 3)
 
 	res, err = model.ListModel1ByP2("3", kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
-	c.So(res, ShouldHaveLength, 3)
+	c.So(res, ShouldHaveLength, 5)
 	res, err = model.ListModel1ByP2("4", kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
-	c.So(res, ShouldHaveLength, 2)
+	c.So(res, ShouldHaveLength, 4)
 	res, err = model.ListModel1ByP2("5", kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
-	c.So(res, ShouldHaveLength, 1)
+	c.So(res, ShouldHaveLength, 3)
 	res, err = model.ListModel1ByP2("6", kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 0)
@@ -89,4 +108,8 @@ func save(c C) {
 	m1p, err = model.ReadModel1ByEnumAndShardKeyAndID(m1.Enum, m1.ShardKey, m1.ID, nil)
 	c.So(err, ShouldNotBeNil)
 	c.So(m1p, ShouldBeNil)
+
+	res, err = model.ListModel1ByID(100, 0, kv.NewListOption())
+	c.So(err, ShouldBeNil)
+	c.So(res, ShouldHaveLength, 3)
 }

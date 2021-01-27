@@ -39,48 +39,39 @@ type Model struct {
 	FieldsGo   map[string]string
 }
 
-func (m *Model) FuncArgs(key Key, onlyPKs bool) string {
+func (m *Model) FuncArgs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
-	keys := key.PKs
-	if !onlyPKs {
-		keys = key.Keys()
-	}
-	for idx, k := range keys {
+	for idx, k := range key.Keys() {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(tools.ToLowerCamel(k))
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
 		sb.WriteRune(' ')
 		sb.WriteString(m.FieldsGo[k])
 	}
 	return sb.String()
 }
 
-func (m *Model) FuncArgsWithPrefix(prefix string, pk Key, onlyPKs bool) string {
+func (m *Model) FuncArgsPKs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
-	keys := pk.PKs
-	if !onlyPKs {
-		keys = pk.Keys()
-	}
-	for idx, k := range keys {
+	for idx, k := range key.PKs {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, k)))
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
 		sb.WriteRune(' ')
 		sb.WriteString(m.FieldsGo[k])
 	}
 	return sb.String()
 }
 
-func (m *Model) FuncArgsCKs(prefix string, pk Key) string {
+func (m *Model) FuncArgsCKs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
-
-	for idx, k := range pk.CKs {
+	for idx, k := range key.CKs {
 		if idx != 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, k)))
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
 		sb.WriteRune(' ')
 		sb.WriteString(m.FieldsGo[k])
 	}
@@ -103,6 +94,23 @@ func (k *Key) Keys() []string {
 func (k *Key) StringPKs(prefix string, sep string, lowerCamel bool) string {
 	sb := strings.Builder{}
 	for idx, k := range k.PKs {
+		if idx != 0 {
+			sb.WriteString(sep)
+		}
+		sb.WriteString(prefix)
+		if lowerCamel {
+			sb.WriteString(tools.ToLowerCamel(k))
+		} else {
+			sb.WriteString(k)
+		}
+
+	}
+	return sb.String()
+}
+
+func (k *Key) StringCKs(prefix string, sep string, lowerCamel bool) string {
+	sb := strings.Builder{}
+	for idx, k := range k.CKs {
 		if idx != 0 {
 			sb.WriteString(sep)
 		}

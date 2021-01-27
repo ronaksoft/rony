@@ -29,20 +29,28 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 
 	genFuncs(file, g)
 }
-func genDbKey(mm *model.Model, pk model.Key, prefix string) string {
-	lowerCamel := prefix == ""
+func genDbKey(mm *model.Model, pk model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("C_%s, %d, %s",
 		mm.Name,
 		pk.Checksum(),
-		pk.String(prefix, ",", lowerCamel),
+		pk.String(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbPrefix(mm *model.Model, pk model.Key, prefix string) string {
-	lowerCamel := prefix == ""
+func genDbPrefixPKs(mm *model.Model, key model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("C_%s, %d, %s",
 		mm.Name,
-		pk.Checksum(),
-		pk.StringPKs(prefix, ",", lowerCamel),
+		key.Checksum(),
+		key.StringPKs(keyPrefix, ",", lowerCamel),
+	)
+}
+func genDbPrefixCKs(mm *model.Model, key model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
+	return fmt.Sprintf("C_%s, %d, %s",
+		mm.Name,
+		key.Checksum(),
+		key.StringCKs(keyPrefix, ",", lowerCamel),
 	)
 }
 func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
@@ -216,7 +224,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 	g.P()
 }
 func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
-	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs(mm.Table, false), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
+	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -232,7 +240,7 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("return m, err")
 	g.P("}") // end of Read func
 	g.P()
-	g.P("func Read", mm.Name, "(", mm.FuncArgs(mm.Table, false), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
+	g.P("func Read", mm.Name, "(", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
@@ -248,7 +256,9 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}") // end of Read func
 	g.P()
 	for _, pk := range mm.Views {
-		g.P("func Read", mm.Name, "By", pk.String("", "And", false), "WithTxn(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *",
+		g.P(
+			"func Read", mm.Name, "By", pk.String("", "And", false),
+			"WithTxn(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *",
 			mm.Name,
 			", "+
 				"error) {")
@@ -267,7 +277,11 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P("return m, err")
 		g.P("}") // end of Read func
 		g.P()
-		g.P("func Read", mm.Name, "By", pk.String("", "And", false), "(", mm.FuncArgs(pk, false), ", m *", mm.Name, ") ( *", mm.Name, ", error) {")
+		g.P(
+			"func Read", mm.Name, "By",
+			pk.String("", "And", false),
+			"(", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *", mm.Name, ", error) {",
+		)
 		g.P("alloc := kv.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("if m == nil {")
@@ -283,7 +297,7 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 	}
 }
 func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
-	g.P("func Delete", mm.Name, "(", mm.FuncArgs(mm.Table, false), ") error {")
+	g.P("func Delete", mm.Name, "(", mm.FuncArgs("", mm.Table), ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
@@ -323,7 +337,7 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 }
 func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func List", mm.Name, "(")
-	g.P(mm.FuncArgsWithPrefix("offset", mm.Table, true), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
+	g.P(mm.FuncArgs("offset", mm.Table), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -333,7 +347,7 @@ func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("opt.Reverse = lo.Backward()")
-	g.P("osk := alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ",", mm.Table.StringPKs("offset", ",", false), ")")
+	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, "offset"), ")")
 	g.P("iter := txn.NewIterator(opt)")
 	g.P("offset := lo.Skip()")
 	g.P("limit := lo.Limit()")
@@ -367,8 +381,8 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *
 	g.P(
 		"func List", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
-		"(", mm.FuncArgs(mm.Table, true), ",",
-		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", "+"error) {",
+		"(", mm.FuncArgsPKs("", mm.Table), ",",
+		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
 	)
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -376,12 +390,13 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *
 	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
 	g.P("err := kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(", genDbPrefix(mm, mm.Table, ""), ")")
+	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 	g.P("opt.Reverse = lo.Backward()")
+	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
 	g.P("iter := txn.NewIterator(opt)")
 	g.P("offset := lo.Skip()")
 	g.P("limit := lo.Limit()")
-	g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 	g.P("if offset--; offset >= 0 {")
 	g.P("continue")
 	g.P("}")
@@ -389,11 +404,6 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *
 	g.P("break")
 	g.P("}")
 	g.P("_ = iter.Item().Value(func (val []byte) error {")
-	g.P("item, err := txn.Get(val)")
-	g.P("if err != nil {")
-	g.P("return err")
-	g.P("}") // end of if
-	g.P("return item.Value(func (val []byte) error {")
 	g.P("m := &", mm.Name, "{}")
 	g.P("err := m.Unmarshal(val)")
 	g.P("if err != nil {")
@@ -402,7 +412,6 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *
 	g.P("res = append(res, m)")
 	g.P("return nil")
 	g.P("})") // end of item.Value
-	g.P("})") // end of iter.Value func
 	g.P("}")  // end of for
 	g.P("iter.Close()")
 	g.P("return nil")

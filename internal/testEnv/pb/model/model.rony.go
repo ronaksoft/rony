@@ -294,7 +294,7 @@ func DeleteModel1(id int32, shardKey int32) error {
 }
 
 func ListModel1(
-	offsetID int32, lo *kv.ListOption, cond func(m *Model1) bool,
+	offsetID int32, offsetShardKey int32, lo *kv.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -474,10 +474,11 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption) ([]*Model
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model1, 4018441491, id)
 		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey(C_Model1, 4018441491, id, offsetShardKey)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -485,19 +486,13 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption) ([]*Model
 				break
 			}
 			_ = iter.Item().Value(func(val []byte) error {
-				item, err := txn.Get(val)
+				m := &Model1{}
+				err := m.Unmarshal(val)
 				if err != nil {
 					return err
 				}
-				return item.Value(func(val []byte) error {
-					m := &Model1{}
-					err := m.Unmarshal(val)
-					if err != nil {
-						return err
-					}
-					res = append(res, m)
-					return nil
-				})
+				res = append(res, m)
+				return nil
 			})
 		}
 		iter.Close()
@@ -653,7 +648,7 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 }
 
 func ListModel2(
-	offsetID int64, offsetShardKey int32, lo *kv.ListOption, cond func(m *Model2) bool,
+	offsetID int64, offsetShardKey int32, offsetP1 string, lo *kv.ListOption, cond func(m *Model2) bool,
 ) ([]*Model2, error) {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -751,10 +746,11 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model2, 1609271041, id, shardKey)
 		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey(C_Model2, 1609271041, id, shardKey, offsetP1)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -762,19 +758,13 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv
 				break
 			}
 			_ = iter.Item().Value(func(val []byte) error {
-				item, err := txn.Get(val)
+				m := &Model2{}
+				err := m.Unmarshal(val)
 				if err != nil {
 					return err
 				}
-				return item.Value(func(val []byte) error {
-					m := &Model2{}
-					err := m.Unmarshal(val)
-					if err != nil {
-						return err
-					}
-					res = append(res, m)
-					return nil
-				})
+				res = append(res, m)
+				return nil
 			})
 		}
 		iter.Close()
