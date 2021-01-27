@@ -112,4 +112,8 @@ func save(c C) {
 	res, err = model.ListModel1ByID(100, 0, kv.NewListOption())
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
+
+	res, err = model.ListModel1ByID(100, 0, kv.NewListOption().SetBackward())
+	c.So(err, ShouldBeNil)
+	c.So(res, ShouldHaveLength, 3)
 }
