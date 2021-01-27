@@ -72,13 +72,14 @@ func ZeroValue(f protoreflect.FieldDescriptor) string {
 
 }
 
-func GoKind(d protoreflect.FieldDescriptor) string {
+func GoKind(file *protogen.File, g *protogen.GeneratedFile, d protoreflect.FieldDescriptor) string {
+	pkg := PackageName(file, g, d.Message())
 	switch d.Kind() {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		return "int32"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 		return "uint32"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
 		return "int64"
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
 		return "uint64"
@@ -92,6 +93,12 @@ func GoKind(d protoreflect.FieldDescriptor) string {
 		return "[]byte"
 	case protoreflect.BoolKind:
 		return "bool"
+	case protoreflect.EnumKind:
+		if pkg == "" {
+			return string(d.Name())
+		} else {
+			return fmt.Sprintf("%s.%s", pkg, d.Name())
+		}
 	}
 	return "unsupported"
 }

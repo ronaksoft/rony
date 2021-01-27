@@ -367,8 +367,8 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 // GenCobraCmd
 func GenCobraCmd(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
 	genPrepareFunc(s, g)
-	genMethodGenerators(s, g)
-	genClientCliInterface(s, g)
+	genMethodGenerators(file, g, s)
+	genClientCliInterface(g, s)
 }
 func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 	serviceName := string(s.Desc.Name())
@@ -407,7 +407,7 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 	}
 	g.P("}")
 }
-func genMethodGenerators(s *protogen.Service, g *protogen.GeneratedFile) {
+func genMethodGenerators(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	serviceName := string(s.Desc.Name())
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
@@ -425,7 +425,7 @@ func genMethodGenerators(s *protogen.Service, g *protogen.GeneratedFile) {
 		g.P("config.SetFlags(cmd,")
 		for _, f := range m.Input.Fields {
 			fieldName := string(f.Desc.Name())
-			switch z.GoKind(f.Desc) {
+			switch z.GoKind(file, g, f.Desc) {
 			case "string", "[]byte":
 				g.P("config.StringFlag(\"", tools.ToLowerCamel(fieldName), "\",\"\", \"\"),")
 			case "int64":
@@ -447,7 +447,7 @@ func genMethodGenerators(s *protogen.Service, g *protogen.GeneratedFile) {
 		g.P()
 	}
 }
-func genClientCliInterface(s *protogen.Service, g *protogen.GeneratedFile) {
+func genClientCliInterface(g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("type I", s.Desc.Name(), "Cli interface {")
 	for _, m := range s.Methods {
 		g.P(m.Desc.Name(), "(cli *", s.Desc.Name(), "Client, cmd *cobra.Command, args []string) error")

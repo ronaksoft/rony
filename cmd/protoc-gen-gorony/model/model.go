@@ -134,7 +134,7 @@ func ResetModels() {
 }
 
 // FillModel fills the in global loadedModels with parsed data
-func FillModel(m *protogen.Message) {
+func FillModel(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Message) {
 	var (
 		isModel = false
 		mm      = Model{
@@ -206,7 +206,7 @@ func FillModel(m *protogen.Message) {
 	if isModel {
 		for _, f := range m.Fields {
 			mm.FieldsCql[f.GoName] = z.CqlKind(f.Desc)
-			mm.FieldsGo[f.GoName] = z.GoKind(f.Desc)
+			mm.FieldsGo[f.GoName] = z.GoKind(file, g, f.Desc)
 		}
 		mm.Name = string(m.Desc.Name())
 		loadedModels[mm.Name] = &mm

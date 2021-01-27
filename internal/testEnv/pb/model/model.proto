@@ -5,15 +5,23 @@ option go_package = ".;model";
 option (rony_storage) = "local";
 
 
+enum Enum {
+    None = 0;
+    Something = 1;
+    Else = 2;
+}
+
 message Hook {
     option (rony_model) = true;
     option (rony_table) = "(ClientID, ID)";
+    option (rony_view) = "(Enum, ClientID, ID)";
     string ClientID = 1;
     string ID = 2;
     string Timestamp = 3; // UTC unix epoch time
     string HookUrl = 4;
     bool Fired = 5;
     bool Success = 6;
+    Enum Enum = 7 [(rony_index) = true];
 }
 
 
@@ -34,7 +42,7 @@ message Model2 {
     option (rony_view) = "(P1, ShardKey, ID)";
     int64 ID = 1;
     int32 ShardKey = 2;
-    string P1 = 3;
+    string P1 = 3 [(rony_index) = true];
     repeated string P2 = 4;
     uint64 P5 = 5;
 }
