@@ -57,10 +57,12 @@ func save(c C) {
 	c.So(err, ShouldBeNil)
 	err = model.SaveModel1(m2)
 	c.So(err, ShouldBeNil)
+	err = model.SaveModel1(m3)
+	c.So(err, ShouldBeNil)
 	res, err := model.ListModel1ByEnum(model.Enum_Else, 0, 10)
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 1)
-	c.So(res[0].ID, ShouldResemble, m3)
+	c.So(res[0].ID, ShouldEqual, m3.ID)
 
 	res, err = model.ListModel1ByP2("3", 0, 10)
 	c.So(err, ShouldBeNil)
