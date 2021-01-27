@@ -37,6 +37,14 @@ func genDbKey(mm *model.Model, pk model.Key, prefix string) string {
 		pk.String(prefix, ",", lowerCamel),
 	)
 }
+func genDbPrefix(mm *model.Model, pk model.Key, prefix string) string {
+	lowerCamel := prefix == ""
+	return fmt.Sprintf("C_%s, %d, %s",
+		mm.Name,
+		pk.Checksum(),
+		pk.StringPKs(prefix, ",", lowerCamel),
+	)
+}
 func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
 	lower := prefix == ""
 	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
@@ -55,6 +63,9 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		funcList(g, mm)
 		funcHasField(g, m, mm)
 		funcListByIndex(g, m, mm)
+		if len(mm.Table.CKs) > 0 {
+			funcListByPartitionKey(g, m, mm)
+		}
 	}
 }
 func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
@@ -312,17 +323,20 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 }
 func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func List", mm.Name, "(")
-	g.P(mm.FuncArgsWithPrefix("offset", mm.Table, true), ", offset int32, limit int32, cond func(m *", mm.Name, ") bool, ")
+	g.P(mm.FuncArgsWithPrefix("offset", mm.Table, true), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
-	g.P("res := make([]*", mm.Name, ", 0, limit)")
+	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
 	g.P("err := kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
+	g.P("opt.Reverse = lo.Backward()")
 	g.P("osk := alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ",", mm.Table.StringPKs("offset", ",", false), ")")
 	g.P("iter := txn.NewIterator(opt)")
+	g.P("offset := lo.Skip()")
+	g.P("limit := lo.Limit()")
 	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 	g.P("if offset--; offset >= 0 {")
 	g.P("continue")
@@ -349,25 +363,53 @@ func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
-	for _, f := range m.Fields {
-		switch f.Desc.Cardinality() {
-		case protoreflect.Repeated:
-			if f.Desc.Kind() == protoreflect.MessageKind {
-				break
-			}
-			mtName := m.Desc.Name()
-			g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
-			g.P("for idx := range x.", f.Desc.Name(), "{")
-			g.P("if x.", f.Desc.Name(), "[idx] == xx {")
-			g.P("return true")
-			g.P("}") // end of if
-			g.P("}") // end of for
-			g.P("return false")
-			g.P("}") // end of func
-			g.P()
-		}
-	}
+func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
+	g.P(
+		"func List", mm.Name, "By",
+		mm.Table.StringPKs("", "And", false),
+		"(", mm.FuncArgs(mm.Table, true), ",",
+		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", "+"error) {",
+	)
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
+	g.P("err := kv.View(func(txn *badger.Txn) error {")
+	g.P("opt := badger.DefaultIteratorOptions")
+	g.P("opt.Prefix = alloc.GenKey(", genDbPrefix(mm, mm.Table, ""), ")")
+	g.P("opt.Reverse = lo.Backward()")
+	g.P("iter := txn.NewIterator(opt)")
+	g.P("offset := lo.Skip()")
+	g.P("limit := lo.Limit()")
+	g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+	g.P("if offset--; offset >= 0 {")
+	g.P("continue")
+	g.P("}")
+	g.P("if limit--; limit < 0 {")
+	g.P("break")
+	g.P("}")
+	g.P("_ = iter.Item().Value(func (val []byte) error {")
+	g.P("item, err := txn.Get(val)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}") // end of if
+	g.P("return item.Value(func (val []byte) error {")
+	g.P("m := &", mm.Name, "{}")
+	g.P("err := m.Unmarshal(val)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}") // end of if
+	g.P("res = append(res, m)")
+	g.P("return nil")
+	g.P("})") // end of item.Value
+	g.P("})") // end of iter.Value func
+	g.P("}")  // end of for
+	g.P("iter.Close()")
+	g.P("return nil")
+	g.P("})") // end of View
+	g.P("return res, err")
+	g.P("}") // end of func List
+	g.P()
 }
 func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
 	for _, f := range m.Fields {
@@ -380,18 +422,19 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.M
 				// TODO:: support index on message fields
 			default:
 				ftNameS := inflection.Singular(ftName)
-				g.P("func List", mm.Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", mm.FieldsGo[ftName], ",offset, limit int32) ([]*", mm.Name, ", error) {")
+				g.P("func List", mm.Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", mm.FieldsGo[ftName], ", lo *kv.ListOption) ([]*", mm.Name, ", "+
+					"error) {")
 				g.P("alloc := kv.NewAllocator()")
 				g.P("defer alloc.ReleaseAll()")
 				g.P()
-				g.P("res := make([]*", mm.Name, ", 0, limit)")
+				g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
 				g.P("err := kv.View(func(txn *badger.Txn) error {")
 				g.P("opt := badger.DefaultIteratorOptions")
-				g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mm.Name, ",",
-					crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS),
-					")",
-				)
+				g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mm.Name, ",", crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS), ")")
+				g.P("opt.Reverse = lo.Backward()")
 				g.P("iter := txn.NewIterator(opt)")
+				g.P("offset := lo.Skip()")
+				g.P("limit := lo.Limit()")
 				g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 				g.P("if offset--; offset >= 0 {")
 				g.P("continue")
@@ -422,6 +465,26 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.M
 				g.P("}") // end of func List
 				g.P()
 			}
+		}
+	}
+}
+func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
+	for _, f := range m.Fields {
+		switch f.Desc.Cardinality() {
+		case protoreflect.Repeated:
+			if f.Desc.Kind() == protoreflect.MessageKind {
+				break
+			}
+			mtName := m.Desc.Name()
+			g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
+			g.P("for idx := range x.", f.Desc.Name(), "{")
+			g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+			g.P("return true")
+			g.P("}") // end of if
+			g.P("}") // end of for
+			g.P("return false")
+			g.P("}") // end of func
+			g.P()
 		}
 	}
 }
