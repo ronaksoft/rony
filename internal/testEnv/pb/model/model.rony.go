@@ -114,6 +114,7 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 		defer alloc.ReleaseAll()
 	}
 
+	// Try to read old value
 	om := &Model1{}
 	om, err = ReadModel1WithTxn(txn, alloc, m.ID, m.ShardKey, om)
 	if err != nil && err != badger.ErrKeyNotFound {
@@ -121,6 +122,7 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 	}
 
 	if om != nil {
+		// update field index by deleting old values
 		if om.P1 != m.P1 {
 			err = txn.Delete(alloc.GenKey("IDX", C_Model1, 2864467857, om.P1, om.ID, om.ShardKey))
 			if err != nil {
@@ -128,6 +130,7 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 			}
 		}
 
+		// update field index by deleting old values
 		for i := 0; i < len(om.P2); i++ {
 			found := false
 			for j := 0; j < len(m.P2); j++ {
@@ -144,6 +147,7 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 			}
 		}
 
+		// update field index by deleting old values
 		if om.Enum != m.Enum {
 			err = txn.Delete(alloc.GenKey("IDX", C_Model1, 2928410991, om.Enum, om.ID, om.ShardKey))
 			if err != nil {
@@ -152,6 +156,8 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 		}
 
 	}
+
+	// save entry
 	b := alloc.GenValue(m)
 	key := alloc.GenKey(C_Model1, 4018441491, m.ID, m.ShardKey)
 	err = txn.Set(key, b)
@@ -159,25 +165,32 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 		return
 	}
 
+	// save entry for view[Enum ShardKey ID]
 	err = txn.Set(alloc.GenKey(C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID), b)
 	if err != nil {
 		return
 	}
 
+	// update field index by saving new values
 	err = txn.Set(alloc.GenKey("IDX", C_Model1, 2864467857, m.P1, m.ID, m.ShardKey), key)
 	if err != nil {
 		return
 	}
+
+	// update field index by saving new values
 	for idx := range m.P2 {
 		err = txn.Set(alloc.GenKey("IDX", C_Model1, 867507755, m.P2[idx], m.ID, m.ShardKey), key)
 		if err != nil {
 			return
 		}
 	}
+
+	// update field index by saving new values
 	err = txn.Set(alloc.GenKey("IDX", C_Model1, 2928410991, m.Enum, m.ID, m.ShardKey), key)
 	if err != nil {
 		return
 	}
+
 	return
 
 }
@@ -446,6 +459,7 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 		defer alloc.ReleaseAll()
 	}
 
+	// Try to read old value
 	om := &Model2{}
 	om, err = ReadModel2WithTxn(txn, alloc, m.ID, m.ShardKey, m.P1, om)
 	if err != nil && err != badger.ErrKeyNotFound {
@@ -453,6 +467,7 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 	}
 
 	if om != nil {
+		// update field index by deleting old values
 		if om.P1 != m.P1 {
 			err = txn.Delete(alloc.GenKey("IDX", C_Model2, 2864467857, om.P1, om.ID, om.ShardKey, om.P1))
 			if err != nil {
@@ -461,6 +476,8 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 		}
 
 	}
+
+	// save entry
 	b := alloc.GenValue(m)
 	key := alloc.GenKey(C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	err = txn.Set(key, b)
@@ -468,15 +485,18 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 		return
 	}
 
+	// save entry for view[P1 ShardKey ID]
 	err = txn.Set(alloc.GenKey(C_Model2, 2344331025, m.P1, m.ShardKey, m.ID), b)
 	if err != nil {
 		return
 	}
 
+	// update field index by saving new values
 	err = txn.Set(alloc.GenKey("IDX", C_Model2, 2864467857, m.P1, m.ID, m.ShardKey, m.P1), key)
 	if err != nil {
 		return
 	}
+
 	return
 
 }

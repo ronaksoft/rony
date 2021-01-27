@@ -59,7 +59,6 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 }
 func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
 	// SaveWithTxn func
-	g.Annotate(mm.Name, mt.Location)
 	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
@@ -77,6 +76,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 	}
 
 	if hasIndexedField {
+		g.P("// Try to read old value")
 		g.P("om := &", mm.Name, "{}")
 		g.P("om, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("m.", ",", false), ", om)")
 		g.P("if err != nil && err != badger.ErrKeyNotFound {")
@@ -89,6 +89,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 			opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 			index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
 			if index {
+				g.P("// update field index by deleting old values")
 				switch f.Desc.Cardinality() {
 				case protoreflect.Repeated:
 					g.P("for i := 0; i < len(om.", ftName, "); i++ {")
@@ -135,16 +136,16 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 						g.P("return")
 						g.P("}")
 						g.P("}")
-
 					}
 				}
-				g.P("")
+				g.P()
 			}
-
 		}
 		g.P("}")
+		g.P()
 	}
 
+	g.P("// save entry")
 	g.P("b := alloc.GenValue(m)")
 	g.P("key := alloc.GenKey(", genDbKey(mm, mm.Table, "m."), ")")
 	g.P("err = txn.Set(key, b)")
@@ -153,6 +154,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 	g.P("}")
 	g.P()
 	for idx := range mm.Views {
+		g.P("// save entry for view", mm.Views[idx].Keys())
 		g.P("err = txn.Set(alloc.GenKey(", genDbKey(mm, mm.Views[idx], "m."), "), b)")
 		g.P("if err != nil {")
 		g.P("return")
@@ -164,6 +166,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
 		if index {
+			g.P("// update field index by saving new values")
 			switch f.Desc.Kind() {
 			case protoreflect.MessageKind:
 				// TODO:: support index on message fields
@@ -183,6 +186,7 @@ func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Messa
 					g.P("}")
 				}
 			}
+			g.P()
 		}
 	}
 	g.P("return")

@@ -76,4 +76,16 @@ func save(c C) {
 	res, err = model.ListModel1ByP2("6", 0, 10)
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 0)
+
+	m1p, err := model.ReadModel1ByEnumAndShardKeyAndID(m1.Enum, m1.ShardKey, m1.ID, nil)
+	c.So(err, ShouldBeNil)
+	c.So(m1p.P1, ShouldEqual, m1.P1)
+	c.So(m1p.P2, ShouldResemble, m1.P2)
+
+	err = model.DeleteModel1(m1.ID, m1.ShardKey)
+	c.So(err, ShouldBeNil)
+
+	m1p, err = model.ReadModel1ByEnumAndShardKeyAndID(m1.Enum, m1.ShardKey, m1.ID, nil)
+	c.So(err, ShouldNotBeNil)
+	c.So(m1p, ShouldBeNil)
 }
