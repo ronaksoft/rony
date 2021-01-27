@@ -49,34 +49,115 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		funcSave(m, mm, g)
-		funcRead(mm, g)
-		funcDelete(mm, g)
-		funcList(mm, g)
-		funcHasField(m, mm, g)
-		funcListByIndex(m, mm, g)
+		funcSave(file, g, m, mm)
+		funcRead(g, mm)
+		funcDelete(g, mm)
+		funcList(g, mm)
+		funcHasField(g, m, mm)
+		funcListByIndex(g, m, mm)
 	}
 }
-func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
 	// SaveWithTxn func
-	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") error {")
+	g.Annotate(mm.Name, mt.Location)
+	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
+
+
+	var hasIndexedField bool
+	for _, f := range mt.Fields {
+		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
+		hasIndexedField = proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+		if hasIndexedField {
+			break
+		}
+	}
+
+	if hasIndexedField {
+		g.P("om := &", mm.Name, "{}")
+		g.P("om, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("m.", ",", false), ", om)")
+		g.P("if err != nil && err != badger.ErrKeyNotFound {")
+		g.P("return")
+		g.P("}")
+		g.P()
+		g.P("if om != nil {")
+		for _, f := range mt.Fields {
+			ftName := string(f.Desc.Name())
+			opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
+			index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+			if index {
+				switch f.Desc.Cardinality() {
+				case protoreflect.Repeated:
+					g.P("for i := 0; i < len(om.", ftName, "); i++ {")
+					g.P("found := false")
+					g.P("for j := 0; j < len(m.", ftName, "); j++ {")
+					switch f.Desc.Kind() {
+					case protoreflect.MessageKind:
+						panic("rony_index on MessageKind field is not valid")
+					case protoreflect.BytesKind:
+						g.Import("bytes")
+						g.P("if bytes.Equal(om.", ftName, "[i], m.", ftName, "[j])) {")
+						g.P("found = true")
+						g.P("break")
+						g.P("}")
+					default:
+						g.P("if om.", ftName, "[i] == m.", ftName, "[j] {")
+						g.P("found = true")
+						g.P("break")
+						g.P("}")
+					}
+					g.P("}") // end of for (j)
+					g.P("if !found {")
+					g.P("err = txn.Delete(alloc.GenKey(", genDbIndexKey(mm, ftName, "om.", "[i]"), "))")
+					g.P("if err != nil {")
+					g.P("return")
+					g.P("}")
+					g.P("}")
+					g.P("}") // end of for (i)
+				default:
+					switch f.Desc.Kind() {
+					case protoreflect.MessageKind:
+						panic("rony_index on MessageKind field is not valid")
+					case protoreflect.BytesKind:
+						g.P("if !bytes.Equal(om.", ftName, ", m.", ftName, "){")
+						g.P("err = txn.Delete(alloc.GenKey(", genDbIndexKey(mm, ftName, "om.", ""), "))")
+						g.P("if err != nil {")
+						g.P("return")
+						g.P("}")
+						g.P("}")
+					default:
+						g.P("if om.", ftName, " != m.", ftName, "{")
+						g.P("err = txn.Delete(alloc.GenKey(", genDbIndexKey(mm, ftName, "om.", ""), "))")
+						g.P("if err != nil {")
+						g.P("return")
+						g.P("}")
+						g.P("}")
+
+					}
+				}
+				g.P("")
+			}
+
+		}
+		g.P("}")
+	}
+
+
 	g.P("b := alloc.GenValue(m)")
 	g.P("key := alloc.GenKey(", genDbKey(mm, mm.Table, "m."), ")")
-	g.P("err := txn.Set(key, b)")
-
+	g.P("err = txn.Set(key, b)")
 	g.P("if err != nil {")
-	g.P("return err")
+	g.P("return")
 	g.P("}")
 	g.P()
-	for _, pk := range mm.Views {
-		g.P("err = txn.Set(alloc.GenKey(", genDbKey(mm, pk, "m."), "), b)")
+	for idx := range mm.Views {
+		g.P("err = txn.Set(alloc.GenKey(", genDbKey(mm, mm.Views[idx], "m."), "), b)")
 		g.P("if err != nil {")
-		g.P("return err")
+		g.P("return")
 		g.P("}")
 		g.P()
 	}
@@ -89,25 +170,24 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 			case protoreflect.MessageKind:
 				// TODO:: support index on message fields
 			default:
-				g.Annotate(string(f.Desc.FullName()), f.Location)
 				switch f.Desc.Cardinality() {
 				case protoreflect.Repeated:
 					g.P("for idx := range m.", ftName, "{")
 					g.P("err = txn.Set(alloc.GenKey(", genDbIndexKey(mm, ftName, "m.", "[idx]"), "), key)")
 					g.P("if err != nil {")
-					g.P("return err")
+					g.P("return")
 					g.P("}")
 					g.P("}") // end of for
 				default:
 					g.P("err = txn.Set(alloc.GenKey(", genDbIndexKey(mm, ftName, "m.", ""), "), key)")
 					g.P("if err != nil {")
-					g.P("return err")
+					g.P("return")
 					g.P("}")
 				}
 			}
 		}
 	}
-	g.P("return nil")
+	g.P("return")
 	g.P()
 	g.P("}") // end of SaveWithTxn func
 	g.P()
@@ -122,7 +202,7 @@ func funcSave(mt *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) 
 	g.P("}")  // end of Save func
 	g.P()
 }
-func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
+func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs(mm.Table, false), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
@@ -189,7 +269,7 @@ func funcRead(mm *model.Model, g *protogen.GeneratedFile) {
 		g.P()
 	}
 }
-func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
+func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func Delete", mm.Name, "(", mm.FuncArgs(mm.Table, false), ") error {")
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -228,7 +308,7 @@ func funcDelete(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 }
-func funcList(mm *model.Model, g *protogen.GeneratedFile) {
+func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func List", mm.Name, "(")
 	g.P(mm.FuncArgsWithPrefix("offset", mm.Table, true), ", offset int32, limit int32, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
@@ -267,7 +347,7 @@ func funcList(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcHasField(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
 	for _, f := range m.Fields {
 		switch f.Desc.Cardinality() {
 		case protoreflect.Repeated:
@@ -287,7 +367,7 @@ func funcHasField(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFil
 		}
 	}
 }
-func funcListByIndex(m *protogen.Message, mm *model.Model, g *protogen.GeneratedFile) {
+func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
 	for _, f := range m.Fields {
 		ftName := string(f.Desc.Name())
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
