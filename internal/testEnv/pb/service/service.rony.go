@@ -299,18 +299,18 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server) {
-	e.SetHandlers(C_Echo, false, sw.echoWrapper)
-	e.SetHandlers(C_EchoLeaderOnly, true, sw.echoLeaderOnlyWrapper)
-	e.SetHandlers(C_EchoTunnel, true, sw.echoTunnelWrapper)
-	e.SetHandlers(C_EchoDelay, true, sw.echoDelayWrapper)
+func (sw *sampleWrapper) Register(e *edge.Server, ho *edge.HandlerOptions) {
+	e.SetHandlers(C_Echo, false, ho.ApplyTo(sw.echoWrapper)...)
+	e.SetHandlers(C_EchoLeaderOnly, true, ho.ApplyTo(sw.echoLeaderOnlyWrapper)...)
+	e.SetHandlers(C_EchoTunnel, true, ho.ApplyTo(sw.echoTunnelWrapper)...)
+	e.SetHandlers(C_EchoDelay, true, ho.ApplyTo(sw.echoDelayWrapper)...)
 }
 
-func RegisterSample(h ISample, e *edge.Server) {
+func RegisterSample(h ISample, e *edge.Server, ho *edge.HandlerOptions) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e)
+	w.Register(e, ho)
 }
 
 func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

@@ -248,7 +248,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		g.P("}") // end of func block
 		g.P()
 	}
-	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server) {")
+	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server, ho *edge.HandlerOptions) {")
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
 		leaderOnlyText := "true"
@@ -257,17 +257,18 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
-		g.P("e.SetHandlers(C_", methodName, ", ", leaderOnlyText, ", sw.", tools.ToLowerCamel(methodName), "Wrapper)")
+		g.P("e.SetHandlers(C_", methodName, ", ", leaderOnlyText, ", ho.ApplyTo(sw.", tools.ToLowerCamel(methodName), "Wrapper)...)")
 	}
 	g.P("}")
 	g.P()
-	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server) {")
+	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server, ho *edge.HandlerOptions) {")
 	g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
 	g.P("h: h,")
 	g.P("}")
-	g.P("w.Register(e)")
+	g.P("w.Register(e, ho)")
 	g.P("}")
 	g.P()
+
 }
 func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("type ", s.Desc.Name(), "Client struct {")

@@ -263,33 +263,37 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	return m, err
 }
 
+func DeleteModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey int32) error {
+	m := &Model1{}
+	item, err := txn.Get(alloc.GenKey(C_Model1, 4018441491, id, shardKey))
+	if err != nil {
+		return err
+	}
+	err = item.Value(func(val []byte) error {
+		return m.Unmarshal(val)
+	})
+	if err != nil {
+		return err
+	}
+	err = txn.Delete(alloc.GenKey(C_Model1, 4018441491, m.ID, m.ShardKey))
+	if err != nil {
+		return err
+	}
+
+	err = txn.Delete(alloc.GenKey(C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func DeleteModel1(id int32, shardKey int32) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	return kv.Update(func(txn *badger.Txn) error {
-		m := &Model1{}
-		item, err := txn.Get(alloc.GenKey(C_Model1, 4018441491, id, shardKey))
-		if err != nil {
-			return err
-		}
-		err = item.Value(func(val []byte) error {
-			return m.Unmarshal(val)
-		})
-		if err != nil {
-			return err
-		}
-		err = txn.Delete(alloc.GenKey(C_Model1, 4018441491, m.ID, m.ShardKey))
-		if err != nil {
-			return err
-		}
-
-		err = txn.Delete(alloc.GenKey(C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID))
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return DeleteModel1WithTxn(txn, alloc, id, shardKey)
 	})
 }
 
@@ -617,33 +621,37 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	return m, err
 }
 
+func DeleteModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, p1 string) error {
+	m := &Model2{}
+	item, err := txn.Get(alloc.GenKey(C_Model2, 1609271041, id, shardKey, p1))
+	if err != nil {
+		return err
+	}
+	err = item.Value(func(val []byte) error {
+		return m.Unmarshal(val)
+	})
+	if err != nil {
+		return err
+	}
+	err = txn.Delete(alloc.GenKey(C_Model2, 1609271041, m.ID, m.ShardKey, m.P1))
+	if err != nil {
+		return err
+	}
+
+	err = txn.Delete(alloc.GenKey(C_Model2, 2344331025, m.P1, m.ShardKey, m.ID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func DeleteModel2(id int64, shardKey int32, p1 string) error {
 	alloc := kv.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	return kv.Update(func(txn *badger.Txn) error {
-		m := &Model2{}
-		item, err := txn.Get(alloc.GenKey(C_Model2, 1609271041, id, shardKey, p1))
-		if err != nil {
-			return err
-		}
-		err = item.Value(func(val []byte) error {
-			return m.Unmarshal(val)
-		})
-		if err != nil {
-			return err
-		}
-		err = txn.Delete(alloc.GenKey(C_Model2, 1609271041, m.ID, m.ShardKey, m.P1))
-		if err != nil {
-			return err
-		}
-
-		err = txn.Delete(alloc.GenKey(C_Model2, 2344331025, m.P1, m.ShardKey, m.ID))
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return DeleteModel2WithTxn(txn, alloc, id, shardKey, p1)
 	})
 }
 

@@ -27,9 +27,11 @@ func init() {
 func TestClient_Connect(t *testing.T) {
 	Convey("Websocket Client Tests", t, func(c C) {
 		e := testEnv.InitEdgeServerWithWebsocket("Test.01", 8081, 10)
-		service.RegisterSample(&testEnv.Handlers{
-			ServerID: e.GetServerID(),
-		}, e)
+		service.RegisterSample(
+			&testEnv.Handlers{
+				ServerID: e.GetServerID(),
+			}, e, edge.NewHandlerOptions(),
+		)
 
 		err := e.StartCluster()
 		if err != nil && err != edge.ErrClusterNotSet {

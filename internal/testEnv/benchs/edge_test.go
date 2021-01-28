@@ -31,7 +31,10 @@ func TestMain(m *testing.M) {
 	service.RegisterSample(
 		&testEnv.Handlers{
 			ServerID: edgeServer.GetServerID(),
-		}, edgeServer)
+		},
+		edgeServer,
+		edge.NewHandlerOptions(),
+	)
 
 	edgeServer.Start()
 

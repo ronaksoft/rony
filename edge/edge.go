@@ -32,8 +32,6 @@ func init() {
 	log.Init(log.DefaultConfig)
 }
 
-type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
-
 // Server
 type Server struct {
 	// General
