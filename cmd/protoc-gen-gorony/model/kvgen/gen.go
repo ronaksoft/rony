@@ -344,12 +344,8 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P(
 		"func Iter", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
-		"(", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ")) error {",
+		"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ")) error {",
 	)
-	g.P("alloc := kv.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P()
-	g.P("return kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 	g.P("iter := txn.NewIterator(opt)")
@@ -366,30 +362,18 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}")  // end of for
 	g.P("iter.Close()")
 	g.P("return nil")
-	g.P("})") // end of View
-	g.P("}")  // end of func List
+	g.P("}")  // end of func Iter
 	g.P()
 	for idx := range mm.Views {
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
-			"(", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ")) error {",
+			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ")) error {",
 		)
-		g.P("alloc := kv.NewAllocator()")
-		g.P("defer alloc.ReleaseAll()")
-		g.P()
-		g.P("return kv.View(func(txn *badger.Txn) error {")
 		g.P("opt := badger.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
-		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ",", mm.Views[idx].StringCKs("offset", ",", false), ")")
 		g.P("iter := txn.NewIterator(opt)")
 		g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
-		g.P("if offset--; offset >= 0 {")
-		g.P("continue")
-		g.P("}")
-		g.P("if limit--; limit < 0 {")
-		g.P("break")
-		g.P("}")
 		g.P("_ = iter.Item().Value(func (val []byte) error {")
 		g.P("m := &", mm.Name, "{}")
 		g.P("err := m.Unmarshal(val)")
@@ -402,7 +386,6 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P("}")  // end of for
 		g.P("iter.Close()")
 		g.P("return nil")
-		g.P("})") // end of View
 		g.P("}")  // end of func List
 		g.P()
 	}
