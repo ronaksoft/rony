@@ -80,7 +80,7 @@ func save(c C) {
 	c.So(err, ShouldBeNil)
 	err = model.SaveModel1(m5)
 	c.So(err, ShouldBeNil)
-	res, err := model.ListModel1ByEnum(model.Enum_Else, kv.NewListOption().SetLimit(10))
+	res, err := model.ListModel1ByEnum(model.Enum_Else, 0, 0, kv.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 

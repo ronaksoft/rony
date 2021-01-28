@@ -344,8 +344,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P(
 		"func Iter", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
-		"(", mm.FuncArgsPKs("", mm.Table), ",",
-		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption, cb func(m *", mm.Name, ")) error {",
+		"(", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ")) error {",
 	)
 	g.P("alloc := kv.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -353,18 +352,8 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("return kv.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
-	g.P("opt.Reverse = lo.Backward()")
-	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
 	g.P("iter := txn.NewIterator(opt)")
-	g.P("offset := lo.Skip()")
-	g.P("limit := lo.Limit()")
-	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
-	g.P("if offset--; offset >= 0 {")
-	g.P("continue")
-	g.P("}")
-	g.P("if limit--; limit < 0 {")
-	g.P("break")
-	g.P("}")
+	g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 	g.P("_ = iter.Item().Value(func (val []byte) error {")
 	g.P("m := &", mm.Name, "{}")
 	g.P("err := m.Unmarshal(val)")
@@ -380,6 +369,43 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("})") // end of View
 	g.P("}")  // end of func List
 	g.P()
+	for idx := range mm.Views {
+		g.P(
+			"func Iter", mm.Name, "By",
+			mm.Views[idx].StringPKs("", "And", false),
+			"(", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ")) error {",
+		)
+		g.P("alloc := kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P()
+		g.P("return kv.View(func(txn *badger.Txn) error {")
+		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
+		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ",", mm.Views[idx].StringCKs("offset", ",", false), ")")
+		g.P("iter := txn.NewIterator(opt)")
+		g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+		g.P("if offset--; offset >= 0 {")
+		g.P("continue")
+		g.P("}")
+		g.P("if limit--; limit < 0 {")
+		g.P("break")
+		g.P("}")
+		g.P("_ = iter.Item().Value(func (val []byte) error {")
+		g.P("m := &", mm.Name, "{}")
+		g.P("err := m.Unmarshal(val)")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}") // end of if
+		g.P("cb(m)")
+		g.P("return nil")
+		g.P("})") // end of item.Value
+		g.P("}")  // end of for
+		g.P("iter.Close()")
+		g.P("return nil")
+		g.P("})") // end of View
+		g.P("}")  // end of func List
+		g.P()
+	}
 }
 func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func List", mm.Name, "(")
@@ -465,6 +491,50 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("return res, err")
 	g.P("}") // end of func List
 	g.P()
+
+	for idx := range mm.Views {
+		g.P(
+			"func List", mm.Name, "By",
+			mm.Views[idx].StringPKs("", "And", false),
+			"(", mm.FuncArgsPKs("", mm.Views[idx]), ",",
+			mm.FuncArgsCKs("offset", mm.Views[idx]), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
+		)
+		g.P("alloc := kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P()
+		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
+		g.P("err := kv.View(func(txn *badger.Txn) error {")
+		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
+		g.P("opt.Reverse = lo.Backward()")
+		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ",", mm.Views[idx].StringCKs("offset", ",", false), ")")
+		g.P("iter := txn.NewIterator(opt)")
+		g.P("offset := lo.Skip()")
+		g.P("limit := lo.Limit()")
+		g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+		g.P("if offset--; offset >= 0 {")
+		g.P("continue")
+		g.P("}")
+		g.P("if limit--; limit < 0 {")
+		g.P("break")
+		g.P("}")
+		g.P("_ = iter.Item().Value(func (val []byte) error {")
+		g.P("m := &", mm.Name, "{}")
+		g.P("err := m.Unmarshal(val)")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}") // end of if
+		g.P("res = append(res, m)")
+		g.P("return nil")
+		g.P("})") // end of item.Value
+		g.P("}")  // end of for
+		g.P("iter.Close()")
+		g.P("return nil")
+		g.P("})") // end of View
+		g.P("return res, err")
+		g.P("}") // end of func List
+		g.P()
+	}
 }
 func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
 	for _, f := range m.Fields {

@@ -21,7 +21,7 @@ message Model1 {
     string P1 = 3 [(rony_index) = true];
     repeated string P2 = 4 [(rony_index) = true];
     uint64 P5 = 5;
-    Enum Enum = 7 [(rony_index) = true];
+    Enum Enum = 7 ;
 }
 
 message Model2 {
@@ -30,7 +30,7 @@ message Model2 {
     option (rony_view) = "(P1, ShardKey, ID)";
     int64 ID = 1;
     int32 ShardKey = 2;
-    string P1 = 3 [(rony_index) = true];
+    string P1 = 3 ;
     repeated string P2 = 4;
     uint64 P5 = 5;
 }
