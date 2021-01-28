@@ -34,14 +34,6 @@ func (ho *HandlerOptions) SetPostHandlers(h ...Handler) *HandlerOptions {
 	return ho
 }
 
-func (ho *HandlerOptions) PreHandlers() []Handler {
-	return ho.pre
-}
-
-func (ho *HandlerOptions) PostHandlers() []Handler {
-	return ho.post
-}
-
 func (ho *HandlerOptions) ApplyTo(h ...Handler) []Handler {
 	out := make([]Handler, 0, len(ho.pre)+len(h)+len(ho.post))
 	out = append(out, ho.pre...)

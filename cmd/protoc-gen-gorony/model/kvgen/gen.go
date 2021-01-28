@@ -72,7 +72,8 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		funcHasField(g, m, mm)
 		funcListByIndex(g, m, mm)
 		if len(mm.Table.CKs) > 0 {
-			funcListByPartitionKey(g, m, mm)
+			funcListByPartitionKey(g, mm)
+			funcIterByPartitionKey(g, mm)
 		}
 	}
 }
@@ -339,6 +340,47 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}")  // end of Delete func
 	g.P()
 }
+func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
+	g.P(
+		"func Iter", mm.Name, "By",
+		mm.Table.StringPKs("", "And", false),
+		"(", mm.FuncArgsPKs("", mm.Table), ",",
+		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption, cb func(m *", mm.Name, ")) error {",
+	)
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("return kv.View(func(txn *badger.Txn) error {")
+	g.P("opt := badger.DefaultIteratorOptions")
+	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
+	g.P("opt.Reverse = lo.Backward()")
+	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
+	g.P("iter := txn.NewIterator(opt)")
+	g.P("offset := lo.Skip()")
+	g.P("limit := lo.Limit()")
+	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+	g.P("if offset--; offset >= 0 {")
+	g.P("continue")
+	g.P("}")
+	g.P("if limit--; limit < 0 {")
+	g.P("break")
+	g.P("}")
+	g.P("_ = iter.Item().Value(func (val []byte) error {")
+	g.P("m := &", mm.Name, "{}")
+	g.P("err := m.Unmarshal(val)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}") // end of if
+	g.P("cb(m)")
+	g.P("return nil")
+	g.P("})") // end of item.Value
+	g.P("}")  // end of for
+	g.P("iter.Close()")
+	g.P("return nil")
+	g.P("})") // end of View
+	g.P("}")  // end of func List
+	g.P()
+}
 func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("func List", mm.Name, "(")
 	g.P(mm.FuncArgs("offset", mm.Table), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
@@ -368,7 +410,7 @@ func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}") // end of if
-	g.P("if cond(m) {")
+	g.P("if cond == nil || cond(m) {")
 	g.P("res = append(res, m)")
 	g.P("}") // end of if cond
 	g.P("return nil")
@@ -381,7 +423,7 @@ func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcListByPartitionKey(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
+func funcListByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P(
 		"func List", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
@@ -488,16 +530,33 @@ func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Mode
 			if f.Desc.Kind() == protoreflect.MessageKind {
 				break
 			}
-			mtName := m.Desc.Name()
-			g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
-			g.P("for idx := range x.", f.Desc.Name(), "{")
-			g.P("if x.", f.Desc.Name(), "[idx] == xx {")
-			g.P("return true")
-			g.P("}") // end of if
-			g.P("}") // end of for
-			g.P("return false")
-			g.P("}") // end of func
-			g.P()
+			switch f.Desc.Kind() {
+			case protoreflect.MessageKind, protoreflect.GroupKind:
+			case protoreflect.BytesKind:
+				mtName := m.Desc.Name()
+				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
+				g.P("for idx := range x.", f.Desc.Name(), "{")
+				g.P("if bytes.Equal(x.", f.Desc.Name(), "[idx], xx) {")
+				g.P("return true")
+				g.P("}") // end of if
+				g.P("}") // end of for
+				g.P("return false")
+				g.P("}") // end of func
+				g.P()
+			default:
+				mtName := m.Desc.Name()
+				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
+				g.P("for idx := range x.", f.Desc.Name(), "{")
+				g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+				g.P("return true")
+				g.P("}") // end of if
+				g.P("}") // end of for
+				g.P("return false")
+				g.P("}") // end of func
+				g.P()
+
+			}
+
 		}
 	}
 }
