@@ -297,11 +297,7 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 	}
 }
 func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
-	g.P("func Delete", mm.Name, "(", mm.FuncArgs("", mm.Table), ") error {")
-	g.P("alloc := kv.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P()
-	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("func Delete", mm.Name, "WithTxn(txn *badger.Txn, alloc *kv.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
 	if len(mm.Views) > 0 {
 		g.P("m := &", mm.Name, "{}")
 		g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
@@ -331,8 +327,16 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P()
 	}
 	g.P("return nil")
-	g.P("})")
-	g.P("}")
+	g.P("}")	// end of DeleteWithTxn
+	g.P()
+	g.P("func Delete", mm.Name, "(", mm.FuncArgs("", mm.Table), ") error {")
+	g.P("alloc := kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P()
+	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("return Delete", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ")")
+	g.P("})")	// end of Update func
+	g.P("}")	// end of Delete func
 	g.P()
 }
 func funcList(g *protogen.GeneratedFile, mm *model.Model) {
