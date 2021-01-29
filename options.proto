@@ -3,22 +3,45 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
 extend google.protobuf.FileOptions {
-    optional string rony_storage = 50001;
+    // rony_repo defines what kind of rony repos will be used for messages with 'rony_model' or 'rony_singleton' options enabled.
+    // POSSIBLE VALUES: local, cql
+    optional string rony_repo = 50001;
 }
 
 extend google.protobuf.ServiceOptions {
+    // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
     optional bool rony_cobra_cmd = 50001;
+    // rony_cobra_cmd_protocol defines what protocol should client use to communicate with server.
+    // POSSIBLE VALUES: ws, http
     optional string rony_cobra_cmd_protocol = 50002;
 }
 
 extend google.protobuf.MethodOptions {
+    // follower_ok marks this method that it could be called on nodes with FOLLOWER state. Otherwise methods could only
+    // be executed on LEADER nodes.
     optional bool follower_ok = 50001;
 }
 
 extend google.protobuf.MessageOptions {
+    // rony_model marks this message as a model, then 'rony_table' and 'rony_view' options become available for this
+    // message.
     optional bool rony_model = 50001;
+    // rony_table creates a virtual table presentation to hold instances of this message, like rows in a table
+    // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+    // NOTE: If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
     optional string rony_table = 50002;
+    // rony_view creates a materialized view of the model based on the primary key.
+    // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+    // NOTE (1): If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
+    // NOTE (2): The primary key of the model must contains all the primary key items of the table. They don't need to
+    //           follow the same order as table. for example the following is correct:
+    //                  rony_table = ((a, b), c)
+    //                  rony_view = ((c, a), d, b)
     optional string rony_view = 50003;
+    // rony_singleton marks this message as a singleton.
+    // NOTE: a message could either have 'rony_model' ro 'rony_singleton' options at a same time. Setting both
+    // cause unpredictable results.
+    optional bool rony_singleton = 50004;
 }
 
 extend google.protobuf.FieldOptions {

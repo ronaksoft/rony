@@ -323,6 +323,36 @@ func ListModel1(
 	return res, err
 }
 
+func IterModel1(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
 func (x *Model1) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -486,72 +516,64 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *kv.Li
 	return res, err
 }
 
-func IterModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption, cb func(m *Model1)) error {
-	alloc := kv.NewAllocator()
-	defer alloc.ReleaseAll()
+func IterModel1ByID(txn *badger.Txn, alloc *kv.Allocator, id int32, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
 
-	return kv.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model1, 4018441491, id)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model1, 4018441491, id, offsetShardKey)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model1, 4018441491, id)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
 			}
-			if limit--; limit < 0 {
-				break
+			if !cb(m) {
+				exitLoop = true
 			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model1{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				cb(m)
-				return nil
-			})
+			return nil
+		})
+		if exitLoop {
+			break
 		}
-		iter.Close()
-		return nil
-	})
+	}
+	iter.Close()
+	return nil
 }
 
-func IterModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *kv.ListOption, cb func(m *Model1)) error {
-	alloc := kv.NewAllocator()
-	defer alloc.ReleaseAll()
+func IterModel1ByEnum(txn *badger.Txn, alloc *kv.Allocator, enum Enum, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
 
-	return kv.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model1, 2535881670, enum)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model1, 2535881670, enum, offsetShardKey, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model1, 2535881670, enum)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
 			}
-			if limit--; limit < 0 {
-				break
+			if !cb(m) {
+				exitLoop = true
 			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model1{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				cb(m)
-				return nil
-			})
+			return nil
+		})
+		if exitLoop {
+			break
 		}
-		iter.Close()
-		return nil
-	})
+	}
+	iter.Close()
+	return nil
 }
 
 func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err error) {
@@ -720,6 +742,36 @@ func ListModel2(
 	return res, err
 }
 
+func IterModel2(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
 func (x *Model2) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -801,70 +853,62 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *kv.List
 	return res, err
 }
 
-func IterModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv.ListOption, cb func(m *Model2)) error {
-	alloc := kv.NewAllocator()
-	defer alloc.ReleaseAll()
+func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
 
-	return kv.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model2, 1609271041, id, shardKey)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model2, 1609271041, id, shardKey, offsetP1)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model2, 1609271041, id, shardKey)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
 			}
-			if limit--; limit < 0 {
-				break
+			if !cb(m) {
+				exitLoop = true
 			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model2{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				cb(m)
-				return nil
-			})
+			return nil
+		})
+		if exitLoop {
+			break
 		}
-		iter.Close()
-		return nil
-	})
+	}
+	iter.Close()
+	return nil
 }
 
-func IterModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *kv.ListOption, cb func(m *Model2)) error {
-	alloc := kv.NewAllocator()
-	defer alloc.ReleaseAll()
+func IterModel2ByP1(txn *badger.Txn, alloc *kv.Allocator, p1 string, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = kv.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
 
-	return kv.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model2, 2344331025, p1)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model2, 2344331025, p1, offsetShardKey, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
+	exitLoop := false
+	opt := badger.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey(C_Model2, 2344331025, p1)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
 			}
-			if limit--; limit < 0 {
-				break
+			if !cb(m) {
+				exitLoop = true
 			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model2{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				cb(m)
-				return nil
-			})
+			return nil
+		})
+		if exitLoop {
+			break
 		}
-		iter.Close()
-		return nil
-	})
+	}
+	iter.Close()
+	return nil
 }
