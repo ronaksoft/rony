@@ -56,3 +56,48 @@ func (o *ListOption) SetBackward() *ListOption {
 func (o *ListOption) Backward() bool {
 	return o.reverse
 }
+
+type IterOption struct {
+	reverse   bool
+	offsetKey []byte
+	onClose   func(key []byte)
+}
+
+func NewIterOption() *IterOption {
+	return &IterOption{}
+}
+
+func (o *IterOption) SetOffsetKey(offset []byte) *IterOption {
+	o.offsetKey = offset
+	return o
+}
+
+func (o *IterOption) SetForward() *IterOption {
+	o.reverse = false
+	return o
+}
+
+func (o *IterOption) SetBackward() *IterOption {
+	o.reverse = true
+	return o
+}
+
+func (o *IterOption) SetOnClose(f func(key []byte)) *IterOption {
+	o.onClose = f
+	return o
+}
+
+func (o *IterOption) Backward() bool {
+	return o.reverse
+}
+
+func (o *IterOption) OffsetKey() []byte {
+	return o.offsetKey
+}
+
+func (o *IterOption) OnClose(key []byte) {
+	if o.onClose == nil {
+		return
+	}
+	o.onClose(key)
+}

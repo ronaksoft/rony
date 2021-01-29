@@ -330,10 +330,10 @@ func IterModel1(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model1) bool) e
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+	iterOpt := badger.DefaultIteratorOptions
+	iterOpt.Prefix = alloc.GenKey(C_Model1, 4018441491)
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
 			m := &Model1{}
 			err := m.Unmarshal(val)
@@ -749,10 +749,10 @@ func IterModel2(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model2) bool) e
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+	iterOpt := badger.DefaultIteratorOptions
+	iterOpt.Prefix = alloc.GenKey(C_Model2, 1609271041)
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
 			m := &Model2{}
 			err := m.Unmarshal(val)

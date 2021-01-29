@@ -387,6 +387,8 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 		g.P("wsC := edgec.NewWebsocket(edgec.WebsocketConfig{")
 		g.P("SeedHostPort: fmt.Sprintf(\"%s:%d\", config.GetString(\"host\"), config.GetInt(\"port\")),")
 		g.P("Header: header,")
+		g.P("ContextTimeout: config.GetDuration(\"requestTimeout\"),")
+		g.P("RequestMaxRetry: config.GetInt(\"requestRetry\"),")
 		g.P("})")
 		g.P("err = wsC.Start()")
 		g.P("if err != nil {")
@@ -459,6 +461,8 @@ func genClientCliInterface(g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("config.SetPersistentFlags(rootCmd, ")
 	g.P("config.StringFlag(\"host\", \"127.0.0.1\", \"the seed host's address\"),")
 	g.P("config.StringFlag(\"port\", \"80\", \"the seed host's port\"),")
+	g.P("config.DurationFlag(\"requestTimeout\", time.Minute, \"the request time out\"),")
+	g.P("config.IntFlag(\"requestRetry\", 1, \"number of auto retry for failed requests\"),")
 	g.P(")") // end of SetPersistentFlags
 	g.P("rootCmd.AddCommand(")
 	var names []string
