@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/cqlgen"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/kvgen"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/cqlmodel"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/kvmodel"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton/kvsingleton"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -55,16 +56,19 @@ func main() {
 			// Generate all the helper functions
 			GenHelpers(f, g1)
 
-			// Generate Model's repo functionality based on the 'rony_storage' option
+			opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
+			repoType := proto.GetExtension(opt, rony.E_RonyRepo).(string)
+
+			switch strings.ToLower(repoType) {
+			case "local":
+				kvsingleton.Generate(f, g1)
+				kvmodel.Generate(f, g1)
+			case "cql":
+				cqlmodel.Generate(f, g1)
+			}
+			// Generate Model or Singleton repo functionality based on the 'rony_repo' option
 			if len(model.GetModels()) > 0 {
-				opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
-				storage := proto.GetExtension(opt, rony.E_RonyRepo).(string)
-				switch strings.ToLower(storage) {
-				case "local":
-					kvgen.Generate(f, g1)
-				case "cql":
-					cqlgen.Generate(f, g1)
-				}
+
 			}
 
 			// Generate RPCs if there is any service definition in the file

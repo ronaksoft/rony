@@ -1,0 +1,34 @@
+syntax = "proto3";
+package singleton;
+import "options.proto";
+option go_package = ".;singleton";
+option (rony_repo) = "local";
+
+
+enum Enum {
+    None = 0;
+    Something = 1;
+    Else = 2;
+}
+
+
+message Single1 {
+    option (rony_singleton) = true;
+    int32 ID = 1;
+    int32 ShardKey = 2;
+    string P1 = 3;
+    repeated string P2 = 4;
+    uint64 P5 = 5;
+    Enum Enum = 7 ;
+}
+
+message Single2 {
+    option (rony_singleton) = true;
+    int64 ID = 1;
+    int32 ShardKey = 2;
+    string P1 = 3 ;
+    repeated string P2 = 4;
+    uint64 P5 = 5;
+}
+
+

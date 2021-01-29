@@ -1,4 +1,4 @@
-package cqlgen
+package cqlmodel
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package kvgen_test
+package kvmodel_test
 
 import (
 	"github.com/ronaksoft/rony/internal/testEnv"

@@ -1,4 +1,4 @@
-package kvgen
+package kvmodel
 
 import (
 	"fmt"
@@ -24,47 +24,14 @@ import (
 
 // Generate generates the repo functions for messages which are identified as model with {{@entity cql}}
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/kv"})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
-
-	genFuncs(file, g)
-}
-func genDbKey(mm *model.Model, pk model.Key, keyPrefix string) string {
-	lowerCamel := keyPrefix == ""
-	return fmt.Sprintf("C_%s, %d, %s",
-		mm.Name,
-		pk.Checksum(),
-		pk.String(keyPrefix, ",", lowerCamel),
-	)
-}
-func genDbPrefixPKs(mm *model.Model, key model.Key, keyPrefix string) string {
-	lowerCamel := keyPrefix == ""
-	return fmt.Sprintf("C_%s, %d, %s",
-		mm.Name,
-		key.Checksum(),
-		key.StringPKs(keyPrefix, ",", lowerCamel),
-	)
-}
-func genDbPrefixCKs(mm *model.Model, key model.Key, keyPrefix string) string {
-	lowerCamel := keyPrefix == ""
-	return fmt.Sprintf("C_%s, %d, %s",
-		mm.Name,
-		key.Checksum(),
-		key.StringCKs(keyPrefix, ",", lowerCamel),
-	)
-}
-func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
-	lower := prefix == ""
-	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
-		mm.Name, crc32.ChecksumIEEE([]byte(fieldName)), prefix, fieldName, postfix, mm.Table.String(prefix, ",", lower),
-	)
-}
-func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
 		mm := model.GetModels()[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/kv"})
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
+
 		funcSave(g, m, mm)
 		funcRead(g, mm)
 		funcDelete(g, mm)
@@ -77,6 +44,36 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 			funcIterByPartitionKey(g, mm)
 		}
 	}
+}
+func genDbKey(mm *model.Model, pk model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		mm.Name,
+		pk.Checksum(),
+		pk.String(keyPrefix, ",", lowerCamel),
+	)
+}
+func genDbPrefixPKs(mm *model.Model, key model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		mm.Name,
+		key.Checksum(),
+		key.StringPKs(keyPrefix, ",", lowerCamel),
+	)
+}
+func genDbPrefixCKs(mm *model.Model, key model.Key, keyPrefix string) string {
+	lowerCamel := keyPrefix == ""
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		mm.Name,
+		key.Checksum(),
+		key.StringCKs(keyPrefix, ",", lowerCamel),
+	)
+}
+func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
+	lower := prefix == ""
+	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
+		mm.Name, crc32.ChecksumIEEE([]byte(fieldName)), prefix, fieldName, postfix, mm.Table.String(prefix, ",", lower),
+	)
 }
 func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
 	// SaveWithTxn func

@@ -151,14 +151,14 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 
 	// save entry
 	b := alloc.GenValue(m)
-	key := alloc.GenKey(C_Model1, 4018441491, m.ID, m.ShardKey)
+	key := alloc.GenKey('M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	err = txn.Set(key, b)
 	if err != nil {
 		return
 	}
 
 	// save entry for view[Enum ShardKey ID]
-	err = txn.Set(alloc.GenKey(C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID), b)
+	err = txn.Set(alloc.GenKey('M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID), b)
 	if err != nil {
 		return
 	}
@@ -195,7 +195,7 @@ func ReadModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey 
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey(C_Model1, 4018441491, id, shardKey))
+	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocato
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey(C_Model1, 2535881670, enum, shardKey, id))
+	item, err := txn.Get(alloc.GenKey('M', C_Model1, 2535881670, enum, shardKey, id))
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 
 func DeleteModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
-	item, err := txn.Get(alloc.GenKey(C_Model1, 4018441491, id, shardKey))
+	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
 	if err != nil {
 		return err
 	}
@@ -261,12 +261,12 @@ func DeleteModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKe
 	if err != nil {
 		return err
 	}
-	err = txn.Delete(alloc.GenKey(C_Model1, 4018441491, m.ID, m.ShardKey))
+	err = txn.Delete(alloc.GenKey('M', C_Model1, 4018441491, m.ID, m.ShardKey))
 	if err != nil {
 		return err
 	}
 
-	err = txn.Delete(alloc.GenKey(C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID))
+	err = txn.Delete(alloc.GenKey('M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID))
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func ListModel1(
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model1, 4018441491, offsetID)
+		osk := alloc.GenKey('M', C_Model1, 4018441491, offsetID)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -451,9 +451,9 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption) ([]*Model
 	res := make([]*Model1, 0, lo.Limit())
 	err := kv.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model1, 4018441491, id)
+		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model1, 4018441491, id, offsetShardKey)
+		osk := alloc.GenKey('M', C_Model1, 4018441491, id, offsetShardKey)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -487,9 +487,9 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *kv.Li
 	res := make([]*Model1, 0, lo.Limit())
 	err := kv.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model1, 2535881670, enum)
+		opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model1, 2535881670, enum, offsetShardKey, offsetID)
+		osk := alloc.GenKey('M', C_Model1, 2535881670, enum, offsetShardKey, offsetID)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -524,7 +524,7 @@ func IterModel1ByID(txn *badger.Txn, alloc *kv.Allocator, id int32, cb func(m *M
 
 	exitLoop := false
 	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model1, 4018441491, id)
+	opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
@@ -554,7 +554,7 @@ func IterModel1ByEnum(txn *badger.Txn, alloc *kv.Allocator, enum Enum, cb func(m
 
 	exitLoop := false
 	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model1, 2535881670, enum)
+	opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
@@ -584,14 +584,14 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 
 	// save entry
 	b := alloc.GenValue(m)
-	key := alloc.GenKey(C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
+	key := alloc.GenKey('M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	err = txn.Set(key, b)
 	if err != nil {
 		return
 	}
 
 	// save entry for view[P1 ShardKey ID]
-	err = txn.Set(alloc.GenKey(C_Model2, 2344331025, m.P1, m.ShardKey, m.ID), b)
+	err = txn.Set(alloc.GenKey('M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID), b)
 	if err != nil {
 		return
 	}
@@ -614,7 +614,7 @@ func ReadModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey 
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey(C_Model2, 1609271041, id, shardKey, p1))
+	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,7 @@ func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocator,
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey(C_Model2, 2344331025, p1, shardKey, id))
+	item, err := txn.Get(alloc.GenKey('M', C_Model2, 2344331025, p1, shardKey, id))
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +670,7 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 
 func DeleteModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
-	item, err := txn.Get(alloc.GenKey(C_Model2, 1609271041, id, shardKey, p1))
+	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
 	if err != nil {
 		return err
 	}
@@ -680,12 +680,12 @@ func DeleteModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKe
 	if err != nil {
 		return err
 	}
-	err = txn.Delete(alloc.GenKey(C_Model2, 1609271041, m.ID, m.ShardKey, m.P1))
+	err = txn.Delete(alloc.GenKey('M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1))
 	if err != nil {
 		return err
 	}
 
-	err = txn.Delete(alloc.GenKey(C_Model2, 2344331025, m.P1, m.ShardKey, m.ID))
+	err = txn.Delete(alloc.GenKey('M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID))
 	if err != nil {
 		return err
 	}
@@ -713,7 +713,7 @@ func ListModel2(
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model2, 1609271041, offsetID, offsetShardKey)
+		osk := alloc.GenKey('M', C_Model2, 1609271041, offsetID, offsetShardKey)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -788,9 +788,9 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv
 	res := make([]*Model2, 0, lo.Limit())
 	err := kv.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model2, 1609271041, id, shardKey)
+		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model2, 1609271041, id, shardKey, offsetP1)
+		osk := alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, offsetP1)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -824,9 +824,9 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *kv.List
 	res := make([]*Model2, 0, lo.Limit())
 	err := kv.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model2, 2344331025, p1)
+		opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
 		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey(C_Model2, 2344331025, p1, offsetShardKey, offsetID)
+		osk := alloc.GenKey('M', C_Model2, 2344331025, p1, offsetShardKey, offsetID)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -861,7 +861,7 @@ func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *kv.Allocator, id int64, s
 
 	exitLoop := false
 	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model2, 1609271041, id, shardKey)
+	opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
@@ -891,7 +891,7 @@ func IterModel2ByP1(txn *badger.Txn, alloc *kv.Allocator, p1 string, cb func(m *
 
 	exitLoop := false
 	opt := badger.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey(C_Model2, 2344331025, p1)
+	opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
