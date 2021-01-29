@@ -65,10 +65,11 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		if mm == nil {
 			continue
 		}
-		funcSave(file, g, m, mm)
+		funcSave(g, m, mm)
 		funcRead(g, mm)
 		funcDelete(g, mm)
 		funcList(g, mm)
+		funcIter(g, mm)
 		funcHasField(g, m, mm)
 		funcListByIndex(g, m, mm)
 		if len(mm.Table.CKs) > 0 {
@@ -77,7 +78,7 @@ func genFuncs(file *protogen.File, g *protogen.GeneratedFile) {
 		}
 	}
 }
-func funcSave(file *protogen.File, g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
+func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
 	// SaveWithTxn func
 	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
@@ -340,12 +341,50 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}")  // end of Delete func
 	g.P()
 }
+func funcIter(g *protogen.GeneratedFile, mm *model.Model) {
+	g.P("func Iter", inflection.Plural(mm.Name), "(txn *badger.Txn, alloc *kv.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
+	g.P("if alloc == nil {")
+	g.P("alloc = kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P("}")
+	g.P()
+	g.P("exitLoop := false")
+	g.P("opt := badger.DefaultIteratorOptions")
+	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
+	g.P("iter := txn.NewIterator(opt)")
+	g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+	g.P("_ = iter.Item().Value(func (val []byte) error {")
+	g.P("m := &", mm.Name, "{}")
+	g.P("err := m.Unmarshal(val)")
+	g.P("if err != nil {")
+	g.P("return err")
+	g.P("}") // end of if
+	g.P("if !cb(m) {")
+	g.P("exitLoop = true")
+	g.P("}") // end of if callback
+	g.P("return nil")
+	g.P("})") // end of iter.Value func
+	g.P("if exitLoop {")
+	g.P("break")
+	g.P("}")
+	g.P("}") // end of for
+	g.P("iter.Close()")
+	g.P("return nil")
+	g.P("}") // end of func List
+	g.P()
+}
 func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P(
 		"func Iter", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
-		"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ")) error {",
+		"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
 	)
+	g.P("if alloc == nil {")
+	g.P("alloc = kv.NewAllocator()")
+	g.P("defer alloc.ReleaseAll()")
+	g.P("}")
+	g.P()
+	g.P("exitLoop := false")
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 	g.P("iter := txn.NewIterator(opt)")
@@ -356,20 +395,31 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("if err != nil {")
 	g.P("return err")
 	g.P("}") // end of if
-	g.P("cb(m)")
+	g.P("if !cb(m) {")
+	g.P("exitLoop = true")
+	g.P("}")
 	g.P("return nil")
 	g.P("})") // end of item.Value
-	g.P("}")  // end of for
+	g.P("if exitLoop {")
+	g.P("break")
+	g.P("}")
+	g.P("}") // end of for
 	g.P("iter.Close()")
 	g.P("return nil")
-	g.P("}")  // end of func Iter
+	g.P("}") // end of func Iter
 	g.P()
 	for idx := range mm.Views {
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
-			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ")) error {",
+			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ") bool) error {",
 		)
+		g.P("if alloc == nil {")
+		g.P("alloc = kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P("}")
+		g.P()
+		g.P("exitLoop := false")
 		g.P("opt := badger.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
 		g.P("iter := txn.NewIterator(opt)")
@@ -380,13 +430,18 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}") // end of if
-		g.P("cb(m)")
+		g.P("if !cb(m) {")
+		g.P("exitLoop = true")
+		g.P("}")
 		g.P("return nil")
 		g.P("})") // end of item.Value
-		g.P("}")  // end of for
+		g.P("if exitLoop {")
+		g.P("break")
+		g.P("}")
+		g.P("}") // end of for
 		g.P("iter.Close()")
 		g.P("return nil")
-		g.P("}")  // end of func List
+		g.P("}") // end of func List
 		g.P()
 	}
 }
