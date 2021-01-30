@@ -1,10 +1,12 @@
 syntax = "proto3";
 package service ;
+import "github.com/ronaksoft/rony/options.proto";
 option go_package = ",;service";
 
 
 // SampleService
 service SampleService {
+    option (rony_cobra_cmd) = true;
     rpc Func1(Request1) returns (Response1);
 }
 

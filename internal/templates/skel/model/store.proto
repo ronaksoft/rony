@@ -1,9 +1,12 @@
 syntax = "proto3";
 package model;
+import "github.com/ronaksoft/rony/options.proto";
 option go_package = ",;model";
 
 // Store
 message Store {
+    option (rony_model) = true ;
+    option (rony_table) = "(ID)";
     string ID = 1;
     string Name = 2;
 }
@@ -11,7 +14,10 @@ message Store {
 
 // User
 message User {
+    option (rony_model) = true ;
+    option (rony_table) = "(ID)";
     string ID = 1;
     string Name = 2;
     string Username =3;
+    string Phone = 4 [(rony_index) = true];
 }
