@@ -49,7 +49,7 @@ var GenProtoCmd = &cobra.Command{
 func compileProto(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
 	// Compile proto files
-	folders := []string{"service", "model"}
+	folders := []string{"rpc", "model"}
 	for _, f := range folders {
 		_ = filepath.Walk(filepath.Join(projectPath, f), func(path string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
