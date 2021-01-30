@@ -515,31 +515,21 @@ func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*Echo
 	}
 }
 
-func prepareSampleCommand(cmd *cobra.Command, header map[string]string) (*SampleClient, error) {
+func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, error) {
 	// Bind the current flags to registered flags in config package
 	err := config.BindCmdFlags(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	httpC := edgec.NewHttp(edgec.HttpConfig{
-		Name:         "Rony Client",
-		SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
-		Header:       header,
-	})
-
-	err = httpC.Start()
-	if err != nil {
-		return nil, err
-	}
-	return NewSampleClient(httpC), nil
+	return NewSampleClient(c), nil
 }
 
-var genEchoCmd = func(h ISampleCli, header map[string]string) *cobra.Command {
+var genEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli, err := prepareSampleCommand(cmd, header)
+			cli, err := prepareSampleCommand(cmd, c)
 			if err != nil {
 				return err
 			}
@@ -554,11 +544,11 @@ var genEchoCmd = func(h ISampleCli, header map[string]string) *cobra.Command {
 	return cmd
 }
 
-var genEchoLeaderOnlyCmd = func(h ISampleCli, header map[string]string) *cobra.Command {
+var genEchoLeaderOnlyCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-leader-only",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli, err := prepareSampleCommand(cmd, header)
+			cli, err := prepareSampleCommand(cmd, c)
 			if err != nil {
 				return err
 			}
@@ -573,11 +563,11 @@ var genEchoLeaderOnlyCmd = func(h ISampleCli, header map[string]string) *cobra.C
 	return cmd
 }
 
-var genEchoTunnelCmd = func(h ISampleCli, header map[string]string) *cobra.Command {
+var genEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-tunnel",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli, err := prepareSampleCommand(cmd, header)
+			cli, err := prepareSampleCommand(cmd, c)
 			if err != nil {
 				return err
 			}
@@ -592,11 +582,11 @@ var genEchoTunnelCmd = func(h ISampleCli, header map[string]string) *cobra.Comma
 	return cmd
 }
 
-var genEchoDelayCmd = func(h ISampleCli, header map[string]string) *cobra.Command {
+var genEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-delay",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli, err := prepareSampleCommand(cmd, header)
+			cli, err := prepareSampleCommand(cmd, c)
 			if err != nil {
 				return err
 			}
@@ -618,13 +608,9 @@ type ISampleCli interface {
 	EchoDelay(cli *SampleClient, cmd *cobra.Command, args []string) error
 }
 
-func RegisterSampleCli(h ISampleCli, header map[string]string, rootCmd *cobra.Command) {
-	config.SetPersistentFlags(rootCmd,
-		config.StringFlag("host", "127.0.0.1", "the seed host's address"),
-		config.StringFlag("port", "80", "the seed host's port"),
-	)
+func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 	rootCmd.AddCommand(
-		genEchoCmd(h, header), genEchoLeaderOnlyCmd(h, header), genEchoTunnelCmd(h, header),
-		genEchoDelayCmd(h, header),
+		genEchoCmd(h, c), genEchoLeaderOnlyCmd(h, c), genEchoTunnelCmd(h, c),
+		genEchoDelayCmd(h, c),
 	)
 }

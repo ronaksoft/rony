@@ -87,7 +87,7 @@ func main() {
 					if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
 						g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
 						g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
-						g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "time"})
+						// g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "time"})
 						GenCobraCmd(f, s, g1)
 					}
 				}
