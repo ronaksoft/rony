@@ -56,19 +56,17 @@ func main() {
 			// Generate all the helper functions
 			GenHelpers(f, g1)
 
+
+
+			// Generate Model or Singleton repo functionality based on the 'rony_repo' option
 			opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
 			repoType := proto.GetExtension(opt, rony.E_RonyRepo).(string)
-
 			switch strings.ToLower(repoType) {
 			case "local":
 				kvsingleton.Generate(f, g1)
 				kvmodel.Generate(f, g1)
 			case "cql":
 				cqlmodel.Generate(f, g1)
-			}
-			// Generate Model or Singleton repo functionality based on the 'rony_repo' option
-			if len(model.GetModels()) > 0 {
-
 			}
 
 			// Generate RPCs if there is any service definition in the file
