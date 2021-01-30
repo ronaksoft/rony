@@ -22,7 +22,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-
 var CreateProjectCmd = &cobra.Command{
 	Use: "create-project",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -49,6 +48,7 @@ var CreateProjectCmd = &cobra.Command{
 		return r.Run()
 	},
 }
+
 func setupSkeleton(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
 	projectName := config.GetString("project.name")

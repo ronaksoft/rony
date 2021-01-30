@@ -56,7 +56,6 @@ func main() {
 			// Generate all the helper functions
 			GenHelpers(f, g1)
 
-
 			// Generate Model or Singleton repo functionality based on the 'rony_repo' option
 			opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
 			repoType := proto.GetExtension(opt, rony.E_RonyRepo).(string)

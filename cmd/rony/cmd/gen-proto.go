@@ -24,7 +24,6 @@ const (
 	skeletonPath = "github.com/ronaksoft/rony:/internal/templates"
 )
 
-
 var GenProtoCmd = &cobra.Command{
 	Use: "gen-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,6 +45,7 @@ var GenProtoCmd = &cobra.Command{
 		return r.Run()
 	},
 }
+
 func compileProto(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
 	// Compile proto files

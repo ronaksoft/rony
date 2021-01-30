@@ -36,7 +36,6 @@ func init() {
 
 	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd)
 
-
 	_ = pkger.Walk(skeletonPath, func(path string, info os.FileInfo, err error) error {
 		return nil
 	})
