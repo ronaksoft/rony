@@ -38,6 +38,7 @@ var CreateProjectCmd = &cobra.Command{
 		setupSkeleton(g)
 		goModuleInit(g)
 		goModuleTidy(g)
+		goModuleVendor(g)
 		gofmt(g)
 
 		// Create a Runner with the Generator customized by command's arguments
@@ -93,6 +94,12 @@ func goModuleInit(g *genny.Generator) {
 }
 func goModuleTidy(g *genny.Generator) {
 	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Env = os.Environ()
+	cmd.Dir = config.GetString("project.dir")
+	g.Command(cmd)
+}
+func goModuleVendor(g *genny.Generator) {
+	cmd := exec.Command("go", "mod", "vendor")
 	cmd.Env = os.Environ()
 	cmd.Dir = config.GetString("project.dir")
 	g.Command(cmd)

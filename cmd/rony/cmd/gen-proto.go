@@ -36,6 +36,7 @@ var GenProtoCmd = &cobra.Command{
 		compileProto(g)
 		gofmt(g)
 		goModuleTidy(g)
+		goModuleVendor(g)
 
 		// Create a Runner with the Generator customized by command's arguments
 		err := r.With(g)
@@ -57,9 +58,12 @@ func compileProto(g *genny.Generator) {
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
 				projectPathAbs, _ := filepath.Abs(projectPath)
+				folderPathAbs, _ := filepath.Abs(filepath.Dir(path))
 				cmd1 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
+					fmt.Sprintf("-I=%s", folderPathAbs),
+					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
 					fmt.Sprintf("--go_out=paths=source_relative:%s", projectPathAbs),
 					path,
 				)
@@ -70,6 +74,8 @@ func compileProto(g *genny.Generator) {
 				cmd2 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
+					fmt.Sprintf("-I=%s", folderPathAbs),
+					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
 					fmt.Sprintf("--gorony_out=paths=source_relative,plugin=server:%s", projectPathAbs),
 					path,
 				)
