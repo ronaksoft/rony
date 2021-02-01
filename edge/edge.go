@@ -132,9 +132,9 @@ func (edge *Server) BulkPrependHandlers(handlers []Handler, constructors ...int6
 	}
 }
 
-// ClusterMembers returns a list of all the discovered nodes in the cluster
-func (edge *Server) ClusterMembers() []cluster.Member {
-	return edge.cluster.Members()
+// Cluster returns a reference to the underlying cluster of the Edge server
+func (edge *Server) Cluster() cluster.Cluster {
+	return edge.cluster
 }
 
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {

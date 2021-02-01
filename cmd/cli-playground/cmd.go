@@ -470,7 +470,7 @@ var Members = &cobra.Command{
 			"------- | ----------- | ------ |  -------- | ------- ",
 		)
 
-		for _, m := range e1.ClusterMembers() {
+		for _, m := range e1.Cluster().Members() {
 			rows = append(rows,
 				fmt.Sprintf("%s | %d | %s | %d | %v",
 					m.ServerID(), m.ReplicaSet(), m.RaftState().String(), m.RaftPort(), m.GatewayAddr(),
