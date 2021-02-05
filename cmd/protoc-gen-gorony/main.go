@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/cqlmodel"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model/kvmodel"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate/cqlmodel"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate/kvmodel"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton/kvsingleton"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -48,15 +48,15 @@ func main() {
 			g1.P()
 
 			// reset the global model and fill with the new data
-			model.ResetModels()
+			aggregate.ResetAggregates()
 			for _, m := range f.Messages {
-				model.FillModel(f, g1, m)
+				aggregate.FillAggregate(f, g1, m)
 			}
 
 			// Generate all the helper functions
 			GenHelpers(f, g1)
 
-			// Generate Model or Singleton repo functionality based on the 'rony_repo' option
+			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
 			opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
 			repoType := proto.GetExtension(opt, rony.E_RonyRepo).(string)
 			switch strings.ToLower(repoType) {

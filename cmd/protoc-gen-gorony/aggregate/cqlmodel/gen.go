@@ -2,7 +2,7 @@ package cqlmodel
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"strings"
@@ -33,7 +33,7 @@ func constTables(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("// Tables")
 	g.P("const (")
 	for _, m := range file.Messages {
-		mm := model.GetModels()[string(m.Desc.Name())]
+		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
@@ -48,7 +48,7 @@ func constTables(file *protogen.File, g *protogen.GeneratedFile) {
 func initCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 	g.P("func init() {")
 	for _, m := range file.Messages {
-		mm := model.GetModels()[string(m.Desc.Name())]
+		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
@@ -149,7 +149,7 @@ func initCqlQueries(file *protogen.File, g *protogen.GeneratedFile) {
 }
 func funcsAndFactories(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
-		mm := model.GetModels()[string(m.Desc.Name())]
+		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
@@ -158,7 +158,7 @@ func funcsAndFactories(file *protogen.File, g *protogen.GeneratedFile) {
 		funcListBy(mm, g)
 	}
 }
-func funcInsert(mm *model.Model, g *protogen.GeneratedFile) {
+func funcInsert(mm *aggregate.Aggregate, g *protogen.GeneratedFile) {
 	g.P("var _", mm.Name, "InsertFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Insert(Table", mm.Name, ").")
 	columns := strings.Builder{}
@@ -191,7 +191,7 @@ func funcInsert(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("return err")
 	g.P("}")
 }
-func funcGet(mm *model.Model, g *protogen.GeneratedFile) {
+func funcGet(mm *aggregate.Aggregate, g *protogen.GeneratedFile) {
 	// Generate Factory
 	g.P("var _", mm.Name, "GetFactory = cql.NewQueryFactory(func() *gocqlx.Queryx {")
 	g.P("return qb.Select(Table", mm.Name, ").")
@@ -236,7 +236,7 @@ func funcGet(mm *model.Model, g *protogen.GeneratedFile) {
 	g.P("}")
 	g.P()
 }
-func funcListBy(mm *model.Model, g *protogen.GeneratedFile) {
+func funcListBy(mm *aggregate.Aggregate, g *protogen.GeneratedFile) {
 	for idx, v := range mm.ViewParams {
 		// Generate Factory
 		g.P("var _", mm.Name, "ListBy", v, "Factory = cql.NewQueryFactory(func() *gocqlx.Queryx {")

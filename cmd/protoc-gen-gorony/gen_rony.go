@@ -253,7 +253,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		methodName := string(m.Desc.Name())
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_FollowerOk).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
@@ -288,7 +288,7 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_FollowerOk).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
@@ -329,7 +329,7 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 	for _, m := range s.Methods {
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_FollowerOk).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}

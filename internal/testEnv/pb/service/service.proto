@@ -6,7 +6,7 @@ import "options.proto";
 service Sample {
     option (rony_cobra_cmd) = true;
     rpc Echo (EchoRequest) returns (EchoResponse){
-        option (follower_ok) = true;
+        option (inconsistent_read) = true;
     };
     rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);

@@ -1,4 +1,4 @@
-package model
+package aggregate
 
 import (
 	"fmt"
@@ -25,10 +25,10 @@ import (
 
 var _ = qb.ASC
 
-var loadedModels = map[string]*Model{}
+var loadedAggregates = map[string]*Aggregate{}
 var loadedFields = map[string]struct{}{}
 
-type Model struct {
+type Aggregate struct {
 	Type       string
 	Name       string
 	Table      Key
@@ -39,7 +39,7 @@ type Model struct {
 	FieldsGo   map[string]string
 }
 
-func (m *Model) FuncArgs(keyPrefix string, key Key) string {
+func (m *Aggregate) FuncArgs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
 	for idx, k := range key.Keys() {
 		if idx != 0 {
@@ -52,7 +52,7 @@ func (m *Model) FuncArgs(keyPrefix string, key Key) string {
 	return sb.String()
 }
 
-func (m *Model) FuncArgsPKs(keyPrefix string, key Key) string {
+func (m *Aggregate) FuncArgsPKs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
 	for idx, k := range key.PKs {
 		if idx != 0 {
@@ -65,7 +65,7 @@ func (m *Model) FuncArgsPKs(keyPrefix string, key Key) string {
 	return sb.String()
 }
 
-func (m *Model) FuncArgsCKs(keyPrefix string, key Key) string {
+func (m *Aggregate) FuncArgsCKs(keyPrefix string, key Key) string {
 	sb := strings.Builder{}
 	for idx, k := range key.CKs {
 		if idx != 0 {
@@ -150,16 +150,16 @@ func (k *Key) Checksum() uint32 {
 	return crc32.ChecksumIEEE(tools.StrToByte(k.String("", ",", false)))
 }
 
-// ResetModels reset the internal data
-func ResetModels() {
-	loadedModels = map[string]*Model{}
+// ResetAggregates reset the internal data
+func ResetAggregates() {
+	loadedAggregates = map[string]*Aggregate{}
 }
 
-// FillModel fills the in global loadedModels with parsed data
-func FillModel(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Message) {
+// FillAggregate fills the in global loadedAggregates with parsed data
+func FillAggregate(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Message) {
 	var (
 		isModel = false
-		mm      = Model{
+		mm      = Aggregate{
 			FieldsCql: make(map[string]string),
 			FieldsGo:  make(map[string]string),
 		}
@@ -167,13 +167,13 @@ func FillModel(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Messa
 
 	modelDesc := strings.Builder{}
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	if entity := proto.GetExtension(opt, rony.E_RonyModel).(bool); entity {
+	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
 		modelDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", m.Desc.Name()))
 	}
-	if tab := proto.GetExtension(opt, rony.E_RonyTable).(string); tab != "" {
+	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
 		modelDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
 	}
-	if view := proto.GetExtension(opt, rony.E_RonyView).(string); view != "" {
+	if view := proto.GetExtension(opt, rony.E_RonyAggregateView).(string); view != "" {
 		modelDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
 	}
 
@@ -231,11 +231,11 @@ func FillModel(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Messa
 			mm.FieldsGo[f.GoName] = z.GoKind(file, g, f.Desc)
 		}
 		mm.Name = string(m.Desc.Name())
-		loadedModels[mm.Name] = &mm
+		loadedAggregates[mm.Name] = &mm
 	}
 }
 
-// GetModels
-func GetModels() map[string]*Model {
-	return loadedModels
+// GetAggregates
+func GetAggregates() map[string]*Aggregate {
+	return loadedAggregates
 }

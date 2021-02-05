@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/model"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -25,7 +25,7 @@ import (
 // Generate generates the repo functions for messages which are identified as model with {{@entity cql}}
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
-		mm := model.GetModels()[string(m.Desc.Name())]
+		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
 		if mm == nil {
 			continue
 		}
@@ -45,7 +45,7 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 		}
 	}
 }
-func genDbKey(mm *model.Model, pk model.Key, keyPrefix string) string {
+func genDbKey(mm *aggregate.Aggregate, pk aggregate.Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -53,7 +53,7 @@ func genDbKey(mm *model.Model, pk model.Key, keyPrefix string) string {
 		pk.String(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbPrefixPKs(mm *model.Model, key model.Key, keyPrefix string) string {
+func genDbPrefixPKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -61,7 +61,7 @@ func genDbPrefixPKs(mm *model.Model, key model.Key, keyPrefix string) string {
 		key.StringPKs(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbPrefixCKs(mm *model.Model, key model.Key, keyPrefix string) string {
+func genDbPrefixCKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -69,13 +69,13 @@ func genDbPrefixCKs(mm *model.Model, key model.Key, keyPrefix string) string {
 		key.StringCKs(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbIndexKey(mm *model.Model, fieldName string, prefix string, postfix string) string {
+func genDbIndexKey(mm *aggregate.Aggregate, fieldName string, prefix string, postfix string) string {
 	lower := prefix == ""
 	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
 		mm.Name, crc32.ChecksumIEEE([]byte(fieldName)), prefix, fieldName, postfix, mm.Table.String(prefix, ",", lower),
 	)
 }
-func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) {
+func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Aggregate) {
 	// SaveWithTxn func
 	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
@@ -222,7 +222,7 @@ func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *model.Model) 
 	g.P("}")  // end of Save func
 	g.P()
 }
-func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
+func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
@@ -295,7 +295,7 @@ func funcRead(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P()
 	}
 }
-func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
+func funcDelete(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("func Delete", mm.Name, "WithTxn(txn *badger.Txn, alloc *kv.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
 	if len(mm.Views) > 0 {
 		g.P("m := &", mm.Name, "{}")
@@ -338,7 +338,7 @@ func funcDelete(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}")  // end of Delete func
 	g.P()
 }
-func funcIter(g *protogen.GeneratedFile, mm *model.Model) {
+func funcIter(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("func Iter", inflection.Plural(mm.Name), "(txn *badger.Txn, alloc *kv.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
 	g.P("if alloc == nil {")
 	g.P("alloc = kv.NewAllocator()")
@@ -370,7 +370,7 @@ func funcIter(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
+func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P(
 		"func Iter", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
@@ -442,7 +442,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P()
 	}
 }
-func funcList(g *protogen.GeneratedFile, mm *model.Model) {
+func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("func List", mm.Name, "(")
 	g.P(mm.FuncArgs("offset", mm.Table), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
@@ -484,7 +484,7 @@ func funcList(g *protogen.GeneratedFile, mm *model.Model) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcListByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
+func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P(
 		"func List", mm.Name, "By",
 		mm.Table.StringPKs("", "And", false),
@@ -571,7 +571,7 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *model.Model) {
 		g.P()
 	}
 }
-func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
+func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *aggregate.Aggregate) {
 	for _, f := range m.Fields {
 		ftName := string(f.Desc.Name())
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
@@ -628,7 +628,7 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *model.M
 		}
 	}
 }
-func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *model.Model) {
+func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *aggregate.Aggregate) {
 	for _, f := range m.Fields {
 		switch f.Desc.Cardinality() {
 		case protoreflect.Repeated:
