@@ -158,26 +158,33 @@ func ResetAggregates() {
 // FillAggregate fills the in global loadedAggregates with parsed data
 func FillAggregate(file *protogen.File, g *protogen.GeneratedFile, m *protogen.Message) {
 	var (
-		isModel = false
-		mm      = Aggregate{
+		isAggregate = false
+		mm          = Aggregate{
 			FieldsCql: make(map[string]string),
 			FieldsGo:  make(map[string]string),
 		}
 	)
 
-	modelDesc := strings.Builder{}
+	// Generate the aggregate description from proto options
+	aggregateDesc := strings.Builder{}
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+
 	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
-		modelDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", m.Desc.Name()))
+		aggrType := proto.GetExtension(opt, rony.E_RonyAggregateType).(string)
+		if aggrType == "" {
+			panic("define rony_aggregate_type")
+		}
+		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", aggrType))
 	}
 	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
-		modelDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
+		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
 	}
 	if view := proto.GetExtension(opt, rony.E_RonyAggregateView).(string); view != "" {
-		modelDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+		aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
 	}
 
-	t, err := parse.Parse(string(m.Desc.Name()), modelDesc.String())
+	// Parse the generated description
+	t, err := parse.Parse(string(m.Desc.Name()), aggregateDesc.String())
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +194,7 @@ func FillAggregate(file *protogen.File, g *protogen.GeneratedFile, m *protogen.M
 		case parse.NodeModel:
 			nn := n.(*parse.ModelNode)
 			mm.Type = nn.Text
-			isModel = true
+			isAggregate = true
 		case parse.NodeTable:
 			pk := Key{}
 			nn := n.(*parse.TableNode)
@@ -225,7 +232,7 @@ func FillAggregate(file *protogen.File, g *protogen.GeneratedFile, m *protogen.M
 		loadedFields[f] = struct{}{}
 		mm.FieldNames = append(mm.FieldNames, f)
 	}
-	if isModel {
+	if isAggregate {
 		for _, f := range m.Fields {
 			mm.FieldsCql[f.GoName] = z.CqlKind(f.Desc)
 			mm.FieldsGo[f.GoName] = z.GoKind(file, g, f.Desc)
