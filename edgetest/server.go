@@ -44,7 +44,7 @@ func (s *Server) RealEdge() *edge.Server {
 	return s.edge
 }
 
-func (s *Server) SetGlolablPreHandlers(h ...edge.Handler) {
+func (s *Server) SetGlobalPreHandlers(h ...edge.Handler) {
 	s.edge.SetGlobalPreHandlers(h...)
 }
 
