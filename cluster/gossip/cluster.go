@@ -2,7 +2,6 @@ package gossipCluster
 
 import (
 	"fmt"
-	raftbadger "github.com/bbva/raft-badger"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/memberlist"
@@ -10,6 +9,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/internal/log"
+	raftbadger "github.com/ronaksoft/rony/internal/raftstore"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"io/ioutil"
