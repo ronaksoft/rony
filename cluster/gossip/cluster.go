@@ -3,7 +3,7 @@ package gossipCluster
 import (
 	"fmt"
 	raftbadger "github.com/bbva/raft-badger"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"

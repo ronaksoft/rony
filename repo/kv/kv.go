@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/tidwall/buntdb"
 	"path/filepath"

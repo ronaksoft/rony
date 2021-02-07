@@ -3,7 +3,7 @@
 package model
 
 import (
-	badger "github.com/dgraph-io/badger/v2"
+	badger "github.com/dgraph-io/badger/v3"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	kv "github.com/ronaksoft/rony/repo/kv"
