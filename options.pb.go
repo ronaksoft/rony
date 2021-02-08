@@ -54,8 +54,16 @@ var file_options_proto_extTypes = []protoimpl.ExtensionInfo{
 		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
 		ExtensionType: (*bool)(nil),
 		Field:         50001,
-		Name:          "inconsistent_read",
-		Tag:           "varint,50001,opt,name=inconsistent_read",
+		Name:          "rony_inconsistent_read",
+		Tag:           "varint,50001,opt,name=rony_inconsistent_read",
+		Filename:      "options.proto",
+	},
+	{
+		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
+		ExtensionType: (*bool)(nil),
+		Field:         50002,
+		Name:          "rony_internal",
+		Tag:           "varint,50002,opt,name=rony_internal",
 		Filename:      "options.proto",
 	},
 	{
@@ -156,11 +164,16 @@ var (
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
-	// inconsistent_read marks this method that it could be called on nodes with FOLLOWER state. Otherwise methods could only
+	// rony_inconsistent_read marks this method that it could be called on nodes with FOLLOWER state. Otherwise methods could only
 	// be executed on LEADER nodes.
 	//
-	// optional bool inconsistent_read = 50001;
-	E_InconsistentRead = &file_options_proto_extTypes[3]
+	// optional bool rony_inconsistent_read = 50001;
+	E_RonyInconsistentRead = &file_options_proto_extTypes[3]
+	// rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
+	// this command is not exposed to external clients connected through th gateway.
+	//
+	// optional bool rony_internal = 50002;
+	E_RonyInternal = &file_options_proto_extTypes[4]
 )
 
 // Extension fields to descriptorpb.MessageOptions.
@@ -169,39 +182,39 @@ var (
 	// message.
 	//
 	// optional bool rony_aggregate = 50001;
-	E_RonyAggregate = &file_options_proto_extTypes[4]
+	E_RonyAggregate = &file_options_proto_extTypes[5]
 	// rony_singleton marks this message as a singleton.
 	// NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
 	// cause unpredictable results.
 	//
 	// optional bool rony_singleton = 50002;
-	E_RonySingleton = &file_options_proto_extTypes[5]
+	E_RonySingleton = &file_options_proto_extTypes[6]
 	// rony_aggregate_type makes the code generator to generate appropriate functions based on the way you are going
 	// to handle actions on the aggregate.
 	// POSSIBLE_VALUES: "crud", "eventsource"
 	//
 	// optional string rony_aggregate_type = 50010;
-	E_RonyAggregateType = &file_options_proto_extTypes[6]
+	E_RonyAggregateType = &file_options_proto_extTypes[7]
 	// rony_aggregate_command makes this message as a command which is ONLY used if rony_aggregate_type is set to 'eventsource'.
 	// If this option is set then you MUST also define rony_aggregate_link to identify which aggregate this command will work on.
 	//
 	// optional bool rony_aggregate_command = 50011;
-	E_RonyAggregateCommand = &file_options_proto_extTypes[7]
+	E_RonyAggregateCommand = &file_options_proto_extTypes[8]
 	// rony_aggregate_event makes this message as an event which is ONLY used if rony_aggregate_type is set to 'eventsource'
 	// If this option is set then you MUST also define rony_aggregate_link to identify which aggregate this event will be read from.
 	//
 	// optional bool rony_aggregate_event = 50012;
-	E_RonyAggregateEvent = &file_options_proto_extTypes[8]
+	E_RonyAggregateEvent = &file_options_proto_extTypes[9]
 	// rony_aggregate_link is the name of the aggregate message which we link this message to.
 	//
 	// optional string rony_aggregate_link = 50013;
-	E_RonyAggregateLink = &file_options_proto_extTypes[9]
+	E_RonyAggregateLink = &file_options_proto_extTypes[10]
 	// rony_aggregate_table creates a virtual table presentation to hold instances of this message, like rows in a table
 	// PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
 	// NOTE: If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
 	//
 	// optional string rony_aggregate_table = 50014;
-	E_RonyAggregateTable = &file_options_proto_extTypes[10]
+	E_RonyAggregateTable = &file_options_proto_extTypes[11]
 	// rony_aggregate_view creates a materialized view of the aggregate based on the primary key.
 	// PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
 	// NOTE (1): If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
@@ -211,13 +224,13 @@ var (
 	//                  rony_aggregate_view = ((c, a), d, b)
 	//
 	// optional string rony_aggregate_view = 50015;
-	E_RonyAggregateView = &file_options_proto_extTypes[11]
+	E_RonyAggregateView = &file_options_proto_extTypes[12]
 )
 
 // Extension fields to descriptorpb.FieldOptions.
 var (
 	// optional bool rony_index = 50001;
-	E_RonyIndex = &file_options_proto_extTypes[12]
+	E_RonyIndex = &file_options_proto_extTypes[13]
 )
 
 var File_options_proto protoreflect.FileDescriptor
@@ -240,11 +253,16 @@ var file_options_proto_rawDesc = []byte{
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x18, 0xd2, 0x86, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x14, 0x72, 0x6f, 0x6e,
 	0x79, 0x43, 0x6f, 0x62, 0x72, 0x61, 0x43, 0x6d, 0x64, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f,
-	0x6c, 0x3a, 0x4d, 0x0a, 0x11, 0x69, 0x6e, 0x63, 0x6f, 0x6e, 0x73, 0x69, 0x73, 0x74, 0x65, 0x6e,
-	0x74, 0x5f, 0x72, 0x65, 0x61, 0x64, 0x12, 0x1e, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd1, 0x86, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x10,
-	0x69, 0x6e, 0x63, 0x6f, 0x6e, 0x73, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x61, 0x64,
+	0x6c, 0x3a, 0x56, 0x0a, 0x16, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x69, 0x6e, 0x63, 0x6f, 0x6e, 0x73,
+	0x69, 0x73, 0x74, 0x65, 0x6e, 0x74, 0x5f, 0x72, 0x65, 0x61, 0x64, 0x12, 0x1e, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65,
+	0x74, 0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd1, 0x86, 0x03, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x14, 0x72, 0x6f, 0x6e, 0x79, 0x49, 0x6e, 0x63, 0x6f, 0x6e, 0x73, 0x69,
+	0x73, 0x74, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x61, 0x64, 0x3a, 0x45, 0x0a, 0x0d, 0x72, 0x6f, 0x6e,
+	0x79, 0x5f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x12, 0x1e, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x74,
+	0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd2, 0x86, 0x03, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x0c, 0x72, 0x6f, 0x6e, 0x79, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
 	0x3a, 0x48, 0x0a, 0x0e, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x61, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61,
 	0x74, 0x65, 0x12, 0x1f, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69,
@@ -305,20 +323,21 @@ var file_options_proto_depIdxs = []int32{
 	0,  // 0: rony_repo:extendee -> google.protobuf.FileOptions
 	1,  // 1: rony_cobra_cmd:extendee -> google.protobuf.ServiceOptions
 	1,  // 2: rony_cobra_cmd_protocol:extendee -> google.protobuf.ServiceOptions
-	2,  // 3: inconsistent_read:extendee -> google.protobuf.MethodOptions
-	3,  // 4: rony_aggregate:extendee -> google.protobuf.MessageOptions
-	3,  // 5: rony_singleton:extendee -> google.protobuf.MessageOptions
-	3,  // 6: rony_aggregate_type:extendee -> google.protobuf.MessageOptions
-	3,  // 7: rony_aggregate_command:extendee -> google.protobuf.MessageOptions
-	3,  // 8: rony_aggregate_event:extendee -> google.protobuf.MessageOptions
-	3,  // 9: rony_aggregate_link:extendee -> google.protobuf.MessageOptions
-	3,  // 10: rony_aggregate_table:extendee -> google.protobuf.MessageOptions
-	3,  // 11: rony_aggregate_view:extendee -> google.protobuf.MessageOptions
-	4,  // 12: rony_index:extendee -> google.protobuf.FieldOptions
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	0,  // [0:13] is the sub-list for extension extendee
+	2,  // 3: rony_inconsistent_read:extendee -> google.protobuf.MethodOptions
+	2,  // 4: rony_internal:extendee -> google.protobuf.MethodOptions
+	3,  // 5: rony_aggregate:extendee -> google.protobuf.MessageOptions
+	3,  // 6: rony_singleton:extendee -> google.protobuf.MessageOptions
+	3,  // 7: rony_aggregate_type:extendee -> google.protobuf.MessageOptions
+	3,  // 8: rony_aggregate_command:extendee -> google.protobuf.MessageOptions
+	3,  // 9: rony_aggregate_event:extendee -> google.protobuf.MessageOptions
+	3,  // 10: rony_aggregate_link:extendee -> google.protobuf.MessageOptions
+	3,  // 11: rony_aggregate_table:extendee -> google.protobuf.MessageOptions
+	3,  // 12: rony_aggregate_view:extendee -> google.protobuf.MessageOptions
+	4,  // 13: rony_index:extendee -> google.protobuf.FieldOptions
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	0,  // [0:14] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
 }
 
@@ -334,7 +353,7 @@ func file_options_proto_init() {
 			RawDescriptor: file_options_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   0,
-			NumExtensions: 13,
+			NumExtensions: 14,
 			NumServices:   0,
 		},
 		GoTypes:           file_options_proto_goTypes,

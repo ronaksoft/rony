@@ -253,7 +253,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		methodName := string(m.Desc.Name())
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
@@ -282,17 +282,19 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	g.P("}")
 	g.P()
 	for _, m := range s.Methods {
+		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
+			continue
+		}
 		inputName := z.Name(file, g, m.Desc.Input())
 		outputName := z.Name(file, g, m.Desc.Output())
 		outputPkg, outputType := z.DescName(file, g, m.Desc.Output())
 
 		leaderOnlyText := "true"
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
-		// constructor := crc32.ChecksumIEEE([]byte(*m.Name))
 		g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 		g.P("out := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(out)")
@@ -329,7 +331,7 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 	for _, m := range s.Methods {
 		leaderOnlyText := "true"
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_InconsistentRead).(bool)
+		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
@@ -386,6 +388,10 @@ func genPrepareFunc(s *protogen.Service, g *protogen.GeneratedFile) {
 func genMethodGenerators(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	serviceName := string(s.Desc.Name())
 	for _, m := range s.Methods {
+		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
+			continue
+		}
 		methodName := string(m.Desc.Name())
 		g.P("var gen", methodName, "Cmd = func(h I", serviceName, "Cli, c edgec.Client) *cobra.Command {")
 		g.P("cmd := &cobra.Command {")
@@ -426,6 +432,10 @@ func genMethodGenerators(file *protogen.File, g *protogen.GeneratedFile, s *prot
 func genClientCliInterface(g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("type I", s.Desc.Name(), "Cli interface {")
 	for _, m := range s.Methods {
+		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
+			continue
+		}
 		g.P(m.Desc.Name(), "(cli *", s.Desc.Name(), "Client, cmd *cobra.Command, args []string) error")
 	}
 	g.P("}")
@@ -434,6 +444,10 @@ func genClientCliInterface(g *protogen.GeneratedFile, s *protogen.Service) {
 	g.P("rootCmd.AddCommand(")
 	var names []string
 	for _, m := range s.Methods {
+		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
+			continue
+		}
 		methodName := string(m.Desc.Name())
 		names = append(names, fmt.Sprintf("gen%sCmd(h, c)", methodName))
 		if len(names) == 3 {
