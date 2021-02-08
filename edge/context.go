@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -423,4 +424,8 @@ func (ctx *RequestCtx) getReplicaMember(replicaSet uint64, onlyLeader bool) (tar
 		}
 	}
 	return
+}
+
+func (ctx *RequestCtx) Log() log.Logger {
+	return log.DefaultLogger
 }
