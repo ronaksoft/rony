@@ -3,7 +3,6 @@ package kv
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/tools"
-	"github.com/tidwall/buntdb"
 	"path/filepath"
 	"time"
 )
@@ -19,7 +18,6 @@ import (
 
 var (
 	_DB                    *badger.DB
-	_Index                 *buntdb.DB
 	_Flusher               *tools.FlusherPool
 	_ConflictRetry         int
 	_ConflictRetryInterval time.Duration
@@ -37,11 +35,6 @@ func Init(config Config) error {
 	if err != nil {
 		return err
 	}
-	idx, err := newIndex(config)
-	if err != nil {
-		return err
-	}
-	_Index = idx
 	_DB = db
 	if config.ConflictRetries == 0 {
 		config.ConflictRetries = defaultConflictRetries
@@ -67,14 +60,6 @@ func newDB(config Config) (*badger.DB, error) {
 	return badger.Open(opt)
 }
 
-func newIndex(config Config) (*buntdb.DB, error) {
-	idx, err := buntdb.Open(filepath.Join(config.DirPath, "bunt"))
-	if err != nil {
-		return nil, err
-	}
-	_ = idx.Shrink()
-	return idx, nil
-}
 
 func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
 	wb := _DB.NewWriteBatch()
@@ -89,32 +74,6 @@ func DB() *badger.DB {
 	return _DB
 }
 
-// Index returns the underlying object of the index db
-func Index() *buntdb.DB {
-	return _Index
-}
-
-// UpdateIndex executes a function within a managed read/write transaction.
-// The transaction has been committed when no error is returned.
-// In the event that an error is returned, the transaction will be rolled back.
-// When a non-nil error is returned from the function, the transaction will be
-// rolled back and the that error will be return to the caller of UpdateIndex().
-//
-// Executing a manual commit or rollback from inside the function will result
-// in a panic.
-func UpdateIndex(fn func(tx *buntdb.Tx) error) (err error) {
-	return _Index.Update(fn)
-}
-
-// ViewIndex executes a function within a managed read-only transaction.
-// When a non-nil error is returned from the function that error will be return
-// to the caller of ViewIndex().
-//
-// Executing a manual commit or rollback from inside the function will result
-// in a panic.
-func ViewIndex(fn func(tx *buntdb.Tx) error) error {
-	return _Index.View(fn)
-}
 
 // Update executes a function, creating and managing a read-write transaction
 // for the user. Error returned by the function is relayed by the Update method.
