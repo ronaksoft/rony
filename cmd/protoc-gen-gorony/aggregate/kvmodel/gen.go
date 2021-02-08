@@ -22,6 +22,16 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+var funcNames = map[string]bool{}
+
+func setFuncName(n string) bool {
+	if funcNames[n] == true {
+		return false
+	}
+	funcNames[n] = true
+	return true
+}
+
 // Generate generates the repo functions for messages which are identified as model with {{@entity cql}}
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
@@ -39,10 +49,8 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 		funcIter(g, mm)
 		funcHasField(g, m, mm)
 		funcListByIndex(g, m, mm)
-		if len(mm.Table.CKs) > 0 {
-			funcListByPartitionKey(g, mm)
-			funcIterByPartitionKey(g, mm)
-		}
+		funcListByPartitionKey(g, mm)
+		funcIterByPartitionKey(g, mm)
 	}
 }
 func genDbKey(mm *aggregate.Aggregate, pk aggregate.Key, keyPrefix string) string {
@@ -371,41 +379,47 @@ func funcIter(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P()
 }
 func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P(
-		"func Iter", mm.Name, "By",
-		mm.Table.StringPKs("", "And", false),
-		"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
-	)
-	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P("}")
-	g.P()
-	g.P("exitLoop := false")
-	g.P("opt := badger.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
-	g.P("iter := txn.NewIterator(opt)")
-	g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
-	g.P("_ = iter.Item().Value(func (val []byte) error {")
-	g.P("m := &", mm.Name, "{}")
-	g.P("err := m.Unmarshal(val)")
-	g.P("if err != nil {")
-	g.P("return err")
-	g.P("}") // end of if
-	g.P("if !cb(m) {")
-	g.P("exitLoop = true")
-	g.P("}")
-	g.P("return nil")
-	g.P("})") // end of item.Value
-	g.P("if exitLoop {")
-	g.P("break")
-	g.P("}")
-	g.P("}") // end of for
-	g.P("iter.Close()")
-	g.P("return nil")
-	g.P("}") // end of func Iter
-	g.P()
+	if len(mm.Table.CKs) > 0 {
+		g.P(
+			"func Iter", mm.Name, "By",
+			mm.Table.StringPKs("", "And", false),
+			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
+		)
+		g.P("if alloc == nil {")
+		g.P("alloc = kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P("}")
+		g.P()
+		g.P("exitLoop := false")
+		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
+		g.P("iter := txn.NewIterator(opt)")
+		g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+		g.P("_ = iter.Item().Value(func (val []byte) error {")
+		g.P("m := &", mm.Name, "{}")
+		g.P("err := m.Unmarshal(val)")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}") // end of if
+		g.P("if !cb(m) {")
+		g.P("exitLoop = true")
+		g.P("}")
+		g.P("return nil")
+		g.P("})") // end of item.Value
+		g.P("if exitLoop {")
+		g.P("break")
+		g.P("}")
+		g.P("}") // end of for
+		g.P("iter.Close()")
+		g.P("return nil")
+		g.P("}") // end of func Iter
+		g.P()
+	}
+
 	for idx := range mm.Views {
+		if len(mm.Views[idx].CKs) == 0 {
+			continue
+		}
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
@@ -485,49 +499,54 @@ func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P()
 }
 func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P(
-		"func List", mm.Name, "By",
-		mm.Table.StringPKs("", "And", false),
-		"(", mm.FuncArgsPKs("", mm.Table), ",",
-		mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
-	)
-	g.P("alloc := kv.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P()
-	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-	g.P("err := kv.View(func(txn *badger.Txn) error {")
-	g.P("opt := badger.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
-	g.P("opt.Reverse = lo.Backward()")
-	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
-	g.P("iter := txn.NewIterator(opt)")
-	g.P("offset := lo.Skip()")
-	g.P("limit := lo.Limit()")
-	g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
-	g.P("if offset--; offset >= 0 {")
-	g.P("continue")
-	g.P("}")
-	g.P("if limit--; limit < 0 {")
-	g.P("break")
-	g.P("}")
-	g.P("_ = iter.Item().Value(func (val []byte) error {")
-	g.P("m := &", mm.Name, "{}")
-	g.P("err := m.Unmarshal(val)")
-	g.P("if err != nil {")
-	g.P("return err")
-	g.P("}") // end of if
-	g.P("res = append(res, m)")
-	g.P("return nil")
-	g.P("})") // end of item.Value
-	g.P("}")  // end of for
-	g.P("iter.Close()")
-	g.P("return nil")
-	g.P("})") // end of View
-	g.P("return res, err")
-	g.P("}") // end of func List
-	g.P()
+	if len(mm.Table.CKs) > 0 {
+		g.P(
+			"func List", mm.Name, "By",
+			mm.Table.StringPKs("", "And", false),
+			"(", mm.FuncArgsPKs("", mm.Table), ",",
+			mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
+		)
+		g.P("alloc := kv.NewAllocator()")
+		g.P("defer alloc.ReleaseAll()")
+		g.P()
+		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
+		g.P("err := kv.View(func(txn *badger.Txn) error {")
+		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
+		g.P("opt.Reverse = lo.Backward()")
+		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
+		g.P("iter := txn.NewIterator(opt)")
+		g.P("offset := lo.Skip()")
+		g.P("limit := lo.Limit()")
+		g.P("for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
+		g.P("if offset--; offset >= 0 {")
+		g.P("continue")
+		g.P("}")
+		g.P("if limit--; limit < 0 {")
+		g.P("break")
+		g.P("}")
+		g.P("_ = iter.Item().Value(func (val []byte) error {")
+		g.P("m := &", mm.Name, "{}")
+		g.P("err := m.Unmarshal(val)")
+		g.P("if err != nil {")
+		g.P("return err")
+		g.P("}") // end of if
+		g.P("res = append(res, m)")
+		g.P("return nil")
+		g.P("})") // end of item.Value
+		g.P("}")  // end of for
+		g.P("iter.Close()")
+		g.P("return nil")
+		g.P("})") // end of View
+		g.P("return res, err")
+		g.P("}") // end of func List
+		g.P()
+	}
 
 	for idx := range mm.Views {
+		if len(mm.Views[idx].CKs) == 0 {
+			continue
+		}
 		g.P(
 			"func List", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
