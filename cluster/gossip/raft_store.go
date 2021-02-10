@@ -45,7 +45,7 @@ func (b *BadgerStore) FirstIndex() (uint64, error) {
 
 		it.Seek(prefixLogs)
 		if it.ValidForPrefix(prefixLogs) {
-			value = bytesToUint64(it.Item().Key()[1:])
+			value = bytesToUint64(it.Item().Key()[8:])
 		}
 		return nil
 	})
@@ -67,7 +67,7 @@ func (b *BadgerStore) LastIndex() (uint64, error) {
 
 		it.Seek(append(prefixLogs, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff))
 		if it.ValidForPrefix(prefixLogs) {
-			value = bytesToUint64(it.Item().Key()[1:])
+			value = bytesToUint64(it.Item().Key()[8:])
 		}
 		return nil
 	})
@@ -136,10 +136,10 @@ func (b *BadgerStore) DeleteRange(min, max uint64) error {
 
 	start := append(prefixLogs, uint64ToBytes(min)...)
 	for it.Seek(start); it.Valid(); it.Next() {
-		key := make([]byte, 9)
+		key := make([]byte, 16)
 		it.Item().KeyCopy(key)
 		// Handle out-of-range log index
-		if bytesToUint64(key[1:]) > max {
+		if bytesToUint64(key[8:]) > max {
 			break
 		}
 		// Delete in-range log index
