@@ -426,3 +426,47 @@ func (ctx *RequestCtx) getReplicaMember(replicaSet uint64, onlyLeader bool) (tar
 func (ctx *RequestCtx) Log() log.Logger {
 	return log.DefaultLogger
 }
+
+func (ctx *RequestCtx) GetReplica(pageID uint32) (uint64, error) {
+	p := &rony.Page{}
+	_, err := rony.ReadPage(pageID, p)
+	if err == nil {
+		return p.GetReplicaSet(), nil
+	}
+	thisReplicaSet := ctx.Cluster().ReplicaSet()
+	p.ID = pageID
+	p.ReplicaSet = thisReplicaSet
+	if thisReplicaSet != 1 {
+		req := rony.PoolMessageEnvelope.Get()
+		defer rony.PoolMessageEnvelope.Put(req)
+		res := rony.PoolMessageEnvelope.Get()
+		defer rony.PoolMessageEnvelope.Put(res)
+		getPage := rony.PoolGetPage.Get()
+		defer rony.PoolGetPage.Put(getPage)
+		getPage.PageID = pageID
+		getPage.ReplicaSet = ctx.Cluster().ReplicaSet()
+		req.Fill(uint64(tools.FastRand()<<31|tools.FastRand()), rony.C_GetPage, getPage)
+		err = ctx.ExecuteRemote(1, true, req, res)
+		if err != nil {
+			return 0, err
+		}
+
+		switch res.GetConstructor() {
+		case rony.C_Page:
+			_ = p.Unmarshal(res.GetMessage())
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(res.GetMessage())
+			return 0, x
+		default:
+			panic("BUG!! invalid response")
+		}
+
+	}
+
+	err = rony.SavePage(p)
+	if err != nil {
+		return 0, err
+	}
+	return p.ReplicaSet, nil
+}

@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/store"
+	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -68,53 +69,36 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
-	panic("implement me")
-}
+	if pm.cluster.ReplicaSet() != 1 {
+		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRequest)
+		return
+	}
 
-// Get returns the replica set which owns pageID. If this pageID was not exists in our database
-// and newReplicaSet is non-zero, then database updates with new value, and the new value
-// will be returned.
-func (pm *Builtin) Get(ctx *RequestCtx, pageID uint32, newReplicaSet uint64) (uint64, error) {
+	req := rony.PoolGetPage.Get()
+	defer rony.PoolGetPage.Put(req)
+	res := rony.PoolPage.Get()
+	defer rony.PoolPage.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	page := rony.Page{}
-	err := store.Update(func(txn *badger.Txn) (err error) {
-		_, err = rony.ReadPageWithTxn(txn, alloc, pageID, &page)
-		if err == nil {
-			return
+	err = store.Update(func(txn *badger.Txn) (err error) {
+		_, err = rony.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
+		if err != nil && req.GetReplicaSet() == 0 {
+			return err
 		}
-		if newReplicaSet == 0 {
-			return
-		}
-		page.ReplicaSet = newReplicaSet
-		page.ID = pageID
-		return rony.SavePageWithTxn(txn, alloc, &page)
+		res.ReplicaSet = req.GetReplicaSet()
+		res.ID = req.GetPageID()
+		return rony.SavePageWithTxn(txn, alloc, res)
 	})
 	if err != nil {
-		return 0, err
+		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		return
 	}
-	return page.ReplicaSet, nil
-}
-
-// Set updates the database with new entry. If replace is not set, then it will returns
-// error if there is already a value in the database.
-func (pm *Builtin) Set(ctx *RequestCtx, pageID uint32, replicaSet uint64, replace bool) error {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	page := &rony.Page{
-		ID:         pageID,
-		ReplicaSet: replicaSet,
-	}
-	return store.Update(func(txn *badger.Txn) (err error) {
-		_, err = rony.ReadPageWithTxn(txn, alloc, pageID, page)
-		if err == nil && !replace {
-			err = rony.ErrAlreadyExists
-			return
-		}
-		page.ReplicaSet = replicaSet
-		page.ID = pageID
-		return rony.SavePageWithTxn(txn, alloc, page)
-	})
+	ctx.PushMessage(rony.C_Page, res)
 }
