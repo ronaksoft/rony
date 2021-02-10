@@ -33,6 +33,9 @@ func MustInit(config Config) {
 }
 
 func Init(config Config) error {
+	if _DB != nil {
+		return nil
+	}
 	db, err := newDB(config)
 	if err != nil {
 		return err

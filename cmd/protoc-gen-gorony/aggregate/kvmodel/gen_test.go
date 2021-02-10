@@ -113,7 +113,7 @@ func save(c C) {
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 
-	res, err = model.ListModel1ByID(100, 0, store.NewListOption().SetBackward())
+	res, err = model.ListModel1ByID(100, 0, store.NewListOption())
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/gateway"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
-	"github.com/ronaksoft/rony/store"
 	udpTunnel "github.com/ronaksoft/rony/tunnel/udp"
 )
 
@@ -108,21 +107,5 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
-	}
-}
-
-// StoreConfig
-type StoreConfig store.Config
-
-// WithStore initialize the underlying badger db
-func WithStore(config StoreConfig) Option {
-	return func(edge *Server) {
-		store.MustInit(store.Config{
-			DirPath:             config.DirPath,
-			ConflictRetries:     config.ConflictRetries,
-			ConflictMaxInterval: config.ConflictMaxInterval,
-			BatchWorkers:        config.BatchWorkers,
-			BatchSize:           config.BatchSize,
-		})
 	}
 }
