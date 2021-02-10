@@ -2,18 +2,15 @@ syntax = "proto2";
 import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
-extend google.protobuf.FileOptions {
-    // rony_repo defines what kind of rony repos will be used for messages with 'rony_model' or 'rony_singleton' options enabled.
-    // POSSIBLE VALUES: "local", "cql"
-    optional string rony_repo = 50001;
-}
-
 extend google.protobuf.ServiceOptions {
     // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
     optional bool rony_cobra_cmd = 50001;
     // rony_cobra_cmd_protocol defines what protocol should client use to communicate with server.
     // POSSIBLE VALUES: "ws", "http"
     optional string rony_cobra_cmd_protocol = 50002;
+    // rony_no_client if is set then no client code will be generated. This flag is for internal usage.
+    // DO NOT USE IT.
+    optional bool rony_no_client = 50003;
 }
 
 extend google.protobuf.MethodOptions {

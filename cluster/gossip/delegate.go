@@ -153,14 +153,12 @@ func leaveRaft(c *Cluster, nodeID, addr string) error {
 
 func (d *clusterDelegate) NodeMeta(limit int) []byte {
 	n := rony.EdgeNode{
-		ServerID:      d.c.localServerID,
-		ShardRangeMin: d.c.localShardRange[0],
-		ShardRangeMax: d.c.localShardRange[1],
-		ReplicaSet:    d.c.cfg.ReplicaSet,
-		RaftPort:      uint32(d.c.cfg.RaftPort),
-		GatewayAddr:   d.c.localGatewayAddr,
-		TunnelAddr:    d.c.localTunnelAddr,
-		RaftState:     *rony.RaftState_Leader.Enum(),
+		ServerID:    d.c.localServerID,
+		ReplicaSet:  d.c.cfg.ReplicaSet,
+		RaftPort:    uint32(d.c.cfg.RaftPort),
+		GatewayAddr: d.c.localGatewayAddr,
+		TunnelAddr:  d.c.localTunnelAddr,
+		RaftState:   *rony.RaftState_Leader.Enum(),
 	}
 
 	if d.c.raft != nil {

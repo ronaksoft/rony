@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate/cqlmodel"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate/kvmodel"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton/kvsingleton"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -57,22 +56,14 @@ func main() {
 			GenHelpers(f, g1)
 
 			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
-			opt, _ := f.Desc.Options().(*descriptorpb.FileOptions)
-			repoType := proto.GetExtension(opt, rony.E_RonyRepo).(string)
-			switch strings.ToLower(repoType) {
-			case "local":
-				kvsingleton.Generate(f, g1)
-				kvmodel.Generate(f, g1)
-			case "cql":
-				cqlmodel.Generate(f, g1)
-			}
+			kvsingleton.Generate(f, g1)
+			kvmodel.Generate(f, g1)
 
 			// Generate RPCs if there is any service definition in the file
 			if len(f.Services) > 0 {
 				g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 				g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 				g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
-				g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
 				if f.GoPackageName != "rony" {
 					g1.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 				}

@@ -1,4 +1,4 @@
-package kv
+package store
 
 import (
 	"github.com/dgraph-io/badger/v3"
@@ -60,7 +60,6 @@ func newDB(config Config) (*badger.DB, error) {
 	return badger.Open(opt)
 }
 
-
 func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
 	wb := _DB.NewWriteBatch()
 	for idx := range entries {
@@ -73,7 +72,6 @@ func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
 func DB() *badger.DB {
 	return _DB
 }
-
 
 // Update executes a function, creating and managing a read-write transaction
 // for the user. Error returned by the function is relayed by the Update method.

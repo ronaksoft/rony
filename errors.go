@@ -44,9 +44,9 @@ const (
 var (
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
 	ErrNotFound                  = errors.New("not found")
+	ErrAlreadyExists             = errors.New("already exists")
 	ErrNotRaftLeader             = errors.New("not raft leader")
 	ErrRaftAlreadyJoined         = errors.New("raft already joined")
-	ErrRaftNotSet                = errors.New("raft not set")
 	ErrRaftExecuteOnLeader       = errors.New("raft execute on leader")
 	ErrRetriesExceeded           = wrapError("maximum retries exceeded")
 )

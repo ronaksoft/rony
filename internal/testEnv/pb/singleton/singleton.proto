@@ -2,7 +2,6 @@ syntax = "proto3";
 package singleton;
 import "options.proto";
 option go_package = ".;singleton";
-option (rony_repo) = "local";
 
 
 enum Enum {

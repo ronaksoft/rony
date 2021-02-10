@@ -35,11 +35,15 @@ func setFuncName(n string) bool {
 // Generate generates the repo functions for messages which are identified as model with {{@entity cql}}
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 	for _, m := range file.Messages {
-		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
-		if mm == nil {
+		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+		if !proto.GetExtension(opt, rony.E_RonyAggregate).(bool) {
 			continue
 		}
-		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/kv"})
+		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
+		if mm == nil {
+			panic(fmt.Sprintf("invalid aggregate: %s", m.Desc.Name()))
+		}
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
 		g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
 
 		funcSave(g, m, mm)
@@ -85,9 +89,9 @@ func genDbIndexKey(mm *aggregate.Aggregate, fieldName string, prefix string, pos
 }
 func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Aggregate) {
 	// SaveWithTxn func
-	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m*", mm.Name, ") (err error) {")
+	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *store.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
+	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
@@ -222,18 +226,18 @@ func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Agg
 
 	// Save func
 	g.P("func Save", mm.Name, "(m *", mm.Name, ") error {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
-	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *badger.Txn) error {")
 	g.P("return Save", mm.Name, "WithTxn (txn, alloc, m)")
 	g.P("})") // end of Update func
 	g.P("}")  // end of Save func
 	g.P()
 }
 func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
+	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
+	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
@@ -248,14 +252,14 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("}") // end of Read func
 	g.P()
 	g.P("func Read", mm.Name, "(", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
 	g.P("if m == nil {")
 	g.P("m = &", mm.Name, "{}")
 	g.P("}")
 	g.P()
-	g.P("err := kv.View(func(txn *badger.Txn) (err error) {")
+	g.P("err := store.View(func(txn *badger.Txn) (err error) {")
 	g.P("m, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ", m)")
 	g.P("return err")
 	g.P("})") // end of View func
@@ -265,12 +269,12 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	for _, pk := range mm.Views {
 		g.P(
 			"func Read", mm.Name, "By", pk.String("", "And", false),
-			"WithTxn(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *",
+			"WithTxn(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *",
 			mm.Name,
 			", "+
 				"error) {")
 		g.P("if alloc == nil {")
-		g.P("alloc = kv.NewAllocator()")
+		g.P("alloc = store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("}") // end of if block
 		g.P()
@@ -289,12 +293,12 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 			pk.String("", "And", false),
 			"(", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *", mm.Name, ", error) {",
 		)
-		g.P("alloc := kv.NewAllocator()")
+		g.P("alloc := store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("if m == nil {")
 		g.P("m = &", mm.Name, "{}")
 		g.P("}")
-		g.P("err := kv.View(func(txn *badger.Txn) (err error) {")
+		g.P("err := store.View(func(txn *badger.Txn) (err error) {")
 		g.P("m, err = Read", mm.Name, "By", pk.String("", "And", false), "WithTxn (txn, alloc,", pk.String("", ",", true), ", m)")
 		g.P("return err")
 		g.P("})") // end of View func
@@ -304,7 +308,7 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	}
 }
 func funcDelete(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Delete", mm.Name, "WithTxn(txn *badger.Txn, alloc *kv.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
+	g.P("func Delete", mm.Name, "WithTxn(txn *badger.Txn, alloc *store.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
 	if len(mm.Views) > 0 {
 		g.P("m := &", mm.Name, "{}")
 		g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
@@ -337,19 +341,19 @@ func funcDelete(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("}") // end of DeleteWithTxn
 	g.P()
 	g.P("func Delete", mm.Name, "(", mm.FuncArgs("", mm.Table), ") error {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
-	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *badger.Txn) error {")
 	g.P("return Delete", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ")")
 	g.P("})") // end of Update func
 	g.P("}")  // end of Delete func
 	g.P()
 }
 func funcIter(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Iter", inflection.Plural(mm.Name), "(txn *badger.Txn, alloc *kv.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
+	g.P("func Iter", inflection.Plural(mm.Name), "(txn *badger.Txn, alloc *store.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
 	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
+	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}")
 	g.P()
@@ -383,10 +387,10 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Table.StringPKs("", "And", false),
-			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
+			"(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
 		)
 		g.P("if alloc == nil {")
-		g.P("alloc = kv.NewAllocator()")
+		g.P("alloc = store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("}")
 		g.P()
@@ -423,10 +427,10 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
-			"(txn *badger.Txn, alloc *kv.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ") bool) error {",
+			"(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ") bool) error {",
 		)
 		g.P("if alloc == nil {")
-		g.P("alloc = kv.NewAllocator()")
+		g.P("alloc = store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P("}")
 		g.P()
@@ -458,13 +462,13 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 }
 func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("func List", mm.Name, "(")
-	g.P(mm.FuncArgs("offset", mm.Table), ", lo *kv.ListOption, cond func(m *", mm.Name, ") bool, ")
+	g.P(mm.FuncArgs("offset", mm.Table), ", lo *store.ListOption, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
 	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-	g.P("err := kv.View(func(txn *badger.Txn) error {")
+	g.P("err := store.View(func(txn *badger.Txn) error {")
 	g.P("opt := badger.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("opt.Reverse = lo.Backward()")
@@ -504,13 +508,13 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 			"func List", mm.Name, "By",
 			mm.Table.StringPKs("", "And", false),
 			"(", mm.FuncArgsPKs("", mm.Table), ",",
-			mm.FuncArgsCKs("offset", mm.Table), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
+			mm.FuncArgsCKs("offset", mm.Table), ", lo *store.ListOption) ([]*", mm.Name, ", error) {",
 		)
-		g.P("alloc := kv.NewAllocator()")
+		g.P("alloc := store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P()
 		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-		g.P("err := kv.View(func(txn *badger.Txn) error {")
+		g.P("err := store.View(func(txn *badger.Txn) error {")
 		g.P("opt := badger.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 		g.P("opt.Reverse = lo.Backward()")
@@ -551,13 +555,13 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 			"func List", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
 			"(", mm.FuncArgsPKs("", mm.Views[idx]), ",",
-			mm.FuncArgsCKs("offset", mm.Views[idx]), ", lo *kv.ListOption) ([]*", mm.Name, ", error) {",
+			mm.FuncArgsCKs("offset", mm.Views[idx]), ", lo *store.ListOption) ([]*", mm.Name, ", error) {",
 		)
-		g.P("alloc := kv.NewAllocator()")
+		g.P("alloc := store.NewAllocator()")
 		g.P("defer alloc.ReleaseAll()")
 		g.P()
 		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-		g.P("err := kv.View(func(txn *badger.Txn) error {")
+		g.P("err := store.View(func(txn *badger.Txn) error {")
 		g.P("opt := badger.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
 		g.P("opt.Reverse = lo.Backward()")
@@ -601,13 +605,13 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *aggrega
 				// TODO:: support index on message fields
 			default:
 				ftNameS := inflection.Singular(ftName)
-				g.P("func List", mm.Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", mm.FieldsGo[ftName], ", lo *kv.ListOption) ([]*", mm.Name, ", "+
+				g.P("func List", mm.Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", mm.FieldsGo[ftName], ", lo *store.ListOption) ([]*", mm.Name, ", "+
 					"error) {")
-				g.P("alloc := kv.NewAllocator()")
+				g.P("alloc := store.NewAllocator()")
 				g.P("defer alloc.ReleaseAll()")
 				g.P()
 				g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-				g.P("err := kv.View(func(txn *badger.Txn) error {")
+				g.P("err := store.View(func(txn *badger.Txn) error {")
 				g.P("opt := badger.DefaultIteratorOptions")
 				g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mm.Name, ",", crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS), ")")
 				g.P("opt.Reverse = lo.Backward()")

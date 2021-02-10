@@ -48,7 +48,6 @@ type Cluster struct {
 	localServerID    []byte
 	localGatewayAddr []string
 	localTunnelAddr  []string
-	localShardRange  [2]uint32
 	replicaLeaderID  string
 	replicaMembers   map[uint64]map[string]*Member
 	clusterMembers   map[string]*Member

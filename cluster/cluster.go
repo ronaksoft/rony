@@ -47,7 +47,7 @@ type Raft interface {
 }
 
 type Member interface {
-	Proto(info *rony.NodeInfo) *rony.NodeInfo
+	Proto(info *rony.Edge) *rony.Edge
 	ServerID() string
 	RaftState() rony.RaftState
 	ReplicaSet() uint64

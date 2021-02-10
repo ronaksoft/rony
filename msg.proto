@@ -29,10 +29,7 @@ message MessageContainer {
 message Error {
     string Code = 1;
     string Items = 2;
-    string Template = 3;
-    repeated string TemplateItems = 4;
-    string LocalTemplate = 5;
-    repeated string LocalTemplateItems = 6;
+    string Description = 3;
 }
 
 // RedirectReason
@@ -49,27 +46,20 @@ enum RedirectReason {
 // Redirect
 message Redirect {
     RedirectReason Reason = 100;
-    NodeInfo Leader = 1;
-    repeated NodeInfo Followers = 2;
+    Edge Leader = 1;
+    repeated Edge Followers = 2;
     uint32 WaitInSec = 3;
 }
 
-// NodeInfo
-message NodeInfo {
+// Edge
+message Edge {
     uint64 ReplicaSet = 1;
     string ServerID = 2;
     repeated string HostPorts = 3;
     bool Leader = 4;
 }
 
-// GetNodes
-// @Returns: NodeInfoMany
-message GetNodes {
-    repeated uint64 ReplicaSet = 1;
+// Edges
+message Edges {
+    repeated Edge Nodes = 1;
 }
-
-// NodeInfoMany
-message NodeInfoMany {
-    repeated NodeInfo Nodes = 1;
-}
-

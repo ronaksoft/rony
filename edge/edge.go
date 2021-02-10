@@ -67,8 +67,10 @@ func NewServer(serverID string, opts ...Option) *Server {
 		opt(edgeServer)
 	}
 
-	// register default rony handlers
-	edgeServer.SetHandlers(rony.C_GetNodes, false, edgeServer.getNodes)
+	// register builtin rony handlers
+	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
+	edgeServer.SetHandlers(rony.C_GetNodes, false, builtin.GetNodes)
+	edgeServer.SetHandlers(rony.C_GetPage, true, builtin.GetPage)
 
 	return edgeServer
 }

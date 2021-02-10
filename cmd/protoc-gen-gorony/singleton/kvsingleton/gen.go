@@ -18,15 +18,14 @@ import (
 */
 
 func Generate(file *protogen.File, g *protogen.GeneratedFile) {
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/repo/kv"})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
-
 	for _, m := range file.Messages {
 		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
 		singleton := proto.GetExtension(opt, rony.E_RonySingleton).(bool)
 		if !singleton {
 			continue
 		}
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
 
 		funcSave(g, m)
 		funcRead(g, m)
@@ -40,9 +39,9 @@ func genDbKey(m *protogen.Message) string {
 }
 func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
 	// SaveWithTxn func
-	g.P("func Save", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m *", m.Desc.Name(), ") (err error) {")
+	g.P("func Save", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
 	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
+	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
@@ -56,18 +55,18 @@ func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("}") // end of SaveWithTxn func
 	g.P()
 	g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
-	g.P("return kv.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *badger.Txn) error {")
 	g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
-	g.P("})") // end of kv.Update func
+	g.P("})") // end of store.Update func
 	g.P("}")  // end of Save func
 	g.P()
 }
 func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
-	g.P("func Read", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *kv.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.P("func Read", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
 	g.P("if alloc == nil {")
-	g.P("alloc = kv.NewAllocator()")
+	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
@@ -82,14 +81,14 @@ func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("}") // end of ReadWithTxn func
 	g.P()
 	g.P("func Read", m.Desc.Name(), "(m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
-	g.P("alloc := kv.NewAllocator()")
+	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
 	g.P("if m == nil {")
 	g.P("m = &", m.Desc.Name(), "{}")
 	g.P("}")
 	g.P()
-	g.P("err := kv.View(func(txn *badger.Txn) (err error) {")
+	g.P("err := store.View(func(txn *badger.Txn) (err error) {")
 	g.P("m, err = Read", m.Desc.Name(), "WithTxn(txn, alloc,  m)")
 	g.P("return")
 	g.P("})") // end of View func

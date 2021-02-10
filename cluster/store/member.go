@@ -23,7 +23,6 @@ import (
 type Member struct {
 	serverID    string
 	replicaSet  uint64
-	ShardRange  [2]uint32
 	gatewayAddr []string
 	tunnelAddr  []string
 	ClusterAddr net.IP
@@ -57,9 +56,9 @@ func (m *Member) RaftPort() int {
 	return m.raftPort
 }
 
-func (m *Member) Proto(p *rony.NodeInfo) *rony.NodeInfo {
+func (m *Member) Proto(p *rony.Edge) *rony.Edge {
 	if p == nil {
-		p = &rony.NodeInfo{}
+		p = &rony.Edge{}
 	}
 	p.ReplicaSet = m.replicaSet
 	p.ServerID = m.serverID
@@ -82,7 +81,6 @@ func convertMember(sm *memberlist.Node) *Member {
 	return &Member{
 		serverID:    tools.ByteToStr(edgeNode.ServerID),
 		replicaSet:  edgeNode.GetReplicaSet(),
-		ShardRange:  [2]uint32{edgeNode.ShardRangeMin, edgeNode.ShardRangeMax},
 		gatewayAddr: edgeNode.GatewayAddr,
 		tunnelAddr:  edgeNode.TunnelAddr,
 		raftPort:    int(edgeNode.GetRaftPort()),

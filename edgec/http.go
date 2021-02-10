@@ -141,8 +141,8 @@ func (h *Http) initConn() error {
 	}
 	h.sessionReplica = sessionReplica
 	switch res.Constructor {
-	case rony.C_NodeInfoMany:
-		x := &rony.NodeInfoMany{}
+	case rony.C_Edges:
+		x := &rony.Edges{}
 		_ = x.Unmarshal(res.Message)
 		found := false
 		for _, n := range x.Nodes {

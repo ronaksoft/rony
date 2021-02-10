@@ -193,7 +193,13 @@ func genMarshal(mt *protogen.Message, g *protogen.GeneratedFile) {
 func GenRPC(file *protogen.File, s *protogen.Service, g *protogen.GeneratedFile) {
 	genServerRPC(file, g, s)
 	genExecuteRemoteRPC(file, g, s)
-	genClientRPC(file, g, s)
+
+	opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
+	if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
+		genClientRPC(file, g, s)
+	}
+
 }
 func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Service) {
 	serviceName := string(s.Desc.Name())

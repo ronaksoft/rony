@@ -15,8 +15,9 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto imsg.proto options.proto
-//go:generate protoc -I=. --gorony_out=paths=source_relative:. msg.proto imsg.proto
+//go:generate protoc -I=. --go_out=paths=source_relative:. imsg.proto msg.proto options.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative:. imsg.proto msg.proto
+func init() {}
 
 func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 	errMessage := PoolError.Get()
@@ -88,8 +89,8 @@ func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *Messag
 }
 
 func (x *Error) Error() string {
-	if len(x.Template) > 0 {
-		return fmt.Sprintf("%s:%s (%s %s)", x.Code, x.Items, x.Template, x.Items)
+	if len(x.Description) > 0 {
+		return fmt.Sprintf("%s:%s (%s)", x.Code, x.Items, x.Description)
 	} else {
 		return fmt.Sprintf("%s:%s", x.Code, x.Items)
 	}

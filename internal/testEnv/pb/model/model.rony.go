@@ -6,7 +6,7 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
-	kv "github.com/ronaksoft/rony/repo/kv"
+	store "github.com/ronaksoft/rony/store"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -108,9 +108,9 @@ func init() {
 	registry.RegisterConstructor(3802219577, "Model2")
 }
 
-func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err error) {
+func SaveModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model1) (err error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -182,16 +182,16 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model1) (err err
 }
 
 func SaveModel1(m *Model1) error {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return SaveModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
+func ReadModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -206,23 +206,23 @@ func ReadModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey 
 }
 
 func ReadModel1(id int32, shardKey int32, m *Model1) (*Model1, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
 		m = &Model1{}
 	}
 
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadModel1WithTxn(txn, alloc, id, shardKey, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *store.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -237,19 +237,19 @@ func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocato
 }
 
 func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 	if m == nil {
 		m = &Model1{}
 	}
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn, alloc, enum, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func DeleteModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKey int32) error {
+func DeleteModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
 	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
 	if err != nil {
@@ -275,22 +275,22 @@ func DeleteModel1WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int32, shardKe
 }
 
 func DeleteModel1(id int32, shardKey int32) error {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return DeleteModel1WithTxn(txn, alloc, id, shardKey)
 	})
 }
 
 func ListModel1(
-	offsetID int32, offsetShardKey int32, lo *kv.ListOption, cond func(m *Model1) bool,
+	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
 		opt.Reverse = lo.Backward()
@@ -323,9 +323,9 @@ func ListModel1(
 	return res, err
 }
 
-func IterModel1(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model1) bool) error {
+func IterModel1(txn *badger.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -362,12 +362,12 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
-func ListModel1ByP1(p1 string, lo *kv.ListOption) ([]*Model1, error) {
-	alloc := kv.NewAllocator()
+func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey("IDX", C_Model1, 2864467857, p1)
 		opt.Reverse = lo.Backward()
@@ -403,12 +403,12 @@ func ListModel1ByP1(p1 string, lo *kv.ListOption) ([]*Model1, error) {
 	return res, err
 }
 
-func ListModel1ByP2(p2 string, lo *kv.ListOption) ([]*Model1, error) {
-	alloc := kv.NewAllocator()
+func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey("IDX", C_Model1, 867507755, p2)
 		opt.Reverse = lo.Backward()
@@ -444,12 +444,12 @@ func ListModel1ByP2(p2 string, lo *kv.ListOption) ([]*Model1, error) {
 	return res, err
 }
 
-func ListModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption) ([]*Model1, error) {
-	alloc := kv.NewAllocator()
+func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
 		opt.Reverse = lo.Backward()
@@ -480,12 +480,12 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *kv.ListOption) ([]*Model
 	return res, err
 }
 
-func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *kv.ListOption) ([]*Model1, error) {
-	alloc := kv.NewAllocator()
+func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
 		opt.Reverse = lo.Backward()
@@ -516,9 +516,9 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *kv.Li
 	return res, err
 }
 
-func IterModel1ByID(txn *badger.Txn, alloc *kv.Allocator, id int32, cb func(m *Model1) bool) error {
+func IterModel1ByID(txn *badger.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -546,9 +546,9 @@ func IterModel1ByID(txn *badger.Txn, alloc *kv.Allocator, id int32, cb func(m *M
 	return nil
 }
 
-func IterModel1ByEnum(txn *badger.Txn, alloc *kv.Allocator, enum Enum, cb func(m *Model1) bool) error {
+func IterModel1ByEnum(txn *badger.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -576,9 +576,9 @@ func IterModel1ByEnum(txn *badger.Txn, alloc *kv.Allocator, enum Enum, cb func(m
 	return nil
 }
 
-func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err error) {
+func SaveModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model2) (err error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -601,16 +601,16 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Model2) (err err
 }
 
 func SaveModel2(m *Model2) error {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return SaveModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
+func ReadModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -625,23 +625,23 @@ func ReadModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey 
 }
 
 func ReadModel2(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
 		m = &Model2{}
 	}
 
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadModel2WithTxn(txn, alloc, id, shardKey, p1, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *store.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -656,19 +656,19 @@ func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *kv.Allocator,
 }
 
 func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 	if m == nil {
 		m = &Model2{}
 	}
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadModel2ByP1AndShardKeyAndIDWithTxn(txn, alloc, p1, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func DeleteModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, p1 string) error {
+func DeleteModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
 	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
 	if err != nil {
@@ -694,22 +694,22 @@ func DeleteModel2WithTxn(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKe
 }
 
 func DeleteModel2(id int64, shardKey int32, p1 string) error {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return DeleteModel2WithTxn(txn, alloc, id, shardKey, p1)
 	})
 }
 
 func ListModel2(
-	offsetID int64, offsetShardKey int32, offsetP1 string, lo *kv.ListOption, cond func(m *Model2) bool,
+	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
 ) ([]*Model2, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
 		opt.Reverse = lo.Backward()
@@ -742,9 +742,9 @@ func ListModel2(
 	return res, err
 }
 
-func IterModel2(txn *badger.Txn, alloc *kv.Allocator, cb func(m *Model2) bool) error {
+func IterModel2(txn *badger.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -781,12 +781,12 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
-func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv.ListOption) ([]*Model2, error) {
-	alloc := kv.NewAllocator()
+func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *store.ListOption) ([]*Model2, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
 		opt.Reverse = lo.Backward()
@@ -817,12 +817,12 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *kv
 	return res, err
 }
 
-func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *kv.ListOption) ([]*Model2, error) {
-	alloc := kv.NewAllocator()
+func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption) ([]*Model2, error) {
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := kv.View(func(txn *badger.Txn) error {
+	err := store.View(func(txn *badger.Txn) error {
 		opt := badger.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
 		opt.Reverse = lo.Backward()
@@ -853,9 +853,9 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *kv.List
 	return res, err
 }
 
-func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *kv.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -883,9 +883,9 @@ func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *kv.Allocator, id int64, s
 	return nil
 }
 
-func IterModel2ByP1(txn *badger.Txn, alloc *kv.Allocator, p1 string, cb func(m *Model2) bool) error {
+func IterModel2ByP1(txn *badger.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 

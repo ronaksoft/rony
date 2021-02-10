@@ -3,7 +3,7 @@ package kvmodel_test
 import (
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/model"
-	"github.com/ronaksoft/rony/repo/kv"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -80,20 +80,20 @@ func save(c C) {
 	c.So(err, ShouldBeNil)
 	err = model.SaveModel1(m5)
 	c.So(err, ShouldBeNil)
-	res, err := model.ListModel1ByEnum(model.Enum_Else, 0, 0, kv.NewListOption().SetLimit(10))
+	res, err := model.ListModel1ByEnum(model.Enum_Else, 0, 0, store.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 
-	res, err = model.ListModel1ByP2("3", kv.NewListOption().SetLimit(10))
+	res, err = model.ListModel1ByP2("3", store.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 5)
-	res, err = model.ListModel1ByP2("4", kv.NewListOption().SetLimit(10))
+	res, err = model.ListModel1ByP2("4", store.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 4)
-	res, err = model.ListModel1ByP2("5", kv.NewListOption().SetLimit(10))
+	res, err = model.ListModel1ByP2("5", store.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
-	res, err = model.ListModel1ByP2("6", kv.NewListOption().SetLimit(10))
+	res, err = model.ListModel1ByP2("6", store.NewListOption().SetLimit(10))
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 0)
 
@@ -109,11 +109,11 @@ func save(c C) {
 	c.So(err, ShouldNotBeNil)
 	c.So(m1p, ShouldBeNil)
 
-	res, err = model.ListModel1ByID(100, 0, kv.NewListOption())
+	res, err = model.ListModel1ByID(100, 0, store.NewListOption())
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 
-	res, err = model.ListModel1ByID(100, 0, kv.NewListOption().SetBackward())
+	res, err = model.ListModel1ByID(100, 0, store.NewListOption().SetBackward())
 	c.So(err, ShouldBeNil)
 	c.So(res, ShouldHaveLength, 3)
 }

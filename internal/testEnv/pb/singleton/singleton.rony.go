@@ -6,7 +6,7 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
-	kv "github.com/ronaksoft/rony/repo/kv"
+	store "github.com/ronaksoft/rony/store"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -108,9 +108,9 @@ func init() {
 	registry.RegisterConstructor(2982774902, "Single2")
 }
 
-func SaveSingle1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single1) (err error) {
+func SaveSingle1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Single1) (err error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -124,16 +124,16 @@ func SaveSingle1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single1) (err e
 }
 
 func SaveSingle1(m *Single1) (err error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return SaveSingle1WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single1) (*Single1, error) {
+func ReadSingle1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Single1) (*Single1, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -148,23 +148,23 @@ func ReadSingle1WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single1) (*Sing
 }
 
 func ReadSingle1(m *Single1) (*Single1, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
 		m = &Single1{}
 	}
 
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadSingle1WithTxn(txn, alloc, m)
 		return
 	})
 	return m, err
 }
 
-func SaveSingle2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single2) (err error) {
+func SaveSingle2WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Single2) (err error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -178,16 +178,16 @@ func SaveSingle2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single2) (err e
 }
 
 func SaveSingle2(m *Single2) (err error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return kv.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *badger.Txn) error {
 		return SaveSingle2WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single2) (*Single2, error) {
+func ReadSingle2WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Single2) (*Single2, error) {
 	if alloc == nil {
-		alloc = kv.NewAllocator()
+		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -202,14 +202,14 @@ func ReadSingle2WithTxn(txn *badger.Txn, alloc *kv.Allocator, m *Single2) (*Sing
 }
 
 func ReadSingle2(m *Single2) (*Single2, error) {
-	alloc := kv.NewAllocator()
+	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
 		m = &Single2{}
 	}
 
-	err := kv.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *badger.Txn) (err error) {
 		m, err = ReadSingle2WithTxn(txn, alloc, m)
 		return
 	})

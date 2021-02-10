@@ -1,6 +1,6 @@
 module github.com/ronaksoft/rony
 
-go 1.14
+go 1.15
 
 require (
 	github.com/allegro/bigcache/v2 v2.2.5

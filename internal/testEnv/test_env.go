@@ -2,7 +2,7 @@ package testEnv
 
 import (
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/repo/kv"
+	"github.com/ronaksoft/rony/store"
 	"os"
 )
 
@@ -38,7 +38,7 @@ func Init() {
 
 	_ = os.RemoveAll("./_hdd")
 	_ = os.MkdirAll("./_hdd", os.ModePerm)
-	kv.MustInit(kv.Config{
+	store.MustInit(store.Config{
 		DirPath:             "./_hdd",
 		ConflictRetries:     0,
 		ConflictMaxInterval: 0,

@@ -1,7 +1,24 @@
 syntax = "proto3";
 package rony;
-option go_package = "github.com/ronaksoft/rony";
+import "options.proto";
 import "msg.proto";
+option go_package = "github.com/ronaksoft/rony";
+
+// GetNodes
+// @Function
+// @Return: Edges
+message GetNodes {
+    repeated uint64 ReplicaSet = 1;
+}
+
+// GetPage
+// @Function
+// @Return: Page
+message GetPage {
+    uint32 PageID = 1;
+    uint64 ReplicaSet = 2;
+}
+
 
 // TunnelMessage
 message TunnelMessage {
@@ -31,10 +48,19 @@ enum RaftState {
 message EdgeNode {
     bytes ServerID = 1;
     uint64 ReplicaSet = 2;
-    uint32 ShardRangeMin = 3;
-    uint32 ShardRangeMax = 4;
     uint32 RaftPort = 5;
     RaftState RaftState = 6;
     repeated string GatewayAddr = 7;
     repeated string TunnelAddr = 8;
+}
+
+
+// Page
+message Page {
+    option (rony_aggregate) = true;
+    option (rony_aggregate_type) = "crud";
+    option (rony_aggregate_table) = "(ID)";
+    option (rony_aggregate_view) = "(ReplicaSet, ID)";
+    uint32 ID = 1;
+    uint64 ReplicaSet = 2;
 }

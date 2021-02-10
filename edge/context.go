@@ -286,9 +286,9 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 		r.Reason = rony.RedirectReason_ReplicaMaster
 		r.WaitInSec = 0
 		members := ctxCluster.RaftMembers(ctxCluster.ReplicaSet())
-		nodeInfos := make([]*rony.NodeInfo, 0, len(members))
+		nodeInfos := make([]*rony.Edge, 0, len(members))
 		for _, m := range members {
-			ni := m.Proto(rony.PoolNodeInfo.Get())
+			ni := m.Proto(rony.PoolEdge.Get())
 			if ni.Leader {
 				r.Leader = ni
 			} else {
@@ -298,7 +298,7 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 		}
 		ctx.PushMessage(rony.C_Redirect, r)
 		for _, p := range nodeInfos {
-			rony.PoolNodeInfo.Put(p)
+			rony.PoolEdge.Put(p)
 		}
 		rony.PoolRedirect.Put(r)
 	}
@@ -336,17 +336,14 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 }
 
 func (ctx *RequestCtx) PushError(code, item string) {
-	ctx.PushCustomError(code, item, "", nil, "", nil)
+	ctx.PushCustomError(code, item, "")
 }
 
-func (ctx *RequestCtx) PushCustomError(code, item string, enTxt string, enItems []string, localTxt string, localItems []string) {
+func (ctx *RequestCtx) PushCustomError(code, item string, desc string) {
 	ctx.PushMessage(rony.C_Error, &rony.Error{
-		Code:               code,
-		Items:              item,
-		TemplateItems:      enItems,
-		Template:           enTxt,
-		LocalTemplate:      localTxt,
-		LocalTemplateItems: localItems,
+		Code:        code,
+		Items:       item,
+		Description: desc,
 	})
 	ctx.stop = true
 }
