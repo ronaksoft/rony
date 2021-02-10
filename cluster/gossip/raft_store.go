@@ -21,8 +21,8 @@ import (
 
 var (
 	// Prefix names to distinguish between logs and conf
-	prefixLogs = []byte{0x0}
-	prefixConf = []byte{0x1}
+	prefixLogs = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
+	prefixConf = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1}
 
 	// ErrKeyNotFound is an error indicating a given key does not exist
 	ErrKeyNotFound = errors.New("not found")
