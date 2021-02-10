@@ -89,7 +89,10 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 
 	err = store.Update(func(txn *badger.Txn) (err error) {
 		_, err = rony.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
-		if err != nil && req.GetReplicaSet() == 0 {
+		if err == nil {
+			return
+		}
+		if req.GetReplicaSet() == 0 {
 			return err
 		}
 		res.ReplicaSet = req.GetReplicaSet()
