@@ -24,6 +24,7 @@ var ServerCmd = &cobra.Command{
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
 			config.GetString("serverID"),
+			edge.WithDataDir(config.GetString("dataPath")),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gatewayListen"),
@@ -38,7 +39,6 @@ var ServerCmd = &cobra.Command{
 				ReplicaSet: config.GetUint64("replicaSet"),
 				Mode:       cluster.MultiReplica,
 				GossipPort: config.GetInt("gossipPort"),
-				DataPath:   config.GetString("dataPath"),
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{
 				ServerID:      config.GetString("serverID"),

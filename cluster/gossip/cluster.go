@@ -2,14 +2,12 @@ package gossipCluster
 
 import (
 	"fmt"
-	"github.com/dgraph-io/badger/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/internal/log"
-	raftbadger "github.com/ronaksoft/rony/internal/raftstore"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -37,12 +35,12 @@ type Config struct {
 	ReplicaSet uint64
 	Mode       cluster.Mode
 	GossipPort int
-	DataPath   string
 }
 
 // Cluster
 type Cluster struct {
 	cluster.ReplicaMessageHandler
+	dataPath         string
 	cfg              Config
 	mtx              sync.RWMutex
 	localServerID    []byte
@@ -53,26 +51,25 @@ type Cluster struct {
 	clusterMembers   map[string]*Member
 
 	// Raft & Gossip
-	raftFSM       raftFSM
-	raft          *raft.Raft
-	gossip        *memberlist.Memberlist
-	badgerStore   *raftbadger.BadgerStore
+	raftFSM raftFSM
+	raft    *raft.Raft
+	gossip  *memberlist.Memberlist
+	// badgerStore   *raftbadger.BadgerStore
 	rateLimitChan chan struct{}
 }
 
-func New(cfg Config) *Cluster {
+func New(dataPath string, cfg Config) *Cluster {
 	if cfg.GossipPort == 0 {
 		cfg.GossipPort = 7946
 	}
-	if cfg.DataPath == "" {
-		cfg.DataPath = "./_hdd"
-	}
+
 	switch cfg.Mode {
 	case cluster.MultiReplica, cluster.SingleReplica:
 	default:
 		panic("only singleReplica and multiReplica supported")
 	}
 	c := &Cluster{
+		dataPath:       dataPath,
 		cfg:            cfg,
 		localServerID:  cfg.ServerID,
 		clusterMembers: make(map[string]*Member, 100),
@@ -89,9 +86,6 @@ func (c *Cluster) updateCluster(timeout time.Duration) error {
 }
 
 func (c *Cluster) startGossip() error {
-	dirPath := filepath.Join(c.cfg.DataPath, "gossip")
-	_ = os.MkdirAll(dirPath, os.ModePerm)
-
 	cd := &clusterDelegate{
 		c: c,
 	}
@@ -115,21 +109,8 @@ func (c *Cluster) startGossip() error {
 
 func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 	// Initialize LogStore for Raft
-	dirPath := filepath.Join(c.cfg.DataPath, "raft")
+	dirPath := filepath.Join(c.dataPath, "raft")
 	_ = os.MkdirAll(dirPath, os.ModePerm)
-	badgerOpt := badger.DefaultOptions(dirPath).WithLogger(nil)
-	c.badgerStore, err = raftbadger.New(raftbadger.Options{
-		Path:                dirPath,
-		BadgerOptions:       &badgerOpt,
-		NoSync:              false,
-		ValueLogGC:          false,
-		GCInterval:          0,
-		MandatoryGCInterval: 0,
-		GCThreshold:         0,
-	})
-	if err != nil {
-		return
-	}
 
 	// Initialize Raft
 	raftConfig := raft.DefaultConfig()
@@ -170,7 +151,8 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 		return err
 	}
 
-	c.raft, err = raft.NewRaft(raftConfig, c.raftFSM, c.badgerStore, c.badgerStore, raftSnapshot, raftTransport)
+	badgerStore := &BadgerStore{}
+	c.raft, err = raft.NewRaft(raftConfig, c.raftFSM, badgerStore, badgerStore, raftSnapshot, raftTransport)
 	if err != nil {
 		return err
 	}
@@ -292,11 +274,6 @@ func (c *Cluster) Shutdown() {
 		}
 		if f := c.raft.Shutdown(); f.Error() != nil {
 			log.Warn("Error On Shutdown (Raft Shutdown)", zap.Error(f.Error()))
-		}
-
-		err := c.badgerStore.Close()
-		if err != nil {
-			log.Warn("Error On Shutdown (Close Raft Badger)", zap.Error(err))
 		}
 	}
 

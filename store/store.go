@@ -21,6 +21,8 @@ var (
 	_Flusher               *tools.FlusherPool
 	_ConflictRetry         int
 	_ConflictRetryInterval time.Duration
+	vlogTicker             *time.Ticker // runs every 1m, check size of vlog and run GC conditionally.
+	mandatoryVlogTicker    *time.Ticker // runs every 10m, we always run vlog GC.
 )
 
 func MustInit(config Config) {
@@ -52,7 +54,38 @@ func Init(config Config) error {
 	_ConflictRetryInterval = config.ConflictMaxInterval
 
 	_Flusher = tools.NewFlusherPool(int32(config.BatchWorkers), int32(config.BatchSize), writeFlushFunc)
+
+	vlogTicker = time.NewTicker(time.Minute)
+	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
+	go runVlogGC(_DB, 1<<30)
 	return nil
+}
+
+func runVlogGC(db *badger.DB, threshold int64) {
+	// Get initial size on start.
+	_, lastVlogSize := db.Size()
+
+	runGC := func() {
+		var err error
+		for err == nil {
+			// If a GC is successful, immediately run it again.
+			err = db.RunValueLogGC(0.7)
+		}
+		_, lastVlogSize = db.Size()
+	}
+
+	for {
+		select {
+		case <-vlogTicker.C:
+			_, currentVlogSize := db.Size()
+			if currentVlogSize < lastVlogSize+threshold {
+				continue
+			}
+			runGC()
+		case <-mandatoryVlogTicker.C:
+			runGC()
+		}
+	}
 }
 
 func newDB(config Config) (*badger.DB, error) {
@@ -71,6 +104,18 @@ func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
 // DB returns the underlying object of the database
 func DB() *badger.DB {
 	return _DB
+}
+
+func Shutdown() {
+	if vlogTicker != nil {
+		vlogTicker.Stop()
+	}
+	if mandatoryVlogTicker != nil {
+		mandatoryVlogTicker.Stop()
+	}
+	if _DB != nil {
+		_ = _DB.Close()
+	}
 }
 
 // Update executes a function, creating and managing a read-write transaction

@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/gateway"
 	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/gateway/tcp"
+	"github.com/ronaksoft/rony/store"
 	udpTunnel "github.com/ronaksoft/rony/tunnel/udp"
 )
 
@@ -21,6 +22,13 @@ import (
 // Option
 type Option func(edge *Server)
 
+// WithDataDir
+func WithDataDir(path string) Option {
+	return func(edge *Server) {
+		edge.dataDir = path
+	}
+}
+
 // WithDispatcher enables custom dispatcher to write your specific event handlers.
 func WithDispatcher(d Dispatcher) Option {
 	return func(edge *Server) {
@@ -34,7 +42,7 @@ type GossipClusterConfig gossipCluster.Config
 // no need to a central key-value store or any other 3rd party service to run the cluster
 func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
-		c := gossipCluster.New(gossipCluster.Config(cfg))
+		c := gossipCluster.New(edge.dataDir, gossipCluster.Config(cfg))
 		c.ReplicaMessageHandler = edge.onReplicaMessage
 		edge.cluster = c
 	}
@@ -100,5 +108,21 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
+	}
+}
+
+// StoreConfig
+type StoreConfig store.Config
+
+// WithStore initialize the underlying badger db
+func WithStore(config StoreConfig) Option {
+	return func(edge *Server) {
+		store.MustInit(store.Config{
+			DirPath:             config.DirPath,
+			ConflictRetries:     config.ConflictRetries,
+			ConflictMaxInterval: config.ConflictMaxInterval,
+			BatchWorkers:        config.BatchWorkers,
+			BatchSize:           config.BatchSize,
+		})
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ronaksoft/rony/tunnel"
 	"go.uber.org/zap"
@@ -35,6 +36,7 @@ func init() {
 // Server
 type Server struct {
 	// General
+	dataDir  string
 	serverID []byte
 
 	// Handlers
@@ -57,6 +59,7 @@ type Server struct {
 
 func NewServer(serverID string, opts ...Option) *Server {
 	edgeServer := &Server{
+		dataDir:           "./_hdd",
 		handlers:          make(map[int64][]Handler),
 		readonlyHandlers:  make(map[int64]struct{}),
 		serverID:          []byte(serverID),
@@ -66,6 +69,9 @@ func NewServer(serverID string, opts ...Option) *Server {
 	for _, opt := range opts {
 		opt(edgeServer)
 	}
+
+	// Initialize store
+	store.MustInit(store.DefaultConfig("./_hdd"))
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
@@ -467,6 +473,9 @@ func (edge *Server) Shutdown() {
 	if edge.cluster != nil {
 		edge.cluster.Shutdown()
 	}
+
+	// Shutdown the underlying store
+	store.Shutdown()
 
 	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
