@@ -70,7 +70,7 @@ func BenchmarkSingleClient(b *testing.B) {
 		for p.Next() {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), service.C_Echo, &echoRequest)
+			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
 			_ = edgeClient.Send(req, res, true)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)
@@ -103,7 +103,7 @@ func BenchmarkMultiClient(b *testing.B) {
 		for p.Next() {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), service.C_Echo, &echoRequest)
+			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
 			_ = edgeClient.Send(req, res, true)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)

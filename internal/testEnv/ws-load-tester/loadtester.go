@@ -127,7 +127,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 		Timestamp: 42342342342,
 	}
 	req := rony.PoolMessageEnvelope.Get()
-	req.Fill(tools.RandomUint64(0), service.C_Echo, &echoRequest)
+	req.Fill(tools.RandomUint64(0), service.C_SampleEcho, &echoRequest)
 	reqBytes, _ := req.Marshal()
 	for i := 0; i < m; i++ {
 		err := wsutil.WriteClientMessage(c, ws.OpBinary, reqBytes)

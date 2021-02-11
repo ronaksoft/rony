@@ -28,7 +28,7 @@ func TestWithTestGateway(t *testing.T) {
 		defer s.Shutdown()
 
 		err := s.Context().
-			Request(service.C_Echo, &service.EchoRequest{
+			Request(service.C_SampleEcho, &service.EchoRequest{
 				Int:       100,
 				Timestamp: 123,
 			}).

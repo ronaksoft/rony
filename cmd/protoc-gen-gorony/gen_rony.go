@@ -58,9 +58,10 @@ func GenHelpers(file *protogen.File, g *protogen.GeneratedFile) {
 	}
 	for _, st := range file.Services {
 		for _, m := range st.Methods {
-			constructor := crc32.ChecksumIEEE([]byte(m.Desc.Name()))
-			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, m.Desc.Name()))
-			g.P("const C_", m.Desc.Name(), " int64 = ", fmt.Sprintf("%d", constructor))
+			methodName := fmt.Sprintf("%s%s", st.Desc.Name(), m.Desc.Name())
+			constructor := crc32.ChecksumIEEE([]byte(methodName))
+			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, methodName))
+			g.P("const C_", methodName, " int64 = ", fmt.Sprintf("%d", constructor))
 		}
 	}
 
@@ -263,7 +264,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
-		g.P("e.SetHandlers(C_", methodName, ", ", leaderOnlyText, ", ho.ApplyTo(sw.", tools.ToLowerCamel(methodName), "Wrapper)...)")
+		g.P("e.SetHandlers(C_", serviceName, methodName, ", ", leaderOnlyText, ", ho.ApplyTo(sw.", tools.ToLowerCamel(methodName), "Wrapper)...)")
 	}
 	g.P("}")
 	g.P()
@@ -288,6 +289,8 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 	g.P("}")
 	g.P()
 	for _, m := range s.Methods {
+		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
+		methodLocalName := string(m.Desc.Name())
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			continue
@@ -301,12 +304,12 @@ func genClientRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
-		g.P("func (c *", s.Desc.Name(), "Client) ", m.Desc.Name(), "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
+		g.P("func (c *", s.Desc.Name(), "Client) ", methodLocalName, "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 		g.P("out := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(out)")
 		g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(in)")
-		g.P("out.Fill(c.c.GetRequestID(), C_", m.Desc.Name(), ", req, kvs...)")
+		g.P("out.Fill(c.c.GetRequestID(), C_", methodName, ", req, kvs...)")
 		g.P("err := c.c.Send(out, in, ", leaderOnlyText, ")")
 		g.P("if err != nil {")
 		g.P("return nil, err")
@@ -341,17 +344,17 @@ func genExecuteRemoteRPC(file *protogen.File, g *protogen.GeneratedFile, s *prot
 		if leaderOnly {
 			leaderOnlyText = "false"
 		}
-
+		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
 		inputName := z.Name(file, g, m.Desc.Input())
 		outputName := z.Name(file, g, m.Desc.Output())
 		outputC := z.Constructor(file, g, m.Desc.Output())
 
-		g.P("func ExecuteRemote", m.Desc.Name(), "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ", kvs ...*rony.KeyValue) error {")
+		g.P("func ExecuteRemote", methodName, "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ", kvs ...*rony.KeyValue) error {")
 		g.P("out := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(out)")
 		g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.P("defer rony.PoolMessageEnvelope.Put(in)")
-		g.P("out.Fill(ctx.ReqID(), C_", m.Desc.Name(), ", req, kvs...)")
+		g.P("out.Fill(ctx.ReqID(), C_", methodName, ", req, kvs...)")
 		g.P("err := ctx.ExecuteRemote(replicaSet, ", leaderOnlyText, ", out, in)")
 		g.P("if err != nil {")
 		g.P("return err")
@@ -398,16 +401,17 @@ func genMethodGenerators(file *protogen.File, g *protogen.GeneratedFile, s *prot
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			continue
 		}
-		methodName := string(m.Desc.Name())
+		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
+		methodLocalName := string(m.Desc.Name())
 		g.P("var gen", methodName, "Cmd = func(h I", serviceName, "Cli, c edgec.Client) *cobra.Command {")
 		g.P("cmd := &cobra.Command {")
-		g.P("Use: \"", tools.ToKebab(methodName), "\",")
+		g.P("Use: \"", tools.ToKebab(methodLocalName), "\",")
 		g.P("RunE: func(cmd *cobra.Command, args []string) error {")
 		g.P("cli, err := prepare", serviceName, "Command(cmd, c)")
 		g.P("if err != nil {")
 		g.P("return err")
 		g.P("}") // end if if clause
-		g.P("return h.", methodName, "(cli, cmd, args)")
+		g.P("return h.", methodLocalName, "(cli, cmd, args)")
 		g.P("},") // end of RunE func block
 		g.P("}")  // end of cobra.Command
 		g.P("config.SetFlags(cmd,")
@@ -454,7 +458,7 @@ func genClientCliInterface(g *protogen.GeneratedFile, s *protogen.Service) {
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			continue
 		}
-		methodName := string(m.Desc.Name())
+		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
 		names = append(names, fmt.Sprintf("gen%sCmd(h, c)", methodName))
 		if len(names) == 3 {
 			sb := strings.Builder{}

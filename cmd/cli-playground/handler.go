@@ -36,7 +36,7 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest
 
 	switch ctx.Kind() {
 	case edge.GatewayMessage:
-		err := service.ExecuteRemoteEchoTunnel(ctx, req.ReplicaSet, req, res)
+		err := service.ExecuteRemoteSampleEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
 			ctx.PushError(rony.ErrCodeInternal, err.Error())
 			return

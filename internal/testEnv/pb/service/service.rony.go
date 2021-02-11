@@ -204,20 +204,20 @@ func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Message2, x)
 }
 
-const C_Echo int64 = 3073810188
-const C_EchoLeaderOnly int64 = 27569121
-const C_EchoTunnel int64 = 3809767204
-const C_EchoDelay int64 = 3639218737
+const C_SampleEcho int64 = 3852587671
+const C_SampleEchoLeaderOnly int64 = 2252175833
+const C_SampleEchoTunnel int64 = 2071541407
+const C_SampleEchoDelay int64 = 1737692531
 
 func init() {
 	registry.RegisterConstructor(1904100324, "EchoRequest")
 	registry.RegisterConstructor(4192619139, "EchoResponse")
 	registry.RegisterConstructor(3131464828, "Message1")
 	registry.RegisterConstructor(598674886, "Message2")
-	registry.RegisterConstructor(3073810188, "Echo")
-	registry.RegisterConstructor(27569121, "EchoLeaderOnly")
-	registry.RegisterConstructor(3809767204, "EchoTunnel")
-	registry.RegisterConstructor(3639218737, "EchoDelay")
+	registry.RegisterConstructor(3852587671, "SampleEcho")
+	registry.RegisterConstructor(2252175833, "SampleEchoLeaderOnly")
+	registry.RegisterConstructor(2071541407, "SampleEchoTunnel")
+	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
 }
 
 type ISample interface {
@@ -300,10 +300,10 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 }
 
 func (sw *sampleWrapper) Register(e *edge.Server, ho *edge.HandlerOptions) {
-	e.SetHandlers(C_Echo, false, ho.ApplyTo(sw.echoWrapper)...)
-	e.SetHandlers(C_EchoLeaderOnly, true, ho.ApplyTo(sw.echoLeaderOnlyWrapper)...)
-	e.SetHandlers(C_EchoTunnel, true, ho.ApplyTo(sw.echoTunnelWrapper)...)
-	e.SetHandlers(C_EchoDelay, true, ho.ApplyTo(sw.echoDelayWrapper)...)
+	e.SetHandlers(C_SampleEcho, false, ho.ApplyTo(sw.echoWrapper)...)
+	e.SetHandlers(C_SampleEchoLeaderOnly, true, ho.ApplyTo(sw.echoLeaderOnlyWrapper)...)
+	e.SetHandlers(C_SampleEchoTunnel, true, ho.ApplyTo(sw.echoTunnelWrapper)...)
+	e.SetHandlers(C_SampleEchoDelay, true, ho.ApplyTo(sw.echoDelayWrapper)...)
 }
 
 func RegisterSample(h ISample, e *edge.Server, ho *edge.HandlerOptions) {
@@ -313,12 +313,12 @@ func RegisterSample(h ISample, e *edge.Server, ho *edge.HandlerOptions) {
 	w.Register(e, ho)
 }
 
-func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_Echo, req, kvs...)
+	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, false, out, in)
 	if err != nil {
 		return err
@@ -337,12 +337,12 @@ func ExecuteRemoteEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest
 	}
 }
 
-func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func ExecuteRemoteSampleEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoLeaderOnly, req, kvs...)
+	out.Fill(ctx.ReqID(), C_SampleEchoLeaderOnly, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
@@ -361,12 +361,12 @@ func ExecuteRemoteEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *E
 	}
 }
 
-func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoTunnel, req, kvs...)
+	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
@@ -385,12 +385,12 @@ func ExecuteRemoteEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	}
 }
 
-func ExecuteRemoteEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func ExecuteRemoteSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_EchoDelay, req, kvs...)
+	out.Fill(ctx.ReqID(), C_SampleEchoDelay, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err
@@ -424,7 +424,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_Echo, req, kvs...)
+	out.Fill(c.c.GetRequestID(), C_SampleEcho, req, kvs...)
 	err := c.c.Send(out, in, false)
 	if err != nil {
 		return nil, err
@@ -448,7 +448,7 @@ func (c *SampleClient) EchoLeaderOnly(req *EchoRequest, kvs ...*rony.KeyValue) (
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_EchoLeaderOnly, req, kvs...)
+	out.Fill(c.c.GetRequestID(), C_SampleEchoLeaderOnly, req, kvs...)
 	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
@@ -472,7 +472,7 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_EchoTunnel, req, kvs...)
+	out.Fill(c.c.GetRequestID(), C_SampleEchoTunnel, req, kvs...)
 	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
@@ -496,7 +496,7 @@ func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*Echo
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_EchoDelay, req, kvs...)
+	out.Fill(c.c.GetRequestID(), C_SampleEchoDelay, req, kvs...)
 	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
@@ -525,7 +525,7 @@ func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, er
 	return NewSampleClient(c), nil
 }
 
-var genEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -544,7 +544,7 @@ var genEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	return cmd
 }
 
-var genEchoLeaderOnlyCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSampleEchoLeaderOnlyCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-leader-only",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -563,7 +563,7 @@ var genEchoLeaderOnlyCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	return cmd
 }
 
-var genEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-tunnel",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -582,7 +582,7 @@ var genEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	return cmd
 }
 
-var genEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSampleEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-delay",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -610,7 +610,7 @@ type ISampleCli interface {
 
 func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 	rootCmd.AddCommand(
-		genEchoCmd(h, c), genEchoLeaderOnlyCmd(h, c), genEchoTunnelCmd(h, c),
-		genEchoDelayCmd(h, c),
+		genSampleEchoCmd(h, c), genSampleEchoLeaderOnlyCmd(h, c), genSampleEchoTunnelCmd(h, c),
+		genSampleEchoDelayCmd(h, c),
 	)
 }
