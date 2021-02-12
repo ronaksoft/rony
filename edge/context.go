@@ -427,7 +427,7 @@ func (ctx *RequestCtx) Log() log.Logger {
 	return log.DefaultLogger
 }
 
-func (ctx *RequestCtx) GetReplica(pageID uint32) (uint64, error) {
+func (ctx *RequestCtx) GetReplicaSet(pageID uint32) (uint64, error) {
 	p := &rony.Page{}
 	_, err := rony.ReadPage(pageID, p)
 	if err == nil {
@@ -469,4 +469,11 @@ func (ctx *RequestCtx) GetReplica(pageID uint32) (uint64, error) {
 		return 0, err
 	}
 	return p.ReplicaSet, nil
+}
+
+func (ctx *RequestCtx) ReplicaSet() uint64 {
+	if ctx.Cluster() == nil {
+		return 0
+	}
+	return ctx.Cluster().ReplicaSet()
 }
