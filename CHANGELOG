@@ -1,4 +1,9 @@
 ## [Untagged]
+### Changed
+1. The external types used in store package has been aliased to make it more clear and less imports on the caller side.
+### Removed
+1. CQL code generator has been removed
+
 
 ## [5.5]
 ### Changed

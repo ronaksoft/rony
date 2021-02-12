@@ -1,7 +1,6 @@
 package storeCluster
 
 import (
-	raftbadger "github.com/bbva/raft-badger"
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony/cluster"
@@ -44,7 +43,7 @@ type Cluster struct {
 	raftFSM       raftFSM
 	raft          *raft.Raft
 	gossip        *memberlist.Memberlist
-	badgerStore   *raftbadger.BadgerStore
+	badgerStore   *BadgerStore
 	rateLimitChan chan struct{}
 }
 

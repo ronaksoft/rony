@@ -17,7 +17,7 @@ import (
 */
 
 var (
-	_DB                    *badger.DB
+	_DB                    *Store
 	_Flusher               *tools.FlusherPool
 	_ConflictRetry         int
 	_ConflictRetryInterval time.Duration
@@ -30,6 +30,7 @@ func MustInit(config Config) {
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func Init(config Config) error {
@@ -124,7 +125,7 @@ func Shutdown() {
 // Update executes a function, creating and managing a read-write transaction
 // for the user. Error returned by the function is relayed by the Update method.
 // It retries in case of badger.ErrConflict returned.
-func Update(fn func(txn *badger.Txn) error) (err error) {
+func Update(fn func(txn *Txn) error) (err error) {
 	for retry := _ConflictRetry; retry > 0; retry-- {
 		err = _DB.Update(fn)
 		switch err {
@@ -139,7 +140,7 @@ func Update(fn func(txn *badger.Txn) error) (err error) {
 
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
-func View(fn func(txn *badger.Txn) error) (err error) {
+func View(fn func(txn *Txn) error) (err error) {
 	for retry := _ConflictRetry; retry > 0; retry-- {
 		err = _DB.View(fn)
 		switch err {
@@ -155,6 +156,6 @@ func View(fn func(txn *badger.Txn) error) (err error) {
 // BatchWrite is the helper function to set the entry backed by an internal flusher. Which makes writes
 // faster but there is no guarantee that write has been done successfully, since we bypass the errors.
 // TODO:: Maybe improve the flusher structure to return error in the case
-func BatchWrite(e *badger.Entry) {
+func BatchWrite(e *Entry) {
 	_Flusher.EnterAndWait("", tools.NewEntry(e))
 }

@@ -1,4 +1,4 @@
-package kvsingleton
+package singleton
 
 import (
 	"fmt"
@@ -25,7 +25,6 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 			continue
 		}
 		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-		g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
 
 		funcSave(g, m)
 		funcRead(g, m)
@@ -39,7 +38,7 @@ func genDbKey(m *protogen.Message) string {
 }
 func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
 	// SaveWithTxn func
-	g.P("func Save", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
+	g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -57,14 +56,14 @@ func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
 	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
-	g.P("return store.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *store.Txn) error {")
 	g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
 	g.P("})") // end of store.Update func
 	g.P("}")  // end of Save func
 	g.P()
 }
 func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
-	g.P("func Read", m.Desc.Name(), "WithTxn (txn *badger.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -88,7 +87,7 @@ func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("m = &", m.Desc.Name(), "{}")
 	g.P("}")
 	g.P()
-	g.P("err := store.View(func(txn *badger.Txn) (err error) {")
+	g.P("err := store.View(func(txn *store.Txn) (err error) {")
 	g.P("m, err = Read", m.Desc.Name(), "WithTxn(txn, alloc,  m)")
 	g.P("return")
 	g.P("})") // end of View func

@@ -1,10 +1,9 @@
-package kvmodel
+package aggregate
 
 import (
 	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -39,12 +38,11 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 		if !proto.GetExtension(opt, rony.E_RonyAggregate).(bool) {
 			continue
 		}
-		mm := aggregate.GetAggregates()[string(m.Desc.Name())]
+		mm := GetAggregates()[string(m.Desc.Name())]
 		if mm == nil {
 			panic(fmt.Sprintf("invalid aggregate: %s", m.Desc.Name()))
 		}
 		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-		g.QualifiedGoIdent(protogen.GoIdent{GoName: "badger", GoImportPath: "github.com/dgraph-io/badger"})
 
 		funcSave(g, m, mm)
 		funcRead(g, mm)
@@ -57,7 +55,7 @@ func Generate(file *protogen.File, g *protogen.GeneratedFile) {
 		funcIterByPartitionKey(g, mm)
 	}
 }
-func genDbKey(mm *aggregate.Aggregate, pk aggregate.Key, keyPrefix string) string {
+func genDbKey(mm *Aggregate, pk Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -65,7 +63,7 @@ func genDbKey(mm *aggregate.Aggregate, pk aggregate.Key, keyPrefix string) strin
 		pk.String(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbPrefixPKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string) string {
+func genDbPrefixPKs(mm *Aggregate, key Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -73,7 +71,7 @@ func genDbPrefixPKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string
 		key.StringPKs(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbPrefixCKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string) string {
+func genDbPrefixCKs(mm *Aggregate, key Key, keyPrefix string) string {
 	lowerCamel := keyPrefix == ""
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
@@ -81,15 +79,15 @@ func genDbPrefixCKs(mm *aggregate.Aggregate, key aggregate.Key, keyPrefix string
 		key.StringCKs(keyPrefix, ",", lowerCamel),
 	)
 }
-func genDbIndexKey(mm *aggregate.Aggregate, fieldName string, prefix string, postfix string) string {
+func genDbIndexKey(mm *Aggregate, fieldName string, prefix string, postfix string) string {
 	lower := prefix == ""
 	return fmt.Sprintf("\"IDX\", C_%s, %d, %s%s%s, %s",
 		mm.Name, crc32.ChecksumIEEE([]byte(fieldName)), prefix, fieldName, postfix, mm.Table.String(prefix, ",", lower),
 	)
 }
-func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Aggregate) {
+func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *Aggregate) {
 	// SaveWithTxn func
-	g.P("func Save", mm.Name, "WithTxn (txn *badger.Txn, alloc *store.Allocator, m*", mm.Name, ") (err error) {")
+	g.P("func Save", mm.Name, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", mm.Name, ") (err error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -109,7 +107,7 @@ func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Agg
 		g.P("// Try to read old value")
 		g.P("om := &", mm.Name, "{}")
 		g.P("om, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("m.", ",", false), ", om)")
-		g.P("if err != nil && err != badger.ErrKeyNotFound {")
+		g.P("if err != nil && err != store.ErrKeyNotFound {")
 		g.P("return")
 		g.P("}")
 		g.P()
@@ -228,14 +226,14 @@ func funcSave(g *protogen.GeneratedFile, mt *protogen.Message, mm *aggregate.Agg
 	g.P("func Save", mm.Name, "(m *", mm.Name, ") error {")
 	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
-	g.P("return store.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *store.Txn) error {")
 	g.P("return Save", mm.Name, "WithTxn (txn, alloc, m)")
 	g.P("})") // end of Update func
 	g.P("}")  // end of Save func
 	g.P()
 }
-func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Read", mm.Name, "WithTxn (txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
+func funcRead(g *protogen.GeneratedFile, mm *Aggregate) {
+	g.P("func Read", mm.Name, "WithTxn (txn *store.Txn, alloc *store.Allocator,", mm.FuncArgs("", mm.Table), ", m *", mm.Name, ") (*", mm.Name, ",error) {")
 	g.P("if alloc == nil {")
 	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
@@ -259,7 +257,7 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("m = &", mm.Name, "{}")
 	g.P("}")
 	g.P()
-	g.P("err := store.View(func(txn *badger.Txn) (err error) {")
+	g.P("err := store.View(func(txn *store.Txn) (err error) {")
 	g.P("m, err = Read", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ", m)")
 	g.P("return err")
 	g.P("})") // end of View func
@@ -269,7 +267,7 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	for _, pk := range mm.Views {
 		g.P(
 			"func Read", mm.Name, "By", pk.String("", "And", false),
-			"WithTxn(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *",
+			"WithTxn(txn *store.Txn, alloc *store.Allocator,", mm.FuncArgs("", pk), ", m *", mm.Name, ") ( *",
 			mm.Name,
 			", "+
 				"error) {")
@@ -298,7 +296,7 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 		g.P("if m == nil {")
 		g.P("m = &", mm.Name, "{}")
 		g.P("}")
-		g.P("err := store.View(func(txn *badger.Txn) (err error) {")
+		g.P("err := store.View(func(txn *store.Txn) (err error) {")
 		g.P("m, err = Read", mm.Name, "By", pk.String("", "And", false), "WithTxn (txn, alloc,", pk.String("", ",", true), ", m)")
 		g.P("return err")
 		g.P("})") // end of View func
@@ -307,8 +305,8 @@ func funcRead(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 		g.P()
 	}
 }
-func funcDelete(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Delete", mm.Name, "WithTxn(txn *badger.Txn, alloc *store.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
+func funcDelete(g *protogen.GeneratedFile, mm *Aggregate) {
+	g.P("func Delete", mm.Name, "WithTxn(txn *store.Txn, alloc *store.Allocator, ", mm.FuncArgs("", mm.Table), ") error {")
 	if len(mm.Views) > 0 {
 		g.P("m := &", mm.Name, "{}")
 		g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(mm, mm.Table, ""), "))")
@@ -344,21 +342,21 @@ func funcDelete(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("alloc := store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
-	g.P("return store.Update(func(txn *badger.Txn) error {")
+	g.P("return store.Update(func(txn *store.Txn) error {")
 	g.P("return Delete", mm.Name, "WithTxn(txn, alloc, ", mm.Table.String("", ",", true), ")")
 	g.P("})") // end of Update func
 	g.P("}")  // end of Delete func
 	g.P()
 }
-func funcIter(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
-	g.P("func Iter", inflection.Plural(mm.Name), "(txn *badger.Txn, alloc *store.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
+func funcIter(g *protogen.GeneratedFile, mm *Aggregate) {
+	g.P("func Iter", inflection.Plural(mm.Name), "(txn *store.Txn, alloc *store.Allocator, cb func(m *", mm.Name, ") bool, )  error {")
 	g.P("if alloc == nil {")
 	g.P("alloc = store.NewAllocator()")
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}")
 	g.P()
 	g.P("exitLoop := false")
-	g.P("iterOpt := badger.DefaultIteratorOptions")
+	g.P("iterOpt := store.DefaultIteratorOptions")
 	g.P("iterOpt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("iter := txn.NewIterator(iterOpt)")
 	g.P("for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {")
@@ -382,12 +380,12 @@ func funcIter(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
+func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *Aggregate) {
 	if len(mm.Table.CKs) > 0 {
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Table.StringPKs("", "And", false),
-			"(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
+			"(txn *store.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Table), ", cb func(m *", mm.Name, ") bool) error {",
 		)
 		g.P("if alloc == nil {")
 		g.P("alloc = store.NewAllocator()")
@@ -395,7 +393,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P("}")
 		g.P()
 		g.P("exitLoop := false")
-		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt := store.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 		g.P("iter := txn.NewIterator(opt)")
 		g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
@@ -427,7 +425,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P(
 			"func Iter", mm.Name, "By",
 			mm.Views[idx].StringPKs("", "And", false),
-			"(txn *badger.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ") bool) error {",
+			"(txn *store.Txn, alloc *store.Allocator,", mm.FuncArgsPKs("", mm.Views[idx]), ", cb func(m *", mm.Name, ") bool) error {",
 		)
 		g.P("if alloc == nil {")
 		g.P("alloc = store.NewAllocator()")
@@ -435,7 +433,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P("}")
 		g.P()
 		g.P("exitLoop := false")
-		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("opt := store.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
 		g.P("iter := txn.NewIterator(opt)")
 		g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
@@ -460,7 +458,7 @@ func funcIterByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P()
 	}
 }
-func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
+func funcList(g *protogen.GeneratedFile, mm *Aggregate) {
 	g.P("func List", mm.Name, "(")
 	g.P(mm.FuncArgs("offset", mm.Table), ", lo *store.ListOption, cond func(m *", mm.Name, ") bool, ")
 	g.P(") ([]*", mm.Name, ", error) {")
@@ -468,8 +466,8 @@ func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P()
 	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-	g.P("err := store.View(func(txn *badger.Txn) error {")
-	g.P("opt := badger.DefaultIteratorOptions")
+	g.P("err := store.View(func(txn *store.Txn) error {")
+	g.P("opt := store.DefaultIteratorOptions")
 	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("opt.Reverse = lo.Backward()")
 	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, "offset"), ")")
@@ -502,7 +500,7 @@ func funcList(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
 	g.P("}") // end of func List
 	g.P()
 }
-func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) {
+func funcListByPartitionKey(g *protogen.GeneratedFile, mm *Aggregate) {
 	if len(mm.Table.CKs) > 0 {
 		g.P(
 			"func List", mm.Name, "By",
@@ -514,8 +512,8 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P("defer alloc.ReleaseAll()")
 		g.P()
 		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-		g.P("err := store.View(func(txn *badger.Txn) error {")
-		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("err := store.View(func(txn *store.Txn) error {")
+		g.P("opt := store.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ")")
 		g.P("opt.Reverse = lo.Backward()")
 		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, ""), ",", mm.Table.StringCKs("offset", ",", false), ")")
@@ -561,8 +559,8 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P("defer alloc.ReleaseAll()")
 		g.P()
 		g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-		g.P("err := store.View(func(txn *badger.Txn) error {")
-		g.P("opt := badger.DefaultIteratorOptions")
+		g.P("err := store.View(func(txn *store.Txn) error {")
+		g.P("opt := store.DefaultIteratorOptions")
 		g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ")")
 		g.P("opt.Reverse = lo.Backward()")
 		g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Views[idx], ""), ",", mm.Views[idx].StringCKs("offset", ",", false), ")")
@@ -594,7 +592,7 @@ func funcListByPartitionKey(g *protogen.GeneratedFile, mm *aggregate.Aggregate) 
 		g.P()
 	}
 }
-func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *aggregate.Aggregate) {
+func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggregate) {
 	for _, f := range m.Fields {
 		ftName := string(f.Desc.Name())
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
@@ -611,8 +609,8 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *aggrega
 				g.P("defer alloc.ReleaseAll()")
 				g.P()
 				g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
-				g.P("err := store.View(func(txn *badger.Txn) error {")
-				g.P("opt := badger.DefaultIteratorOptions")
+				g.P("err := store.View(func(txn *store.Txn) error {")
+				g.P("opt := store.DefaultIteratorOptions")
 				g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mm.Name, ",", crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS), ")")
 				g.P("opt.Reverse = lo.Backward()")
 				g.P("iter := txn.NewIterator(opt)")
@@ -651,7 +649,7 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *aggrega
 		}
 	}
 }
-func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *aggregate.Aggregate) {
+func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggregate) {
 	for _, f := range m.Fields {
 		switch f.Desc.Cardinality() {
 		case protoreflect.Repeated:

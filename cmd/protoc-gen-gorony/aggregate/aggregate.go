@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
-	"github.com/scylladb/gocqlx/v2/qb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -22,8 +21,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-var _ = qb.ASC
 
 var loadedAggregates = map[string]*Aggregate{}
 var loadedFields = map[string]struct{}{}

@@ -1,7 +1,7 @@
-package cqlmodel
+package store
 
 /*
-   Creation Time: 2021 - Feb - 05
+   Creation Time: 2021 - Feb - 12
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)

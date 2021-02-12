@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate/kvmodel"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton/kvsingleton"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -29,8 +28,6 @@ func main() {
 			switch path {
 			case "github.com/scylladb/gocqlx":
 				return "github.com/scylladb/gocqlx/v2"
-			case "github.com/dgraph-io/badger":
-				return "github.com/dgraph-io/badger/v3"
 			}
 			return path
 		},
@@ -56,8 +53,8 @@ func main() {
 			GenHelpers(f, g1)
 
 			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
-			kvsingleton.Generate(f, g1)
-			kvmodel.Generate(f, g1)
+			singleton.Generate(f, g1)
+			aggregate.Generate(f, g1)
 
 			// Generate RPCs if there is any service definition in the file
 			if len(f.Services) > 0 {

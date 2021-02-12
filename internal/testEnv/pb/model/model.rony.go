@@ -3,7 +3,6 @@
 package model
 
 import (
-	badger "github.com/dgraph-io/badger/v3"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -108,7 +107,7 @@ func init() {
 	registry.RegisterConstructor(3802219577, "Model2")
 }
 
-func SaveModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model1) (err error) {
+func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -117,7 +116,7 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model1) (err 
 	// Try to read old value
 	om := &Model1{}
 	om, err = ReadModel1WithTxn(txn, alloc, m.ID, m.ShardKey, om)
-	if err != nil && err != badger.ErrKeyNotFound {
+	if err != nil && err != store.ErrKeyNotFound {
 		return
 	}
 
@@ -184,12 +183,12 @@ func SaveModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model1) (err 
 func SaveModel1(m *Model1) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *store.Txn) error {
 		return SaveModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
+func ReadModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -213,14 +212,14 @@ func ReadModel1(id int32, shardKey int32, m *Model1) (*Model1, error) {
 		m = &Model1{}
 	}
 
-	err := store.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *store.Txn) (err error) {
 		m, err = ReadModel1WithTxn(txn, alloc, id, shardKey, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *store.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -242,14 +241,14 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	if m == nil {
 		m = &Model1{}
 	}
-	err := store.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *store.Txn) (err error) {
 		m, err = ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn, alloc, enum, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func DeleteModel1WithTxn(txn *badger.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
+func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
 	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
 	if err != nil {
@@ -278,7 +277,7 @@ func DeleteModel1(id int32, shardKey int32) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *store.Txn) error {
 		return DeleteModel1WithTxn(txn, alloc, id, shardKey)
 	})
 }
@@ -290,8 +289,8 @@ func ListModel1(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model1, 4018441491, offsetID)
@@ -323,14 +322,14 @@ func ListModel1(
 	return res, err
 }
 
-func IterModel1(txn *badger.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
+func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	iterOpt := badger.DefaultIteratorOptions
+	iterOpt := store.DefaultIteratorOptions
 	iterOpt.Prefix = alloc.GenKey(C_Model1, 4018441491)
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
@@ -367,8 +366,8 @@ func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey("IDX", C_Model1, 2864467857, p1)
 		opt.Reverse = lo.Backward()
 		iter := txn.NewIterator(opt)
@@ -408,8 +407,8 @@ func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey("IDX", C_Model1, 867507755, p2)
 		opt.Reverse = lo.Backward()
 		iter := txn.NewIterator(opt)
@@ -449,8 +448,8 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Mo
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model1, 4018441491, id, offsetShardKey)
@@ -485,8 +484,8 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model1, 2535881670, enum, offsetShardKey, offsetID)
@@ -516,14 +515,14 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store
 	return res, err
 }
 
-func IterModel1ByID(txn *badger.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
+func IterModel1ByID(txn *store.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
+	opt := store.DefaultIteratorOptions
 	opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
@@ -546,14 +545,14 @@ func IterModel1ByID(txn *badger.Txn, alloc *store.Allocator, id int32, cb func(m
 	return nil
 }
 
-func IterModel1ByEnum(txn *badger.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
+func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
+	opt := store.DefaultIteratorOptions
 	opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
@@ -576,7 +575,7 @@ func IterModel1ByEnum(txn *badger.Txn, alloc *store.Allocator, enum Enum, cb fun
 	return nil
 }
 
-func SaveModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model2) (err error) {
+func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -603,12 +602,12 @@ func SaveModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, m *Model2) (err 
 func SaveModel2(m *Model2) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *store.Txn) error {
 		return SaveModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
+func ReadModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -632,14 +631,14 @@ func ReadModel2(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error)
 		m = &Model2{}
 	}
 
-	err := store.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *store.Txn) (err error) {
 		m, err = ReadModel2WithTxn(txn, alloc, id, shardKey, p1, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *badger.Txn, alloc *store.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -661,14 +660,14 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	if m == nil {
 		m = &Model2{}
 	}
-	err := store.View(func(txn *badger.Txn) (err error) {
+	err := store.View(func(txn *store.Txn) (err error) {
 		m, err = ReadModel2ByP1AndShardKeyAndIDWithTxn(txn, alloc, p1, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func DeleteModel2WithTxn(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
+func DeleteModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
 	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
 	if err != nil {
@@ -697,7 +696,7 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *badger.Txn) error {
+	return store.Update(func(txn *store.Txn) error {
 		return DeleteModel2WithTxn(txn, alloc, id, shardKey, p1)
 	})
 }
@@ -709,8 +708,8 @@ func ListModel2(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model2, 1609271041, offsetID, offsetShardKey)
@@ -742,14 +741,14 @@ func ListModel2(
 	return res, err
 }
 
-func IterModel2(txn *badger.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
+func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	iterOpt := badger.DefaultIteratorOptions
+	iterOpt := store.DefaultIteratorOptions
 	iterOpt.Prefix = alloc.GenKey(C_Model2, 1609271041)
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
@@ -786,8 +785,8 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *st
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, offsetP1)
@@ -822,8 +821,8 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.L
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *badger.Txn) error {
-		opt := badger.DefaultIteratorOptions
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model2, 2344331025, p1, offsetShardKey, offsetID)
@@ -853,14 +852,14 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.L
 	return res, err
 }
 
-func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
+	opt := store.DefaultIteratorOptions
 	opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
@@ -883,14 +882,14 @@ func IterModel2ByIDAndShardKey(txn *badger.Txn, alloc *store.Allocator, id int64
 	return nil
 }
 
-func IterModel2ByP1(txn *badger.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
+func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
 	exitLoop := false
-	opt := badger.DefaultIteratorOptions
+	opt := store.DefaultIteratorOptions
 	opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
 	iter := txn.NewIterator(opt)
 	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {

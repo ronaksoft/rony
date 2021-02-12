@@ -1,4 +1,4 @@
-package kvmodel_test
+package aggregate_test
 
 import (
 	"github.com/ronaksoft/rony/internal/testEnv"
