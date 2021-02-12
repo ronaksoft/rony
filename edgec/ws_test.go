@@ -26,7 +26,7 @@ func init() {
 
 func TestClient_Connect(t *testing.T) {
 	Convey("Websocket Client Tests", t, func(c C) {
-		e := testEnv.InitEdgeServerWithWebsocket("Test.01", 8081, 10)
+		e := testEnv.InitEdgeServer("Test.01", 8081, 10)
 		service.RegisterSample(
 			&testEnv.Handlers{
 				ServerID: e.GetServerID(),

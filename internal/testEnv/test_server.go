@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
+	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"
@@ -61,13 +62,14 @@ func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err err
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
 
-func InitEdgeServerWithWebsocket(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
+func InitEdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithDispatcher(&testDispatcher{}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
 			MaxIdleTime:   time.Second,
+			Protocol:      gateway.TCP,
 			ExternalAddrs: []string{fmt.Sprintf("127.0.0.1:%d", listenPort)},
 		}),
 	)
