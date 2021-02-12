@@ -24,47 +24,36 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type ContextKind byte
+type MessageKind byte
 
 const (
-	_ ContextKind = iota
+	_ MessageKind = iota
 	GatewayMessage
 	ReplicaMessage
 	TunnelMessage
 )
 
-func (c ContextKind) String() string {
-	switch c {
-	case GatewayMessage:
-		return "GatewayMessage"
-	case ReplicaMessage:
-		return "ReplicaMessage"
-	case TunnelMessage:
-		return "TunnelMessage"
-	default:
-		panic("BUG!! invalid context kind")
+var (
+	kindNames = map[MessageKind]string{
+		GatewayMessage: "GatewayMessage",
+		ReplicaMessage: "ReplicatedMessage",
+		TunnelMessage:  "TunnelMessage",
 	}
-}
+)
 
-// Conn defines the Connection interface
-type Conn interface {
-	ConnID() uint64
-	ClientIP() string
-	SendBinary(streamID int64, data []byte) error
-	Persistent() bool
-	Get(key string) interface{}
-	Set(key string, val interface{})
+func (c MessageKind) String() string {
+	return kindNames[c]
 }
 
 // DispatchCtx
 type DispatchCtx struct {
 	streamID          int64
 	serverID          []byte
-	conn              Conn
+	conn              rony.Conn
 	req               *rony.MessageEnvelope
 	cluster           cluster.Cluster
 	gatewayDispatcher Dispatcher
-	kind              ContextKind
+	kind              MessageKind
 	buf               *tools.LinkedList
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
@@ -100,7 +89,7 @@ func (ctx *DispatchCtx) Debug() {
 	}
 }
 
-func (ctx *DispatchCtx) Conn() Conn {
+func (ctx *DispatchCtx) Conn() rony.Conn {
 	return ctx.conn
 }
 
@@ -159,7 +148,7 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 	}
 }
 
-func (ctx *DispatchCtx) Kind() ContextKind {
+func (ctx *DispatchCtx) Kind() MessageKind {
 	return ctx.kind
 }
 
@@ -227,7 +216,7 @@ func (ctx *RequestCtx) ConnID() uint64 {
 	return 0
 }
 
-func (ctx *RequestCtx) Conn() Conn {
+func (ctx *RequestCtx) Conn() rony.Conn {
 	return ctx.dispatchCtx.Conn()
 }
 
@@ -239,7 +228,7 @@ func (ctx *RequestCtx) ServerID() string {
 	return string(ctx.dispatchCtx.serverID)
 }
 
-func (ctx *RequestCtx) Kind() ContextKind {
+func (ctx *RequestCtx) Kind() MessageKind {
 	return ctx.dispatchCtx.kind
 }
 
