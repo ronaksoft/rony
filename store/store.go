@@ -17,12 +17,12 @@ import (
 */
 
 var (
-	_DB                    *Store
-	_Flusher               *tools.FlusherPool
-	_ConflictRetry         int
-	_ConflictRetryInterval time.Duration
-	vlogTicker             *time.Ticker // runs every 1m, check size of vlog and run GC conditionally.
-	mandatoryVlogTicker    *time.Ticker // runs every 10m, we always run vlog GC.
+	db                    *Store
+	flusher               *tools.FlusherPool
+	conflictRetry         int
+	conflictRetryInterval time.Duration
+	vlogTicker            *time.Ticker // runs every 1m, check size of vlog and run GC conditionally.
+	mandatoryVlogTicker   *time.Ticker // runs every 10m, we always run vlog GC.
 )
 
 func MustInit(config Config) {
@@ -33,15 +33,14 @@ func MustInit(config Config) {
 
 }
 
-func Init(config Config) error {
-	if _DB != nil {
-		return nil
+func Init(config Config) (err error) {
+	if db != nil {
+		return
 	}
-	db, err := newDB(config)
+	db, err = newDB(config)
 	if err != nil {
-		return err
+		return
 	}
-	_DB = db
 	if config.ConflictRetries == 0 {
 		config.ConflictRetries = defaultConflictRetries
 	}
@@ -54,14 +53,12 @@ func Init(config Config) error {
 	if config.BatchSize == 0 {
 		config.BatchSize = defaultBatchSize
 	}
-	_ConflictRetry = config.ConflictRetries
-	_ConflictRetryInterval = config.ConflictMaxInterval
-
-	_Flusher = tools.NewFlusherPool(int32(config.BatchWorkers), int32(config.BatchSize), writeFlushFunc)
-
+	conflictRetry = config.ConflictRetries
+	conflictRetryInterval = config.ConflictMaxInterval
+	flusher = tools.NewFlusherPool(int32(config.BatchWorkers), int32(config.BatchSize), writeFlushFunc)
 	vlogTicker = time.NewTicker(time.Minute)
 	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
-	go runVlogGC(_DB, 1<<30)
+	go runVlogGC(db, 1<<30)
 	return nil
 }
 
@@ -98,18 +95,19 @@ func newDB(config Config) (*badger.DB, error) {
 }
 
 func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
-	wb := _DB.NewWriteBatch()
+	wb := db.NewWriteBatch()
 	for idx := range entries {
-		_ = wb.SetEntry(entries[idx].Value().(*badger.Entry))
+		_ = wb.SetEntry(entries[idx].Value().(*Entry))
 	}
 	_ = wb.Flush()
 }
 
 // DB returns the underlying object of the database
 func DB() *badger.DB {
-	return _DB
+	return db
 }
 
+// Shutdown stops all the background go-routines and closed the underlying database
 func Shutdown() {
 	if vlogTicker != nil {
 		vlogTicker.Stop()
@@ -117,8 +115,8 @@ func Shutdown() {
 	if mandatoryVlogTicker != nil {
 		mandatoryVlogTicker.Stop()
 	}
-	if _DB != nil {
-		_ = _DB.Close()
+	if db != nil {
+		_ = db.Close()
 	}
 }
 
@@ -126,14 +124,14 @@ func Shutdown() {
 // for the user. Error returned by the function is relayed by the Update method.
 // It retries in case of badger.ErrConflict returned.
 func Update(fn func(txn *Txn) error) (err error) {
-	for retry := _ConflictRetry; retry > 0; retry-- {
-		err = _DB.Update(fn)
+	for retry := conflictRetry; retry > 0; retry-- {
+		err = db.Update(fn)
 		switch err {
 		case badger.ErrConflict:
 		default:
 			return
 		}
-		time.Sleep(time.Duration(tools.RandomInt64(int64(_ConflictRetryInterval))))
+		time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 	}
 	return
 }
@@ -141,14 +139,14 @@ func Update(fn func(txn *Txn) error) (err error) {
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
 func View(fn func(txn *Txn) error) (err error) {
-	for retry := _ConflictRetry; retry > 0; retry-- {
-		err = _DB.View(fn)
+	for retry := conflictRetry; retry > 0; retry-- {
+		err = db.View(fn)
 		switch err {
 		case badger.ErrConflict:
 		default:
 			return
 		}
-		time.Sleep(time.Duration(tools.RandomInt64(int64(_ConflictRetryInterval))))
+		time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 	}
 	return
 }
@@ -157,5 +155,5 @@ func View(fn func(txn *Txn) error) (err error) {
 // faster but there is no guarantee that write has been done successfully, since we bypass the errors.
 // TODO:: Maybe improve the flusher structure to return error in the case
 func BatchWrite(e *Entry) {
-	_Flusher.EnterAndWait("", tools.NewEntry(e))
+	flusher.EnterAndWait("", tools.NewEntry(e))
 }
