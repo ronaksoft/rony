@@ -21,8 +21,8 @@ import (
 
 var (
 	// Prefix names to distinguish between logs and conf
-	prefixLogs = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
-	prefixConf = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1}
+	prefixLogs = []byte{0x0}
+	prefixConf = []byte{0x1}
 
 	// ErrKeyNotFound is an error indicating a given key does not exist
 	ErrKeyNotFound = errors.New("not found")
@@ -45,7 +45,7 @@ func (b *BadgerStore) FirstIndex() (uint64, error) {
 
 		it.Seek(prefixLogs)
 		if it.ValidForPrefix(prefixLogs) {
-			value = bytesToUint64(it.Item().Key()[8:])
+			value = bytesToUint64(it.Item().Key()[1:])
 		}
 		return nil
 	})
@@ -67,7 +67,7 @@ func (b *BadgerStore) LastIndex() (uint64, error) {
 
 		it.Seek(append(prefixLogs, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff))
 		if it.ValidForPrefix(prefixLogs) {
-			value = bytesToUint64(it.Item().Key()[8:])
+			value = bytesToUint64(it.Item().Key()[1:])
 		}
 		return nil
 	})

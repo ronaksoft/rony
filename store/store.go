@@ -139,6 +139,7 @@ func Update(fn func(txn *Txn) error) (err error) {
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
 func View(fn func(txn *Txn) error) (err error) {
+
 	for retry := conflictRetry; retry > 0; retry-- {
 		err = db.View(fn)
 		switch err {

@@ -1,5 +1,9 @@
 ## [Untagged]
 
+## [5.7]
+### Changed
+1. Prefix byte added to key-value stores to separate user keys with system keys
+2. Internal RPCs could not be served through gateway
 
 ## [5.6]
 ### Changed

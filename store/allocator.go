@@ -18,6 +18,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+var (
+	prefix = []byte{0xFF}
+)
+
 type Allocator struct {
 	blocks []*pools.ByteBuffer
 }
@@ -29,9 +33,10 @@ func NewAllocator() *Allocator {
 }
 
 func (bk *Allocator) GenKey(v ...interface{}) []byte {
-	b := pools.Buffer.GetLen(getSize(v...))
+	b := pools.Buffer.GetLen(1 + getSize(v...))
 	var buf [8]byte
-	idx := 0
+	b.Fill(prefix, 0, 1)
+	idx := 1
 	for _, x := range v {
 		t := reflect.TypeOf(x)
 		switch t.Kind() {

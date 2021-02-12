@@ -21,6 +21,10 @@ type SampleServer struct {
 	es *edge.Server
 }
 
+func (h *SampleServer) EchoInternal(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
+	panic("implement me")
+}
+
 func (h *SampleServer) EchoLeaderOnly(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.Int = req.Int
 	res.Timestamp = tools.NanoTime()

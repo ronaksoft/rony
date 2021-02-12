@@ -2,7 +2,6 @@ package edge_test
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/registry"
@@ -23,7 +22,7 @@ import (
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
 		s := testEnv.InitTestServer("TestServer")
-		service.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge(), edge.NewHandlerOptions())
+		service.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
 		s.Start()
 		defer s.Shutdown()
 

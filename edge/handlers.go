@@ -13,31 +13,64 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Handler func(ctx *RequestCtx, in *rony.MessageEnvelope)
+type Handler = func(ctx *RequestCtx, in *rony.MessageEnvelope)
 
-type HandlerOptions struct {
-	pre  []Handler
-	post []Handler
+// HandlerOption is a structure holds all the information required for a handler.
+type HandlerOption struct {
+	constructor      int64
+	handlers         []Handler
+	inconsistentRead bool
+	tunnel           bool
+	gateway          bool
 }
 
-func NewHandlerOptions() *HandlerOptions {
-	return &HandlerOptions{}
+func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
+	return &HandlerOption{
+		constructor:      constructor,
+		handlers:         h,
+		gateway:          true,
+		tunnel:           true,
+		inconsistentRead: false,
+	}
 }
 
-func (ho *HandlerOptions) SetPreHandlers(h ...Handler) *HandlerOptions {
-	ho.pre = append(ho.pre[:0], h...)
+// GatewayOnly makes this method only available through gateway messages.
+func (ho *HandlerOption) GatewayOnly() *HandlerOption {
+	ho.tunnel = false
+	ho.gateway = true
 	return ho
 }
 
-func (ho *HandlerOptions) SetPostHandlers(h ...Handler) *HandlerOptions {
-	ho.post = append(ho.post[:0], h...)
+// TunnelOnly makes this method only available through tunnel messages.
+func (ho *HandlerOption) TunnelOnly() *HandlerOption {
+	ho.tunnel = true
+	ho.gateway = false
 	return ho
 }
 
-func (ho *HandlerOptions) ApplyTo(h ...Handler) []Handler {
-	out := make([]Handler, 0, len(ho.pre)+len(h)+len(ho.post))
-	out = append(out, ho.pre...)
-	out = append(out, h...)
-	out = append(out, ho.post...)
-	return out
+// InconsistentRead makes this method (constructor) available on edges in follower state
+func (ho *HandlerOption) InconsistentRead() *HandlerOption {
+	ho.inconsistentRead = true
+	return ho
+}
+
+// Set replaces the handlers for this constructor with h
+func (ho *HandlerOption) Set(h ...Handler) *HandlerOption {
+	ho.handlers = append(ho.handlers[:0], h...)
+	return ho
+}
+
+// Prepend adds the h handlers before already set handlers
+func (ho *HandlerOption) Prepend(h ...Handler) *HandlerOption {
+	nh := make([]Handler, 0, len(ho.handlers)+len(h))
+	nh = append(nh, h...)
+	nh = append(nh, ho.handlers...)
+	ho.handlers = nh
+	return ho
+}
+
+// Append adds the h handlers after already set handlers
+func (ho *HandlerOption) Append(h ...Handler) *HandlerOption {
+	ho.handlers = append(ho.handlers, h...)
+	return ho
 }

@@ -255,24 +255,27 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		g.P("}") // end of func block
 		g.P()
 	}
-	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server, ho *edge.HandlerOptions) {")
+	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server) {")
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
-		leaderOnlyText := "true"
+		sb := strings.Builder{}
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
-		if leaderOnly {
-			leaderOnlyText = "false"
+		if proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool) {
+			sb.WriteString(".InconsistentRead()")
 		}
-		g.P("e.SetHandlers(C_", serviceName, methodName, ", ", leaderOnlyText, ", ho.ApplyTo(sw.", tools.ToLowerCamel(methodName), "Wrapper)...)")
+		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
+			sb.WriteString(".TunnelOnly()")
+		}
+		g.P("e.SetHandler(edge.NewHandlerOptions(C_", serviceName, methodName, ", sw.", tools.ToLowerCamel(methodName), "Wrapper)", sb.String(), ")")
+
 	}
 	g.P("}")
 	g.P()
-	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server, ho *edge.HandlerOptions) {")
+	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server) {")
 	g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
 	g.P("h: h,")
 	g.P("}")
-	g.P("w.Register(e, ho)")
+	g.P("w.Register(e)")
 	g.P("}")
 	g.P()
 

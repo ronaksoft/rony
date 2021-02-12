@@ -19,6 +19,10 @@ type Handlers struct {
 	ServerID string
 }
 
+func (h *Handlers) EchoInternal(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
+	panic("implement me")
+}
+
 func (h *Handlers) Echo(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp

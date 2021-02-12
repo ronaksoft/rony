@@ -30,7 +30,7 @@ func TestClient_Connect(t *testing.T) {
 		service.RegisterSample(
 			&testEnv.Handlers{
 				ServerID: e.GetServerID(),
-			}, e, edge.NewHandlerOptions(),
+			}, e,
 		)
 
 		err := e.StartCluster()

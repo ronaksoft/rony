@@ -207,6 +207,7 @@ func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
 const C_SampleEcho int64 = 3852587671
 const C_SampleEchoLeaderOnly int64 = 2252175833
 const C_SampleEchoTunnel int64 = 2071541407
+const C_SampleEchoInternal int64 = 3655883317
 const C_SampleEchoDelay int64 = 1737692531
 
 func init() {
@@ -217,6 +218,7 @@ func init() {
 	registry.RegisterConstructor(3852587671, "SampleEcho")
 	registry.RegisterConstructor(2252175833, "SampleEchoLeaderOnly")
 	registry.RegisterConstructor(2071541407, "SampleEchoTunnel")
+	registry.RegisterConstructor(3655883317, "SampleEchoInternal")
 	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
 }
 
@@ -224,6 +226,7 @@ type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoLeaderOnly(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
+	EchoInternal(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 }
 
@@ -282,6 +285,23 @@ func (sw *sampleWrapper) echoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	}
 }
 
+func (sw *sampleWrapper) echoInternalWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	res := PoolEchoResponse.Get()
+	defer PoolEchoResponse.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	sw.h.EchoInternal(ctx, req, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_EchoResponse, res)
+	}
+}
+
 func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -299,18 +319,19 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server, ho *edge.HandlerOptions) {
-	e.SetHandlers(C_SampleEcho, false, ho.ApplyTo(sw.echoWrapper)...)
-	e.SetHandlers(C_SampleEchoLeaderOnly, true, ho.ApplyTo(sw.echoLeaderOnlyWrapper)...)
-	e.SetHandlers(C_SampleEchoTunnel, true, ho.ApplyTo(sw.echoTunnelWrapper)...)
-	e.SetHandlers(C_SampleEchoDelay, true, ho.ApplyTo(sw.echoDelayWrapper)...)
+func (sw *sampleWrapper) Register(e *edge.Server) {
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEcho, sw.echoWrapper).InconsistentRead())
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoLeaderOnly, sw.echoLeaderOnlyWrapper))
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoTunnel, sw.echoTunnelWrapper))
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoInternal, sw.echoInternalWrapper).TunnelOnly())
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoDelay, sw.echoDelayWrapper))
 }
 
-func RegisterSample(h ISample, e *edge.Server, ho *edge.HandlerOptions) {
+func RegisterSample(h ISample, e *edge.Server) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e, ho)
+	w.Register(e)
 }
 
 func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
@@ -367,6 +388,30 @@ func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
+	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
+	}
+}
+
+func ExecuteRemoteSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEchoInternal, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, true, out, in)
 	if err != nil {
 		return err

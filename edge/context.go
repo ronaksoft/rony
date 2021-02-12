@@ -281,27 +281,27 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 	ctxCluster := ctx.dispatchCtx.cluster
 	if leaderID := ctxCluster.RaftLeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
-	} else {
-		r := rony.PoolRedirect.Get()
-		r.Reason = rony.RedirectReason_ReplicaMaster
-		r.WaitInSec = 0
-		members := ctxCluster.RaftMembers(ctxCluster.ReplicaSet())
-		nodeInfos := make([]*rony.Edge, 0, len(members))
-		for _, m := range members {
-			ni := m.Proto(rony.PoolEdge.Get())
-			if ni.Leader {
-				r.Leader = ni
-			} else {
-				r.Followers = append(r.Followers, ni)
-			}
-			nodeInfos = append(nodeInfos, ni)
-		}
-		ctx.PushMessage(rony.C_Redirect, r)
-		for _, p := range nodeInfos {
-			rony.PoolEdge.Put(p)
-		}
-		rony.PoolRedirect.Put(r)
+		return
 	}
+	r := rony.PoolRedirect.Get()
+	r.Reason = rony.RedirectReason_ReplicaMaster
+	r.WaitInSec = 0
+	members := ctxCluster.RaftMembers(ctxCluster.ReplicaSet())
+	nodeInfos := make([]*rony.Edge, 0, len(members))
+	for _, m := range members {
+		ni := m.Proto(rony.PoolEdge.Get())
+		if ni.Leader {
+			r.Leader = ni
+		} else {
+			r.Followers = append(r.Followers, ni)
+		}
+		nodeInfos = append(nodeInfos, ni)
+	}
+	ctx.PushMessage(rony.C_Redirect, r)
+	for _, p := range nodeInfos {
+		rony.PoolEdge.Put(p)
+	}
+	rony.PoolRedirect.Put(r)
 }
 
 func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64, wait time.Duration) {
@@ -353,7 +353,7 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 }
 
 func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	target := ctx.getReplicaMember(replicaSet, onlyLeader)
+	target := getReplicaMember(ctx.dispatchCtx.cluster, replicaSet, onlyLeader)
 	if target == nil {
 		return ErrMemberNotFound
 	}
@@ -405,8 +405,9 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 
 	return nil
 }
-func (ctx *RequestCtx) getReplicaMember(replicaSet uint64, onlyLeader bool) (target cluster.Member) {
-	members := ctx.dispatchCtx.cluster.RaftMembers(replicaSet)
+
+func getReplicaMember(cluster cluster.Cluster, replicaSet uint64, onlyLeader bool) (target cluster.Member) {
+	members := cluster.RaftMembers(replicaSet)
 	if len(members) == 0 {
 		return nil
 	}
@@ -472,8 +473,8 @@ func (ctx *RequestCtx) GetReplicaSet(pageID uint32) (uint64, error) {
 }
 
 func (ctx *RequestCtx) ReplicaSet() uint64 {
-	if ctx.Cluster() == nil {
+	if ctx.dispatchCtx.cluster == nil {
 		return 0
 	}
-	return ctx.Cluster().ReplicaSet()
+	return ctx.dispatchCtx.cluster.ReplicaSet()
 }

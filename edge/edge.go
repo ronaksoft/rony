@@ -40,10 +40,9 @@ type Server struct {
 	serverID []byte
 
 	// Handlers
-	preHandlers      []Handler
-	handlers         map[int64][]Handler
-	postHandlers     []Handler
-	readonlyHandlers map[int64]struct{}
+	preHandlers  []Handler
+	handlers     map[int64]*HandlerOption
+	postHandlers []Handler
 
 	// Gateway's Configs
 	gatewayProtocol   gateway.Protocol
@@ -60,8 +59,7 @@ type Server struct {
 func NewServer(serverID string, opts ...Option) *Server {
 	edgeServer := &Server{
 		dataDir:           "./_hdd",
-		handlers:          make(map[int64][]Handler),
-		readonlyHandlers:  make(map[int64]struct{}),
+		handlers:          make(map[int64]*HandlerOption),
 		serverID:          []byte(serverID),
 		gatewayDispatcher: &defaultDispatcher{},
 	}
@@ -75,8 +73,8 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
-	edgeServer.SetHandlers(rony.C_GetNodes, false, builtin.GetNodes)
-	edgeServer.SetHandlers(rony.C_GetPage, true, builtin.GetPage)
+	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead())
+	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetPage, builtin.GetPage))
 
 	return edgeServer
 }
@@ -101,43 +99,17 @@ func (edge *Server) SetGlobalPostHandlers(handlers ...Handler) {
 	edge.postHandlers = handlers
 }
 
-// SetHandlers set the handlers for the constructor. 'leaderOnly' is applicable ONLY if the cluster is run
+// SetHandler set the handlers for the constructor. 'leaderOnly' is applicable ONLY if the cluster is run
 // with Raft support. If cluster is a Raft enabled cluster, then by setting 'leaderOnly' to TRUE, requests sent
 // to a follower server will return redirect error to the client. For standalone servers 'leaderOnly' does not
 // affect.
-func (edge *Server) SetHandlers(constructor int64, leaderOnly bool, handlers ...Handler) {
-	if !leaderOnly {
-		edge.readonlyHandlers[constructor] = struct{}{}
-	}
-	edge.handlers[constructor] = handlers
+func (edge *Server) SetHandler(ho *HandlerOption) {
+	edge.handlers[ho.constructor] = ho
 }
 
-// AppendHandlers appends the handlers for the constructor in order. So handlers[n] will be called before
-// handlers[n+1].
-func (edge *Server) AppendHandlers(constructor int64, handlers ...Handler) {
-	edge.handlers[constructor] = append(edge.handlers[constructor], handlers...)
-}
-
-// BulkAppendHandlers appends the handlers for all the constructors. This method is useful when you
-// a fixed set of pre-handlers for many of your rpc.it appends the handlers for the constructor in order.
-// So handlers[n] will be called before handlers[n+1]
-func (edge *Server) BulkAppendHandlers(handlers []Handler, constructors ...int64) {
-	for _, c := range constructors {
-		edge.handlers[c] = append(edge.handlers[c], handlers...)
-	}
-}
-
-// PrependHandlers prepends the handlers for the constructor in order.
-func (edge *Server) PrependHandlers(constructor int64, handlers ...Handler) {
-	edge.handlers[constructor] = append(handlers, edge.handlers[constructor]...)
-}
-
-// BulkPrependHandlers prepends the handlers for all the constructors. This method is useful when you
-// a fixed set of post-handlers for many of your rpc.it appends the handlers for the constructor in order.
-func (edge *Server) BulkPrependHandlers(handlers []Handler, constructors ...int64) {
-	for _, c := range constructors {
-		edge.handlers[c] = append(handlers, edge.handlers[c]...)
-	}
+// GetHandler returns the handlers of the constructor
+func (edge *Server) GetHandler(constructor int64) *HandlerOption {
+	return edge.handlers[constructor]
 }
 
 // Cluster returns a reference to the underlying cluster of the Edge server
@@ -218,9 +190,16 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	// Set the context request
 	requestCtx.reqID = in.RequestID
 
-	if !isLeader && requestCtx.dispatchCtx.kind != ReplicaMessage {
-		_, ok := edge.readonlyHandlers[in.GetConstructor()]
-		if !ok {
+	ho, ok := edge.handlers[in.GetConstructor()]
+	if !ok {
+		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
+		return
+	}
+
+	switch requestCtx.Kind() {
+	case ReplicaMessage:
+	default:
+		if !isLeader && !ho.inconsistentRead {
 			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
 				ce.Write(
 					zap.String("RaftLeaderID", edge.cluster.RaftLeaderID()),
@@ -232,12 +211,6 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		}
 	}
 
-	handlers, ok := edge.handlers[in.GetConstructor()]
-	if !ok {
-		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
-		return
-	}
-
 	// Run the handler
 	for idx := range edge.preHandlers {
 		edge.preHandlers[idx](requestCtx, in)
@@ -246,8 +219,8 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		}
 	}
 	if !requestCtx.stop {
-		for idx := range handlers {
-			handlers[idx](requestCtx, in)
+		for idx := range ho.handlers {
+			ho.handlers[idx](requestCtx, in)
 			if requestCtx.stop {
 				break
 			}
@@ -266,15 +239,13 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	if ce := log.Check(log.DebugLevel, "Request Executed"); ce != nil {
-		if requestCtx.Kind() != ReplicaMessage {
-			ce.Write(
-				zap.String("ServerID", edge.GetServerID()),
-				zap.String("Kind", requestCtx.Kind().String()),
-				zap.Uint64("ReqID", in.GetRequestID()),
-				zap.String("C", registry.ConstructorName(in.GetConstructor())),
-				zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
-			)
-		}
+		ce.Write(
+			zap.String("ServerID", edge.GetServerID()),
+			zap.String("Kind", requestCtx.Kind().String()),
+			zap.Uint64("ReqID", in.GetRequestID()),
+			zap.String("C", registry.ConstructorName(in.GetConstructor())),
+			zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
+		)
 	}
 
 	return
@@ -376,7 +347,6 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 	b, _ = mo.MarshalAppend(b, tm)
 	_ = ctx.Conn().SendBinary(ctx.streamID, b)
 }
-
 func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	envelope := rony.PoolMessageEnvelope.Get()
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)

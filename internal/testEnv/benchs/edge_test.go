@@ -33,7 +33,6 @@ func TestMain(m *testing.M) {
 			ServerID: edgeServer.GetServerID(),
 		},
 		edgeServer,
-		edge.NewHandlerOptions(),
 	)
 
 	edgeServer.Start()
