@@ -1,7 +1,9 @@
 package rony
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
 	"hash/crc64"
 	"reflect"
@@ -20,6 +22,7 @@ var (
 	crc64Table = crc64.MakeTable(crc64.ISO)
 )
 
+// ConstructorOf
 func ConstructorOf(x interface{}) int64 {
 	return int64(crc64.Checksum(tools.StrToByte(reflect.ValueOf(x).Type().Name()), crc64Table))
 }
@@ -31,4 +34,9 @@ func ConstructorOf(x interface{}) int64 {
 // 2  : ERROR
 func SetLogLevel(l int) {
 	log.SetLevel(log.Level(l))
+}
+
+// RegisterPrometheus
+func RegisterPrometheus(registerer prometheus.Registerer) {
+	metrics.Register(registerer)
 }

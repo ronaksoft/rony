@@ -2,6 +2,7 @@ package udpTunnel
 
 import (
 	"github.com/panjf2000/gnet"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"sync"
 )
 
@@ -46,6 +47,7 @@ func (u *udpConn) SendBinary(streamID int64, data []byte) error {
 	if u == nil || u.c == nil {
 		return nil
 	}
+	metrics.IncCounter(metrics.CntTunnelOutgoingMessage)
 	return u.c.SendTo(data)
 }
 

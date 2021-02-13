@@ -5,6 +5,7 @@ import (
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ronaksoft/rony/tunnel"
@@ -157,6 +158,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 
 	conn := newConn(t.nextID(), c)
 	pools.Go(func() {
+		metrics.IncCounter(metrics.CntTunnelIncomingMessage)
 		t.MessageHandler(conn, req)
 		rony.PoolTunnelMessage.Put(req)
 	})

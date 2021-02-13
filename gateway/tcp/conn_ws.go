@@ -8,6 +8,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"sync"
@@ -195,6 +196,7 @@ func (wc *websocketConn) SendBinary(streamID int64, payload []byte) error {
 		wc.release(4)
 	}
 	releaseWriteRequest(wr)
+	metrics.IncCounter(metrics.CntGatewayOutgoingWebsocketMessage)
 	return nil
 }
 

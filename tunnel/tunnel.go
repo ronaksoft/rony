@@ -22,4 +22,4 @@ type Tunnel interface {
 	Addr() []string
 }
 
-type MessageHandler func(conn rony.Conn, tm *rony.TunnelMessage)
+type MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage)

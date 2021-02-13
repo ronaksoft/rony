@@ -7,6 +7,7 @@ import (
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/store"
@@ -246,6 +247,12 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			zap.String("C", registry.ConstructorName(in.GetConstructor())),
 			zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
 		)
+	}
+	switch requestCtx.Kind() {
+	case GatewayMessage:
+		metrics.ObserveHistogram(metrics.HistGatewayRequestTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+	case TunnelMessage:
+		metrics.ObserveHistogram(metrics.HistTunnelRequestTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
 	}
 
 	return

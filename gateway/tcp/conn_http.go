@@ -1,6 +1,7 @@
 package tcpGateway
 
 import (
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/valyala/fasthttp"
 	"net"
 	"sync"
@@ -56,6 +57,7 @@ func (c *httpConn) SetClientType(ct []byte) {
 
 func (c *httpConn) SendBinary(streamID int64, data []byte) error {
 	_, err := c.req.Write(data)
+	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)
 	return err
 }
 

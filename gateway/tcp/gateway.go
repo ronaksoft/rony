@@ -9,6 +9,7 @@ import (
 	"github.com/ronaksoft/rony/gateway"
 	wsutil "github.com/ronaksoft/rony/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
@@ -209,6 +210,12 @@ func MustNew(config Config) *Gateway {
 // Start is non-blocking and call the Run function in background
 func (g *Gateway) Start() {
 	go g.Run()
+	go func() {
+		for {
+			metrics.SetGauge(metrics.GaugeActiveWebsocketConnections, float64(g.TotalConnections()))
+			time.Sleep(time.Second * 5)
+		}
+	}()
 }
 
 // Run is blocking and runs the server endless loop until a non-temporary error happens
@@ -362,6 +369,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
+	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
 	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
@@ -434,6 +442,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 		case ws.OpBinary:
 			waitGroup.Add(1)
 			_ = goPoolB.Submit(func() {
+				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
 				g.MessageHandler(wc, 0, ms[idx].Payload)
 				waitGroup.Done()
 			})
@@ -470,7 +479,6 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 			if ce := log.Check(log.WarnLevel, "Error in websocketWritePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
-			return
 		} else {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}

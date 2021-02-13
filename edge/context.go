@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -34,7 +35,7 @@ const (
 )
 
 var (
-	kindNames = map[MessageKind]string{
+	messageKindNames = map[MessageKind]string{
 		GatewayMessage: "GatewayMessage",
 		ReplicaMessage: "ReplicatedMessage",
 		TunnelMessage:  "TunnelMessage",
@@ -42,7 +43,7 @@ var (
 )
 
 func (c MessageKind) String() string {
-	return kindNames[c]
+	return messageKindNames[c]
 }
 
 // DispatchCtx
@@ -342,6 +343,10 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 }
 
 func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+	startTime := tools.CPUTicks()
+	defer func() {
+		metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+	}()
 	target := getReplicaMember(ctx.dispatchCtx.cluster, replicaSet, onlyLeader)
 	if target == nil {
 		return ErrMemberNotFound
