@@ -1,5 +1,9 @@
 ## [Untagged]
 
+## [5.8]
+### Added
+1. Prometheus metrics added, they could be added to your prometheus by calling rony.RegisterPrometheus
+
 ## [5.7]
 ### Changed
 1. Prefix byte added to key-value stores to separate user keys with system keys

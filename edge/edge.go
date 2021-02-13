@@ -72,6 +72,11 @@ func NewServer(serverID string, opts ...Option) *Server {
 	// Initialize store
 	store.MustInit(store.DefaultConfig("./_hdd"))
 
+	// Initialize metrics
+	metrics.Init(map[string]string{
+		"ServerID": serverID,
+	})
+
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
 	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead())
