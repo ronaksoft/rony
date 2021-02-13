@@ -23,28 +23,28 @@ var ServerCmd = &cobra.Command{
 
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
-			config.GetString("serverID"),
-			edge.WithDataDir(config.GetString("dataPath")),
+			config.GetString("server.id"),
+			edge.WithDataDir(config.GetString("data.path")),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   runtime.NumCPU() * 100,
-				ListenAddress: config.GetString("gatewayListen"),
-				MaxIdleTime:   config.GetDuration("idleTime"),
+				ListenAddress: config.GetString("gateway.listen"),
+				MaxIdleTime:   config.GetDuration("idle-time"),
 				Protocol:      gateway.Http,
-				ExternalAddrs: config.GetStringSlice("gatewayAdvertiseUrl"),
+				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{
-				ServerID:   tools.StrToByte(config.GetString("serverID")),
+				ServerID:   tools.StrToByte(config.GetString("server.id")),
 				Bootstrap:  config.GetBool("bootstrap"),
-				RaftPort:   config.GetInt("raftPort"),
-				ReplicaSet: config.GetUint64("replicaSet"),
+				RaftPort:   config.GetInt("raft.port"),
+				ReplicaSet: config.GetUint64("replica-set"),
 				Mode:       cluster.MultiReplica,
-				GossipPort: config.GetInt("gossipPort"),
+				GossipPort: config.GetInt("gossip.port"),
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{
-				ServerID:      config.GetString("serverID"),
+				ServerID:      config.GetString("server.id"),
 				Concurrency:   runtime.NumCPU() * 100,
-				ListenAddress: config.GetString("tunnelListen"),
-				ExternalAddrs: config.GetStringSlice("tunnelAdvertiseUrl"),
+				ListenAddress: config.GetString("tunnel.listen"),
+				ExternalAddrs: config.GetStringSlice("tunnel.advertise.url"),
 			}),
 		)
 

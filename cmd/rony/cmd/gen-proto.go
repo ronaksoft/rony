@@ -20,10 +20,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-const (
-	skeletonPath = "github.com/ronaksoft/rony:/internal/templates"
-)
-
 var GenProtoCmd = &cobra.Command{
 	Use: "gen-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {

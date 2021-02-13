@@ -18,16 +18,16 @@ func main() {
 	// Define the configs if this executable is running as a server instance
 	// Set the flags as config parameters
 	config.SetCmdFlags(ServerCmd,
-		config.StringFlag("serverID", tools.RandomID(12), ""),
-		config.StringFlag("gatewayListen", "0.0.0.0:80", ""),
-		config.StringSliceFlag("gatewayAdvertiseUrl", nil, ""),
-		config.StringFlag("tunnelListen", "0.0.0.0:81", ""),
-		config.StringSliceFlag("tunnelAdvertiseUrl", nil, ""),
-		config.DurationFlag("idleTime", time.Minute, ""),
-		config.IntFlag("raftPort", 7080, ""),
-		config.Uint64Flag("replicaSet", 1, ""),
-		config.IntFlag("gossipPort", 7081, ""),
-		config.StringFlag("dataPath", "./_hdd", ""),
+		config.StringFlag("server.id", tools.RandomID(12), ""),
+		config.StringFlag("gateway.listen", "0.0.0.0:80", ""),
+		config.StringSliceFlag("gateway.advertise.url", nil, ""),
+		config.StringFlag("tunnel.listen", "0.0.0.0:81", ""),
+		config.StringSliceFlag("tunnel.advertise.url", nil, ""),
+		config.DurationFlag("idle-time", time.Minute, ""),
+		config.IntFlag("raft.port", 7080, ""),
+		config.Uint64Flag("replica-set", 1, ""),
+		config.IntFlag("gossip.port", 7081, ""),
+		config.StringFlag("data.path", "./_hdd", ""),
 		config.BoolFlag("bootstrap", false, ""),
 	)
 

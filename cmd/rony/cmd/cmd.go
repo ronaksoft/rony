@@ -16,6 +16,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+const (
+	skeletonPath = "github.com/ronaksoft/rony:/internal/templates"
+)
+
 func init() {
 	workingDir, _ := os.Getwd()
 	_ = config.Init("", workingDir)
@@ -36,9 +40,7 @@ func init() {
 
 	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd)
 
-	_ = pkger.Walk(skeletonPath, func(path string, info os.FileInfo, err error) error {
-		return nil
-	})
+	_ = pkger.Walk(skeletonPath, nil)
 }
 
 var RootCmd = &cobra.Command{
