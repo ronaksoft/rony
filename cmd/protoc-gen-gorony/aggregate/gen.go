@@ -357,7 +357,7 @@ func funcIter(g *protogen.GeneratedFile, mm *Aggregate) {
 	g.P()
 	g.P("exitLoop := false")
 	g.P("iterOpt := store.DefaultIteratorOptions")
-	g.P("iterOpt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
+	g.P("iterOpt.Prefix = alloc.GenKey('M', C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("iter := txn.NewIterator(iterOpt)")
 	g.P("for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {")
 	g.P("_ = iter.Item().Value(func (val []byte) error {")
