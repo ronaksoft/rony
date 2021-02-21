@@ -79,8 +79,8 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
-	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead())
-	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetPage, builtin.GetPage))
+	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead().setBuiltin())
+	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetPage, builtin.GetPage).setBuiltin())
 
 	return edgeServer
 }
@@ -218,10 +218,12 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	// Run the handler
-	for idx := range edge.preHandlers {
-		edge.preHandlers[idx](requestCtx, in)
-		if requestCtx.stop {
-			break
+	if !ho.builtin {
+		for idx := range edge.preHandlers {
+			edge.preHandlers[idx](requestCtx, in)
+			if requestCtx.stop {
+				break
+			}
 		}
 	}
 	if !requestCtx.stop {
@@ -232,7 +234,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			}
 		}
 	}
-	if !requestCtx.stop {
+	if !requestCtx.stop && !ho.builtin {
 		for idx := range edge.postHandlers {
 			edge.postHandlers[idx](requestCtx, in)
 			if requestCtx.stop {

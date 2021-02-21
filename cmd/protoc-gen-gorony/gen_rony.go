@@ -255,7 +255,7 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		g.P("}") // end of func block
 		g.P()
 	}
-	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server) {")
+	g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server, preHandlers ...edge.Handler) {")
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
 		sb := strings.Builder{}
@@ -266,16 +266,15 @@ func genServerRPC(file *protogen.File, g *protogen.GeneratedFile, s *protogen.Se
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			sb.WriteString(".TunnelOnly()")
 		}
-		g.P("e.SetHandler(edge.NewHandlerOptions(C_", serviceName, methodName, ", sw.", tools.ToLowerCamel(methodName), "Wrapper)", sb.String(), ")")
-
+		g.P("e.SetHandler(edge.NewHandlerOptions(C_", serviceName, methodName, ", sw.", tools.ToLowerCamel(methodName), "Wrapper).Prepend(preHandlers...)", sb.String(), ")")
 	}
 	g.P("}")
 	g.P()
-	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server) {")
+	g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server, preHandlers ...edge.Handler) {")
 	g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
 	g.P("h: h,")
 	g.P("}")
-	g.P("w.Register(e)")
+	g.P("w.Register(e, preHandlers...)")
 	g.P("}")
 	g.P()
 

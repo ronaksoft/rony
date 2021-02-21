@@ -22,6 +22,8 @@ type HandlerOption struct {
 	inconsistentRead bool
 	tunnel           bool
 	gateway          bool
+	// internal user
+	builtin          bool
 }
 
 func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
@@ -32,6 +34,11 @@ func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
 		tunnel:           true,
 		inconsistentRead: false,
 	}
+}
+
+func (ho *HandlerOption) setBuiltin() *HandlerOption {
+	ho.builtin = true
+	return ho
 }
 
 // GatewayOnly makes this method only available through gateway messages.
