@@ -330,7 +330,7 @@ func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool)
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey(C_Model1, 4018441491)
+	iterOpt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
@@ -749,7 +749,7 @@ func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool)
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey(C_Model2, 1609271041)
+	iterOpt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {

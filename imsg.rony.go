@@ -438,7 +438,7 @@ func IterPages(txn *store.Txn, alloc *store.Allocator, cb func(m *Page) bool) er
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey(C_Page, 299066170)
+	iterOpt.Prefix = alloc.GenKey('M', C_Page, 299066170)
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {

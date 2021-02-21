@@ -245,7 +245,7 @@ SendLoop:
 	// If it is required to wait until the connection is established before try sending the
 	// request over the wire
 	if waitToConnect {
-		err = c.waitUntilConnect(retry)
+		err = c.waitUntilConnect(100)
 		if err != nil {
 			return
 		}

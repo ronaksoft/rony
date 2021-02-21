@@ -50,7 +50,7 @@ func TestClient_Connect(t *testing.T) {
 			c.So(err, ShouldBeNil)
 
 			wg := sync.WaitGroup{}
-			for i := 0; i < 20; i++ {
+			for i := 0; i < 200; i++ {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
@@ -63,7 +63,7 @@ func TestClient_Connect(t *testing.T) {
 			err = wsc.Close()
 			c.So(err, ShouldBeNil)
 		})
-		Convey("One Connection With Slow Data-Rate", func(c C) {
+		SkipConvey("One Connection With Slow Data-Rate", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
@@ -78,7 +78,7 @@ func TestClient_Connect(t *testing.T) {
 				time.Sleep(time.Second * 3)
 			}
 		})
-		Convey("One Connection With Slow Request", func(c C) {
+		SkipConvey("One Connection With Slow Request", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
@@ -92,7 +92,5 @@ func TestClient_Connect(t *testing.T) {
 				c.So(res.Int, ShouldEqual, 123)
 			}
 		})
-
 	})
-
 }
