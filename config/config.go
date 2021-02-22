@@ -29,7 +29,7 @@ func MustInit(configFileName string, configSearchPaths ...string) {
 
 func Init(configFileName string, configSearchPaths ...string) error {
 	_Viper = viper.NewWithOptions(
-		viper.EnvKeyReplacer(strings.NewReplacer(".", "_")),
+		viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")),
 	)
 	for _, p := range configSearchPaths {
 		_Viper.AddConfigPath(p)
