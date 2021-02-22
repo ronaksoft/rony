@@ -468,7 +468,7 @@ func funcList(g *protogen.GeneratedFile, mm *Aggregate) {
 	g.P("res := make([]*", mm.Name, ", 0, lo.Limit())")
 	g.P("err := store.View(func(txn *store.Txn) error {")
 	g.P("opt := store.DefaultIteratorOptions")
-	g.P("opt.Prefix = alloc.GenKey(C_", mm.Name, ",", mm.Table.Checksum(), ")")
+	g.P("opt.Prefix = alloc.GenKey('M', C_", mm.Name, ",", mm.Table.Checksum(), ")")
 	g.P("opt.Reverse = lo.Backward()")
 	g.P("osk := alloc.GenKey(", genDbPrefixPKs(mm, mm.Table, "offset"), ")")
 	g.P("iter := txn.NewIterator(opt)")
