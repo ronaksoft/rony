@@ -651,6 +651,7 @@ func funcListByIndex(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggrega
 }
 func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggregate) {
 	for _, f := range m.Fields {
+		ftName := string(f.Desc.Name())
 		switch f.Desc.Cardinality() {
 		case protoreflect.Repeated:
 			if f.Desc.Kind() == protoreflect.MessageKind {
@@ -660,7 +661,7 @@ func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggregate)
 			case protoreflect.MessageKind, protoreflect.GroupKind:
 			case protoreflect.BytesKind:
 				mtName := m.Desc.Name()
-				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
+				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[ftName], ") bool {")
 				g.P("for idx := range x.", f.Desc.Name(), "{")
 				g.P("if bytes.Equal(x.", f.Desc.Name(), "[idx], xx) {")
 				g.P("return true")
@@ -669,9 +670,20 @@ func funcHasField(g *protogen.GeneratedFile, m *protogen.Message, mm *Aggregate)
 				g.P("return false")
 				g.P("}") // end of func
 				g.P()
+			case protoreflect.EnumKind:
+				mtName := m.Desc.Name()
+				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", f.Enum.Desc.Name(), ") bool {")
+				g.P("for idx := range x.", f.Desc.Name(), "{")
+				g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+				g.P("return true")
+				g.P("}") // end of if
+				g.P("}") // end of for
+				g.P("return false")
+				g.P("}") // end of func
+				g.P()
 			default:
 				mtName := m.Desc.Name()
-				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[f.GoName], ") bool {")
+				g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", mm.FieldsGo[ftName], ") bool {")
 				g.P("for idx := range x.", f.Desc.Name(), "{")
 				g.P("if x.", f.Desc.Name(), "[idx] == xx {")
 				g.P("return true")
