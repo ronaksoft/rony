@@ -291,7 +291,7 @@ func ListModel1(
 	res := make([]*Model1, 0, lo.Limit())
 	err := store.View(func(txn *store.Txn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model1, 4018441491)
+		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model1, 4018441491, offsetID)
 		iter := txn.NewIterator(opt)
@@ -710,7 +710,7 @@ func ListModel2(
 	res := make([]*Model2, 0, lo.Limit())
 	err := store.View(func(txn *store.Txn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Model2, 1609271041)
+		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Model2, 1609271041, offsetID, offsetShardKey)
 		iter := txn.NewIterator(opt)

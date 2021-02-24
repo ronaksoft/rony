@@ -23,7 +23,7 @@ type HandlerOption struct {
 	tunnel           bool
 	gateway          bool
 	// internal user
-	builtin          bool
+	builtin bool
 }
 
 func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {

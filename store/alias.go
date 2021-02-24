@@ -24,7 +24,6 @@ var (
 	DefaultIteratorOptions = badger.DefaultIteratorOptions
 )
 
-
 func NewEntry(key, value []byte) *Entry {
 	return badger.NewEntry(key, value)
 }

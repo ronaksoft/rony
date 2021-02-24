@@ -175,7 +175,7 @@ func listFunc(cmd *cobra.Command) {
 				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
 				edgeStats.Members,
 				edgeStats.TunnelAddr,
-				edgeStats.GatewayProtocol, edgeStats.GatewayAddr,
+				edgeStats.GatewayProtocol.String(), edgeStats.GatewayAddr,
 			),
 		)
 	}

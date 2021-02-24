@@ -70,7 +70,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	}
 
 	// Initialize store
-	store.MustInit(store.DefaultConfig("./_hdd"))
+	store.MustInit(store.DefaultConfig(edgeServer.dataDir))
 
 	// Initialize metrics
 	metrics.Init(map[string]string{

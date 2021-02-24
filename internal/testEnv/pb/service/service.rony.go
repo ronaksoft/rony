@@ -319,19 +319,19 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server) {
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEcho, sw.echoWrapper).InconsistentRead())
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoLeaderOnly, sw.echoLeaderOnlyWrapper))
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoTunnel, sw.echoTunnelWrapper))
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoInternal, sw.echoInternalWrapper).TunnelOnly())
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoDelay, sw.echoDelayWrapper))
+func (sw *sampleWrapper) Register(e *edge.Server, preHandlers ...edge.Handler) {
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEcho, sw.echoWrapper).Prepend(preHandlers...).InconsistentRead())
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoLeaderOnly, sw.echoLeaderOnlyWrapper).Prepend(preHandlers...))
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoTunnel, sw.echoTunnelWrapper).Prepend(preHandlers...))
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoInternal, sw.echoInternalWrapper).Prepend(preHandlers...).TunnelOnly())
+	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoDelay, sw.echoDelayWrapper).Prepend(preHandlers...))
 }
 
-func RegisterSample(h ISample, e *edge.Server) {
+func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e)
+	w.Register(e, preHandlers...)
 }
 
 func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

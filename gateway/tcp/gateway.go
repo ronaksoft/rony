@@ -50,13 +50,13 @@ type UnsafeConn interface {
 
 // Config
 type Config struct {
-	serverID      string
 	Concurrency   int
 	ListenAddress string
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
+	HttpProxyFunc func(req *fasthttp.RequestCtx) []byte
 }
 
 // Gateway
@@ -73,6 +73,9 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
+
+	// Http Internals
+	httpProxyFunc func(ctx *fasthttp.RequestCtx) []byte
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -107,6 +110,7 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
+		httpProxyFunc:      config.HttpProxyFunc,
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -117,7 +121,7 @@ func New(config Config) (*Gateway, error) {
 	if config.MaxIdleTime != 0 {
 		g.maxIdleTime = int64(config.MaxIdleTime)
 	}
-	if config.Protocol != "" {
+	if config.Protocol != gateway.Undefined {
 		g.transportMode = config.Protocol
 	}
 
@@ -343,7 +347,6 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 			req.SetStatusCode(http.StatusNotAcceptable)
 			return
 		}
-
 		req.HijackSetNoResponse(true)
 		req.Hijack(func(c net.Conn) {
 			hjc, _ := c.(UnsafeConn)
@@ -370,7 +373,12 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		rony.PoolKeyValue.Put(kv)
 	}
 	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
-	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+
+	if g.httpProxyFunc != nil {
+		g.MessageHandler(conn, int64(req.ID()), g.httpProxyFunc(req))
+	} else {
+		g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	}
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
 }

@@ -13,15 +13,32 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Protocol string
+type Protocol int32
 
 const (
-	Undefined Protocol = ""
-	TCP       Protocol = "tcp"
-	Dummy     Protocol = "dummy"
-	Websocket Protocol = "ws"
-	Http      Protocol = "http"
+	Undefined Protocol = 0
+	Dummy     Protocol = 1 << iota
+	Http
+	Websocket
+	Quic
+	Grpc
+	// Mixed
+	TCP Protocol = 0x0003 // Http & Websocket
 )
+
+var protocolNames = map[Protocol]string{
+	Undefined: "Undefined",
+	Dummy:     "Dummy",
+	Http:      "Http",
+	Websocket: "Websocket",
+	Quic:      "Quic",
+	Grpc:      "Grpc",
+	TCP:       "TCP",
+}
+
+func (p Protocol) String() string {
+	return protocolNames[p]
+}
 
 // Gateway defines the gateway interface where clients could connect
 // and communicate with the edge server

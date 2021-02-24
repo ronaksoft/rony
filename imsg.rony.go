@@ -399,7 +399,7 @@ func ListPage(
 	res := make([]*Page, 0, lo.Limit())
 	err := store.View(func(txn *store.Txn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey(C_Page, 299066170)
+		opt.Prefix = alloc.GenKey('M', C_Page, 299066170)
 		opt.Reverse = lo.Backward()
 		osk := alloc.GenKey('M', C_Page, 299066170, offsetID)
 		iter := txn.NewIterator(opt)
