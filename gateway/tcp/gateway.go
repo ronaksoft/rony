@@ -200,9 +200,6 @@ func (g *Gateway) watchdog() {
 }
 
 func (g *Gateway) detectAddrs() error {
-
-	defer g.addrsMtx.Unlock()
-
 	// try to detect the ip address of the listener
 	ta, err := net.ResolveTCPAddr("tcp4", g.listener.Addr().String())
 	if err != nil {
