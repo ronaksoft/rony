@@ -4,6 +4,7 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/store"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,17 +20,17 @@ import (
 
 // Builtin keep track of pages distribution over Edge servers.
 type Builtin struct {
-	cluster   cluster.Cluster
-	serverID  string
-	hostPorts []string
-	rs        uint64
+	cluster  cluster.Cluster
+	gateway  gateway.Gateway
+	serverID string
+	rs       uint64
 }
 
-func newBuiltin(serverID string, hostPorts []string, c cluster.Cluster) *Builtin {
+func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster) *Builtin {
 	return &Builtin{
-		cluster:   c,
-		serverID:  serverID,
-		hostPorts: hostPorts,
+		cluster:  c,
+		gateway:  gw,
+		serverID: serverID,
 	}
 }
 
@@ -48,7 +49,7 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		res.Nodes = append(res.Nodes, &rony.Edge{
 			ReplicaSet: 0,
 			ServerID:   pm.serverID,
-			HostPorts:  pm.hostPorts,
+			HostPorts:  pm.gateway.Addr(),
 			Leader:     true,
 		})
 	} else if len(req.ReplicaSet) == 0 {

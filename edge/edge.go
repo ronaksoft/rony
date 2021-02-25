@@ -78,7 +78,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	})
 
 	// register builtin rony handlers
-	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.gateway.Addr(), edgeServer.Cluster())
+	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
 	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead().setBuiltin())
 	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetPage, builtin.GetPage).setBuiltin())
 
@@ -121,6 +121,11 @@ func (edge *Server) GetHandler(constructor int64) *HandlerOption {
 // Cluster returns a reference to the underlying cluster of the Edge server
 func (edge *Server) Cluster() cluster.Cluster {
 	return edge.cluster
+}
+
+// Gateway returns a reference to the underlying gateway of the Edge server
+func (edge *Server) Gateway() gateway.Gateway {
+	return edge.gateway
 }
 
 func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {

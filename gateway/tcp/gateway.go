@@ -69,6 +69,7 @@ type Gateway struct {
 	transportMode gateway.Protocol
 	listenOn      string
 	listener      *wrapListener
+	addrsMtx      sync.RWMutex
 	addrs         []string
 	extAddrs      []string
 	concurrency   int
@@ -154,35 +155,10 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	// try to detect the ip address of the listener
-	ta, err := net.ResolveTCPAddr("tcp4", g.listener.Addr().String())
+	err = g.detectAddrs()
 	if err != nil {
+		log.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
 		return nil, err
-	}
-	if ta.IP.IsUnspecified() {
-		addrs, err := net.InterfaceAddrs()
-		if err == nil {
-			for _, a := range addrs {
-				switch x := a.(type) {
-				case *net.IPNet:
-					if x.IP.To4() == nil || x.IP.IsLoopback() {
-						continue
-					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
-				case *net.IPAddr:
-					if x.IP.To4() == nil || x.IP.IsLoopback() {
-						continue
-					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
-				case *net.TCPAddr:
-					if x.IP.To4() == nil || x.IP.IsLoopback() {
-						continue
-					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
-				}
-			}
-		}
-	} else {
-		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
 	}
 
 	goPoolB, err = ants.NewPool(g.concurrency,
@@ -211,15 +187,63 @@ func MustNew(config Config) *Gateway {
 	return g
 }
 
+func (g *Gateway) watchdog() {
+	for {
+		metrics.SetGauge(metrics.GaugeActiveWebsocketConnections, float64(g.TotalConnections()))
+		err := g.detectAddrs()
+		if err != nil {
+			log.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+		}
+		time.Sleep(time.Second * 15)
+	}
+
+}
+
+func (g *Gateway) detectAddrs() error {
+
+	defer g.addrsMtx.Unlock()
+
+	// try to detect the ip address of the listener
+	ta, err := net.ResolveTCPAddr("tcp4", g.listener.Addr().String())
+	if err != nil {
+		return err
+	}
+	if ta.IP.IsUnspecified() {
+		addrs, err := net.InterfaceAddrs()
+		if err == nil {
+			g.addrsMtx.Lock()
+			for _, a := range addrs {
+				switch x := a.(type) {
+				case *net.IPNet:
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+				case *net.IPAddr:
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+				case *net.TCPAddr:
+					if x.IP.To4() == nil || x.IP.IsLoopback() {
+						continue
+					}
+					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+				}
+			}
+			g.addrsMtx.Unlock()
+		}
+	} else {
+		g.addrsMtx.Lock()
+		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
+		g.addrsMtx.Unlock()
+	}
+	return nil
+}
+
 // Start is non-blocking and call the Run function in background
 func (g *Gateway) Start() {
 	go g.Run()
-	go func() {
-		for {
-			metrics.SetGauge(metrics.GaugeActiveWebsocketConnections, float64(g.TotalConnections()))
-			time.Sleep(time.Second * 5)
-		}
-	}()
 }
 
 // Run is blocking and runs the server endless loop until a non-temporary error happens
@@ -279,7 +303,10 @@ func (g *Gateway) Addr() []string {
 	if len(g.extAddrs) > 0 {
 		return g.extAddrs
 	}
-	return g.addrs
+	g.addrsMtx.RLock()
+	addrs := g.addrs
+	g.addrsMtx.RUnlock()
+	return addrs
 }
 
 // GetConn returns the connection identified by connID
