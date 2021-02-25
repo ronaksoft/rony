@@ -33,7 +33,7 @@ type WebsocketConfig struct {
 	IdleTimeout  time.Duration
 	DialTimeout  time.Duration
 	Handler      MessageHandler
-	Header       map[string]string
+	HeaderFunc   func() map[string]string
 	Secure       bool
 	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
 	RequestMaxRetry int

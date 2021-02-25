@@ -90,12 +90,15 @@ ConnectLoop:
 	c.createDialer(c.ws.cfg.DialTimeout)
 
 	sb := strings.Builder{}
-	for k, v := range c.ws.cfg.Header {
-		sb.WriteString(k)
-		sb.WriteString(": ")
-		sb.WriteString(v)
-		sb.WriteRune('\n')
+	if hf := c.ws.cfg.HeaderFunc; hf != nil {
+		for k, v := range hf() {
+			sb.WriteString(k)
+			sb.WriteString(": ")
+			sb.WriteString(v)
+			sb.WriteRune('\n')
+		}
 	}
+
 	c.dialer.Header = ws.HandshakeHeaderString(sb.String())
 	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPorts[0]))
 	if err != nil {

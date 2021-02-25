@@ -24,7 +24,7 @@ import (
 type HttpConfig struct {
 	Name            string
 	SeedHostPort    string
-	Header          map[string]string
+	HeaderFunc      func() map[string]string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	ContextTimeout  time.Duration
