@@ -29,12 +29,14 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.4.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
+	github.com/savsgio/gotils v0.0.0-20210217112953-d4a072536008
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/valyala/fasthttp v1.19.0
+	github.com/valyala/bytebufferpool v1.0.0
+	github.com/valyala/fasthttp v1.21.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
