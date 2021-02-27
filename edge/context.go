@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/internal/gateway"
 )
 
 // Group returns a new group.

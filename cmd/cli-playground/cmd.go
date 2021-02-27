@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
+	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"

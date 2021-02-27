@@ -2,7 +2,7 @@ package dummyGateway
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/internal/gateway"
 	"sync"
 	"sync/atomic"
 )

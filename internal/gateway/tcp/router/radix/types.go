@@ -1,7 +1,7 @@
 package radix
 
 import (
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/internal/gateway"
 	"regexp"
 )
 

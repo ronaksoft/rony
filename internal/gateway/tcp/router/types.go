@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/ronaksoft/rony/gateway"
-	"github.com/ronaksoft/rony/gateway/tcp/router/radix"
+	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/router/radix"
 	"github.com/valyala/fasthttp"
 )
 

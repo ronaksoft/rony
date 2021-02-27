@@ -2,7 +2,7 @@ package edge
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/gateway/tcp"
+	"github.com/ronaksoft/rony/internal/gateway/tcp"
 )
 
 /*

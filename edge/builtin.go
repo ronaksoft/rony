@@ -3,8 +3,8 @@ package edge
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cluster"
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/store"
 	"google.golang.org/protobuf/proto"
 )

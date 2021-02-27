@@ -3,7 +3,7 @@ package storeCluster
 import (
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
-	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/internal/cluster"
 	"sync"
 )
 

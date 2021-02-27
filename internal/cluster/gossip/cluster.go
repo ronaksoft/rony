@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cluster"
+	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"

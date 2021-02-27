@@ -5,7 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
-	"github.com/ronaksoft/rony/gateway"
+	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"

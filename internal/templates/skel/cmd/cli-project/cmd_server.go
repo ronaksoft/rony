@@ -1,10 +1,8 @@
 package main
 
 import (
-	"github.com/ronaksoft/rony/cluster"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/gateway"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
 	"os"
@@ -29,7 +27,7 @@ var ServerCmd = &cobra.Command{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),
 				MaxIdleTime:   config.GetDuration("idle-time"),
-				Protocol:      gateway.Http,
+				Protocol:      edge.Http,
 				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{
@@ -37,7 +35,7 @@ var ServerCmd = &cobra.Command{
 				Bootstrap:  config.GetBool("bootstrap"),
 				RaftPort:   config.GetInt("raft.port"),
 				ReplicaSet: config.GetUint64("replica-set"),
-				Mode:       cluster.MultiReplica,
+				Mode:       edge.MultiReplica,
 				GossipPort: config.GetInt("gossip.port"),
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{

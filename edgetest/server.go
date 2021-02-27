@@ -2,7 +2,7 @@ package edgetest
 
 import (
 	"github.com/ronaksoft/rony/edge"
-	dummyGateway "github.com/ronaksoft/rony/gateway/dummy"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 )
 
 /*
