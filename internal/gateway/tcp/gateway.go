@@ -7,7 +7,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/router"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -57,7 +57,7 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
-	CustomRouter  *router.Router
+	Proxy         *proxy.Proxy
 }
 
 // Gateway
@@ -77,7 +77,7 @@ type Gateway struct {
 	maxBodySize   int
 
 	// Http Internals
-	httpRouter *router.Router
+	httpProxy *proxy.Proxy
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -114,8 +114,8 @@ func New(config Config) (*Gateway, error) {
 		extAddrs:           config.ExternalAddrs,
 	}
 
-	if config.CustomRouter != nil {
-		g.httpRouter = config.CustomRouter
+	if config.Proxy != nil {
+		g.httpProxy = config.Proxy
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -402,9 +402,9 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	}
 	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
 
-	if g.httpRouter != nil && tools.ByteToStr(req.Request.URI().PathOriginal()) != "/" {
+	if g.httpProxy != nil && tools.ByteToStr(req.Request.URI().PathOriginal()) != "/" {
 		buf := pools.Buffer.GetCap(len(req.PostBody()))
-		g.httpRouter.Handler(req, buf)
+		g.httpProxy.Handler(req, buf)
 		g.MessageHandler(conn, int64(req.ID()), *buf.Bytes())
 		pools.Buffer.Put(buf)
 	} else {

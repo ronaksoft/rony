@@ -1,14 +1,14 @@
-package router
+package proxy
 
 import (
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/router/radix"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy/radix"
 	"github.com/valyala/fasthttp"
 )
 
-// Router is a gateway.ProxyHandler which can be used to dispatch requests to different
+// Proxy is a gateway.ProxyHandler which can be used to dispatch requests to different
 // handler functions via configurable routes
-type Router struct {
+type Proxy struct {
 	trees              []*radix.Tree
 	treeMutable        bool
 	customMethodsIndex map[string]int
@@ -80,6 +80,6 @@ type Router struct {
 
 // Group is a sub-router to group paths
 type Group struct {
-	router *Router
+	router *Proxy
 	prefix string
 }

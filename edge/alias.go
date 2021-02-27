@@ -3,7 +3,7 @@ package edge
 import (
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/router"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy"
 	"github.com/ronaksoft/rony/internal/tunnel"
 )
 
@@ -19,7 +19,7 @@ import (
 type (
 	Gateway         = gateway.Gateway
 	GatewayProtocol = gateway.Protocol
-	GatewayRouter   = router.Router
+	GatewayProxy    = proxy.Proxy
 	Tunnel          = tunnel.Tunnel
 	Cluster         = cluster.Cluster
 	ClusterMode     = cluster.Mode
@@ -46,6 +46,6 @@ const (
 )
 
 // NewHttpRouter create a router which let you wrapper around your RPCs.
-func NewHttpRouter() *router.Router {
-	return router.New()
+func NewHttpRouter() *proxy.Proxy {
+	return proxy.New()
 }

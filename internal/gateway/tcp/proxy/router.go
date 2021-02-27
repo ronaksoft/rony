@@ -1,9 +1,9 @@
-package router
+package proxy
 
 import (
 	"fmt"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/router/radix"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy/radix"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"strings"
@@ -22,14 +22,14 @@ var (
 	questionMark       = byte('?')
 
 	// MatchedRoutePathParam is the param name under which the path of the matched
-	// route is stored, if Router.SaveMatchedRoutePath is set.
+	// route is stored, if Proxy.SaveMatchedRoutePath is set.
 	MatchedRoutePathParam = fmt.Sprintf("__matchedRoutePath::%s__", bytes.Rand(make([]byte, 15)))
 )
 
 // New returns a new router.
 // Path auto-correction, including trailing slashes, is enabled by default.
-func New() *Router {
-	return &Router{
+func New() *Proxy {
+	return &Proxy{
 		trees:                  make([]*radix.Tree, 10),
 		customMethodsIndex:     make(map[string]int),
 		registeredPaths:        make(map[string][]string),
@@ -42,21 +42,21 @@ func New() *Router {
 
 // Group returns a new group.
 // Path auto-correction, including trailing slashes, is enabled by default.
-func (r *Router) Group(path string) *Group {
+func (r *Proxy) Group(path string) *Group {
 	return &Group{
 		router: r,
 		prefix: path,
 	}
 }
 
-func (r *Router) saveMatchedRoutePath(path string, handler gateway.ProxyHandler) gateway.ProxyHandler {
+func (r *Proxy) saveMatchedRoutePath(path string, handler gateway.ProxyHandler) gateway.ProxyHandler {
 	return func(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 		ctx.SetUserValue(MatchedRoutePathParam, path)
 		handler(ctx, buf)
 	}
 }
 
-func (r *Router) methodIndexOf(method string) int {
+func (r *Proxy) methodIndexOf(method string) int {
 	switch method {
 	case fasthttp.MethodGet:
 		return 0
@@ -92,7 +92,7 @@ func (r *Router) methodIndexOf(method string) int {
 // It's disabled by default
 //
 // WARNING: Use with care. It could generate unexpected behaviours
-func (r *Router) Mutable(v bool) {
+func (r *Proxy) Mutable(v bool) {
 	r.treeMutable = v
 
 	for i := range r.trees {
@@ -105,59 +105,59 @@ func (r *Router) Mutable(v bool) {
 }
 
 // List returns all registered routes grouped by method
-func (r *Router) List() map[string][]string {
+func (r *Proxy) List() map[string][]string {
 	return r.registeredPaths
 }
 
 // GET is a shortcut for router.Handle(fasthttp.MethodGet, path, handler)
-func (r *Router) GET(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) GET(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodGet, path, handler)
 }
 
 // HEAD is a shortcut for router.Handle(fasthttp.MethodHead, path, handler)
-func (r *Router) HEAD(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) HEAD(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodHead, path, handler)
 }
 
 // POST is a shortcut for router.Handle(fasthttp.MethodPost, path, handler)
-func (r *Router) POST(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) POST(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPost, path, handler)
 }
 
 // PUT is a shortcut for router.Handle(fasthttp.MethodPut, path, handler)
-func (r *Router) PUT(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) PUT(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPut, path, handler)
 }
 
 // PATCH is a shortcut for router.Handle(fasthttp.MethodPatch, path, handler)
-func (r *Router) PATCH(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) PATCH(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPatch, path, handler)
 }
 
 // DELETE is a shortcut for router.Handle(fasthttp.MethodDelete, path, handler)
-func (r *Router) DELETE(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) DELETE(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodDelete, path, handler)
 }
 
 // CONNECT is a shortcut for router.Handle(fasthttp.MethodConnect, path, handler)
-func (r *Router) CONNECT(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) CONNECT(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodConnect, path, handler)
 }
 
 // OPTIONS is a shortcut for router.Handle(fasthttp.MethodOptions, path, handler)
-func (r *Router) OPTIONS(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) OPTIONS(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodOptions, path, handler)
 }
 
 // TRACE is a shortcut for router.Handle(fasthttp.MethodTrace, path, handler)
-func (r *Router) TRACE(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) TRACE(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodTrace, path, handler)
 }
 
 // ANY is a shortcut for router.Handle(router.MethodWild, path, handler)
 //
 // WARNING: Use only for routes where the request method is not important
-func (r *Router) ANY(path string, handler gateway.ProxyHandler) {
+func (r *Proxy) ANY(path string, handler gateway.ProxyHandler) {
 	r.Handle(MethodWild, path, handler)
 }
 
@@ -169,7 +169,7 @@ func (r *Router) ANY(path string, handler gateway.ProxyHandler) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Router) Handle(method, path string, handler gateway.ProxyHandler) {
+func (r *Proxy) Handle(method, path string, handler gateway.ProxyHandler) {
 	switch {
 	case len(method) == 0:
 		panic("method must not be empty")
@@ -223,7 +223,7 @@ func (r *Router) Handle(method, path string, handler gateway.ProxyHandler) {
 // If the path was found, it returns the handler function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (r *Router) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
+func (r *Proxy) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
 	path := strconv.B2S(ctx.Request.URI().PathOriginal())
 	methodIndex := r.methodIndexOf(tools.ByteToStr(ctx.Request.Header.Method()))
 	if methodIndex == -1 {
@@ -244,13 +244,13 @@ func (r *Router) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
 	return nil, false
 }
 
-func (r *Router) recv(ctx *fasthttp.RequestCtx) {
+func (r *Proxy) recv(ctx *fasthttp.RequestCtx) {
 	if rcv := recover(); rcv != nil {
 		r.PanicHandler(ctx, rcv)
 	}
 }
 
-func (r *Router) allowed(path, reqMethod string) (allow string) {
+func (r *Proxy) allowed(path, reqMethod string) (allow string) {
 	allowed := make([]string, 0, 9)
 
 	if path == "*" || path == "/*" { // server-wide{ // server-wide
@@ -300,7 +300,7 @@ func (r *Router) allowed(path, reqMethod string) (allow string) {
 	return
 }
 
-func (r *Router) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
+func (r *Proxy) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
 	// Moved Permanently, request with GET method
 	code := fasthttp.StatusMovedPermanently
 	if method != fasthttp.MethodGet {
@@ -361,7 +361,7 @@ func (r *Router) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr boo
 }
 
 // Handler makes the router implement the http.Handler interface.
-func (r *Router) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
+func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 	if r.PanicHandler != nil {
 		defer r.recv(ctx)
 	}

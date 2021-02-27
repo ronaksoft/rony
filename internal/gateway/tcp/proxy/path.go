@@ -1,4 +1,4 @@
-package router
+package proxy
 
 import (
 	"github.com/savsgio/gotils/strings"
