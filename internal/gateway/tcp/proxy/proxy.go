@@ -87,23 +87,6 @@ func (r *Proxy) methodIndexOf(method string) int {
 	return -1
 }
 
-// Mutable allows updating the route handler
-//
-// It's disabled by default
-//
-// WARNING: Use with care. It could generate unexpected behaviours
-func (r *Proxy) Mutable(v bool) {
-	r.treeMutable = v
-
-	for i := range r.trees {
-		tree := r.trees[i]
-
-		if tree != nil {
-			tree.Mutable = v
-		}
-	}
-}
-
 // List returns all registered routes grouped by method
 func (r *Proxy) List() map[string][]string {
 	return r.registeredPaths
@@ -186,7 +169,7 @@ func (r *Proxy) Handle(method, path string, handler gateway.ProxyHandler) {
 	methodIndex := r.methodIndexOf(method)
 	if methodIndex == -1 {
 		tree := radix.New()
-		tree.Mutable = r.treeMutable
+		tree.Mutable = false
 
 		r.trees = append(r.trees, tree)
 		methodIndex = len(r.trees) - 1
@@ -196,7 +179,7 @@ func (r *Proxy) Handle(method, path string, handler gateway.ProxyHandler) {
 	tree := r.trees[methodIndex]
 	if tree == nil {
 		tree = radix.New()
-		tree.Mutable = r.treeMutable
+		tree.Mutable = false
 
 		r.trees[methodIndex] = tree
 		r.globalAllowed = r.allowed("*", "")
@@ -242,12 +225,6 @@ func (r *Proxy) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
 	}
 
 	return nil, false
-}
-
-func (r *Proxy) recv(ctx *fasthttp.RequestCtx) {
-	if rcv := recover(); rcv != nil {
-		r.PanicHandler(ctx, rcv)
-	}
 }
 
 func (r *Proxy) allowed(path, reqMethod string) (allow string) {
@@ -362,10 +339,6 @@ func (r *Proxy) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool
 
 // Handler makes the router implement the http.Handler interface.
 func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
-	if r.PanicHandler != nil {
-		defer r.recv(ctx)
-	}
-
 	path := strconv.B2S(ctx.Request.URI().PathOriginal())
 	method := strconv.B2S(ctx.Request.Header.Method())
 	methodIndex := r.methodIndexOf(method)

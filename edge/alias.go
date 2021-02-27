@@ -20,6 +20,7 @@ type (
 	Gateway         = gateway.Gateway
 	GatewayProtocol = gateway.Protocol
 	GatewayProxy    = proxy.Proxy
+	HttpRequestCtx  = gateway.HttpRequestCtx
 	Tunnel          = tunnel.Tunnel
 	Cluster         = cluster.Cluster
 	ClusterMode     = cluster.Mode
@@ -46,6 +47,6 @@ const (
 )
 
 // NewHttpRouter create a router which let you wrapper around your RPCs.
-func NewHttpRouter() *proxy.Proxy {
+func NewHttpRouter() *GatewayProxy {
 	return proxy.New()
 }

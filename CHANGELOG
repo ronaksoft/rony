@@ -1,5 +1,10 @@
 ## [Untagged]
 
+
+## [5.22]
+### Added
+1. Http proxy added to the TCP gateway. Now, user can implement RESTful apis by adding wrapper functions for the rpc handlers.
+
 ## [5.8]
 ### Added
 1. Prometheus metrics added, they could be added to your prometheus by calling rony.RegisterPrometheus

@@ -3,14 +3,12 @@ package proxy
 import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy/radix"
-	"github.com/valyala/fasthttp"
 )
 
 // Proxy is a gateway.ProxyHandler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Proxy struct {
 	trees              []*radix.Tree
-	treeMutable        bool
 	customMethodsIndex map[string]int
 	registeredPaths    map[string][]string
 
@@ -66,13 +64,6 @@ type Proxy struct {
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
 	MethodNotAllowed gateway.ProxyHandler
-
-	// Function to handle panics recovered from http handlers.
-	// It should be used to generate a error page and return the http error code
-	// 500 (Internal Server Error).
-	// The handler can be used to keep your server from crashing because of
-	// unrecovered panics.
-	PanicHandler func(*fasthttp.RequestCtx, interface{})
 
 	// Cached value of global (*) allowed methods
 	globalAllowed string
