@@ -60,6 +60,10 @@ func ByteToStr(bts []byte) string {
 	return *(*string)(unsafe.Pointer(s))
 }
 
+func B2S(bts []byte) string {
+	return ByteToStr(bts)
+}
+
 // StrToByte converts string to a byte slice without memory allocation.
 // Note it may break if string and/or slice header will change
 // in the future go versions.
@@ -67,4 +71,8 @@ func StrToByte(str string) []byte {
 	s := *(*reflect.StringHeader)(unsafe.Pointer(&str))
 	b := &reflect.SliceHeader{Data: s.Data, Len: s.Len, Cap: s.Len}
 	return *(*[]byte)(unsafe.Pointer(b))
+}
+
+func S2B(str string) []byte {
+	return StrToByte(str)
 }

@@ -13,10 +13,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var gopool *ants.Pool
+var goPool *ants.Pool
 
 func Go(f func()) {
-	_ = gopool.Submit(f)
+	_ = goPool.Submit(f)
 }
 
 func init() {
@@ -24,5 +24,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	gopool = p
+	goPool = p
 }
