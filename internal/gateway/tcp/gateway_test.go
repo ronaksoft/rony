@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/edge"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/valyala/fasthttp"
 	"net/http"
@@ -32,12 +34,17 @@ func init() {
 func TestGateway(t *testing.T) {
 	// rony.SetLogLevel(-1)
 	hostPort := "127.0.0.1:8080"
+	mux := edge.NewTcpGatewayMux()
+	mux.Handle(edge.MethodGet, "/x/{name}", func(data []byte, kv map[string]interface{}) []byte {
+		return tools.S2B(fmt.Sprintf("Received Get with Param: %s", kv["name"]))
+	})
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
 		ListenAddress: hostPort,
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
 		ExternalAddrs: []string{hostPort},
+		Mux:           mux,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -108,6 +115,37 @@ func TestGateway(t *testing.T) {
 			wg.Wait()
 			time.Sleep(time.Second)
 			c.Println("Total Connections", gw.TotalConnections())
+		})
+		Convey("Http With Path", func(c C) {
+			wg := pools.AcquireWaitGroup()
+			wg.Add(1)
+			go func() {
+				httpc := &fasthttp.Client{}
+				c.So(err, ShouldBeNil)
+				for i := 0; i < 400; i++ {
+					wg.Add(1)
+					go func() {
+						x := tools.RandomID(10)
+						req := fasthttp.AcquireRequest()
+						defer fasthttp.ReleaseRequest(req)
+						res := fasthttp.AcquireResponse()
+						defer fasthttp.ReleaseResponse(res)
+						req.SetRequestURI(fmt.Sprintf("http://%s/x/%s", hostPort, x))
+						req.Header.SetMethod(edge.MethodGet)
+						err := httpc.Do(req, res)
+						if err != nil {
+							c.Println(err)
+						}
+						c.So(err, ShouldBeNil)
+						c.So(res.Body(), ShouldResemble, tools.S2B(fmt.Sprintf("Received Get with Param: %s", x)))
+						wg.Done()
+					}()
+				}
+				wg.Done()
+			}()
+
+			wg.Wait()
+			time.Sleep(time.Second)
 		})
 	})
 

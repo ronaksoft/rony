@@ -512,7 +512,7 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 		err = wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
 		if err != nil {
-			if ce := log.Check(log.WarnLevel, "Error in websocketWritePump"); ce != nil {
+			if ce := log.Check(log.DebugLevel, "Error in websocketWritePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
 		} else {

@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
+	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/tunnel"
 )
 
@@ -56,3 +57,8 @@ const (
 	MethodOptions = "OPTIONS" // RFC 7231, 4.3.7
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
+
+
+func NewTcpGatewayMux() *tcpGateway.Mux {
+	return tcpGateway.NewMux()
+}
