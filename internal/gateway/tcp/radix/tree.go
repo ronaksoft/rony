@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/valyala/bytebufferpool"
-	"github.com/valyala/fasthttp"
 )
 
 // New returns an empty routes storage
@@ -69,7 +68,7 @@ func (t *Tree) Add(path string, handler gateway.ProxyHandler) {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (t *Tree) Get(path string, ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
+func (t *Tree) Get(path string, ctx *gateway.RequestCtx) (gateway.ProxyHandler, bool) {
 	if len(path) > len(t.root.path) {
 		if path[:len(t.root.path)] != t.root.path {
 			return nil, false

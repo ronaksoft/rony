@@ -2,11 +2,9 @@ package radix
 
 import (
 	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/valyala/bytebufferpool"
 	"sort"
 	"strings"
-
-	"github.com/valyala/bytebufferpool"
-	"github.com/valyala/fasthttp"
 )
 
 func newNode(path string) *node {
@@ -274,7 +272,7 @@ func (n *node) add(path, fullPath string, handler gateway.ProxyHandler) (*node, 
 	return n.insert(path, fullPath, handler)
 }
 
-func (n *node) getFromChild(path string, ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
+func (n *node) getFromChild(path string, ctx *gateway.RequestCtx) (gateway.ProxyHandler, bool) {
 	var parent *node
 
 	parentIndex, childIndex := 0, 0

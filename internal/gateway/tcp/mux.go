@@ -1,62 +1,113 @@
-package proxy
+package tcpGateway
 
 import (
 	"fmt"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy/radix"
-	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/radix"
 	"github.com/ronaksoft/rony/tools"
-	"strings"
-
 	"github.com/savsgio/gotils/bytes"
 	"github.com/savsgio/gotils/strconv"
+	gstrings "github.com/savsgio/gotils/strings"
 	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
+	"strings"
 )
+
+/*
+   Creation Time: 2021 - Feb - 28
+   Created by:  (ehsan)
+   Maintainers:
+      1.  Ehsan N. Moosa (E2)
+   Auditor: Ehsan N. Moosa (E2)
+   Copyright Ronak Software Group 2020
+*/
 
 // MethodWild wild HTTP method
 const MethodWild = "*"
 
 var (
-	defaultContentType = []byte("text/plain; charset=utf-8")
-	questionMark       = byte('?')
+	questionMark = byte('?')
 
 	// MatchedRoutePathParam is the param name under which the path of the matched
-	// route is stored, if Proxy.SaveMatchedRoutePath is set.
+	// route is stored, if Router.SaveMatchedRoutePath is set.
 	MatchedRoutePathParam = fmt.Sprintf("__matchedRoutePath::%s__", bytes.Rand(make([]byte, 15)))
 )
 
-// New returns a new router.
-// Path auto-correction, including trailing slashes, is enabled by default.
-func New() *Proxy {
-	return &Proxy{
-		trees:                  make([]*radix.Tree, 10),
-		customMethodsIndex:     make(map[string]int),
-		registeredPaths:        make(map[string][]string),
-		RedirectTrailingSlash:  true,
-		RedirectFixedPath:      true,
-		HandleMethodNotAllowed: true,
-		HandleOPTIONS:          true,
-	}
+type Mux struct {
+	trees              []*radix.Tree
+	customMethodsIndex map[string]int
+	registeredPaths    map[string][]string
+
+	// If enabled, adds the matched route path onto the ctx.UserValue context
+	// before invoking the handler.
+	// The matched route path is only added to handlers of routes that were
+	// registered when this option was enabled.
+	SaveMatchedRoutePath bool
+
+	// Enables automatic redirection if the current route can't be matched but a
+	// handler for the path with (without) the trailing slash exists.
+	// For example if /foo/ is requested but a route only exists for /foo, the
+	// client is redirected to /foo with http status code 301 for GET requests
+	// and 308 for all other request methods.
+	RedirectTrailingSlash bool
+
+	// If enabled, the router tries to fix the current request path, if no
+	// handle is registered for it.
+	// First superfluous path elements like ../ or // are removed.
+	// Afterwards the router does a case-insensitive lookup of the cleaned path.
+	// If a handle can be found for this route, the router makes a redirection
+	// to the corrected path with status code 301 for GET requests and 308 for
+	// all other request methods.
+	// For example /FOO and /..//Foo could be redirected to /foo.
+	// RedirectTrailingSlash is independent of this option.
+	RedirectFixedPath bool
+
+	// If enabled, the router checks if another method is allowed for the
+	// current route, if the current request can not be routed.
+	// If this is the case, the request is answered with 'Method Not Allowed'
+	// and HTTP status code 405.
+	// If no other Method is allowed, the request is delegated to the NotFound
+	// handler.
+	HandleMethodNotAllowed bool
+
+	// If enabled, the router automatically replies to OPTIONS requests.
+	// Custom OPTIONS handlers take priority over automatic replies.
+	HandleOPTIONS bool
+
+	// An optional gateway.ProxyHandler that is called on automatic OPTIONS requests.
+	// The handler is only called if HandleOPTIONS is true and no OPTIONS
+	// handler for the specific path was set.
+	// The "Allowed" header is set before calling the handler.
+	GlobalOPTIONS gateway.ProxyHandler
+
+	// Configurable gateway.ProxyHandler which is called when no matching route is
+	// found. If it is not set, default NotFound is used.
+	NotFound gateway.ProxyHandler
+
+	// Configurable ProxyHandler which is called when a request
+	// cannot be routed and HandleMethodNotAllowed is true.
+	// If it is not set, ctx.Error with fasthttp.StatusMethodNotAllowed is used.
+	// The "Allow" header with allowed request methods is set before the handler
+	// is called.
+	MethodNotAllowed gateway.ProxyHandler
+
+	// Cached value of global (*) allowed methods
+	globalAllowed string
 }
 
-// Group returns a new group.
-// Path auto-correction, including trailing slashes, is enabled by default.
-func (r *Proxy) Group(path string) *Group {
-	return &Group{
-		router: r,
-		prefix: path,
-	}
+func NewMux(addrs string) *Mux {
+	p := &Mux{}
+	return p
 }
 
-func (r *Proxy) saveMatchedRoutePath(path string, handler gateway.ProxyHandler) gateway.ProxyHandler {
-	return func(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
+func (r *Mux) saveMatchedRoutePath(path string, handler gateway.ProxyHandler) gateway.ProxyHandler {
+	return func(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 		ctx.SetUserValue(MatchedRoutePathParam, path)
-		handler(ctx, buf)
+		handler(ctx, f)
 	}
 }
 
-func (r *Proxy) methodIndexOf(method string) int {
+func (r *Mux) methodIndexOf(method string) int {
 	switch method {
 	case fasthttp.MethodGet:
 		return 0
@@ -76,8 +127,6 @@ func (r *Proxy) methodIndexOf(method string) int {
 		return 7
 	case fasthttp.MethodTrace:
 		return 8
-	case MethodWild:
-		return 9
 	}
 
 	if i, ok := r.customMethodsIndex[method]; ok {
@@ -88,59 +137,59 @@ func (r *Proxy) methodIndexOf(method string) int {
 }
 
 // List returns all registered routes grouped by method
-func (r *Proxy) List() map[string][]string {
+func (r *Mux) List() map[string][]string {
 	return r.registeredPaths
 }
 
 // GET is a shortcut for router.Handle(fasthttp.MethodGet, path, handler)
-func (r *Proxy) GET(path string, handler gateway.ProxyHandler) {
+func (r *Mux) GET(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodGet, path, handler)
 }
 
 // HEAD is a shortcut for router.Handle(fasthttp.MethodHead, path, handler)
-func (r *Proxy) HEAD(path string, handler gateway.ProxyHandler) {
+func (r *Mux) HEAD(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodHead, path, handler)
 }
 
 // POST is a shortcut for router.Handle(fasthttp.MethodPost, path, handler)
-func (r *Proxy) POST(path string, handler gateway.ProxyHandler) {
+func (r *Mux) POST(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPost, path, handler)
 }
 
 // PUT is a shortcut for router.Handle(fasthttp.MethodPut, path, handler)
-func (r *Proxy) PUT(path string, handler gateway.ProxyHandler) {
+func (r *Mux) PUT(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPut, path, handler)
 }
 
 // PATCH is a shortcut for router.Handle(fasthttp.MethodPatch, path, handler)
-func (r *Proxy) PATCH(path string, handler gateway.ProxyHandler) {
+func (r *Mux) PATCH(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodPatch, path, handler)
 }
 
 // DELETE is a shortcut for router.Handle(fasthttp.MethodDelete, path, handler)
-func (r *Proxy) DELETE(path string, handler gateway.ProxyHandler) {
+func (r *Mux) DELETE(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodDelete, path, handler)
 }
 
 // CONNECT is a shortcut for router.Handle(fasthttp.MethodConnect, path, handler)
-func (r *Proxy) CONNECT(path string, handler gateway.ProxyHandler) {
+func (r *Mux) CONNECT(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodConnect, path, handler)
 }
 
 // OPTIONS is a shortcut for router.Handle(fasthttp.MethodOptions, path, handler)
-func (r *Proxy) OPTIONS(path string, handler gateway.ProxyHandler) {
+func (r *Mux) OPTIONS(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodOptions, path, handler)
 }
 
 // TRACE is a shortcut for router.Handle(fasthttp.MethodTrace, path, handler)
-func (r *Proxy) TRACE(path string, handler gateway.ProxyHandler) {
+func (r *Mux) TRACE(path string, handler gateway.ProxyHandler) {
 	r.Handle(fasthttp.MethodTrace, path, handler)
 }
 
 // ANY is a shortcut for router.Handle(router.MethodWild, path, handler)
 //
 // WARNING: Use only for routes where the request method is not important
-func (r *Proxy) ANY(path string, handler gateway.ProxyHandler) {
+func (r *Mux) ANY(path string, handler gateway.ProxyHandler) {
 	r.Handle(MethodWild, path, handler)
 }
 
@@ -152,7 +201,7 @@ func (r *Proxy) ANY(path string, handler gateway.ProxyHandler) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Proxy) Handle(method, path string, handler gateway.ProxyHandler) {
+func (r *Mux) Handle(method, path string, handler gateway.ProxyHandler) {
 	switch {
 	case len(method) == 0:
 		panic("method must not be empty")
@@ -206,7 +255,7 @@ func (r *Proxy) Handle(method, path string, handler gateway.ProxyHandler) {
 // If the path was found, it returns the handler function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (r *Proxy) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
+func (r *Mux) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
 	path := strconv.B2S(ctx.Request.URI().PathOriginal())
 	methodIndex := r.methodIndexOf(tools.ByteToStr(ctx.Request.Header.Method()))
 	if methodIndex == -1 {
@@ -227,7 +276,7 @@ func (r *Proxy) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
 	return nil, false
 }
 
-func (r *Proxy) allowed(path, reqMethod string) (allow string) {
+func (r *Mux) allowed(path, reqMethod string) (allow string) {
 	allowed := make([]string, 0, 9)
 
 	if path == "*" || path == "/*" { // server-wide{ // server-wide
@@ -277,7 +326,7 @@ func (r *Proxy) allowed(path, reqMethod string) (allow string) {
 	return
 }
 
-func (r *Proxy) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
+func (r *Mux) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
 	// Moved Permanently, request with GET method
 	code := fasthttp.StatusMovedPermanently
 	if method != fasthttp.MethodGet {
@@ -338,7 +387,7 @@ func (r *Proxy) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool
 }
 
 // Handler makes the router implement the http.Handler interface.
-func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
+func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 	path := strconv.B2S(ctx.Request.URI().PathOriginal())
 	method := strconv.B2S(ctx.Request.Header.Method())
 	methodIndex := r.methodIndexOf(method)
@@ -346,7 +395,7 @@ func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 	if methodIndex > -1 {
 		if tree := r.trees[methodIndex]; tree != nil {
 			if handler, tsr := tree.Get(path, ctx); handler != nil {
-				handler(ctx, buf)
+				handler(ctx, f)
 				return
 			} else if method != fasthttp.MethodConnect && path != "/" {
 				if ok := r.tryRedirect(ctx, tree, tsr, method, path); ok {
@@ -359,7 +408,7 @@ func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 	// Try to search in the wild method tree
 	if tree := r.trees[r.methodIndexOf(MethodWild)]; tree != nil {
 		if handler, tsr := tree.Get(path, ctx); handler != nil {
-			handler(ctx, buf)
+			handler(ctx, f)
 			return
 		} else if method != fasthttp.MethodConnect && path != "/" {
 			if ok := r.tryRedirect(ctx, tree, tsr, method, path); ok {
@@ -374,7 +423,7 @@ func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 		if allow := r.allowed(path, fasthttp.MethodOptions); allow != "" {
 			ctx.Response.Header.Set("Allow", allow)
 			if r.GlobalOPTIONS != nil {
-				r.GlobalOPTIONS(ctx, buf)
+				r.GlobalOPTIONS(ctx, f)
 			}
 			return
 		}
@@ -384,7 +433,7 @@ func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 		if allow := r.allowed(path, method); allow != "" {
 			ctx.Response.Header.Set("Allow", allow)
 			if r.MethodNotAllowed != nil {
-				r.MethodNotAllowed(ctx, buf)
+				r.MethodNotAllowed(ctx, f)
 			} else {
 				ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 				ctx.SetBodyString(fasthttp.StatusMessage(fasthttp.StatusMethodNotAllowed))
@@ -395,8 +444,91 @@ func (r *Proxy) Handler(ctx *fasthttp.RequestCtx, buf *pools.ByteBuffer) {
 
 	// Handle 404
 	if r.NotFound != nil {
-		r.NotFound(ctx, buf)
+		r.NotFound(ctx, f)
 	} else {
 		ctx.Error(fasthttp.StatusMessage(fasthttp.StatusNotFound), fasthttp.StatusNotFound)
+	}
+}
+
+// cleanPath removes the '.' if it is the last character of the route
+func cleanPath(path string) string {
+	lenPath := len(path)
+
+	if path[lenPath-1] == '.' {
+		path = path[:lenPath-1]
+	}
+
+	return path
+}
+
+// getOptionalPaths returns all possible paths when the original path
+// has optional arguments
+func getOptionalPaths(path string) []string {
+	paths := make([]string, 0)
+
+	start := 0
+walk:
+	for {
+		if start >= len(path) {
+			return paths
+		}
+
+		c := path[start]
+		start++
+
+		if c != '{' {
+			continue
+		}
+
+		newPath := ""
+		hasRegex := false
+		questionMarkIndex := -1
+
+		brackets := 0
+
+		for end, c := range []byte(path[start:]) {
+			switch c {
+			case '{':
+				brackets++
+
+			case '}':
+				if brackets > 0 {
+					brackets--
+					continue
+				} else if questionMarkIndex == -1 {
+					continue walk
+				}
+
+				end++
+				newPath += path[questionMarkIndex+1 : start+end]
+
+				path = path[:questionMarkIndex] + path[questionMarkIndex+1:] // remove '?'
+				paths = append(paths, newPath)
+				start += end - 1
+
+				continue walk
+
+			case ':':
+				hasRegex = true
+
+			case '?':
+				if hasRegex {
+					continue
+				}
+
+				questionMarkIndex = start + end
+				newPath += path[:questionMarkIndex]
+
+				if len(path[:start-2]) == 0 {
+					// include the root slash because the param is in the first segment
+					paths = append(paths, "/")
+
+				} else if !gstrings.Include(paths, path[:start-2]) {
+					// include the path without the wildcard
+					// -2 due to remove the '/' and '{'
+					paths = append(paths, path[:start-2])
+				}
+			}
+		}
 	}
 }
