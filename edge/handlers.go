@@ -13,7 +13,9 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Handler = func(ctx *RequestCtx, in *rony.MessageEnvelope)
+type (
+	Handler = func(ctx *RequestCtx, in *rony.MessageEnvelope)
+)
 
 // HandlerOption is a structure holds all the information required for a handler.
 type HandlerOption struct {

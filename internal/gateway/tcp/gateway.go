@@ -56,6 +56,7 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
+	Mux           *Mux
 }
 
 // Gateway
@@ -73,6 +74,9 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
+
+	// Http Internals
+	mux *Mux
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -106,6 +110,7 @@ func New(config Config) (*Gateway, error) {
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
+		mux:                NewMux(),
 		extAddrs:           config.ExternalAddrs,
 	}
 
@@ -119,6 +124,9 @@ func New(config Config) (*Gateway, error) {
 	}
 	if config.Protocol != gateway.Undefined {
 		g.transportMode = config.Protocol
+	}
+	if config.Mux != nil {
+		g.mux = config.Mux
 	}
 
 	switch g.transportMode {
@@ -393,7 +401,11 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
-	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	if g.mux == nil || tools.B2S(req.Request.URI().PathOriginal()) == "/" {
+		g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	} else {
+		g.MessageHandler(conn, int64(req.ID()), g.mux.handler(req))
+	}
 
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)

@@ -10,7 +10,7 @@ type nodeType uint8
 type nodeWildcard struct {
 	path     string
 	paramKey string
-	handler  gateway.ProxyHandler
+	handler  gateway.MuxHandler
 }
 
 type node struct {
@@ -18,7 +18,7 @@ type node struct {
 
 	path         string
 	tsr          bool
-	handler      gateway.ProxyHandler
+	handler      gateway.MuxHandler
 	hasWildChild bool
 	children     []*node
 	wildcard     *nodeWildcard

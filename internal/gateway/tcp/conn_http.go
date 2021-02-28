@@ -19,7 +19,7 @@ import (
 // httpConn
 type httpConn struct {
 	gateway    *Gateway
-	req        *fasthttp.RequestCtx
+	ctx        *fasthttp.RequestCtx
 	clientIP   []byte
 	clientType []byte
 	mtx        sync.RWMutex
@@ -40,7 +40,7 @@ func (c *httpConn) Set(key string, val interface{}) {
 }
 
 func (c *httpConn) ConnID() uint64 {
-	return c.req.ConnID()
+	return c.ctx.ConnID()
 }
 
 func (c *httpConn) ClientIP() string {
@@ -56,7 +56,7 @@ func (c *httpConn) SetClientType(ct []byte) {
 }
 
 func (c *httpConn) SendBinary(streamID int64, data []byte) error {
-	_, err := c.req.Write(data)
+	_, err := c.ctx.Write(data)
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)
 	return err
 }

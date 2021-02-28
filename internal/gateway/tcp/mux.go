@@ -1,11 +1,8 @@
 package tcpGateway
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/gateway/tcp/radix"
-	"github.com/ronaksoft/rony/tools"
-	"github.com/savsgio/gotils/bytes"
 	"github.com/savsgio/gotils/strconv"
 	gstrings "github.com/savsgio/gotils/strings"
 	"github.com/valyala/bytebufferpool"
@@ -27,22 +24,12 @@ const MethodWild = "*"
 
 var (
 	questionMark = byte('?')
-
-	// MatchedRoutePathParam is the param name under which the path of the matched
-	// route is stored, if Router.SaveMatchedRoutePath is set.
-	MatchedRoutePathParam = fmt.Sprintf("__matchedRoutePath::%s__", bytes.Rand(make([]byte, 15)))
 )
 
 type Mux struct {
 	trees              []*radix.Tree
 	customMethodsIndex map[string]int
 	registeredPaths    map[string][]string
-
-	// If enabled, adds the matched route path onto the ctx.UserValue context
-	// before invoking the handler.
-	// The matched route path is only added to handlers of routes that were
-	// registered when this option was enabled.
-	SaveMatchedRoutePath bool
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -74,123 +61,42 @@ type Mux struct {
 	// Custom OPTIONS handlers take priority over automatic replies.
 	HandleOPTIONS bool
 
-	// An optional gateway.ProxyHandler that is called on automatic OPTIONS requests.
+	// An optional gateway.MuxHandler that is called on automatic OPTIONS requests.
 	// The handler is only called if HandleOPTIONS is true and no OPTIONS
 	// handler for the specific path was set.
 	// The "Allowed" header is set before calling the handler.
-	GlobalOPTIONS gateway.ProxyHandler
+	GlobalOPTIONS gateway.MuxHandler
 
-	// Configurable gateway.ProxyHandler which is called when no matching route is
+	// Configurable gateway.MuxHandler which is called when no matching route is
 	// found. If it is not set, default NotFound is used.
-	NotFound gateway.ProxyHandler
+	NotFound gateway.MuxHandler
 
-	// Configurable ProxyHandler which is called when a request
+	// Configurable MuxHandler which is called when a request
 	// cannot be routed and HandleMethodNotAllowed is true.
 	// If it is not set, ctx.Error with fasthttp.StatusMethodNotAllowed is used.
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
-	MethodNotAllowed gateway.ProxyHandler
+	MethodNotAllowed gateway.MuxHandler
 
 	// Cached value of global (*) allowed methods
 	globalAllowed string
 }
 
-func NewMux(addrs string) *Mux {
-	p := &Mux{}
-	return p
-}
-
-func (r *Mux) saveMatchedRoutePath(path string, handler gateway.ProxyHandler) gateway.ProxyHandler {
-	return func(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
-		ctx.SetUserValue(MatchedRoutePathParam, path)
-		handler(ctx, f)
+func NewMux() *Mux {
+	return &Mux{
+		trees:                  make([]*radix.Tree, 10),
+		customMethodsIndex:     make(map[string]int),
+		registeredPaths:        make(map[string][]string),
+		RedirectTrailingSlash:  true,
+		RedirectFixedPath:      true,
+		HandleMethodNotAllowed: true,
+		HandleOPTIONS:          true,
 	}
-}
-
-func (r *Mux) methodIndexOf(method string) int {
-	switch method {
-	case fasthttp.MethodGet:
-		return 0
-	case fasthttp.MethodHead:
-		return 1
-	case fasthttp.MethodPost:
-		return 2
-	case fasthttp.MethodPut:
-		return 3
-	case fasthttp.MethodPatch:
-		return 4
-	case fasthttp.MethodDelete:
-		return 5
-	case fasthttp.MethodConnect:
-		return 6
-	case fasthttp.MethodOptions:
-		return 7
-	case fasthttp.MethodTrace:
-		return 8
-	}
-
-	if i, ok := r.customMethodsIndex[method]; ok {
-		return i
-	}
-
-	return -1
 }
 
 // List returns all registered routes grouped by method
 func (r *Mux) List() map[string][]string {
 	return r.registeredPaths
-}
-
-// GET is a shortcut for router.Handle(fasthttp.MethodGet, path, handler)
-func (r *Mux) GET(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodGet, path, handler)
-}
-
-// HEAD is a shortcut for router.Handle(fasthttp.MethodHead, path, handler)
-func (r *Mux) HEAD(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodHead, path, handler)
-}
-
-// POST is a shortcut for router.Handle(fasthttp.MethodPost, path, handler)
-func (r *Mux) POST(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodPost, path, handler)
-}
-
-// PUT is a shortcut for router.Handle(fasthttp.MethodPut, path, handler)
-func (r *Mux) PUT(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodPut, path, handler)
-}
-
-// PATCH is a shortcut for router.Handle(fasthttp.MethodPatch, path, handler)
-func (r *Mux) PATCH(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodPatch, path, handler)
-}
-
-// DELETE is a shortcut for router.Handle(fasthttp.MethodDelete, path, handler)
-func (r *Mux) DELETE(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodDelete, path, handler)
-}
-
-// CONNECT is a shortcut for router.Handle(fasthttp.MethodConnect, path, handler)
-func (r *Mux) CONNECT(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodConnect, path, handler)
-}
-
-// OPTIONS is a shortcut for router.Handle(fasthttp.MethodOptions, path, handler)
-func (r *Mux) OPTIONS(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodOptions, path, handler)
-}
-
-// TRACE is a shortcut for router.Handle(fasthttp.MethodTrace, path, handler)
-func (r *Mux) TRACE(path string, handler gateway.ProxyHandler) {
-	r.Handle(fasthttp.MethodTrace, path, handler)
-}
-
-// ANY is a shortcut for router.Handle(router.MethodWild, path, handler)
-//
-// WARNING: Use only for routes where the request method is not important
-func (r *Mux) ANY(path string, handler gateway.ProxyHandler) {
-	r.Handle(MethodWild, path, handler)
 }
 
 // Handle registers a new request handler with the given path and method.
@@ -201,7 +107,7 @@ func (r *Mux) ANY(path string, handler gateway.ProxyHandler) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Mux) Handle(method, path string, handler gateway.ProxyHandler) {
+func (r *Mux) Handle(method, path string, handler gateway.MuxHandler) {
 	switch {
 	case len(method) == 0:
 		panic("method must not be empty")
@@ -234,10 +140,6 @@ func (r *Mux) Handle(method, path string, handler gateway.ProxyHandler) {
 		r.globalAllowed = r.allowed("*", "")
 	}
 
-	if r.SaveMatchedRoutePath {
-		handler = r.saveMatchedRoutePath(path, handler)
-	}
-
 	optionalPaths := getOptionalPaths(path)
 
 	// if not has optional paths, adds the original
@@ -250,30 +152,33 @@ func (r *Mux) Handle(method, path string, handler gateway.ProxyHandler) {
 	}
 }
 
-// Lookup allows the manual lookup of a method + path combo.
-// This is e.g. useful to build a framework around this router.
-// If the path was found, it returns the handler function and the path parameter
-// values. Otherwise the third return value indicates whether a redirection to
-// the same path with an extra / without the trailing slash should be performed.
-func (r *Mux) Lookup(ctx *fasthttp.RequestCtx) (gateway.ProxyHandler, bool) {
-	path := strconv.B2S(ctx.Request.URI().PathOriginal())
-	methodIndex := r.methodIndexOf(tools.ByteToStr(ctx.Request.Header.Method()))
-	if methodIndex == -1 {
-		return nil, false
+func (r *Mux) methodIndexOf(method string) int {
+	switch method {
+	case fasthttp.MethodGet:
+		return 0
+	case fasthttp.MethodHead:
+		return 1
+	case fasthttp.MethodPost:
+		return 2
+	case fasthttp.MethodPut:
+		return 3
+	case fasthttp.MethodPatch:
+		return 4
+	case fasthttp.MethodDelete:
+		return 5
+	case fasthttp.MethodConnect:
+		return 6
+	case fasthttp.MethodOptions:
+		return 7
+	case fasthttp.MethodTrace:
+		return 8
 	}
 
-	if tree := r.trees[methodIndex]; tree != nil {
-		handler, tsr := tree.Get(path, ctx)
-		if handler != nil || tsr {
-			return handler, tsr
-		}
+	if i, ok := r.customMethodsIndex[method]; ok {
+		return i
 	}
 
-	if tree := r.trees[r.methodIndexOf(MethodWild)]; tree != nil {
-		return tree.Get(path, ctx)
-	}
-
-	return nil, false
+	return -1
 }
 
 func (r *Mux) allowed(path, reqMethod string) (allow string) {
@@ -326,7 +231,7 @@ func (r *Mux) allowed(path, reqMethod string) (allow string) {
 	return
 }
 
-func (r *Mux) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
+func (r *Mux) tryRedirect(ctx *gateway.RequestCtx, tree *radix.Tree, tsr bool, method, path string) bool {
 	// Moved Permanently, request with GET method
 	code := fasthttp.StatusMovedPermanently
 	if method != fasthttp.MethodGet {
@@ -386,8 +291,15 @@ func (r *Mux) tryRedirect(ctx *fasthttp.RequestCtx, tree *radix.Tree, tsr bool, 
 	return false
 }
 
-// Handler makes the router implement the http.Handler interface.
-func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
+func (r *Mux) ctxValues(ctx *gateway.RequestCtx) map[string]interface{} {
+	m := make(map[string]interface{})
+	ctx.VisitUserValues(func(k []byte, v interface{}) {
+		m[string(k)] = v
+	})
+	return m
+}
+
+func (r *Mux) handler(ctx *gateway.RequestCtx) []byte {
 	path := strconv.B2S(ctx.Request.URI().PathOriginal())
 	method := strconv.B2S(ctx.Request.Header.Method())
 	methodIndex := r.methodIndexOf(method)
@@ -395,11 +307,11 @@ func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 	if methodIndex > -1 {
 		if tree := r.trees[methodIndex]; tree != nil {
 			if handler, tsr := tree.Get(path, ctx); handler != nil {
-				handler(ctx, f)
-				return
+				return handler(ctx.Request.Body(), r.ctxValues(ctx))
+
 			} else if method != fasthttp.MethodConnect && path != "/" {
 				if ok := r.tryRedirect(ctx, tree, tsr, method, path); ok {
-					return
+					return nil
 				}
 			}
 		}
@@ -408,11 +320,10 @@ func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 	// Try to search in the wild method tree
 	if tree := r.trees[r.methodIndexOf(MethodWild)]; tree != nil {
 		if handler, tsr := tree.Get(path, ctx); handler != nil {
-			handler(ctx, f)
-			return
+			return handler(ctx.Request.Body(), r.ctxValues(ctx))
 		} else if method != fasthttp.MethodConnect && path != "/" {
 			if ok := r.tryRedirect(ctx, tree, tsr, method, path); ok {
-				return
+				return nil
 			}
 		}
 	}
@@ -423,9 +334,9 @@ func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 		if allow := r.allowed(path, fasthttp.MethodOptions); allow != "" {
 			ctx.Response.Header.Set("Allow", allow)
 			if r.GlobalOPTIONS != nil {
-				r.GlobalOPTIONS(ctx, f)
+				return r.GlobalOPTIONS(ctx.Request.Body(), r.ctxValues(ctx))
 			}
-			return
+			return nil
 		}
 	} else if r.HandleMethodNotAllowed {
 		// Handle 405
@@ -433,21 +344,22 @@ func (r *Mux) Handler(ctx *gateway.RequestCtx, f gateway.ProxyFunc) {
 		if allow := r.allowed(path, method); allow != "" {
 			ctx.Response.Header.Set("Allow", allow)
 			if r.MethodNotAllowed != nil {
-				r.MethodNotAllowed(ctx, f)
+				return r.MethodNotAllowed(ctx.Request.Body(), r.ctxValues(ctx))
 			} else {
 				ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 				ctx.SetBodyString(fasthttp.StatusMessage(fasthttp.StatusMethodNotAllowed))
 			}
-			return
+			return nil
 		}
 	}
 
 	// Handle 404
 	if r.NotFound != nil {
-		r.NotFound(ctx, f)
+		return r.NotFound(ctx.Request.Body(), r.ctxValues(ctx))
 	} else {
 		ctx.Error(fasthttp.StatusMessage(fasthttp.StatusNotFound), fasthttp.StatusNotFound)
 	}
+	return nil
 }
 
 // cleanPath removes the '.' if it is the last character of the route

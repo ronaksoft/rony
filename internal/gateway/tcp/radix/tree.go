@@ -19,7 +19,7 @@ func New() *Tree {
 // Add adds a node with the given handle to the path.
 //
 // WARNING: Not concurrency-safe!
-func (t *Tree) Add(path string, handler gateway.ProxyHandler) {
+func (t *Tree) Add(path string, handler gateway.MuxHandler) {
 	if !strings.HasPrefix(path, "/") {
 		panicf("path must begin with '/' in path '%s'", path)
 	} else if handler == nil {
@@ -68,7 +68,7 @@ func (t *Tree) Add(path string, handler gateway.ProxyHandler) {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (t *Tree) Get(path string, ctx *gateway.RequestCtx) (gateway.ProxyHandler, bool) {
+func (t *Tree) Get(path string, ctx *gateway.RequestCtx) (gateway.MuxHandler, bool) {
 	if len(path) > len(t.root.path) {
 		if path[:len(t.root.path)] != t.root.path {
 			return nil, false

@@ -29,12 +29,12 @@ func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 	if !ok {
 		return &httpConn{
 			gateway: gw,
-			req:     req,
+			ctx:     req,
 			kv:      make(map[string]interface{}, 4),
 		}
 	}
 	c.gateway = gw
-	c.req = req
+	c.ctx = req
 	return c
 }
 
