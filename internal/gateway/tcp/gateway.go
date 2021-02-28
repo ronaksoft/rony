@@ -7,7 +7,6 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/gateway/tcp/proxy"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -57,7 +56,6 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
-	Proxy         *proxy.Proxy
 }
 
 // Gateway
@@ -75,9 +73,6 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
-
-	// Http Internals
-	httpProxy *proxy.Proxy
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -112,10 +107,6 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
-	}
-
-	if config.Proxy != nil {
-		g.httpProxy = config.Proxy
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -365,7 +356,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		}
 	})
 	if !clientDetected {
-		clientIP = string(req.RemoteIP().To4())
+		clientIP = req.RemoteIP().To4().String()
 	}
 
 	// If this is a Http Upgrade then we handle websocket
@@ -396,20 +387,14 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	conn.SetClientIP(tools.StrToByte(clientIP))
 	conn.SetClientType(tools.StrToByte(clientType))
 
+	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
+
 	g.ConnectHandler(conn, kvs...)
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
-	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
+	g.MessageHandler(conn, int64(req.ID()), req.PostBody())
 
-	if g.httpProxy != nil && tools.ByteToStr(req.Request.URI().PathOriginal()) != "/" {
-		buf := pools.Buffer.GetCap(len(req.PostBody()))
-		g.httpProxy.Handler(req, buf)
-		g.MessageHandler(conn, int64(req.ID()), *buf.Bytes())
-		pools.Buffer.Put(buf)
-	} else {
-		g.MessageHandler(conn, int64(req.ID()), req.PostBody())
-	}
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
 }
