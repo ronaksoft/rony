@@ -395,7 +395,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.blockAlloc()
 		g.g.P("exitLoop := false")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Table, ""), ")")
+		g.g.P("opt.Prefix = alloc.GenKey(", tablePrefix(g.m(m), ""), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 		g.g.P("_ = iter.Item().Value(func (val []byte) error {")
@@ -434,7 +434,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P()
 		g.g.P("exitLoop := false")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Views[idx], ""), ")")
+		g.g.P("opt.Prefix = alloc.GenKey(", viewPrefix(g.m(m), "", idx), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 		g.g.P("_ = iter.Item().Value(func (val []byte) error {")
@@ -471,7 +471,7 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("opt := store.DefaultIteratorOptions")
 	g.g.P("opt.Prefix = alloc.GenKey('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
 	g.g.P("opt.Reverse = lo.Backward()")
-	g.g.P("osk := alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Table, "offset"), ")")
+	g.g.P("osk := alloc.GenKey(", tablePrefix(g.m(m), "offset"), ")")
 	g.g.P("iter := txn.NewIterator(opt)")
 	g.g.P("offset := lo.Skip()")
 	g.g.P("limit := lo.Limit()")
@@ -516,9 +516,9 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 		g.g.P("err := store.View(func(txn *store.Txn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Table, ""), ")")
+		g.g.P("opt.Prefix = alloc.GenKey(", tablePrefix(g.m(m), ""), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
-		g.g.P("osk := alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Table, ""), ",", g.m(m).Table.StringCKs("offset", ",", false), ")")
+		g.g.P("osk := alloc.GenKey(", tablePrefix(g.m(m), ""), ",", g.m(m).Table.StringCKs("offset", ",", false), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("offset := lo.Skip()")
 		g.g.P("limit := lo.Limit()")
@@ -562,9 +562,9 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 		g.g.P("err := store.View(func(txn *store.Txn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Views[idx], ""), ")")
+		g.g.P("opt.Prefix = alloc.GenKey(", viewPrefix(g.m(m), "", idx), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
-		g.g.P("osk := alloc.GenKey(", genDbPrefixPKs(g.m(m), g.m(m).Views[idx], ""), ",", g.m(m).Views[idx].StringCKs("offset", ",", false), ")")
+		g.g.P("osk := alloc.GenKey(", viewPrefix(g.m(m), "", idx), ",", g.m(m).Views[idx].StringCKs("offset", ",", false), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("offset := lo.Skip()")
 		g.g.P("limit := lo.Limit()")
@@ -775,11 +775,27 @@ func tableKey(mm *Aggregate, prefixKey string) string {
 	)
 }
 
+func tablePrefix(mm *Aggregate, prefixKey string) string {
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		mm.Name,
+		mm.Table.Checksum(),
+		mm.Table.StringPKs(prefixKey, ",", prefixKey == ""),
+	)
+}
+
 func viewKey(mm *Aggregate, prefixKey string, idx int) string {
 	return fmt.Sprintf("'M', C_%s, %d, %s",
 		mm.Name,
 		mm.Views[idx].Checksum(),
 		mm.Views[idx].String(prefixKey, ",", prefixKey == ""),
+	)
+}
+
+func viewPrefix(mm *Aggregate, prefixKey string, idx int) string {
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		mm.Name,
+		mm.Views[idx].Checksum(),
+		mm.Views[idx].StringPKs(prefixKey, ",", prefixKey == ""),
 	)
 }
 
@@ -795,20 +811,3 @@ func indexKey(mm *Aggregate, fieldName string, prefix string, postfix string) st
 var (
 	crcTab = crc64.MakeTable(crc64.ISO)
 )
-
-func genDbPrefixPKs(mm *Aggregate, key Key, keyPrefix string) string {
-	lowerCamel := keyPrefix == ""
-	return fmt.Sprintf("'M', C_%s, %d, %s",
-		mm.Name,
-		key.Checksum(),
-		key.StringPKs(keyPrefix, ",", lowerCamel),
-	)
-}
-func genDbPrefixCKs(mm *Aggregate, key Key, keyPrefix string) string {
-	lowerCamel := keyPrefix == ""
-	return fmt.Sprintf("'M', C_%s, %d, %s",
-		mm.Name,
-		key.Checksum(),
-		key.StringCKs(keyPrefix, ",", lowerCamel),
-	)
-}
