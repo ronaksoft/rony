@@ -32,7 +32,13 @@ func NewAllocator() *Allocator {
 	}
 }
 
+// Deprecated
 func (bk *Allocator) GenKey(v ...interface{}) []byte {
+	return bk.Gen(v...)
+}
+
+// Gen acquired a byte slice fitted to hold all the v variables.
+func (bk *Allocator) Gen(v ...interface{}) []byte {
 	b := pools.Buffer.GetLen(1 + getSize(v...))
 	var buf [8]byte
 	b.Fill(prefix, 0, 1)
@@ -87,7 +93,13 @@ func (bk *Allocator) GenKey(v ...interface{}) []byte {
 	return *b.Bytes()
 }
 
+// Deprecated
 func (bk *Allocator) GenValue(m proto.Message) []byte {
+	return bk.Marshal(m)
+}
+
+// Marshal acquires a byte slice fitted for message 'm'
+func (bk *Allocator) Marshal(m proto.Message) []byte {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb := pools.Buffer.GetCap(mo.Size(m))
 	b, _ := mo.MarshalAppend(*bb.Bytes(), m)
@@ -96,6 +108,15 @@ func (bk *Allocator) GenValue(m proto.Message) []byte {
 	return *bb.Bytes()
 }
 
+// FillWith acquired a byte slice with the capacity of 'v' and append/copy v into it.
+func (bk *Allocator) FillWith(v []byte) []byte {
+	b := pools.Buffer.GetCap(cap(v))
+	b.Append(v)
+	bk.blocks = append(bk.blocks, b)
+	return *b.Bytes()
+}
+
+// ReleaseAll releases all the byte slices.
 func (bk *Allocator) ReleaseAll() {
 	for _, b := range bk.blocks {
 		pools.Buffer.Put(b)

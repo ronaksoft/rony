@@ -264,22 +264,33 @@ func init() {
 	registry.RegisterConstructor(3023575326, "Page")
 }
 
-func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
+func CreatePage(m *Page) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+	return store.Update(func(txn *store.Txn) error {
+		return CreatePageWithTxn(txn, alloc, m)
+	})
+}
+
+func CreatePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
+	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
+		return store.ErrAlreadyExists
+	}
 	// save entry
-	b := alloc.GenValue(m)
-	key := alloc.GenKey('M', C_Page, 299066170, m.ID)
-	err = txn.Set(key, b)
+	val := alloc.Marshal(m)
+	err = store.Set(txn, alloc, val, 'M', C_Page, 299066170, m.ID)
 	if err != nil {
 		return
 	}
 
-	// save entry for view[ReplicaSet ID]
-	err = txn.Set(alloc.GenKey('M', C_Page, 1040696757, m.ReplicaSet, m.ID), b)
+	// save views
+	// save entry for view: [ReplicaSet ID]
+	err = store.Set(txn, alloc, val, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
 	if err != nil {
 		return
 	}
@@ -288,27 +299,16 @@ func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error
 
 }
 
-func SavePage(m *Page) error {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.Txn) error {
-		return SavePageWithTxn(txn, alloc, m)
-	})
-}
-
 func ReadPageWithTxn(txn *store.Txn, alloc *store.Allocator, id uint32, m *Page) (*Page, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Page, 299066170, id))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -333,13 +333,10 @@ func ReadPageByReplicaSetAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, re
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Page, 1040696757, replicaSet, id))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -356,24 +353,52 @@ func ReadPageByReplicaSetAndID(replicaSet uint64, id uint32, m *Page) (*Page, er
 	return m, err
 }
 
-func DeletePageWithTxn(txn *store.Txn, alloc *store.Allocator, id uint32) error {
-	m := &Page{}
-	item, err := txn.Get(alloc.GenKey('M', C_Page, 299066170, id))
-	if err != nil {
-		return err
+func UpdatePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
-	if err != nil {
-		return err
-	}
-	err = txn.Delete(alloc.GenKey('M', C_Page, 299066170, m.ID))
+
+	om := &Page{}
+	err := store.Unmarshal(txn, alloc, om, 'M', C_Page, 299066170, m.ID)
 	if err != nil {
 		return err
 	}
 
-	err = txn.Delete(alloc.GenKey('M', C_Page, 1040696757, m.ReplicaSet, m.ID))
+	err = DeletePageWithTxn(txn, alloc, om.ID)
+	if err != nil {
+		return err
+	}
+
+	return CreatePageWithTxn(txn, alloc, m)
+}
+
+func UpdatePage(id uint32, m *Page) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		return store.ErrEmptyObject
+	}
+
+	err := store.View(func(txn *store.Txn) (err error) {
+		return UpdatePageWithTxn(txn, alloc, m)
+	})
+	return err
+}
+
+func DeletePageWithTxn(txn *store.Txn, alloc *store.Allocator, id uint32) error {
+	m := &Page{}
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
+	if err != nil {
+		return err
+	}
+	err = store.Delete(txn, alloc, 'M', C_Page, 299066170, m.ID)
+	if err != nil {
+		return err
+	}
+
+	err = store.Delete(txn, alloc, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
 	if err != nil {
 		return err
 	}
@@ -390,138 +415,14 @@ func DeletePage(id uint32) error {
 	})
 }
 
-func ListPage(
-	offsetID uint32, lo *store.ListOption, cond func(m *Page) bool,
-) ([]*Page, error) {
+func SavePage(m *Page) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-
-	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Page, 299066170)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Page, 299066170, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Page{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				if cond == nil || cond(m) {
-					res = append(res, m)
-				}
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
+	return store.Update(func(txn *store.Txn) error {
+		return CreatePageWithTxn(txn, alloc, m)
 	})
-	return res, err
 }
 
-func IterPages(txn *store.Txn, alloc *store.Allocator, cb func(m *Page) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey('M', C_Page, 299066170)
-	iter := txn.NewIterator(iterOpt)
-	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Page{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
-}
-
-func ListPageByReplicaSet(replicaSet uint64, offsetID uint32, lo *store.ListOption) ([]*Page, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Page, 1040696757, replicaSet)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Page, 1040696757, replicaSet, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Page{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				res = append(res, m)
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func IterPageByReplicaSet(txn *store.Txn, alloc *store.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey('M', C_Page, 1040696757, replicaSet)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Page{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
+func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
 	return nil
 }

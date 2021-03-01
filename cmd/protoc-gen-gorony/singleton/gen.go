@@ -44,9 +44,7 @@ func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
-	g.P("b := alloc.GenValue(m)")
-	g.P("key := alloc.GenKey(", genDbKey(m), ")")
-	g.P("err = txn.Set(key, b)")
+	g.P("err = store.Marshal(txn, alloc, m,", genDbKey(m), ")")
 	g.P("if err != nil {")
 	g.P("return")
 	g.P("}")
@@ -69,13 +67,10 @@ func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("defer alloc.ReleaseAll()")
 	g.P("}") // end of if block
 	g.P()
-	g.P("item, err := txn.Get(alloc.GenKey(", genDbKey(m), "))")
+	g.P("err := store.Unmarshal(txn, alloc, m, ", genDbKey(m), ")")
 	g.P("if err != nil {")
 	g.P("return nil, err")
 	g.P("}")
-	g.P("err = item.Value(func (val []byte) error {")
-	g.P("return m.Unmarshal(val)")
-	g.P("})")
 	g.P("return m, err")
 	g.P("}") // end of ReadWithTxn func
 	g.P()

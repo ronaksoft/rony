@@ -107,70 +107,48 @@ func init() {
 	registry.RegisterConstructor(3802219577, "Model2")
 }
 
-func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
+func CreateModel1(m *Model1) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+	return store.Update(func(txn *store.Txn) error {
+		return CreateModel1WithTxn(txn, alloc, m)
+	})
+}
+
+func CreateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	// Try to read old value
-	om := &Model1{}
-	om, err = ReadModel1WithTxn(txn, alloc, m.ID, m.ShardKey, om)
-	if err != nil && err != store.ErrKeyNotFound {
-		return
+	if store.Exists(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey) {
+		return store.ErrAlreadyExists
 	}
-
-	if om != nil {
-		// update field index by deleting old values
-		if om.P1 != m.P1 {
-			err = txn.Delete(alloc.GenKey("IDX", C_Model1, 2864467857, om.P1, om.ID, om.ShardKey))
-			if err != nil {
-				return
-			}
-		}
-
-		// update field index by deleting old values
-		for i := 0; i < len(om.P2); i++ {
-			found := false
-			for j := 0; j < len(m.P2); j++ {
-				if om.P2[i] == m.P2[j] {
-					found = true
-					break
-				}
-			}
-			if !found {
-				err = txn.Delete(alloc.GenKey("IDX", C_Model1, 867507755, om.P2[i], om.ID, om.ShardKey))
-				if err != nil {
-					return
-				}
-			}
-		}
-
-	}
-
 	// save entry
-	b := alloc.GenValue(m)
-	key := alloc.GenKey('M', C_Model1, 4018441491, m.ID, m.ShardKey)
-	err = txn.Set(key, b)
+	val := alloc.Marshal(m)
+	err = store.Set(txn, alloc, val, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	if err != nil {
 		return
 	}
 
-	// save entry for view[Enum ShardKey ID]
-	err = txn.Set(alloc.GenKey('M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID), b)
+	// save views
+	// save entry for view: [Enum ShardKey ID]
+	err = store.Set(txn, alloc, val, 'M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID)
 	if err != nil {
 		return
 	}
 
+	// save indices
+	key := alloc.Gen('M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	// update field index by saving new values
-	err = txn.Set(alloc.GenKey("IDX", C_Model1, 2864467857, m.P1, m.ID, m.ShardKey), key)
+	err = store.Set(txn, alloc, key, 'I', C_Model1, 4843779728911368192, m.P1, m.ID, m.ShardKey)
 	if err != nil {
 		return
 	}
 
 	// update field index by saving new values
 	for idx := range m.P2 {
-		err = txn.Set(alloc.GenKey("IDX", C_Model1, 867507755, m.P2[idx], m.ID, m.ShardKey), key)
+		err = store.Set(txn, alloc, key, 'I', C_Model1, 4749204136736587776, m.P2[idx], m.ID, m.ShardKey)
 		if err != nil {
 			return
 		}
@@ -180,27 +158,16 @@ func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err e
 
 }
 
-func SaveModel1(m *Model1) error {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.Txn) error {
-		return SaveModel1WithTxn(txn, alloc, m)
-	})
-}
-
 func ReadModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -225,13 +192,10 @@ func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Alloca
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Model1, 2535881670, enum, shardKey, id))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -248,24 +212,52 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	return m, err
 }
 
-func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
-	m := &Model1{}
-	item, err := txn.Get(alloc.GenKey('M', C_Model1, 4018441491, id, shardKey))
-	if err != nil {
-		return err
+func UpdateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
-	if err != nil {
-		return err
-	}
-	err = txn.Delete(alloc.GenKey('M', C_Model1, 4018441491, m.ID, m.ShardKey))
+
+	om := &Model1{}
+	err := store.Unmarshal(txn, alloc, om, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	if err != nil {
 		return err
 	}
 
-	err = txn.Delete(alloc.GenKey('M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID))
+	err = DeleteModel1WithTxn(txn, alloc, om.ID, om.ShardKey)
+	if err != nil {
+		return err
+	}
+
+	return CreateModel1WithTxn(txn, alloc, m)
+}
+
+func UpdateModel1(id int32, shardKey int32, m *Model1) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		return store.ErrEmptyObject
+	}
+
+	err := store.View(func(txn *store.Txn) (err error) {
+		return UpdateModel1WithTxn(txn, alloc, m)
+	})
+	return err
+}
+
+func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
+	m := &Model1{}
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
+	if err != nil {
+		return err
+	}
+	err = store.Delete(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
+	if err != nil {
+		return err
+	}
+
+	err = store.Delete(txn, alloc, 'M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID)
 	if err != nil {
 		return err
 	}
@@ -282,76 +274,6 @@ func DeleteModel1(id int32, shardKey int32) error {
 	})
 }
 
-func ListModel1(
-	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
-) ([]*Model1, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model1, 4018441491, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model1{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				if cond == nil || cond(m) {
-					res = append(res, m)
-				}
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
-	iter := txn.NewIterator(iterOpt)
-	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model1{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
-}
-
 func (x *Model1) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -361,236 +283,44 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
-func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
+func SaveModel1(m *Model1) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-
-	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey("IDX", C_Model1, 2864467857, p1)
-		opt.Reverse = lo.Backward()
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				item, err := txn.Get(val)
-				if err != nil {
-					return err
-				}
-				return item.Value(func(val []byte) error {
-					m := &Model1{}
-					err := m.Unmarshal(val)
-					if err != nil {
-						return err
-					}
-					res = append(res, m)
-					return nil
-				})
-			})
-		}
-		iter.Close()
-		return nil
+	return store.Update(func(txn *store.Txn) error {
+		return CreateModel1WithTxn(txn, alloc, m)
 	})
-	return res, err
 }
 
-func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey("IDX", C_Model1, 867507755, p2)
-		opt.Reverse = lo.Backward()
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				item, err := txn.Get(val)
-				if err != nil {
-					return err
-				}
-				return item.Value(func(val []byte) error {
-					m := &Model1{}
-					err := m.Unmarshal(val)
-					if err != nil {
-						return err
-					}
-					res = append(res, m)
-					return nil
-				})
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Model1, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model1, 4018441491, id, offsetShardKey)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model1{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				res = append(res, m)
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption) ([]*Model1, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model1, 2535881670, enum, offsetShardKey, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model1{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				res = append(res, m)
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func IterModel1ByID(txn *store.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model1{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
+func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
 	return nil
 }
-
-func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model1{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
+func CreateModel2(m *Model2) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+	return store.Update(func(txn *store.Txn) error {
+		return CreateModel2WithTxn(txn, alloc, m)
+	})
 }
 
-func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
+func CreateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
+	if store.Exists(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1) {
+		return store.ErrAlreadyExists
+	}
 	// save entry
-	b := alloc.GenValue(m)
-	key := alloc.GenKey('M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
-	err = txn.Set(key, b)
+	val := alloc.Marshal(m)
+	err = store.Set(txn, alloc, val, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return
 	}
 
-	// save entry for view[P1 ShardKey ID]
-	err = txn.Set(alloc.GenKey('M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID), b)
+	// save views
+	// save entry for view: [P1 ShardKey ID]
+	err = store.Set(txn, alloc, val, 'M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID)
 	if err != nil {
 		return
 	}
@@ -599,27 +329,16 @@ func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err e
 
 }
 
-func SaveModel2(m *Model2) error {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.Txn) error {
-		return SaveModel2WithTxn(txn, alloc, m)
-	})
-}
-
 func ReadModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {
 		alloc = store.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -644,13 +363,10 @@ func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocato
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('M', C_Model2, 2344331025, p1, shardKey, id))
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -667,24 +383,52 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	return m, err
 }
 
-func DeleteModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
-	m := &Model2{}
-	item, err := txn.Get(alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, p1))
-	if err != nil {
-		return err
+func UpdateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
-	if err != nil {
-		return err
-	}
-	err = txn.Delete(alloc.GenKey('M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1))
+
+	om := &Model2{}
+	err := store.Unmarshal(txn, alloc, om, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return err
 	}
 
-	err = txn.Delete(alloc.GenKey('M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID))
+	err = DeleteModel2WithTxn(txn, alloc, om.ID, om.ShardKey, om.P1)
+	if err != nil {
+		return err
+	}
+
+	return CreateModel2WithTxn(txn, alloc, m)
+}
+
+func UpdateModel2(id int64, shardKey int32, p1 string, m *Model2) error {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		return store.ErrEmptyObject
+	}
+
+	err := store.View(func(txn *store.Txn) (err error) {
+		return UpdateModel2WithTxn(txn, alloc, m)
+	})
+	return err
+}
+
+func DeleteModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
+	m := &Model2{}
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
+	if err != nil {
+		return err
+	}
+	err = store.Delete(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
+	if err != nil {
+		return err
+	}
+
+	err = store.Delete(txn, alloc, 'M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID)
 	if err != nil {
 		return err
 	}
@@ -701,76 +445,6 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 	})
 }
 
-func ListModel2(
-	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
-) ([]*Model2, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model2, 1609271041, offsetID, offsetShardKey)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model2{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				if cond == nil || cond(m) {
-					res = append(res, m)
-				}
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
-	iter := txn.NewIterator(iterOpt)
-	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model2{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
-}
-
 func (x *Model2) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -780,134 +454,14 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
-func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *store.ListOption) ([]*Model2, error) {
+func SaveModel2(m *Model2) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
-
-	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, offsetP1)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model2{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				res = append(res, m)
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
+	return store.Update(func(txn *store.Txn) error {
+		return CreateModel2WithTxn(txn, alloc, m)
 	})
-	return res, err
 }
 
-func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption) ([]*Model2, error) {
-	alloc := store.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
-		opt.Reverse = lo.Backward()
-		osk := alloc.GenKey('M', C_Model2, 2344331025, p1, offsetShardKey, offsetID)
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &Model2{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				res = append(res, m)
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model2{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
-}
-
-func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
-	if alloc == nil {
-		alloc = store.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func(val []byte) error {
-			m := &Model2{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
+func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
 	return nil
 }

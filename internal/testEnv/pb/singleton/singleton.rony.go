@@ -113,9 +113,7 @@ func SaveSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (err
 		defer alloc.ReleaseAll()
 	}
 
-	b := alloc.GenValue(m)
-	key := alloc.GenKey('S', C_Single1)
-	err = txn.Set(key, b)
+	err = store.Marshal(txn, alloc, m, 'S', C_Single1)
 	if err != nil {
 		return
 	}
@@ -136,13 +134,10 @@ func ReadSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (*Si
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('S', C_Single1))
+	err := store.Unmarshal(txn, alloc, m, 'S', C_Single1)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
@@ -167,9 +162,7 @@ func SaveSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (err
 		defer alloc.ReleaseAll()
 	}
 
-	b := alloc.GenValue(m)
-	key := alloc.GenKey('S', C_Single2)
-	err = txn.Set(key, b)
+	err = store.Marshal(txn, alloc, m, 'S', C_Single2)
 	if err != nil {
 		return
 	}
@@ -190,13 +183,10 @@ func ReadSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (*Si
 		defer alloc.ReleaseAll()
 	}
 
-	item, err := txn.Get(alloc.GenKey('S', C_Single2))
+	err := store.Unmarshal(txn, alloc, m, 'S', C_Single2)
 	if err != nil {
 		return nil, err
 	}
-	err = item.Value(func(val []byte) error {
-		return m.Unmarshal(val)
-	})
 	return m, err
 }
 
