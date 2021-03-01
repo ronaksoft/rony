@@ -50,7 +50,8 @@ func main() {
 			g1 := aggregate.New(f, g)
 			g1.Generate()
 
-			singleton.Generate(f, g)
+			g2 := singleton.New(f, g)
+			g2.Generate()
 
 			// Generate RPCs if there is any service definition in the file
 			if len(f.Services) > 0 {

@@ -17,77 +17,89 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func Generate(file *protogen.File, g *protogen.GeneratedFile) {
-	for _, m := range file.Messages {
-		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-		singleton := proto.GetExtension(opt, rony.E_RonySingleton).(bool)
-		if !singleton {
-			continue
-		}
-		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+type Generator struct {
+	f *protogen.File
+	g *protogen.GeneratedFile
+}
 
-		funcSave(g, m)
-		funcRead(g, m)
-		funcDelete(g, m)
+func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
+	return &Generator{
+		f: f,
+		g: g,
 	}
 }
+
+func (g *Generator) Generate() {
+	for _, m := range g.f.Messages {
+		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+		singleton := proto.GetExtension(opt, rony.E_RonySingleton).(bool)
+		if singleton {
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+			g.genSave(m)
+			g.genRead(m)
+			continue
+		}
+	}
+}
+
+func (g *Generator) genSave(m *protogen.Message) {
+	// SaveWithTxn func
+	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
+	g.g.P("if alloc == nil {")
+	g.g.P("alloc = store.NewAllocator()")
+	g.g.P("defer alloc.ReleaseAll()")
+	g.g.P("}") // end of if block
+	g.g.P()
+	g.g.P("err = store.Marshal(txn, alloc, m,", genDbKey(m), ")")
+	g.g.P("if err != nil {")
+	g.g.P("return")
+	g.g.P("}")
+	g.g.P("return nil")
+	g.g.P("}") // end of SaveWithTxn func
+	g.g.P()
+	g.g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
+	g.g.P("alloc := store.NewAllocator()")
+	g.g.P("defer alloc.ReleaseAll()")
+	g.g.P("return store.Update(func(txn *store.Txn) error {")
+	g.g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
+	g.g.P("})") // end of store.Update func
+	g.g.P("}")  // end of Save func
+	g.g.P()
+}
+func (g *Generator) genRead(m *protogen.Message) {
+	g.g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.g.P("if alloc == nil {")
+	g.g.P("alloc = store.NewAllocator()")
+	g.g.P("defer alloc.ReleaseAll()")
+	g.g.P("}") // end of if block
+	g.g.P()
+	g.g.P("err := store.Unmarshal(txn, alloc, m, ", genDbKey(m), ")")
+	g.g.P("if err != nil {")
+	g.g.P("return nil, err")
+	g.g.P("}")
+	g.g.P("return m, err")
+	g.g.P("}") // end of ReadWithTxn func
+	g.g.P()
+	g.g.P("func Read", m.Desc.Name(), "(m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.g.P("alloc := store.NewAllocator()")
+	g.g.P("defer alloc.ReleaseAll()")
+	g.g.P()
+	g.g.P("if m == nil {")
+	g.g.P("m = &", m.Desc.Name(), "{}")
+	g.g.P("}")
+	g.g.P()
+	g.g.P("err := store.View(func(txn *store.Txn) (err error) {")
+	g.g.P("m, err = Read", m.Desc.Name(), "WithTxn(txn, alloc,  m)")
+	g.g.P("return")
+	g.g.P("})") // end of View func
+	g.g.P("return m, err")
+	g.g.P("}") // end of Read func
+	g.g.P()
+}
+func (g *Generator) genDelete(m *protogen.Message) {}
+
 func genDbKey(m *protogen.Message) string {
 	return fmt.Sprintf("'S', C_%s",
 		m.Desc.Name(),
 	)
 }
-func funcSave(g *protogen.GeneratedFile, m *protogen.Message) {
-	// SaveWithTxn func
-	g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
-	g.P("if alloc == nil {")
-	g.P("alloc = store.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P("}") // end of if block
-	g.P()
-	g.P("err = store.Marshal(txn, alloc, m,", genDbKey(m), ")")
-	g.P("if err != nil {")
-	g.P("return")
-	g.P("}")
-	g.P("return nil")
-	g.P("}") // end of SaveWithTxn func
-	g.P()
-	g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
-	g.P("alloc := store.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P("return store.Update(func(txn *store.Txn) error {")
-	g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
-	g.P("})") // end of store.Update func
-	g.P("}")  // end of Save func
-	g.P()
-}
-func funcRead(g *protogen.GeneratedFile, m *protogen.Message) {
-	g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
-	g.P("if alloc == nil {")
-	g.P("alloc = store.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P("}") // end of if block
-	g.P()
-	g.P("err := store.Unmarshal(txn, alloc, m, ", genDbKey(m), ")")
-	g.P("if err != nil {")
-	g.P("return nil, err")
-	g.P("}")
-	g.P("return m, err")
-	g.P("}") // end of ReadWithTxn func
-	g.P()
-	g.P("func Read", m.Desc.Name(), "(m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
-	g.P("alloc := store.NewAllocator()")
-	g.P("defer alloc.ReleaseAll()")
-	g.P()
-	g.P("if m == nil {")
-	g.P("m = &", m.Desc.Name(), "{}")
-	g.P("}")
-	g.P()
-	g.P("err := store.View(func(txn *store.Txn) (err error) {")
-	g.P("m, err = Read", m.Desc.Name(), "WithTxn(txn, alloc,  m)")
-	g.P("return")
-	g.P("})") // end of View func
-	g.P("return m, err")
-	g.P("}") // end of Read func
-	g.P()
-}
-func funcDelete(g *protogen.GeneratedFile, m *protogen.Message) {}
