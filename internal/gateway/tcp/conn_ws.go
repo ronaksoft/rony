@@ -9,6 +9,7 @@ import (
 	"github.com/mailru/easygo/netpoll"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"sync"
@@ -139,13 +140,16 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 
 		err := goPoolNB.Submit(func() {
 			ms := acquireWebsocketMessage()
-			err := wc.gateway.websocketReadPump(wc, *ms)
-			releaseWebsocketMessage(ms)
+			waitGroup := pools.AcquireWaitGroup()
+			err := wc.gateway.websocketReadPump(wc, waitGroup, *ms)
 			if err != nil {
 				wc.release(3)
 			} else {
 				_ = wc.gateway.poller.Resume(wc.desc)
 			}
+			waitGroup.Wait()
+			pools.ReleaseWaitGroup(waitGroup)
+			releaseWebsocketMessage(ms)
 			wc.gateway.waitGroupReaders.Done()
 		})
 		if err != nil {

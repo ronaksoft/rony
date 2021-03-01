@@ -10,7 +10,6 @@ import (
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
@@ -449,8 +448,8 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 	}
 }
 
-func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err error) {
-	waitGroup := pools.AcquireWaitGroup()
+func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []wsutil.Message) (err error) {
+
 	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 	ms = ms[:0]
 	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
@@ -476,11 +475,11 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 				log.Warn("Error On Write OpPing", zap.Error(err))
 			}
 		case ws.OpBinary:
-			waitGroup.Add(1)
+			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
 				g.MessageHandler(wc, 0, ms[idx].Payload)
-				waitGroup.Done()
+				wg.Done()
 			})
 
 		case ws.OpClose:
@@ -490,8 +489,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, ms []wsutil.Message) (err
 			log.Warn("Unknown OpCode")
 		}
 	}
-	waitGroup.Wait()
-	pools.ReleaseWaitGroup(waitGroup)
+
 	return err
 }
 

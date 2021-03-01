@@ -58,7 +58,6 @@ const (
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
 
-
 func NewTcpGatewayMux() *tcpGateway.Mux {
 	return tcpGateway.NewMux()
 }

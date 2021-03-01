@@ -50,6 +50,9 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
+		if len(data) > 0 && data[0] == 'S' {
+			time.Sleep(time.Duration(len(data)) * time.Second)
+		}
 		err := c.SendBinary(streamID, data)
 		if err != nil {
 			fmt.Println("MessageHandler:", err.Error())
@@ -59,6 +62,38 @@ func TestGateway(t *testing.T) {
 	gw.Start()
 	defer gw.Shutdown()
 	Convey("Gateway Test", t, func(c C) {
+		Convey("Websocket Parallel", func(c C) {
+			wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
+			if err != nil {
+				c.Println(err)
+			}
+			c.So(err, ShouldBeNil)
+
+			err = wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, []byte{'S', 1, 2, 3, 4})
+			c.So(err, ShouldBeNil)
+
+			wg := pools.AcquireWaitGroup()
+
+			wg.Add(1)
+			go func() {
+				for i := 0; i < 5; i++ {
+					err := wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, []byte{1, 2, 3, 4})
+					if err != nil {
+						c.Println(err)
+					}
+					c.So(err, ShouldBeNil)
+					_, err = wsutil.ReadMessage(wsc, ws.StateClientSide, nil)
+					if err != nil {
+						c.Println(err)
+					}
+					c.So(err, ShouldBeNil)
+				}
+				wg.Done()
+			}()
+
+			wg.Wait()
+			err = wsc.Close()
+		})
 		Convey("Websocket / With Normal Handler", func(c C) {
 			wg := pools.AcquireWaitGroup()
 			for i := 0; i < 50; i++ {
