@@ -172,6 +172,8 @@ func (r *Mux) methodIndexOf(method string) int {
 		return 7
 	case fasthttp.MethodTrace:
 		return 8
+	case MethodWild:
+		return 9
 	}
 
 	if i, ok := r.customMethodsIndex[method]; ok {
