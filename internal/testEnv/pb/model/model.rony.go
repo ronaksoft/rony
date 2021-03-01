@@ -287,13 +287,297 @@ func SaveModel1(m *Model1) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
-		return CreateModel1WithTxn(txn, alloc, m)
+		return SaveModel1WithTxn(txn, alloc, m)
 	})
 }
 
 func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
 	return nil
 }
+func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	iterOpt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel1(
+	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model1, 4018441491, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func IterModel1ByID(txn *store.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model1, 4018441491, id)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model1, 4018441491, id, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model1, 2535881670, enum)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model1, 2535881670, enum, offsetShardKey, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey("IDX", C_Model1, 2864467857, p1)
+		opt.Reverse = lo.Backward()
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				item, err := txn.Get(val)
+				if err != nil {
+					return err
+				}
+				return item.Value(func(val []byte) error {
+					m := &Model1{}
+					err := m.Unmarshal(val)
+					if err != nil {
+						return err
+					}
+					res = append(res, m)
+					return nil
+				})
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey("IDX", C_Model1, 867507755, p2)
+		opt.Reverse = lo.Backward()
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				item, err := txn.Get(val)
+				if err != nil {
+					return err
+				}
+				return item.Value(func(val []byte) error {
+					m := &Model1{}
+					err := m.Unmarshal(val)
+					if err != nil {
+						return err
+					}
+					res = append(res, m)
+					return nil
+				})
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
 func CreateModel2(m *Model2) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -458,10 +742,211 @@ func SaveModel2(m *Model2) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
-		return CreateModel2WithTxn(txn, alloc, m)
+		return SaveModel2WithTxn(txn, alloc, m)
 	})
 }
 
 func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
 	return nil
+}
+func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	iterOpt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel2(
+	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model2, 1609271041, offsetID, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *store.ListOption) ([]*Model2, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model2, 1609271041, id, shardKey)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model2, 1609271041, id, shardKey, offsetP1)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption) ([]*Model2, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Model2, 2344331025, p1)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Model2, 2344331025, p1, offsetShardKey, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
 }

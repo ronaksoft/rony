@@ -419,10 +419,145 @@ func SavePage(m *Page) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
-		return CreatePageWithTxn(txn, alloc, m)
+		return SavePageWithTxn(txn, alloc, m)
 	})
 }
 
 func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
 	return nil
+}
+func IterPages(txn *store.Txn, alloc *store.Allocator, cb func(m *Page) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	iterOpt.Prefix = alloc.GenKey('M', C_Page, 299066170)
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Page{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListPage(
+	offsetID uint32, lo *store.ListOption, cond func(m *Page) bool,
+) ([]*Page, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Page, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Page, 299066170)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Page, 299066170, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Page{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func IterPageByReplicaSet(txn *store.Txn, alloc *store.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
+	if alloc == nil {
+		alloc = store.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.GenKey('M', C_Page, 1040696757, replicaSet)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Page{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListPageByReplicaSet(replicaSet uint64, offsetID uint32, lo *store.ListOption) ([]*Page, error) {
+	alloc := store.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Page, 0, lo.Limit())
+	err := store.View(func(txn *store.Txn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.GenKey('M', C_Page, 1040696757, replicaSet)
+		opt.Reverse = lo.Backward()
+		osk := alloc.GenKey('M', C_Page, 1040696757, replicaSet, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Page{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
 }

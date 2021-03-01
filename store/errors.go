@@ -15,5 +15,5 @@ import (
 
 var (
 	ErrAlreadyExists = fmt.Errorf("already exists")
-	ErrEmptyObject = fmt.Errorf("empty object")
+	ErrEmptyObject   = fmt.Errorf("empty object")
 )
