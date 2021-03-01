@@ -248,11 +248,13 @@ func (g *Gateway) Start() {
 // Run is blocking and runs the server endless loop until a non-temporary error happens
 func (g *Gateway) Run() {
 	server := fasthttp.Server{
-		Name:               "Rony TCP Gateway",
+		Name:               "Rony TCP-Gateway",
 		Handler:            g.requestHandler,
 		Concurrency:        g.concurrency,
 		KeepHijackedConns:  true,
 		MaxRequestBodySize: g.maxBodySize,
+		DisableKeepalive:   true,
+		CloseOnShutdown:    true,
 	}
 	err := server.Serve(g.listener)
 	if err != nil {
@@ -324,13 +326,14 @@ func (g *Gateway) TotalConnections() int {
 	return n
 }
 
-func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
+func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
-	req.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	req.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
-	req.Response.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-	if req.Request.Header.IsOptions() {
-		req.SetStatusCode(http.StatusOK)
+	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	reqCtx.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
+	reqCtx.Response.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+	if reqCtx.Request.Header.IsOptions() {
+		reqCtx.SetStatusCode(http.StatusOK)
+		reqCtx.SetConnectionClose()
 		return
 	}
 
@@ -341,7 +344,7 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		clientDetected bool
 	)
 
-	req.Request.Header.VisitAll(func(key, value []byte) {
+	reqCtx.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.ByteToStr(key) {
 		case "Cf-Connecting-Ip":
 			clientIP = string(value)
@@ -363,18 +366,18 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 		}
 	})
 	if !clientDetected {
-		clientIP = req.RemoteIP().To4().String()
+		clientIP = reqCtx.RemoteIP().To4().String()
 	}
 
 	// If this is a Http Upgrade then we handle websocket
-	if req.Request.Header.ConnectionUpgrade() {
+	if reqCtx.Request.Header.ConnectionUpgrade() {
 		if g.transportMode == gateway.Http {
-			req.SetConnectionClose()
-			req.SetStatusCode(http.StatusNotAcceptable)
+			reqCtx.SetConnectionClose()
+			reqCtx.SetStatusCode(http.StatusNotAcceptable)
 			return
 		}
-		req.HijackSetNoResponse(true)
-		req.Hijack(func(c net.Conn) {
+		reqCtx.HijackSetNoResponse(true)
+		reqCtx.Hijack(func(c net.Conn) {
 			hjc, _ := c.(UnsafeConn)
 			wc, _ := hjc.UnsafeConn().(*wrapConn)
 			wc.ReadyForUpgrade()
@@ -385,12 +388,12 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	}
 
 	// This is going to be an HTTP request
-	req.SetConnectionClose()
+	reqCtx.SetConnectionClose()
 	if g.transportMode == gateway.Websocket {
-		req.SetStatusCode(http.StatusNotAcceptable)
+		reqCtx.SetStatusCode(http.StatusNotAcceptable)
 		return
 	}
-	conn := acquireHttpConn(g, req)
+	conn := acquireHttpConn(g, reqCtx)
 	conn.SetClientIP(tools.StrToByte(clientIP))
 	conn.SetClientType(tools.StrToByte(clientType))
 
@@ -400,10 +403,10 @@ func (g *Gateway) requestHandler(req *fasthttp.RequestCtx) {
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
-	if g.mux == nil || tools.B2S(req.Request.URI().PathOriginal()) == "/" {
-		g.MessageHandler(conn, int64(req.ID()), req.PostBody())
+	if g.mux == nil || tools.B2S(reqCtx.Request.URI().PathOriginal()) == "/" {
+		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 	} else {
-		g.MessageHandler(conn, int64(req.ID()), g.mux.handler(req))
+		g.MessageHandler(conn, int64(reqCtx.ID()), g.mux.handler(reqCtx))
 	}
 
 	g.CloseHandler(conn)
