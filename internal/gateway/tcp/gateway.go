@@ -109,7 +109,6 @@ func New(config Config) (*Gateway, error) {
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
-		mux:                NewMux(),
 		extAddrs:           config.ExternalAddrs,
 	}
 

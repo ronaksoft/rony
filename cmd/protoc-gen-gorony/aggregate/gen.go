@@ -147,6 +147,8 @@ func (g *Generator) createIndices(m *protogen.Message) {
 }
 func (g *Generator) genRead(m *protogen.Message) {
 	mn := g.m(m).Name
+
+	// ReadWithTxn Func
 	g.g.P("func Read", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
 	g.blockAlloc()
 	g.g.P("err := store.Unmarshal(txn, alloc, m,", tableKey(g.m(m), ""), ")")
@@ -156,6 +158,8 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("return m, err")
 	g.g.P("}") // end of Read func
 	g.g.P()
+
+	// Read Func
 	g.g.P("func Read", mn, "(", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
 	g.g.P("alloc := store.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
@@ -327,6 +331,19 @@ func (g *Generator) genHasField(m *protogen.Message) {
 	}
 }
 func (g *Generator) genSave(m *protogen.Message) {
+	mn := g.m(m).Name
+	// SaveWithTxn func
+	g.g.P("func Save", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", mn, ") (err error) {")
+	g.g.P("om := &", mn, "{}")
+	g.g.P("_, err = Read", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ", om)")
+	g.g.P("if err == nil {")
+	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
+	g.g.P("} else {")
+	g.g.P("return Create", mn, "WithTxn(txn, alloc, m)")
+	g.g.P("}")
+	g.g.P("}")
+	g.g.P()
+
 	// Save func
 	g.g.P("func Save", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
 	g.g.P("alloc := store.NewAllocator()")
@@ -336,11 +353,6 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P("})") // end of Update func
 	g.g.P("}")  // end of Save func
 	g.g.P()
-
-	// SaveWithTxn func
-	g.g.P("func Save", g.model(m).Name, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", g.model(m).Name, ") (err error) {")
-	g.g.P("return nil")
-	g.g.P("}")
 }
 func (g *Generator) genIter(m *protogen.Message) {
 	mn := g.m(m).Name

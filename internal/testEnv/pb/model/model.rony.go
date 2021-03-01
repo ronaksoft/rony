@@ -283,6 +283,16 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
+func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
+	om := &Model1{}
+	_, err = ReadModel1WithTxn(txn, alloc, m.ID, m.ShardKey, om)
+	if err == nil {
+		return UpdateModel1WithTxn(txn, alloc, m)
+	} else {
+		return CreateModel1WithTxn(txn, alloc, m)
+	}
+}
+
 func SaveModel1(m *Model1) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -291,9 +301,6 @@ func SaveModel1(m *Model1) error {
 	})
 }
 
-func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
-	return nil
-}
 func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
@@ -738,6 +745,16 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
+func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
+	om := &Model2{}
+	_, err = ReadModel2WithTxn(txn, alloc, m.ID, m.ShardKey, m.P1, om)
+	if err == nil {
+		return UpdateModel2WithTxn(txn, alloc, m)
+	} else {
+		return CreateModel2WithTxn(txn, alloc, m)
+	}
+}
+
 func SaveModel2(m *Model2) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -746,9 +763,6 @@ func SaveModel2(m *Model2) error {
 	})
 }
 
-func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
-	return nil
-}
 func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()

@@ -415,6 +415,16 @@ func DeletePage(id uint32) error {
 	})
 }
 
+func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
+	om := &Page{}
+	_, err = ReadPageWithTxn(txn, alloc, m.ID, om)
+	if err == nil {
+		return UpdatePageWithTxn(txn, alloc, m)
+	} else {
+		return CreatePageWithTxn(txn, alloc, m)
+	}
+}
+
 func SavePage(m *Page) error {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -423,9 +433,6 @@ func SavePage(m *Page) error {
 	})
 }
 
-func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
-	return nil
-}
 func IterPages(txn *store.Txn, alloc *store.Allocator, cb func(m *Page) bool) error {
 	if alloc == nil {
 		alloc = store.NewAllocator()
