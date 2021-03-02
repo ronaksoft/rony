@@ -38,7 +38,7 @@ func Set(txn *Txn, alloc *Allocator, val []byte, keyParts ...interface{}) error 
 }
 
 func Get(txn *Txn, alloc *Allocator, keyParts ...interface{}) ([]byte, error) {
-	item, err := txn.Get(alloc.Gen(keyParts))
+	item, err := txn.Get(alloc.Gen(keyParts...))
 	if err != nil {
 		return nil, err
 	}
