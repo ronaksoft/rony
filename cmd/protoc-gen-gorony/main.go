@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 )
 
@@ -44,36 +43,18 @@ func main() {
 			g.P()
 
 			// Generate all the helper functions
-			GenHelpers(f, g)
-
-			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
-			g1 := aggregate.New(f, g)
+			g1 := helper.New(f, g)
 			g1.Generate()
 
-			g2 := singleton.New(f, g)
+			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
+			g2 := aggregate.New(f, g)
 			g2.Generate()
 
-			// Generate RPCs if there is any service definition in the file
-			if len(f.Services) > 0 {
-				g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
-				g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
-				g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
-				if f.GoPackageName != "rony" {
-					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-				}
+			g3 := singleton.New(f, g)
+			g3.Generate()
 
-				for _, s := range f.Services {
-					GenRPC(f, s, g)
-					opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
-					if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
-						g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
-						g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
-						// g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "time"})
-						GenCobraCmd(f, s, g)
-					}
-				}
-
-			}
+			g4 := rpc.New(f, g)
+			g4.Generate()
 
 		}
 		return nil
