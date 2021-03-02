@@ -55,7 +55,6 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
-	Mux           *Mux
 }
 
 // Gateway
@@ -73,9 +72,6 @@ type Gateway struct {
 	extAddrs      []string
 	concurrency   int
 	maxBodySize   int
-
-	// Http Internals
-	mux *Mux
 
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
@@ -123,9 +119,6 @@ func New(config Config) (*Gateway, error) {
 	if config.Protocol != gateway.Undefined {
 		g.transportMode = config.Protocol
 	}
-	if config.Mux != nil {
-		g.mux = config.Mux
-	}
 
 	switch g.transportMode {
 	case gateway.Websocket, gateway.Http, gateway.TCP:
@@ -140,7 +133,7 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c rony.Conn, streamID int64, date []byte) {}
+	g.MessageHandler = func(c rony.Conn, streamID int64, date []byte, ctx *gateway.RequestCtx) {}
 	g.CloseHandler = func(c rony.Conn) {}
 	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
@@ -402,11 +395,7 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
-	if g.mux == nil || tools.B2S(reqCtx.Request.URI().PathOriginal()) == "/" {
-		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
-	} else {
-		g.MessageHandler(conn, int64(reqCtx.ID()), g.mux.handler(reqCtx))
-	}
+	g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), reqCtx)
 
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
@@ -480,7 +469,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.MessageHandler(wc, 0, ms[idx].Payload)
+				g.MessageHandler(wc, 0, ms[idx].Payload, nil)
 				wg.Done()
 			})
 

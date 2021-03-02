@@ -6,6 +6,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
@@ -44,12 +45,11 @@ func TestGateway(t *testing.T) {
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
 		ExternalAddrs: []string{hostPort},
-		Mux:           mux,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
+	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte, ctx *gateway.RequestCtx) {
 		if len(data) > 0 && data[0] == 'S' {
 			time.Sleep(time.Duration(len(data)) * time.Second)
 		}

@@ -16,7 +16,7 @@ import (
 
 // OnGatewayMessage is exposed only for test packages
 func (edge *Server) OnGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
-	edge.onGatewayMessage(conn, streamID, data)
+	edge.onGatewayMessage(conn, streamID, data, nil)
 }
 
 // GatewayConns is exposed only for test packages

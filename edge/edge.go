@@ -298,7 +298,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	releaseDispatchCtx(dispatchCtx)
 	return nil
 }
-func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
+func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte, ctx *gateway.RequestCtx) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 

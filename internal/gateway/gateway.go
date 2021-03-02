@@ -55,6 +55,6 @@ type (
 	RequestCtx     = fasthttp.RequestCtx
 	MuxHandler     = func(date []byte, kv map[string]interface{}) []byte
 	ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue)
-	MessageHandler = func(c rony.Conn, streamID int64, data []byte)
+	MessageHandler = func(c rony.Conn, streamID int64, data []byte, ctx *RequestCtx)
 	CloseHandler   = func(c rony.Conn)
 )

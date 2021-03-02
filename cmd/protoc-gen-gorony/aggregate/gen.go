@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"hash/crc32"
 	"hash/crc64"
 	"strings"
 )
@@ -359,7 +358,7 @@ func (g *Generator) genIter(m *protogen.Message) {
 
 	g.g.P("exitLoop := false")
 	g.g.P("iterOpt := store.DefaultIteratorOptions")
-	g.g.P("iterOpt.Prefix = alloc.GenKey('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
+	g.g.P("iterOpt.Prefix = alloc.Gen('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
 	g.g.P("iter := txn.NewIterator(iterOpt)")
 	g.g.P("for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {")
 	g.g.P("_ = iter.Item().Value(func (val []byte) error {")
@@ -393,7 +392,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.blockAlloc()
 		g.g.P("exitLoop := false")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", tablePrefix(g.m(m), ""), ")")
+		g.g.P("opt.Prefix = alloc.Gen(", tablePrefix(g.m(m), ""), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 		g.g.P("_ = iter.Item().Value(func (val []byte) error {")
@@ -432,7 +431,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P()
 		g.g.P("exitLoop := false")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", viewPrefix(g.m(m), "", idx), ")")
+		g.g.P("opt.Prefix = alloc.Gen(", viewPrefix(g.m(m), "", idx), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {")
 		g.g.P("_ = iter.Item().Value(func (val []byte) error {")
@@ -467,9 +466,9 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 	g.g.P("err := store.View(func(txn *store.Txn) error {")
 	g.g.P("opt := store.DefaultIteratorOptions")
-	g.g.P("opt.Prefix = alloc.GenKey('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
+	g.g.P("opt.Prefix = alloc.Gen('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
 	g.g.P("opt.Reverse = lo.Backward()")
-	g.g.P("osk := alloc.GenKey(", tablePrefix(g.m(m), "offset"), ")")
+	g.g.P("osk := alloc.Gen(", tablePrefix(g.m(m), "offset"), ")")
 	g.g.P("iter := txn.NewIterator(opt)")
 	g.g.P("offset := lo.Skip()")
 	g.g.P("limit := lo.Limit()")
@@ -514,9 +513,9 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 		g.g.P("err := store.View(func(txn *store.Txn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", tablePrefix(g.m(m), ""), ")")
+		g.g.P("opt.Prefix = alloc.Gen(", tablePrefix(g.m(m), ""), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
-		g.g.P("osk := alloc.GenKey(", tablePrefix(g.m(m), ""), ",", g.m(m).Table.StringCKs("offset", ",", false), ")")
+		g.g.P("osk := alloc.Gen(", tablePrefix(g.m(m), ""), ",", g.m(m).Table.StringCKs("offset", ",", false), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("offset := lo.Skip()")
 		g.g.P("limit := lo.Limit()")
@@ -560,9 +559,9 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 		g.g.P("err := store.View(func(txn *store.Txn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
-		g.g.P("opt.Prefix = alloc.GenKey(", viewPrefix(g.m(m), "", idx), ")")
+		g.g.P("opt.Prefix = alloc.Gen(", viewPrefix(g.m(m), "", idx), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
-		g.g.P("osk := alloc.GenKey(", viewPrefix(g.m(m), "", idx), ",", g.m(m).Views[idx].StringCKs("offset", ",", false), ")")
+		g.g.P("osk := alloc.Gen(", viewPrefix(g.m(m), "", idx), ",", g.m(m).Views[idx].StringCKs("offset", ",", false), ")")
 		g.g.P("iter := txn.NewIterator(opt)")
 		g.g.P("offset := lo.Skip()")
 		g.g.P("limit := lo.Limit()")
@@ -611,7 +610,7 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 				g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 				g.g.P("err := store.View(func(txn *store.Txn) error {")
 				g.g.P("opt := store.DefaultIteratorOptions")
-				g.g.P("opt.Prefix = alloc.GenKey(\"IDX\", C_", mn, ",", crc32.ChecksumIEEE([]byte(ftName)), ",", tools.ToLowerCamel(ftNameS), ")")
+				g.g.P("opt.Prefix = alloc.Gen(", indexPrefix(g.m(m), ftName, tools.ToLowerCamel(ftNameS)), ")")
 				g.g.P("opt.Reverse = lo.Backward()")
 				g.g.P("iter := txn.NewIterator(opt)")
 				g.g.P("offset := lo.Skip()")
@@ -803,6 +802,12 @@ func indexKey(mm *Aggregate, fieldName string, prefix string, postfix string) st
 		mm.Name, crc64.Checksum([]byte(fieldName), crcTab),
 		prefix, fieldName, postfix,
 		mm.Table.String(prefix, ",", lower),
+	)
+}
+
+func indexPrefix(mm *Aggregate, fieldName string, fieldVarName string) string {
+	return fmt.Sprintf("'I', C_%s, uint64(%d), %s",
+		mm.Name, crc64.Checksum([]byte(fieldName), crcTab), fieldVarName,
 	)
 }
 
