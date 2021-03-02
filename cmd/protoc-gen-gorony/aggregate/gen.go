@@ -799,7 +799,7 @@ func viewPrefix(mm *Aggregate, prefixKey string, idx int) string {
 
 func indexKey(mm *Aggregate, fieldName string, prefix string, postfix string) string {
 	lower := prefix == ""
-	return fmt.Sprintf("'I', C_%s, %d, %s%s%s, %s",
+	return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
 		mm.Name, crc64.Checksum([]byte(fieldName), crcTab),
 		prefix, fieldName, postfix,
 		mm.Table.String(prefix, ",", lower),
