@@ -79,8 +79,7 @@ func Marshal(txn *Txn, alloc *Allocator, m proto.Message, keyParts ...interface{
 }
 
 func Unmarshal(txn *Txn, alloc *Allocator, m proto.Message, keyParts ...interface{}) error {
-	key := alloc.Gen(keyParts...)
-	val, err := Get(txn, alloc, key)
+	val, err := Get(txn, alloc, keyParts...)
 	if err != nil {
 		return err
 	}
@@ -88,8 +87,7 @@ func Unmarshal(txn *Txn, alloc *Allocator, m proto.Message, keyParts ...interfac
 }
 
 func UnmarshalMerge(txn *Txn, alloc *Allocator, m proto.Message, keyParts ...interface{}) error {
-	key := alloc.Gen(keyParts...)
-	val, err := Get(txn, alloc, key)
+	val, err := Get(txn, alloc, keyParts...)
 	if err != nil {
 		return err
 	}

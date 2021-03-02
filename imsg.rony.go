@@ -333,7 +333,7 @@ func ReadPageByReplicaSetAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, re
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 1040696757, replicaSet, id)
 	if err != nil {
 		return nil, err
 	}
@@ -416,9 +416,7 @@ func DeletePage(id uint32) error {
 }
 
 func SavePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) (err error) {
-	om := &Page{}
-	_, err = ReadPageWithTxn(txn, alloc, m.ID, om)
-	if err == nil {
+	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	} else {
 		return CreatePageWithTxn(txn, alloc, m)

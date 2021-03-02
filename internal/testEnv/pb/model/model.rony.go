@@ -192,7 +192,7 @@ func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Alloca
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 2535881670, enum, shardKey, id)
 	if err != nil {
 		return nil, err
 	}
@@ -284,9 +284,7 @@ func (x *Model1) HasP2(xx string) bool {
 }
 
 func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
-	om := &Model1{}
-	_, err = ReadModel1WithTxn(txn, alloc, m.ID, m.ShardKey, om)
-	if err == nil {
+	if store.Exists(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey) {
 		return UpdateModel1WithTxn(txn, alloc, m)
 	} else {
 		return CreateModel1WithTxn(txn, alloc, m)
@@ -654,7 +652,7 @@ func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocato
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 2344331025, p1, shardKey, id)
 	if err != nil {
 		return nil, err
 	}
@@ -746,9 +744,7 @@ func (x *Model2) HasP2(xx string) bool {
 }
 
 func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
-	om := &Model2{}
-	_, err = ReadModel2WithTxn(txn, alloc, m.ID, m.ShardKey, m.P1, om)
-	if err == nil {
+	if store.Exists(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1) {
 		return UpdateModel2WithTxn(txn, alloc, m)
 	} else {
 		return CreateModel2WithTxn(txn, alloc, m)
