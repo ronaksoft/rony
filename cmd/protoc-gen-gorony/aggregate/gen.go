@@ -180,13 +180,13 @@ func (g *Generator) genRead(m *protogen.Message) {
 }
 func (g *Generator) readViews(m *protogen.Message) {
 	mn := g.m(m).Name
-	for _, pk := range g.m(m).Views {
+	for idx, pk := range g.m(m).Views {
 		g.g.P(
 			"func Read", mn, "By", pk.String("", "And", false), "WithTxn",
 			"(txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
 			"( *", mn, ", error) {")
 		g.blockAlloc()
-		g.g.P("err := store.Unmarshal(txn, alloc, m,", tableKey(g.m(m), ""), " )")
+		g.g.P("err := store.Unmarshal(txn, alloc, m,", viewKey(g.m(m), "", idx), " )")
 		g.g.P("if err != nil {")
 		g.g.P("return nil, err")
 		g.g.P("}")
@@ -334,9 +334,7 @@ func (g *Generator) genSave(m *protogen.Message) {
 	mn := g.m(m).Name
 	// SaveWithTxn func
 	g.g.P("func Save", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", mn, ") (err error) {")
-	g.g.P("om := &", mn, "{}")
-	g.g.P("_, err = Read", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ", om)")
-	g.g.P("if err == nil {")
+	g.g.P("if store.Exists(txn, alloc, ", tableKey(g.m(m), "m."), ") {")
 	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
 	g.g.P("} else {")
 	g.g.P("return Create", mn, "WithTxn(txn, alloc, m)")
