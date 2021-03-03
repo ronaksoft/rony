@@ -1,10 +1,10 @@
 package tcpGateway
 
 import (
+	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/valyala/fasthttp"
+	"github.com/ronaksoft/rony/tools"
 	"net"
-	"sync"
 )
 
 /*
@@ -19,17 +19,18 @@ import (
 // httpConn
 type httpConn struct {
 	gateway    *Gateway
-	ctx        *fasthttp.RequestCtx
+	ctx        *gateway.RequestCtx
 	clientIP   []byte
 	clientType []byte
-	mtx        sync.RWMutex
+	mtx        tools.SpinLock
 	kv         map[string]interface{}
+	proxy      gateway.Proxy
 }
 
 func (c *httpConn) Get(key string) interface{} {
-	c.mtx.RLock()
+	c.mtx.Lock()
 	v := c.kv[key]
-	c.mtx.RUnlock()
+	c.mtx.Unlock()
 	return v
 }
 
@@ -55,8 +56,12 @@ func (c *httpConn) SetClientType(ct []byte) {
 	c.clientType = append(c.clientType[:0], ct...)
 }
 
-func (c *httpConn) SendBinary(streamID int64, data []byte) error {
-	_, err := c.ctx.Write(data)
+func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
+	if c.proxy != nil {
+		err = c.proxy.OnResponse(c, data)
+	} else {
+		_, err = c.ctx.Write(data)
+	}
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)
 	return err
 }

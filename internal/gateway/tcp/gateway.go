@@ -73,6 +73,9 @@ type Gateway struct {
 	concurrency   int
 	maxBodySize   int
 
+	// Http Internals
+	httpProxy *HttpProxy
+
 	// Websocket Internals
 	upgradeHandler     ws.Upgrader
 	maxIdleTime        int64
@@ -133,7 +136,7 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c rony.Conn, streamID int64, date []byte, ctx *gateway.RequestCtx) {}
+	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {}
 	g.CloseHandler = func(c rony.Conn) {}
 	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
@@ -318,7 +321,7 @@ func (g *Gateway) TotalConnections() int {
 	return n
 }
 
-func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
+func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	reqCtx.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
@@ -395,7 +398,17 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	for _, kv := range kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
-	g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), reqCtx)
+
+	if g.httpProxy != nil {
+		conn.proxy = g.httpProxy.Search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
+		if conn.proxy == nil {
+			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
+		} else {
+			g.MessageHandler(conn, int64(reqCtx.ID()), conn.proxy.OnRequest(conn, reqCtx.PostBody()))
+		}
+	} else {
+		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
+	}
 
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
@@ -469,7 +482,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.MessageHandler(wc, 0, ms[idx].Payload, nil)
+				g.MessageHandler(wc, 0, ms[idx].Payload)
 				wg.Done()
 			})
 

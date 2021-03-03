@@ -53,8 +53,12 @@ type Gateway interface {
 
 type (
 	RequestCtx     = fasthttp.RequestCtx
-	MuxHandler     = func(date []byte, kv map[string]interface{}) []byte
 	ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue)
-	MessageHandler = func(c rony.Conn, streamID int64, data []byte, ctx *RequestCtx)
+	MessageHandler = func(c rony.Conn, streamID int64, data []byte)
 	CloseHandler   = func(c rony.Conn)
 )
+
+type Proxy interface {
+	OnRequest(conn rony.Conn, date []byte) []byte
+	OnResponse(conn rony.Conn, data []byte) error
+}
