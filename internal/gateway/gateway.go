@@ -60,5 +60,5 @@ type (
 
 type ProxyHandle interface {
 	OnRequest(conn rony.Conn, data []byte) []byte
-	OnResponse(data []byte) []byte
+	OnResponse(data []byte) ([]byte, map[string]string)
 }

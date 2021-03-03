@@ -39,8 +39,8 @@ func TestGateway(t *testing.T) {
 		func(conn rony.Conn, date []byte) []byte {
 			return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
 		},
-		func(data []byte) []byte {
-			return data
+		func(data []byte) ([]byte, map[string]string) {
+			return data, nil
 		},
 	)
 	httpProxy.Set(edge.MethodGet, "/x/:name", h1)

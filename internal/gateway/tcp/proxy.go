@@ -22,7 +22,7 @@ type HttpProxy struct {
 
 func (hp *HttpProxy) CreateHandle(
 	onRequest func(conn rony.Conn, data []byte) []byte,
-	onResponse func(data []byte) []byte,
+	onResponse func(data []byte) ([]byte, map[string]string),
 ) gateway.ProxyHandle {
 	return &simpleProxy{
 		onRequestFunc:  onRequest,
@@ -54,13 +54,13 @@ func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHa
 
 type simpleProxy struct {
 	onRequestFunc  func(conn rony.Conn, date []byte) []byte
-	onResponseFunc func(data []byte) []byte
+	onResponseFunc func(data []byte) ([]byte, map[string]string)
 }
 
 func (s *simpleProxy) OnRequest(conn rony.Conn, data []byte) []byte {
 	return s.onRequestFunc(conn, data)
 }
 
-func (s *simpleProxy) OnResponse(data []byte) []byte {
+func (s *simpleProxy) OnResponse(data []byte) ([]byte, map[string]string) {
 	return s.onResponseFunc(data)
 }
