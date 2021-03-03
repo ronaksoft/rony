@@ -59,6 +59,6 @@ type (
 )
 
 type Proxy interface {
-	OnRequest(conn rony.Conn, date []byte) []byte
-	OnResponse(conn rony.Conn, data []byte) error
+	OnRequest(conn rony.Conn, data []byte) []byte
+	OnResponse(data []byte) []byte
 }

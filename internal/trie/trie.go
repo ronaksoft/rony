@@ -235,7 +235,7 @@ func (t *Trie) Autocomplete(prefix string, sorter NodeKeysSorter) (list []string
 }
 
 // ParamsSetter is the interface which should be implemented by the
-// params writer for `Search` in order to store the found named path parameters, if any.
+// params writer for `search` in order to store the found named path parameters, if any.
 type ParamsSetter interface {
 	Set(string, interface{})
 }

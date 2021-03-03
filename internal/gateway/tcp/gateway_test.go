@@ -34,16 +34,23 @@ func init() {
 func TestGateway(t *testing.T) {
 	// rony.SetLogLevel(-1)
 	hostPort := "127.0.0.1:8080"
-	// mux := edge.NewTcpGatewayMux()
-	// mux.Handle(edge.MethodGet, "/x/{name}", func(data []byte, kv map[string]interface{}) []byte {
-	// 	return tools.S2B(fmt.Sprintf("Received Get with Param: %s", kv["name"]))
-	// })
+	httpProxy := edge.NewTcpGatewayProxy()
+	h1 := tcpGateway.SimpleProxy{
+		OnRequestFunc: func(conn rony.Conn, date []byte) []byte {
+			return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
+		},
+		OnResponseFunc: func(data []byte) []byte {
+			return data
+		},
+	}
+	httpProxy.Set(edge.MethodGet, "/x/{name}", &h1)
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
 		ListenAddress: hostPort,
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
 		ExternalAddrs: []string{hostPort},
+		HttpProxy:     httpProxy,
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -26,7 +26,7 @@ type ParamStore interface {
 // GetParam returns the path parameter value based on its key, i.e
 // "/hello/:name", the parameter key is the "name".
 // For example if a route with pattern of "/hello/:name" is inserted to the `Trie` or handlded by the `Mux`
-// and the path "/hello/kataras" is requested through the `Mux#ServeHTTP -> Trie#Search`
+// and the path "/hello/kataras" is requested through the `Mux#ServeHTTP -> Trie#search`
 // then the `GetParam("name")` will return the value of "kataras".
 // If not associated value with that key is found then it will return an empty string.
 //
@@ -78,7 +78,7 @@ type Writer struct {
 
 var _ ParamStore = (*Writer)(nil)
 
-// Set implements the `ParamsSetter` which `Trie#Search` needs to store the parameters, if any.
+// Set implements the `ParamsSetter` which `Trie#search` needs to store the parameters, if any.
 // These are decoupled because end-developers may want to use the trie to design a new Mux of their own
 // or to store different kind of data inside it.
 func (pw *Writer) Set(key, value string) {

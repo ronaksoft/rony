@@ -58,7 +58,7 @@ func (c *httpConn) SetClientType(ct []byte) {
 
 func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
 	if c.proxy != nil {
-		err = c.proxy.OnResponse(c, data)
+		_, err = c.ctx.Write(c.proxy.OnResponse(data))
 	} else {
 		_, err = c.ctx.Write(data)
 	}

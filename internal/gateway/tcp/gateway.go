@@ -55,6 +55,7 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
+	HttpProxy     *HttpProxy
 }
 
 // Gateway
@@ -109,6 +110,7 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
+		httpProxy:          config.HttpProxy,
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -242,6 +244,12 @@ func (g *Gateway) Start() {
 
 // Run is blocking and runs the server endless loop until a non-temporary error happens
 func (g *Gateway) Run() {
+	// if http proxy is set then, HttpProxy is responsible for handling the request
+	if g.httpProxy != nil {
+		g.httpProxy.handler = g.MessageHandler
+	}
+
+	// initialize the fasthttp server.
 	server := fasthttp.Server{
 		Name:               "Rony TCP-Gateway",
 		Handler:            g.requestHandler,
@@ -251,6 +259,8 @@ func (g *Gateway) Run() {
 		DisableKeepalive:   true,
 		CloseOnShutdown:    true,
 	}
+
+	// start serving in blocking mode
 	err := server.Serve(g.listener)
 	if err != nil {
 		log.Warn("Error On Serve", zap.Error(err))
@@ -400,11 +410,11 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	}
 
 	if g.httpProxy != nil {
-		conn.proxy = g.httpProxy.Search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
+		conn.proxy = g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
 		if conn.proxy == nil {
 			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 		} else {
-			g.MessageHandler(conn, int64(reqCtx.ID()), conn.proxy.OnRequest(conn, reqCtx.PostBody()))
+			g.httpProxy.handle(conn, reqCtx)
 		}
 	} else {
 		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
