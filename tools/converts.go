@@ -35,6 +35,11 @@ func StrToUInt32(s string) uint32 {
 	return uint32(v)
 }
 
+func StrToInt(s string) int {
+	v, _ := strconv.ParseInt(s, 10, 32)
+	return int(v)
+}
+
 func Int64ToStr(x int64) string {
 	return strconv.FormatInt(x, 10)
 }
@@ -48,6 +53,10 @@ func UInt64ToStr(x uint64) string {
 }
 
 func UInt32ToStr(x uint32) string {
+	return strconv.FormatUint(uint64(x), 10)
+}
+
+func IntToStr(x int) string {
 	return strconv.FormatUint(uint64(x), 10)
 }
 
