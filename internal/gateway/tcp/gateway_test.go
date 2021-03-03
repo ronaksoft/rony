@@ -43,7 +43,7 @@ func TestGateway(t *testing.T) {
 			return data
 		},
 	}
-	httpProxy.Set(edge.MethodGet, "/x/{name}", &h1)
+	httpProxy.Set(edge.MethodGet, "/x/:name", &h1)
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
 		ListenAddress: hostPort,
