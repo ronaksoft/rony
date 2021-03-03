@@ -58,7 +58,7 @@ type (
 	CloseHandler   = func(c rony.Conn)
 )
 
-type Proxy interface {
+type ProxyHandle interface {
 	OnRequest(conn rony.Conn, data []byte) []byte
 	OnResponse(data []byte) []byte
 }

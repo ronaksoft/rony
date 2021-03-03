@@ -20,7 +20,16 @@ type HttpProxy struct {
 	routes  map[string]*trie.Trie
 }
 
-func (hp *HttpProxy) Set(method, path string, p gateway.Proxy) {
+func (hp *HttpProxy) CreateHandle(
+	onRequest func(conn rony.Conn, data []byte) []byte,
+	onResponse func(data []byte) []byte,
+) gateway.ProxyHandle {
+	return &simpleProxy{
+		onRequestFunc:  onRequest,
+		onResponseFunc: onResponse,
+	}
+}
+func (hp *HttpProxy) Set(method, path string, p gateway.ProxyHandle) {
 	if hp.routes == nil {
 		hp.routes = make(map[string]*trie.Trie)
 	}
@@ -34,7 +43,7 @@ func (hp *HttpProxy) handle(conn *httpConn, ctx *gateway.RequestCtx) {
 	hp.handler(conn, int64(ctx.ConnID()), conn.proxy.OnRequest(conn, ctx.PostBody()))
 }
 
-func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.Proxy {
+func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHandle {
 	n := hp.routes[method].Search(path, conn)
 	if n == nil {
 		return nil
@@ -43,15 +52,15 @@ func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.Proxy {
 	return n.Proxy
 }
 
-type SimpleProxy struct {
-	OnRequestFunc  func(conn rony.Conn, date []byte) []byte
-	OnResponseFunc func(data []byte) []byte
+type simpleProxy struct {
+	onRequestFunc  func(conn rony.Conn, date []byte) []byte
+	onResponseFunc func(data []byte) []byte
 }
 
-func (s *SimpleProxy) OnRequest(conn rony.Conn, data []byte) []byte {
-	return s.OnRequestFunc(conn, data)
+func (s *simpleProxy) OnRequest(conn rony.Conn, data []byte) []byte {
+	return s.onRequestFunc(conn, data)
 }
 
-func (s *SimpleProxy) OnResponse(data []byte) []byte {
-	return s.OnResponseFunc(data)
+func (s *simpleProxy) OnResponse(data []byte) []byte {
+	return s.onResponseFunc(data)
 }

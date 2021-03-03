@@ -33,7 +33,7 @@ type Node struct {
 	staticKey string
 
 	// insert main data relative to http and a tag for things like route names.
-	Proxy gateway.Proxy
+	Proxy gateway.ProxyHandle
 	Tag   string
 
 	// other insert data.

@@ -34,16 +34,16 @@ func init() {
 func TestGateway(t *testing.T) {
 	// rony.SetLogLevel(-1)
 	hostPort := "127.0.0.1:8080"
-	httpProxy := edge.NewTcpGatewayProxy()
-	h1 := tcpGateway.SimpleProxy{
-		OnRequestFunc: func(conn rony.Conn, date []byte) []byte {
+	httpProxy := edge.NewHttProxy()
+	h1 := httpProxy.CreateHandle(
+		func(conn rony.Conn, date []byte) []byte {
 			return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
 		},
-		OnResponseFunc: func(data []byte) []byte {
+		func(data []byte) []byte {
 			return data
 		},
-	}
-	httpProxy.Set(edge.MethodGet, "/x/:name", &h1)
+	)
+	httpProxy.Set(edge.MethodGet, "/x/:name", h1)
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
 		ListenAddress: hostPort,
