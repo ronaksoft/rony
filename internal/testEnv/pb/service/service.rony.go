@@ -319,19 +319,34 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server, preHandlers ...edge.Handler) {
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(preHandlers...).Append(sw.echoWrapper).InconsistentRead())
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoLeaderOnly).SetHandler(preHandlers...).Append(sw.echoLeaderOnlyWrapper))
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(preHandlers...).Append(sw.echoTunnelWrapper))
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(preHandlers...).Append(sw.echoInternalWrapper).TunnelOnly())
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(preHandlers...).Append(sw.echoDelayWrapper))
+func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	if handlerFunc == nil {
+		handlerFunc = func(c int64) []edge.Handler {
+			return nil
+		}
+	}
+
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper).InconsistentRead())
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoLeaderOnly).SetHandler(handlerFunc(C_SampleEchoLeaderOnly)...).Append(sw.echoLeaderOnlyWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(handlerFunc(C_SampleEchoTunnel)...).Append(sw.echoTunnelWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(handlerFunc(C_SampleEchoInternal)...).Append(sw.echoInternalWrapper).TunnelOnly())
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
 }
 
 func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e, preHandlers...)
+	w.Register(e, func(c int64) []edge.Handler {
+		return preHandlers
+	})
+}
+
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e, handlerFunc)
 }
 
 func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

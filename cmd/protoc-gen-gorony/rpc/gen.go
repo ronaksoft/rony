@@ -112,7 +112,13 @@ func (g *Generator) genServer(s *protogen.Service) {
 		g.g.P("}") // end of func block
 		g.g.P()
 	}
-	g.g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server, preHandlers ...edge.Handler) {")
+	g.g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) Register (e *edge.Server, handlerFunc func(c int64) []edge.Handler) {")
+	g.g.P("if handlerFunc == nil {")
+	g.g.P("handlerFunc = func(c int64) []edge.Handler {")
+	g.g.P("return nil")
+	g.g.P("}")
+	g.g.P("}")
+	g.g.P()
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
 		sb := strings.Builder{}
@@ -123,10 +129,11 @@ func (g *Generator) genServer(s *protogen.Service) {
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			sb.WriteString(".TunnelOnly()")
 		}
+		constructorName := fmt.Sprintf("C_%s%s", serviceName, methodName)
 		g.g.P(
 			"e.SetHandler(",
-			"edge.NewHandlerOptions().SetConstructor(C_", serviceName, methodName, ").",
-			"SetHandler(preHandlers...).Append(sw.", tools.ToLowerCamel(methodName), "Wrapper)",
+			"edge.NewHandlerOptions().SetConstructor(", constructorName, ").",
+			"SetHandler(handlerFunc(", constructorName, ")...).Append(sw.", tools.ToLowerCamel(methodName), "Wrapper)",
 			sb.String(), ")")
 	}
 	g.g.P("}")
@@ -135,9 +142,19 @@ func (g *Generator) genServer(s *protogen.Service) {
 	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
 	g.g.P("h: h,")
 	g.g.P("}")
-	g.g.P("w.Register(e, preHandlers...)")
+	g.g.P("w.Register(e, func(c int64) []edge.Handler {")
+	g.g.P("return preHandlers")
+	g.g.P("})")
 	g.g.P("}")
 	g.g.P()
+	g.g.P("func Register", s.Desc.Name(), "WithFunc(h I", s.Desc.Name(), ", e *edge.Server, handlerFunc func(c int64) []edge.Handler) {")
+	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
+	g.g.P("h: h,")
+	g.g.P("}")
+	g.g.P("w.Register(e, handlerFunc)")
+	g.g.P("}")
+	g.g.P()
+
 }
 func (g *Generator) genClient(s *protogen.Service) {
 	g.g.P("type ", s.Desc.Name(), "Client struct {")
