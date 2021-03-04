@@ -29,19 +29,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var (
-	ignoredHeaders = map[string]bool{
-		"Host":                     true,
-		"Upgrade":                  true,
-		"Connection":               true,
-		"Sec-Websocket-Version":    true,
-		"Sec-Websocket-Protocol":   true,
-		"Sec-Websocket-Extensions": true,
-		"Sec-Websocket-Key":        true,
-		"Sec-Websocket-Accept":     true,
-	}
-)
-
 type UnsafeConn interface {
 	net.Conn
 	UnsafeConn() net.Conn
@@ -342,37 +329,8 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 		return
 	}
 
-	var (
-		kvs            = make([]*rony.KeyValue, 0, 4)
-		clientIP       string
-		clientType     string
-		clientDetected bool
-	)
-
-	reqCtx.Request.Header.VisitAll(func(key, value []byte) {
-		switch tools.ByteToStr(key) {
-		case "Cf-Connecting-Ip":
-			clientIP = string(value)
-			clientDetected = true
-		case "X-Forwarded-For", "X-Real-Ip", "Forwarded":
-			if clientDetected {
-				clientIP = string(value)
-				clientDetected = true
-			}
-		case "X-Client-Type":
-			clientType = string(value)
-		default:
-			if !ignoredHeaders[tools.ByteToStr(key)] {
-				kv := rony.PoolKeyValue.Get()
-				kv.Key = string(key)
-				kv.Value = string(value)
-				kvs = append(kvs, kv)
-			}
-		}
-	})
-	if !clientDetected {
-		clientIP = reqCtx.RemoteIP().To4().String()
-	}
+	// extract required information from the header of the RequestCtx
+	meta := acquireConnInfo(reqCtx)
 
 	// If this is a Http Upgrade then we handle websocket
 	if reqCtx.Request.Header.ConnectionUpgrade() {
@@ -383,11 +341,11 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 		}
 		reqCtx.HijackSetNoResponse(true)
 		reqCtx.Hijack(func(c net.Conn) {
-			hjc, _ := c.(UnsafeConn)
-			wc, _ := hjc.UnsafeConn().(*wrapConn)
+			wc, _ := c.(UnsafeConn).UnsafeConn().(*wrapConn)
 			wc.ReadyForUpgrade()
 			g.waitGroupAcceptors.Add(1)
-			g.websocketHandler(wc, clientIP, clientType, kvs...)
+			g.websocketHandler(wc, meta)
+			releaseConnInfo(meta)
 		})
 		return
 	}
@@ -399,15 +357,13 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 		return
 	}
 	conn := acquireHttpConn(g, reqCtx)
-	conn.SetClientIP(tools.StrToByte(clientIP))
-	conn.SetClientType(tools.StrToByte(clientType))
+	conn.SetClientIP(meta.clientIP)
+	conn.SetClientType(meta.clientType)
 
 	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
 
-	g.ConnectHandler(conn, kvs...)
-	for _, kv := range kvs {
-		rony.PoolKeyValue.Put(kv)
-	}
+	g.ConnectHandler(conn, meta.kvs...)
+	releaseConnInfo(meta)
 
 	if g.httpProxy != nil {
 		conn.proxy = g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
@@ -424,7 +380,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	releaseHttpConn(conn)
 }
 
-func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs ...*rony.KeyValue) {
+func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 	defer g.waitGroupAcceptors.Done()
 	if atomic.LoadInt32(&g.stop) == 1 {
 		return
@@ -432,8 +388,8 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 	if _, err := g.upgradeHandler.Upgrade(c); err != nil {
 		if ce := log.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
 			ce.Write(
-				zap.String("IP", clientIP),
-				zap.String("ClientType", clientType),
+				zap.String("IP", tools.B2S(meta.clientIP)),
+				zap.String("ClientType", tools.B2S(meta.clientType)),
 				zap.Error(err),
 			)
 		}
@@ -445,16 +401,13 @@ func (g *Gateway) websocketHandler(c net.Conn, clientIP, clientType string, kvs 
 		err error
 	)
 
-	wsConn, err := newWebsocketConn(g, c, clientIP, clientType)
+	wsConn, err := newWebsocketConn(g, c, meta.clientIP)
 	if err != nil {
 		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
 		return
 	}
 
-	g.ConnectHandler(wsConn, kvs...)
-	for _, kv := range kvs {
-		rony.PoolKeyValue.Put(kv)
-	}
+	g.ConnectHandler(wsConn, meta.kvs...)
 
 	err = wsConn.registerDesc()
 	if err != nil {

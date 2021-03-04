@@ -47,8 +47,7 @@ type websocketConn struct {
 	startTime    int64
 }
 
-func newWebsocketConn(g *Gateway, conn net.Conn, clientIP, clientType string) (*websocketConn, error) {
-	// desc, err := netpoll.HandleRead(conn)
+func newWebsocketConn(g *Gateway, conn net.Conn, clientIP []byte) (*websocketConn, error) {
 	desc, err := netpoll.Handle(conn,
 		netpoll.EventRead|netpoll.EventHup|netpoll.EventOneShot,
 	)
@@ -60,7 +59,7 @@ func newWebsocketConn(g *Gateway, conn net.Conn, clientIP, clientType string) (*
 	totalConns := atomic.AddInt32(&g.connsTotal, 1)
 	connID := atomic.AddUint64(&g.connsLastID, 1)
 	wsConn := acquireWebsocketConn(g, connID, conn, desc)
-	wsConn.SetClientIP(tools.StrToByte(clientIP))
+	wsConn.SetClientIP(clientIP)
 
 	g.connsMtx.Lock()
 	g.conns[connID] = wsConn
@@ -68,7 +67,6 @@ func newWebsocketConn(g *Gateway, conn net.Conn, clientIP, clientType string) (*
 	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", connID),
-			zap.String("Client", clientType),
 			zap.String("IP", wsConn.ClientIP()),
 			zap.Int32("Total", totalConns),
 		)
