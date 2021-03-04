@@ -23,10 +23,16 @@ func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 }
 
 func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
+	if x == nil {
+		return
+	}
 	x.Constructor = 0
 	x.RequestID = 0
 	x.Message = x.Message[:0]
 	x.Auth = x.Auth[:0]
+	for _, z := range x.Header {
+		PoolKeyValue.Put(z)
+	}
 	x.Header = x.Header[:0]
 	p.pool.Put(x)
 }
@@ -70,6 +76,9 @@ func (p *poolKeyValue) Get() *KeyValue {
 }
 
 func (p *poolKeyValue) Put(x *KeyValue) {
+	if x == nil {
+		return
+	}
 	x.Key = ""
 	x.Value = ""
 	p.pool.Put(x)
@@ -105,7 +114,13 @@ func (p *poolMessageContainer) Get() *MessageContainer {
 }
 
 func (p *poolMessageContainer) Put(x *MessageContainer) {
+	if x == nil {
+		return
+	}
 	x.Length = 0
+	for _, z := range x.Envelopes {
+		PoolMessageEnvelope.Put(z)
+	}
 	x.Envelopes = x.Envelopes[:0]
 	p.pool.Put(x)
 }
@@ -146,6 +161,9 @@ func (p *poolError) Get() *Error {
 }
 
 func (p *poolError) Put(x *Error) {
+	if x == nil {
+		return
+	}
 	x.Code = ""
 	x.Items = ""
 	x.Description = ""
@@ -183,10 +201,14 @@ func (p *poolRedirect) Get() *Redirect {
 }
 
 func (p *poolRedirect) Put(x *Redirect) {
+	if x == nil {
+		return
+	}
 	x.Reason = 0
-	if x.Leader != nil {
-		PoolEdge.Put(x.Leader)
-		x.Leader = nil
+	PoolEdge.Put(x.Leader)
+	x.Leader = nil
+	for _, z := range x.Followers {
+		PoolEdge.Put(z)
 	}
 	x.Followers = x.Followers[:0]
 	x.WaitInSec = 0
@@ -234,6 +256,9 @@ func (p *poolEdge) Get() *Edge {
 }
 
 func (p *poolEdge) Put(x *Edge) {
+	if x == nil {
+		return
+	}
 	x.ReplicaSet = 0
 	x.ServerID = ""
 	x.HostPorts = x.HostPorts[:0]
@@ -273,6 +298,12 @@ func (p *poolEdges) Get() *Edges {
 }
 
 func (p *poolEdges) Put(x *Edges) {
+	if x == nil {
+		return
+	}
+	for _, z := range x.Nodes {
+		PoolEdge.Put(z)
+	}
 	x.Nodes = x.Nodes[:0]
 	p.pool.Put(x)
 }

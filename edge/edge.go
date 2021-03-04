@@ -406,7 +406,7 @@ func (edge *Server) StartGateway() error {
 
 	log.Info("Edge Server:: Gateway Started",
 		zap.ByteString("ServerID", edge.serverID),
-		zap.String("Protocol", string(edge.gatewayProtocol)),
+		zap.String("Protocol", edge.gatewayProtocol.String()),
 		zap.Strings("Addr", edge.gateway.Addr()),
 	)
 

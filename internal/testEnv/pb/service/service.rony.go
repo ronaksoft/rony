@@ -29,6 +29,9 @@ func (p *poolEchoRequest) Get() *EchoRequest {
 }
 
 func (p *poolEchoRequest) Put(x *EchoRequest) {
+	if x == nil {
+		return
+	}
 	x.Int = 0
 	x.Timestamp = 0
 	x.ReplicaSet = 0
@@ -70,6 +73,9 @@ func (p *poolEchoResponse) Get() *EchoResponse {
 }
 
 func (p *poolEchoResponse) Put(x *EchoResponse) {
+	if x == nil {
+		return
+	}
 	x.Int = 0
 	x.Responder = ""
 	x.Timestamp = 0
@@ -115,11 +121,15 @@ func (p *poolMessage1) Get() *Message1 {
 }
 
 func (p *poolMessage1) Put(x *Message1) {
+	if x == nil {
+		return
+	}
 	x.Param1 = 0
 	x.Param2 = ""
-	if x.M2 != nil {
-		PoolMessage2.Put(x.M2)
-		x.M2 = nil
+	PoolMessage2.Put(x.M2)
+	x.M2 = nil
+	for _, z := range x.M2S {
+		PoolMessage2.Put(z)
 	}
 	x.M2S = x.M2S[:0]
 	p.pool.Put(x)
@@ -170,13 +180,14 @@ func (p *poolMessage2) Get() *Message2 {
 }
 
 func (p *poolMessage2) Put(x *Message2) {
+	if x == nil {
+		return
+	}
 	x.Param1 = 0
 	x.P2 = x.P2[:0]
 	x.P3 = x.P3[:0]
-	if x.M1 != nil {
-		PoolMessage1.Put(x.M1)
-		x.M1 = nil
-	}
+	PoolMessage1.Put(x.M1)
+	x.M1 = nil
 	p.pool.Put(x)
 }
 

@@ -267,16 +267,33 @@ func (ctx *RequestCtx) GetBool(key string) bool {
 	return ctx.dispatchCtx.GetBool(key)
 }
 
+func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint64) {
+	r := rony.PoolRedirect.Get()
+	r.Reason = reason
+	r.WaitInSec = 0
+
+	members := ctx.Cluster().RaftMembers(replicaSet)
+	for _, m := range members {
+		ni := m.Proto(rony.PoolEdge.Get())
+		if ni.Leader {
+			r.Leader = ni
+		} else {
+			r.Followers = append(r.Followers, ni)
+		}
+	}
+	ctx.PushMessage(rony.C_Redirect, r)
+
+	rony.PoolRedirect.Put(r)
+}
 func (ctx *RequestCtx) PushRedirectLeader() {
-	ctxCluster := ctx.dispatchCtx.cluster
-	if leaderID := ctxCluster.RaftLeaderID(); leaderID == "" {
+	if leaderID := ctx.Cluster().RaftLeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 		return
 	}
 	r := rony.PoolRedirect.Get()
 	r.Reason = rony.RedirectReason_ReplicaMaster
 	r.WaitInSec = 0
-	members := ctxCluster.RaftMembers(ctxCluster.ReplicaSet())
+	members := ctx.Cluster().RaftMembers(ctx.Cluster().ReplicaSet())
 	nodeInfos := make([]*rony.Edge, 0, len(members))
 	for _, m := range members {
 		ni := m.Proto(rony.PoolEdge.Get())

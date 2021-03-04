@@ -25,6 +25,9 @@ func (p *poolSingle1) Get() *Single1 {
 }
 
 func (p *poolSingle1) Put(x *Single1) {
+	if x == nil {
+		return
+	}
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""
@@ -72,6 +75,9 @@ func (p *poolSingle2) Get() *Single2 {
 }
 
 func (p *poolSingle2) Put(x *Single2) {
+	if x == nil {
+		return
+	}
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""

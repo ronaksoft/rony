@@ -25,6 +25,9 @@ func (p *poolModel1) Get() *Model1 {
 }
 
 func (p *poolModel1) Put(x *Model1) {
+	if x == nil {
+		return
+	}
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""
@@ -72,6 +75,9 @@ func (p *poolModel2) Get() *Model2 {
 }
 
 func (p *poolModel2) Put(x *Model2) {
+	if x == nil {
+		return
+	}
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""

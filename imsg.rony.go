@@ -24,6 +24,9 @@ func (p *poolGetNodes) Get() *GetNodes {
 }
 
 func (p *poolGetNodes) Put(x *GetNodes) {
+	if x == nil {
+		return
+	}
 	x.ReplicaSet = x.ReplicaSet[:0]
 	p.pool.Put(x)
 }
@@ -57,6 +60,9 @@ func (p *poolGetPage) Get() *GetPage {
 }
 
 func (p *poolGetPage) Put(x *GetPage) {
+	if x == nil {
+		return
+	}
 	x.PageID = 0
 	x.ReplicaSet = 0
 	p.pool.Put(x)
@@ -92,13 +98,17 @@ func (p *poolTunnelMessage) Get() *TunnelMessage {
 }
 
 func (p *poolTunnelMessage) Put(x *TunnelMessage) {
+	if x == nil {
+		return
+	}
 	x.SenderID = x.SenderID[:0]
 	x.SenderReplicaSet = 0
-	x.Store = x.Store[:0]
-	if x.Envelope != nil {
-		PoolMessageEnvelope.Put(x.Envelope)
-		x.Envelope = nil
+	for _, z := range x.Store {
+		PoolKeyValue.Put(z)
 	}
+	x.Store = x.Store[:0]
+	PoolMessageEnvelope.Put(x.Envelope)
+	x.Envelope = nil
 	p.pool.Put(x)
 }
 
@@ -143,12 +153,16 @@ func (p *poolRaftCommand) Get() *RaftCommand {
 }
 
 func (p *poolRaftCommand) Put(x *RaftCommand) {
-	x.Sender = x.Sender[:0]
-	x.Store = x.Store[:0]
-	if x.Envelope != nil {
-		PoolMessageEnvelope.Put(x.Envelope)
-		x.Envelope = nil
+	if x == nil {
+		return
 	}
+	x.Sender = x.Sender[:0]
+	for _, z := range x.Store {
+		PoolKeyValue.Put(z)
+	}
+	x.Store = x.Store[:0]
+	PoolMessageEnvelope.Put(x.Envelope)
+	x.Envelope = nil
 	p.pool.Put(x)
 }
 
@@ -192,6 +206,9 @@ func (p *poolEdgeNode) Get() *EdgeNode {
 }
 
 func (p *poolEdgeNode) Put(x *EdgeNode) {
+	if x == nil {
+		return
+	}
 	x.ServerID = x.ServerID[:0]
 	x.ReplicaSet = 0
 	x.RaftPort = 0
@@ -235,6 +252,9 @@ func (p *poolPage) Get() *Page {
 }
 
 func (p *poolPage) Put(x *Page) {
+	if x == nil {
+		return
+	}
 	x.ID = 0
 	x.ReplicaSet = 0
 	p.pool.Put(x)

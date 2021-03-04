@@ -84,11 +84,35 @@ func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
 	g.g.P("}") // end of func Get()
 	g.g.P()
 	g.g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", messageName, messageName))
+	g.g.P("if x == nil {")
+	g.g.P("return")
+	g.g.P("}")
 	for _, ft := range m.Fields {
 		ftName := ft.Desc.Name()
 		switch ft.Desc.Cardinality() {
 		case protoreflect.Repeated:
-			g.g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
+			switch ft.Desc.Kind() {
+			case protoreflect.BytesKind:
+				g.g.P("for _, z := range x.", ftName, "{")
+				g.g.P("pools.Bytes.Put(z)")
+				g.g.P("}") // end of for/range
+				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
+			case protoreflect.MessageKind:
+				// If it is message we check if is nil then we leave it
+				// If it is from same package use Pool
+				g.g.P("for _, z := range x.", ftName, "{")
+				ftPkg := string(ft.Desc.Message().FullName().Parent())
+				if ftPkg != string(g.f.GoPackageName) {
+					g.g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(z)")
+				} else {
+					g.g.P("Pool", ft.Desc.Message().Name(), ".Put(z)")
+				}
+				g.g.P("}") // end of for/range
+				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
+
+			default:
+				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
+			}
 		default:
 			switch ft.Desc.Kind() {
 			case protoreflect.BytesKind:
@@ -96,7 +120,6 @@ func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
 			case protoreflect.MessageKind:
 				// If it is message we check if is nil then we leave it
 				// If it is from same package use Pool
-				g.g.P(fmt.Sprintf("if x.%s != nil {", ftName))
 				ftPkg := string(ft.Desc.Message().FullName().Parent())
 				if ftPkg != string(g.f.GoPackageName) {
 					g.g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
@@ -104,7 +127,6 @@ func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
 					g.g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
 				}
 				g.g.P("x.", ftName, " = nil")
-				g.g.P("}") // end of if
 			default:
 				g.g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc)))
 			}
