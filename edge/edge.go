@@ -79,8 +79,8 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
-	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetNodes, builtin.GetNodes).InconsistentRead().setBuiltin())
-	edgeServer.SetHandler(NewHandlerOptions(rony.C_GetPage, builtin.GetPage).setBuiltin())
+	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetNodes).Append(builtin.GetNodes).InconsistentRead().setBuiltin())
+	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetPage).Append(builtin.GetPage).setBuiltin())
 
 	return edgeServer
 }
@@ -110,7 +110,10 @@ func (edge *Server) SetGlobalPostHandlers(handlers ...Handler) {
 // to a follower server will return redirect error to the client. For standalone servers 'leaderOnly' does not
 // affect.
 func (edge *Server) SetHandler(ho *HandlerOption) {
-	edge.handlers[ho.constructor] = ho
+	for c := range ho.constructors {
+		edge.handlers[c] = ho
+	}
+
 }
 
 // GetHandler returns the handlers of the constructor

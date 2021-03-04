@@ -21,9 +21,12 @@ var (
 	DefaultLogger *zapLogger
 )
 
-type Level = zapcore.Level
-type Field = zapcore.Field
-type CheckedEntry = zapcore.CheckedEntry
+type (
+	Level        = zapcore.Level
+	Field        = zapcore.Field
+	FieldType    = zapcore.FieldType
+	CheckedEntry = zapcore.CheckedEntry
+)
 
 type Logger interface {
 	Log(level Level, msg string, fields ...Field)

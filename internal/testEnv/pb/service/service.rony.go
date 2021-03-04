@@ -320,11 +320,11 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 }
 
 func (sw *sampleWrapper) Register(e *edge.Server, preHandlers ...edge.Handler) {
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEcho, sw.echoWrapper).Prepend(preHandlers...).InconsistentRead())
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoLeaderOnly, sw.echoLeaderOnlyWrapper).Prepend(preHandlers...))
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoTunnel, sw.echoTunnelWrapper).Prepend(preHandlers...))
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoInternal, sw.echoInternalWrapper).Prepend(preHandlers...).TunnelOnly())
-	e.SetHandler(edge.NewHandlerOptions(C_SampleEchoDelay, sw.echoDelayWrapper).Prepend(preHandlers...))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(preHandlers...).Append(sw.echoWrapper).InconsistentRead())
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoLeaderOnly).SetHandler(preHandlers...).Append(sw.echoLeaderOnlyWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(preHandlers...).Append(sw.echoTunnelWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(preHandlers...).Append(sw.echoInternalWrapper).TunnelOnly())
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(preHandlers...).Append(sw.echoDelayWrapper))
 }
 
 func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {

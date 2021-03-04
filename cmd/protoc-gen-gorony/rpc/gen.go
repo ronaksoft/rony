@@ -123,7 +123,11 @@ func (g *Generator) genServer(s *protogen.Service) {
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			sb.WriteString(".TunnelOnly()")
 		}
-		g.g.P("e.SetHandler(edge.NewHandlerOptions(C_", serviceName, methodName, ", sw.", tools.ToLowerCamel(methodName), "Wrapper).Prepend(preHandlers...)", sb.String(), ")")
+		g.g.P(
+			"e.SetHandler(",
+			"edge.NewHandlerOptions().SetConstructor(C_", serviceName, methodName, ").",
+			"SetHandler(preHandlers...).Append(sw.", tools.ToLowerCamel(methodName), "Wrapper)",
+			sb.String(), ")")
 	}
 	g.g.P("}")
 	g.g.P()

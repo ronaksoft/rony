@@ -49,7 +49,7 @@ func (s *Server) SetGlobalPreHandlers(h ...edge.Handler) {
 }
 
 func (s *Server) SetHandlers(constructor int64, h ...edge.Handler) {
-	s.edge.SetHandler(edge.NewHandlerOptions(constructor, h...))
+	s.edge.SetHandler(edge.NewHandlerOptions().SetConstructor(constructor).SetHandler(h...))
 }
 
 func (s *Server) SetGlobalPostHandlers(h ...edge.Handler) {

@@ -19,19 +19,32 @@ type (
 
 // HandlerOption is a structure holds all the information required for a handler.
 type HandlerOption struct {
-	constructor      int64
+	constructors     map[int64]struct{}
 	handlers         []Handler
 	inconsistentRead bool
 	tunnel           bool
 	gateway          bool
+
 	// internal user
 	builtin bool
 }
 
-func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
+// func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
+// 	return &HandlerOption{
+// 		constructors: map[int64]struct{}{
+// 			constructor: {},
+// 		},
+// 		handlers:         h,
+// 		gateway:          true,
+// 		tunnel:           true,
+// 		inconsistentRead: false,
+// 	}
+// }
+
+func NewHandlerOptions() *HandlerOption {
 	return &HandlerOption{
-		constructor:      constructor,
-		handlers:         h,
+		constructors:     map[int64]struct{}{},
+		handlers:         nil,
 		gateway:          true,
 		tunnel:           true,
 		inconsistentRead: false,
@@ -40,6 +53,19 @@ func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
 
 func (ho *HandlerOption) setBuiltin() *HandlerOption {
 	ho.builtin = true
+	return ho
+}
+
+func (ho *HandlerOption) SetConstructor(constructors ...int64) *HandlerOption {
+	for _, c := range constructors {
+		ho.constructors[c] = struct{}{}
+	}
+	return ho
+}
+
+// SetHandler replaces the handlers for this constructor with h
+func (ho *HandlerOption) SetHandler(h ...Handler) *HandlerOption {
+	ho.handlers = append(ho.handlers[:0], h...)
 	return ho
 }
 
@@ -60,12 +86,6 @@ func (ho *HandlerOption) TunnelOnly() *HandlerOption {
 // InconsistentRead makes this method (constructor) available on edges in follower state
 func (ho *HandlerOption) InconsistentRead() *HandlerOption {
 	ho.inconsistentRead = true
-	return ho
-}
-
-// Set replaces the handlers for this constructor with h
-func (ho *HandlerOption) Set(h ...Handler) *HandlerOption {
-	ho.handlers = append(ho.handlers[:0], h...)
 	return ho
 }
 
