@@ -41,15 +41,15 @@ After we have installed two executable files `protoc-gen-rony` and `rony` you ar
 ```shell script
 mkdir sample-project
 cd ./sample-project
-rony project create --project.name github.com/ronaksoft/sample --project.name sample-project
+rony create-project --project.name github.com/ronaksoft/sample --project.name sample-project
 ```
 
-After running the 'project create' command, you should go to the `service` directory and open `service.proto`
-file and write the appropriate protobuf file. You can also go to `model` directory and edit the `model.proto`
-file, but it is an advanced topic. we just delete it. After finishing our edit job we run the following command from the root of our project.
+After running the 'create-project' command, you should go to the `service` directory and open `service.proto`
+file and write the appropriate protobuf file. We edit the protobuf then we run the following command 
+from the root of our project.
 
 ```shell script
-rony project gen-proto
+rony gen-proto
 ```
 
 The above command generates the boiler plate codes for our service.

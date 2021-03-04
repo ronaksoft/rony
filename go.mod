@@ -21,7 +21,6 @@ require (
 	github.com/hashicorp/memberlist v0.2.2
 	github.com/hashicorp/raft v1.2.0
 	github.com/jinzhu/inflection v1.0.0
-	github.com/kataras/muxie v1.1.2
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.54
@@ -30,13 +29,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.4.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
-	github.com/savsgio/gotils v0.0.0-20210217112953-d4a072536008 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.21.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
