@@ -36,9 +36,9 @@ type connInfo struct {
 	clientType []byte
 }
 
-func newMeta() *connInfo {
+func newConnInfo() *connInfo {
 	return &connInfo{
-		kvs: make([]*rony.KeyValue, 8),
+		kvs: make([]*rony.KeyValue, 0, 8),
 	}
 }
 
@@ -63,7 +63,7 @@ func (m *connInfo) SetClientType(clientType []byte) {
 func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 	mt, ok := metaPool.Get().(*connInfo)
 	if !ok {
-		mt = newMeta()
+		mt = newConnInfo()
 	}
 	reqCtx.Request.Header.VisitAll(func(key, value []byte) {
 		switch tools.B2S(key) {
