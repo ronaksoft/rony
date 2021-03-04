@@ -26,8 +26,7 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 
 		buf := pools.Buffer.GetCap(mo.Size(envelope))
 		b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-		buf.SetBytes(&b)
-		err := ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
+		err := ctx.Conn().SendBinary(ctx.StreamID(), b)
 		if err != nil {
 			fmt.Println("Error On SendBinary", err)
 		}

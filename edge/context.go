@@ -372,8 +372,7 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	buf := pools.Buffer.GetCap(mo.Size(tmOut))
 	b, _ := mo.MarshalAppend(*buf.Bytes(), tmOut)
-	buf.SetBytes(&b)
-	n, err := conn.Write(*buf.Bytes())
+	n, err := conn.Write(b)
 	if err != nil {
 		return err
 	}

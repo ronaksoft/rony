@@ -365,9 +365,9 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 	}
 
 	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Bytes.GetCap(mo.Size(tm))
-	b, _ = mo.MarshalAppend(b, tm)
-	_ = ctx.Conn().SendBinary(ctx.streamID, b)
+	b := pools.Buffer.GetCap(mo.Size(tm))
+	bb, _ := mo.MarshalAppend(*b.Bytes(), tm)
+	_ = ctx.Conn().SendBinary(ctx.streamID, bb)
 }
 func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	envelope := rony.PoolMessageEnvelope.Get()
