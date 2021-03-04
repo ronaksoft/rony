@@ -3,7 +3,6 @@ package tcpGateway
 import (
 	"bytes"
 	"github.com/mailru/easygo/netpoll"
-	"github.com/valyala/tcplisten"
 	"io"
 	"net"
 	"os"
@@ -23,7 +22,6 @@ import (
 var (
 	wrapConnPool sync.Pool
 )
-
 
 // filer describes an object that has ability to return os.File.
 type filer interface {
