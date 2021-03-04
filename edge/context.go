@@ -282,7 +282,6 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 		}
 	}
 	ctx.PushMessage(rony.C_Redirect, r)
-
 	rony.PoolRedirect.Put(r)
 }
 func (ctx *RequestCtx) PushRedirectLeader() {
@@ -290,33 +289,15 @@ func (ctx *RequestCtx) PushRedirectLeader() {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
 		return
 	}
-	r := rony.PoolRedirect.Get()
-	r.Reason = rony.RedirectReason_ReplicaMaster
-	r.WaitInSec = 0
-	members := ctx.Cluster().RaftMembers(ctx.Cluster().ReplicaSet())
-	nodeInfos := make([]*rony.Edge, 0, len(members))
-	for _, m := range members {
-		ni := m.Proto(rony.PoolEdge.Get())
-		if ni.Leader {
-			r.Leader = ni
-		} else {
-			r.Followers = append(r.Followers, ni)
-		}
-		nodeInfos = append(nodeInfos, ni)
-	}
-	ctx.PushMessage(rony.C_Redirect, r)
-	for _, p := range nodeInfos {
-		rony.PoolEdge.Put(p)
-	}
-	rony.PoolRedirect.Put(r)
+	ctx.pushRedirect(rony.RedirectReason_ReplicaMaster, ctx.Cluster().ReplicaSet())
 }
 
 func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64, wait time.Duration) {
-	// TODO:: implement it
+	ctx.pushRedirect(rony.RedirectReason_ReplicaSetSession, replicaSet)
 }
 
 func (ctx *RequestCtx) PushRedirectRequest(replicaSet uint64) {
-	// TODO:: implement it
+	ctx.pushRedirect(rony.RedirectReason_ReplicaSetRequest, replicaSet)
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
