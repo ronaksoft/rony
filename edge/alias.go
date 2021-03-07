@@ -24,6 +24,7 @@ type (
 	ClusterMode     = cluster.Mode
 	ProxyHandle     = gateway.ProxyHandle
 	HttpProxy       = tcpGateway.HttpProxy
+	HttpRequest     = gateway.RequestCtx
 )
 
 // Cluster Modes
@@ -59,7 +60,3 @@ const (
 	MethodOptions = "OPTIONS" // RFC 7231, 4.3.7
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
-
-func NewHttProxy() *HttpProxy {
-	return &tcpGateway.HttpProxy{}
-}

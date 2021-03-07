@@ -42,7 +42,7 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
-	HttpProxy     *HttpProxy
+	ProxyEnabled  bool
 }
 
 // Gateway
@@ -97,7 +97,10 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
-		httpProxy:          config.HttpProxy,
+	}
+
+	if config.ProxyEnabled {
+		g.httpProxy = &HttpProxy{}
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -495,4 +498,11 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 		return wsConn
 	}
 	return nil
+}
+
+func (g *Gateway) SetProxy(
+	method, path string,
+	onRequest func(c rony.Conn, ctx *gateway.RequestCtx) []byte, onResponse func(data []byte) ([]byte, map[string]string),
+) {
+	g.httpProxy.Set(method, path, g.httpProxy.CreateHandle(onRequest, onResponse))
 }

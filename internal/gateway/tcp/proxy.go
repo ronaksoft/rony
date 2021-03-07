@@ -29,6 +29,7 @@ func (hp *HttpProxy) CreateHandle(
 		onResponseFunc: onResponse,
 	}
 }
+
 func (hp *HttpProxy) Set(method, path string, p gateway.ProxyHandle) {
 	if hp.routes == nil {
 		hp.routes = make(map[string]*trie.Trie)

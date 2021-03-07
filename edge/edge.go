@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
+	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/tunnel"
@@ -486,6 +487,19 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.
 func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
+}
+
+// SetProxy
+func (edge *Server) SetProxy(
+	method, path string,
+	onRequest func(c rony.Conn, ctx *HttpRequest) []byte, onResponse func(data []byte) ([]byte, map[string]string),
+) {
+	switch gw := edge.gateway.(type) {
+	case *tcpGateway.Gateway:
+		gw.SetProxy(method, path, onRequest, onResponse)
+	default:
+		panic("only works on tcp gateway")
+	}
 }
 
 var (
