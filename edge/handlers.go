@@ -29,18 +29,6 @@ type HandlerOption struct {
 	builtin bool
 }
 
-// func NewHandlerOptions(constructor int64, h ...Handler) *HandlerOption {
-// 	return &HandlerOption{
-// 		constructors: map[int64]struct{}{
-// 			constructor: {},
-// 		},
-// 		handlers:         h,
-// 		gateway:          true,
-// 		tunnel:           true,
-// 		inconsistentRead: false,
-// 	}
-// }
-
 func NewHandlerOptions() *HandlerOption {
 	return &HandlerOption{
 		constructors:     map[int64]struct{}{},

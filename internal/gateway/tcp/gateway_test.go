@@ -6,6 +6,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
@@ -36,7 +37,7 @@ func TestGateway(t *testing.T) {
 	hostPort := "127.0.0.1:8080"
 	httpProxy := edge.NewHttProxy()
 	h1 := httpProxy.CreateHandle(
-		func(conn rony.Conn, date []byte) []byte {
+		func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 			return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
 		},
 		func(data []byte) ([]byte, map[string]string) {

@@ -284,6 +284,7 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 	ctx.PushMessage(rony.C_Redirect, r)
 	rony.PoolRedirect.Put(r)
 }
+
 func (ctx *RequestCtx) PushRedirectLeader() {
 	if leaderID := ctx.Cluster().RaftLeaderID(); leaderID == "" {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
@@ -340,15 +341,21 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 	return ctx.dispatchCtx.cluster
 }
 
-func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+func (ctx *RequestCtx) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
 	startTime := tools.CPUTicks()
 	defer func() {
 		metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
 	}()
-	target := getReplicaMember(ctx.dispatchCtx.cluster, replicaSet, onlyLeader)
-	if target == nil {
-		return ErrMemberNotFound
-	}
+	return tools.Try(attempts, retryWait, func() error {
+		target := ctx.getReplicaMember(ctx.dispatchCtx.cluster, replicaSet, onlyLeader)
+		if target == nil {
+			return ErrMemberNotFound
+		}
+
+		return ctx.sendRemoteCommand(target, req, res)
+	})
+}
+func (ctx *RequestCtx) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
 	if len(target.TunnelAddr()) == 0 {
 		return ErrNoTunnelAddrs
 	}
@@ -393,11 +400,9 @@ func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, re
 
 	// deep copy
 	tmIn.Envelope.DeepCopy(res)
-
 	return nil
 }
-
-func getReplicaMember(cluster cluster.Cluster, replicaSet uint64, onlyLeader bool) (target cluster.Member) {
+func (ctx *RequestCtx) getReplicaMember(cluster cluster.Cluster, replicaSet uint64, onlyLeader bool) (target cluster.Member) {
 	members := cluster.RaftMembers(replicaSet)
 	if len(members) == 0 {
 		return nil
@@ -413,6 +418,10 @@ func getReplicaMember(cluster cluster.Cluster, replicaSet uint64, onlyLeader boo
 		}
 	}
 	return
+}
+
+func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+	return ctx.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
 }
 
 func (ctx *RequestCtx) Log() log.Logger {
