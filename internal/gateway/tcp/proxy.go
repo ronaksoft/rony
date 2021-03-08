@@ -15,19 +15,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// HttpProxy
 type HttpProxy struct {
 	handler gateway.MessageHandler
 	routes  map[string]*trie.Trie
-}
-
-func (hp *HttpProxy) CreateHandle(
-	onRequest func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte,
-	onResponse func(data []byte) ([]byte, map[string]string),
-) gateway.ProxyHandle {
-	return &simpleProxy{
-		onRequestFunc:  onRequest,
-		onResponseFunc: onResponse,
-	}
 }
 
 func (hp *HttpProxy) Set(method, path string, p gateway.ProxyHandle) {
@@ -53,6 +44,7 @@ func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHa
 	return n.Proxy
 }
 
+// simpleProxy
 type simpleProxy struct {
 	onRequestFunc  func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte
 	onResponseFunc func(data []byte) ([]byte, map[string]string)
@@ -64,4 +56,14 @@ func (s *simpleProxy) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte 
 
 func (s *simpleProxy) OnResponse(data []byte) ([]byte, map[string]string) {
 	return s.onResponseFunc(data)
+}
+
+func CreateHandle(
+	onRequest func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte,
+	onResponse func(data []byte) ([]byte, map[string]string),
+) gateway.ProxyHandle {
+	return &simpleProxy{
+		onRequestFunc:  onRequest,
+		onResponseFunc: onResponse,
+	}
 }

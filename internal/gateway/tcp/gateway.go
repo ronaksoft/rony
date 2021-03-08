@@ -501,8 +501,7 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 }
 
 func (g *Gateway) SetProxy(
-	method, path string,
-	onRequest func(c rony.Conn, ctx *gateway.RequestCtx) []byte, onResponse func(data []byte) ([]byte, map[string]string),
+	method, path string, handle gateway.ProxyHandle,
 ) {
-	g.httpProxy.Set(method, path, g.httpProxy.CreateHandle(onRequest, onResponse))
+	g.httpProxy.Set(method, path, handle)
 }

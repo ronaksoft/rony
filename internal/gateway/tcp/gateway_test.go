@@ -47,12 +47,14 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 	gw.SetProxy(edge.MethodGet, "/x/:name",
-		func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
-			return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
-		},
-		func(data []byte) ([]byte, map[string]string) {
-			return data, nil
-		},
+		tcpGateway.CreateHandle(
+			func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
+				return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
+			},
+			func(data []byte) ([]byte, map[string]string) {
+				return data, nil
+			},
+		),
 	)
 	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
 		if len(data) > 0 && data[0] == 'S' {

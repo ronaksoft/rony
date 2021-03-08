@@ -122,6 +122,20 @@ func (edge *Server) GetHandler(constructor int64) *HandlerOption {
 	return edge.handlers[constructor]
 }
 
+// SetHttpProxy
+func (edge *Server) SetHttpProxy(
+	method, path string,
+	onRequest func(c rony.Conn, ctx *HttpRequest) []byte,
+	onResponse func(data []byte) ([]byte, map[string]string),
+) {
+	switch gw := edge.gateway.(type) {
+	case *tcpGateway.Gateway:
+		gw.SetProxy(method, path, tcpGateway.CreateHandle(onRequest, onResponse))
+	default:
+		panic("only works on tcp gateway")
+	}
+}
+
 // Cluster returns a reference to the underlying cluster of the Edge server
 func (edge *Server) Cluster() cluster.Cluster {
 	return edge.cluster
@@ -487,19 +501,6 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.
 func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
-}
-
-// SetProxy
-func (edge *Server) SetProxy(
-	method, path string,
-	onRequest func(c rony.Conn, ctx *HttpRequest) []byte, onResponse func(data []byte) ([]byte, map[string]string),
-) {
-	switch gw := edge.gateway.(type) {
-	case *tcpGateway.Gateway:
-		gw.SetProxy(method, path, onRequest, onResponse)
-	default:
-		panic("only works on tcp gateway")
-	}
 }
 
 var (
