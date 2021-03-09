@@ -165,6 +165,10 @@ func New(config Config) (*Gateway, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// run the watchdog in background
+	go g.watchdog()
+
 	return g, nil
 }
 
