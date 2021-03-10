@@ -75,6 +75,13 @@ func (x *MessageEnvelope) Set(KVs ...*KeyValue) {
 	x.Header = append(x.Header[:0], KVs...)
 }
 
+func (x *MessageContainer) Add(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
+	me := PoolMessageEnvelope.Get()
+	me.Fill(reqID, constructor, p, kvs...)
+	x.Envelopes = append(x.Envelopes, me)
+	x.Length += 1
+}
+
 func (x *RaftCommand) Fill(senderID []byte, e *MessageEnvelope, kvs ...*KeyValue) {
 	x.Sender = append(x.Sender[:0], senderID...)
 	x.Store = append(x.Store[:0], kvs...)
