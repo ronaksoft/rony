@@ -198,36 +198,38 @@ func (g *Gateway) detectAddrs() error {
 	if err != nil {
 		return err
 	}
+	lAddrs := make([]string, 0, 10)
 	if ta.IP.IsUnspecified() {
 		addrs, err := net.InterfaceAddrs()
 		if err == nil {
-			g.addrsMtx.Lock()
 			for _, a := range addrs {
 				switch x := a.(type) {
 				case *net.IPNet:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.IPAddr:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.TCPAddr:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				}
 			}
-			g.addrsMtx.Unlock()
 		}
 	} else {
-		g.addrsMtx.Lock()
-		g.addrs = append(g.addrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
-		g.addrsMtx.Unlock()
+
+		lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
+
 	}
+	g.addrsMtx.Lock()
+	g.addrs = append(g.addrs[:0], lAddrs...)
+	g.addrsMtx.Unlock()
 	return nil
 }
 
