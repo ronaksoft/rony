@@ -36,11 +36,11 @@ func (hp *HttpProxy) handle(conn *httpConn, ctx *gateway.RequestCtx) {
 }
 
 func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHandle {
-	n := hp.routes[method].Search(path, conn)
-	if n == nil {
+	r := hp.routes[method]
+	if r == nil {
 		return nil
 	}
-
+	n := r.Search(path, conn)
 	return n.Proxy
 }
 

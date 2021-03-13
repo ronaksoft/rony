@@ -7,6 +7,7 @@ import (
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/pools"
@@ -157,6 +158,30 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 
 }
 
+func (wc *websocketConn) read(ms []wsutil.Message) ([]wsutil.Message, error) {
+	var err error
+	wc.mtx.Lock()
+	if wc.conn != nil {
+		err = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
+		ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
+	} else {
+		err = ErrConnectionClosed
+	}
+	wc.mtx.Unlock()
+	return ms, err
+}
+
+func (wc *websocketConn) write(opCode ws.OpCode, payload []byte) (err error) {
+	wc.mtx.Lock()
+	if wc.conn != nil {
+		err = wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
+		err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, opCode, payload)
+	} else {
+		err = ErrWriteToClosedConn
+	}
+	wc.mtx.Unlock()
+	return
+}
 func (wc *websocketConn) Get(key string) interface{} {
 	wc.kvLock.Lock()
 	v := wc.kv[key]
@@ -175,7 +200,7 @@ func (wc *websocketConn) ConnID() uint64 {
 }
 
 func (wc *websocketConn) ClientIP() string {
-	return net.IP(wc.clientIP).String()
+	return string(wc.clientIP)
 }
 
 func (wc *websocketConn) SetClientIP(ip []byte) {

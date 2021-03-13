@@ -4,7 +4,6 @@ import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
-	"net"
 )
 
 /*
@@ -45,7 +44,7 @@ func (c *httpConn) ConnID() uint64 {
 }
 
 func (c *httpConn) ClientIP() string {
-	return net.IP(c.clientIP).String()
+	return string(c.clientIP)
 }
 
 func (c *httpConn) SetClientIP(ip []byte) {

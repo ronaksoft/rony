@@ -425,10 +425,8 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 }
 
 func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []wsutil.Message) (err error) {
-
-	_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 	ms = ms[:0]
-	ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
+	ms, err = wc.read(ms)
 	if err != nil {
 		if ce := log.Check(log.DebugLevel, "Error in websocketReadPump"); ce != nil {
 			ce.Write(
@@ -445,8 +443,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 		switch ms[idx].OpCode {
 		case ws.OpPong:
 		case ws.OpPing:
-			_ = wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-			err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, ws.OpPong, ms[idx].Payload)
+			err = wc.write(ws.OpPing, ms[idx].Payload)
 			if err != nil {
 				log.Warn("Error On Write OpPing", zap.Error(err))
 			}
@@ -471,20 +468,10 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 
 func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 	defer g.waitGroupWriters.Done()
-	wr.wc.mtx.Lock()
-	defer wr.wc.mtx.Unlock()
-
-	if wr.wc.closed {
-		return
-	}
-	if wr.wc.conn == nil {
-		return
-	}
 
 	switch wr.opCode {
 	case ws.OpBinary, ws.OpText:
-		_ = wr.wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
-		err = wsutil.WriteMessage(wr.wc.conn, ws.StateServerSide, wr.opCode, wr.payload)
+		err = wr.wc.write(wr.opCode, wr.payload)
 		if err != nil {
 			if ce := log.Check(log.DebugLevel, "Error in websocketWritePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
@@ -492,6 +479,7 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 		} else {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}
+
 	}
 	return
 }

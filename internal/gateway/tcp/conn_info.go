@@ -69,7 +69,7 @@ func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 		switch tools.B2S(key) {
 		case "Cf-Connecting-Ip":
 			mt.SetClientIP(value, false)
-		case "X-Forwarded-For", "X-Real-Ip", "Forwarded":
+		case "X-Forwarded-For", "X-Real-Ip", "Forwarded", "X-Forwarded":
 			mt.SetClientIP(value, true)
 		case "X-Client-Type":
 			mt.SetClientType(value)
@@ -80,6 +80,7 @@ func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 		}
 	})
 	mt.SetClientIP(tools.S2B(reqCtx.RemoteIP().To4().String()), true)
+
 
 	return mt
 }

@@ -65,6 +65,9 @@ func TestGateway(t *testing.T) {
 			fmt.Println("MessageHandler:", err.Error())
 		}
 	}
+	gw.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {
+		// fmt.Println(c.ClientIP())
+	}
 
 	gw.Start()
 	defer gw.Shutdown()
