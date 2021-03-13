@@ -501,6 +501,9 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.
 func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
+	if edge.gateway == nil {
+		return nil
+	}
 	return edge.gateway.GetConn(connID)
 }
 
