@@ -1,16 +1,12 @@
 package edge
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
-	"net"
 	"reflect"
 	"sync"
 	"time"
@@ -48,14 +44,13 @@ func (c MessageKind) String() string {
 
 // DispatchCtx
 type DispatchCtx struct {
-	streamID          int64
-	serverID          []byte
-	conn              rony.Conn
-	req               *rony.MessageEnvelope
-	cluster           cluster.Cluster
-	gatewayDispatcher Dispatcher
-	kind              MessageKind
-	buf               *tools.LinkedList
+	edge     *Server
+	streamID int64
+	serverID []byte
+	conn     rony.Conn
+	req      *rony.MessageEnvelope
+	kind     MessageKind
+	buf      *tools.LinkedList
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -63,11 +58,10 @@ type DispatchCtx struct {
 
 func newDispatchCtx(edge *Server) *DispatchCtx {
 	return &DispatchCtx{
-		cluster:           edge.cluster,
-		gatewayDispatcher: edge.gatewayDispatcher,
-		req:               &rony.MessageEnvelope{},
-		kv:                make(map[string]interface{}, 3),
-		buf:               tools.NewLinkedList(),
+		edge: edge,
+		req:  &rony.MessageEnvelope{},
+		kv:   make(map[string]interface{}, 3),
+		buf:  tools.NewLinkedList(),
 	}
 }
 
@@ -192,15 +186,17 @@ func (ctx *DispatchCtx) BufferSize() int32 {
 // RequestCtx
 type RequestCtx struct {
 	dispatchCtx *DispatchCtx
+	edge        *Server
 	reqID       uint64
 	nextChan    chan struct{}
 	quickReturn bool
 	stop        bool
 }
 
-func newRequestCtx() *RequestCtx {
+func newRequestCtx(edge *Server) *RequestCtx {
 	return &RequestCtx{
 		nextChan: make(chan struct{}, 1),
+		edge:     edge,
 	}
 }
 
@@ -316,7 +312,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, pr
 
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
-		ctx.dispatchCtx.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
 	case TunnelMessage:
 		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}
@@ -338,90 +334,15 @@ func (ctx *RequestCtx) PushCustomError(code, item string, desc string) {
 }
 
 func (ctx *RequestCtx) Cluster() cluster.Cluster {
-	return ctx.dispatchCtx.cluster
+	return ctx.dispatchCtx.edge.cluster
 }
 
 func (ctx *RequestCtx) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	startTime := tools.CPUTicks()
-	defer func() {
-		metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
-	}()
-	return tools.Try(attempts, retryWait, func() error {
-		target := ctx.getReplicaMember(ctx.dispatchCtx.cluster, replicaSet, onlyLeader)
-		if target == nil {
-			return ErrMemberNotFound
-		}
-
-		return ctx.sendRemoteCommand(target, req, res)
-	})
-}
-func (ctx *RequestCtx) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
-	if len(target.TunnelAddr()) == 0 {
-		return ErrNoTunnelAddrs
-	}
-
-	conn, err := net.Dial("udp", target.TunnelAddr()[0])
-	if err != nil {
-		return err
-	}
-
-	// Get a rony.TunnelMessage from pool and put it back into the pool when we are done
-	tmOut := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(tmOut)
-	tmIn := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(tmIn)
-	tmOut.SenderID = ctx.dispatchCtx.serverID
-	tmOut.SenderReplicaSet = ctx.dispatchCtx.cluster.ReplicaSet()
-	tmOut.Envelope = rony.PoolMessageEnvelope.Get()
-	req.DeepCopy(tmOut.Envelope)
-
-	// Marshal and send over the wire
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	buf := pools.Buffer.GetCap(mo.Size(tmOut))
-	b, _ := mo.MarshalAppend(*buf.Bytes(), tmOut)
-	n, err := conn.Write(b)
-	if err != nil {
-		return err
-	}
-	pools.Buffer.Put(buf)
-
-	// Wait for response and unmarshal it
-	buf = pools.Buffer.GetLen(4096)
-	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
-	n, err = bufio.NewReader(conn).Read(*buf.Bytes())
-	if err != nil || n == 0 {
-		return err
-	}
-	err = tmIn.Unmarshal((*buf.Bytes())[:n])
-	if err != nil {
-		return err
-	}
-	pools.Buffer.Put(buf)
-
-	// deep copy
-	tmIn.Envelope.DeepCopy(res)
-	return nil
-}
-func (ctx *RequestCtx) getReplicaMember(cluster cluster.Cluster, replicaSet uint64, onlyLeader bool) (target cluster.Member) {
-	members := cluster.RaftMembers(replicaSet)
-	if len(members) == 0 {
-		return nil
-	}
-	for idx := range members {
-		if onlyLeader {
-			if members[idx].RaftState() == rony.RaftState_Leader {
-				target = members[idx]
-				break
-			}
-		} else {
-			target = members[idx]
-		}
-	}
-	return
+	return ctx.edge.TryExecuteRemote(attempts, retryWait, replicaSet, onlyLeader, req, res)
 }
 
 func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	return ctx.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
+	return ctx.edge.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
 }
 
 func (ctx *RequestCtx) Log() log.Logger {
@@ -473,8 +394,8 @@ func (ctx *RequestCtx) FindReplicaSet(pageID uint32) (uint64, error) {
 }
 
 func (ctx *RequestCtx) LocalReplicaSet() uint64 {
-	if ctx.dispatchCtx.cluster == nil {
+	if ctx.edge.cluster == nil {
 		return 0
 	}
-	return ctx.dispatchCtx.cluster.ReplicaSet()
+	return ctx.edge.cluster.ReplicaSet()
 }

@@ -19,7 +19,7 @@ var requestCtxPool = sync.Pool{}
 func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	var ctx *RequestCtx
 	if v := requestCtxPool.Get(); v == nil {
-		ctx = newRequestCtx()
+		ctx = newRequestCtx(dispatchCtx.edge)
 	} else {
 		ctx = v.(*RequestCtx)
 	}

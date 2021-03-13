@@ -81,7 +81,6 @@ func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 	})
 	mt.SetClientIP(tools.S2B(reqCtx.RemoteIP().To4().String()), true)
 
-
 	return mt
 }
 

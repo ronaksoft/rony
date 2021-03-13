@@ -1,7 +1,7 @@
 package edge
 
 import (
-	"errors"
+	"bufio"
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
@@ -16,6 +16,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"net"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -503,12 +504,81 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
 }
 
-var (
-	ErrClusterNotSet            = errors.New("cluster is not set")
-	ErrGatewayNotSet            = errors.New("gateway is not set")
-	ErrTunnelNotSet             = errors.New("tunnel is not set")
-	ErrUnexpectedTunnelResponse = errors.New("unexpected tunnel response")
-	ErrEmptyMemberList          = errors.New("member list is empty")
-	ErrMemberNotFound           = errors.New("member not found")
-	ErrNoTunnelAddrs            = errors.New("tunnel address does not found")
-)
+func (edge *Server) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+	return edge.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
+}
+func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+	startTime := tools.CPUTicks()
+	err := tools.Try(attempts, retryWait, func() error {
+		target := edge.getReplicaMember(replicaSet, onlyLeader)
+		if target == nil {
+			return ErrMemberNotFound
+		}
+
+		return edge.sendRemoteCommand(target, req, res)
+	})
+	metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+	return err
+}
+func (edge *Server) getReplicaMember(replicaSet uint64, onlyLeader bool) (target cluster.Member) {
+	members := edge.cluster.RaftMembers(replicaSet)
+	if len(members) == 0 {
+		return nil
+	}
+	for idx := range members {
+		if onlyLeader {
+			if members[idx].RaftState() == rony.RaftState_Leader {
+				target = members[idx]
+				break
+			}
+		} else {
+			target = members[idx]
+		}
+	}
+	return
+}
+func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
+	if len(target.TunnelAddr()) == 0 {
+		return ErrNoTunnelAddrs
+	}
+
+	conn, err := net.Dial("udp", target.TunnelAddr()[0])
+	if err != nil {
+		return err
+	}
+
+	// Get a rony.TunnelMessage from pool and put it back into the pool when we are done
+	tmOut := rony.PoolTunnelMessage.Get()
+	defer rony.PoolTunnelMessage.Put(tmOut)
+	tmIn := rony.PoolTunnelMessage.Get()
+	defer rony.PoolTunnelMessage.Put(tmIn)
+	tmOut.Fill(edge.serverID, edge.cluster.ReplicaSet(), req)
+
+	// Marshal and send over the wire
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	buf := pools.Buffer.GetCap(mo.Size(tmOut))
+	b, _ := mo.MarshalAppend(*buf.Bytes(), tmOut)
+	n, err := conn.Write(b)
+	if err != nil {
+		return err
+	}
+	pools.Buffer.Put(buf)
+
+	// Wait for response and unmarshal it
+	buf = pools.Buffer.GetLen(4096)
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
+	n, err = bufio.NewReader(conn).Read(*buf.Bytes())
+	if err != nil || n == 0 {
+		return err
+	}
+	err = tmIn.Unmarshal((*buf.Bytes())[:n])
+	if err != nil {
+		return err
+	}
+	pools.Buffer.Put(buf)
+
+	// deep copy
+	tmIn.Envelope.DeepCopy(res)
+	return nil
+}
+
