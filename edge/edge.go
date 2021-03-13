@@ -507,6 +507,7 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
 }
 
+// ExecuteRemote sends and receives a request through the Tunnel interface of the receiver Edge node.
 func (edge *Server) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
 	return edge.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
 }

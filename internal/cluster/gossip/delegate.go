@@ -27,6 +27,9 @@ func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.addMember(cm)
 
+	if d.c.raft == nil {
+		return
+	}
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
@@ -49,6 +52,9 @@ func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.addMember(cm)
+	if d.c.raft == nil {
+		return
+	}
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
@@ -71,6 +77,9 @@ func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 	cm := convertMember(n)
 	d.c.addMember(cm)
+	if d.c.raft == nil {
+		return nil
+	}
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err == nil {
@@ -119,6 +128,9 @@ func joinRaft(c *Cluster, nodeID, addr string) error {
 func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 	cm := convertMember(n)
 	d.c.removeMember(cm)
+	if d.c.raft == nil {
+		return
+	}
 	if cm.replicaSet == d.c.cfg.ReplicaSet {
 		_ = leaveRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 	}
