@@ -18,7 +18,7 @@ type poolGetNodes struct {
 func (p *poolGetNodes) Get() *GetNodes {
 	x, ok := p.pool.Get().(*GetNodes)
 	if !ok {
-		return &GetNodes{}
+		x = &GetNodes{}
 	}
 	return x
 }
@@ -54,7 +54,7 @@ type poolGetPage struct {
 func (p *poolGetPage) Get() *GetPage {
 	x, ok := p.pool.Get().(*GetPage)
 	if !ok {
-		return &GetPage{}
+		x = &GetPage{}
 	}
 	return x
 }
@@ -92,7 +92,7 @@ type poolTunnelMessage struct {
 func (p *poolTunnelMessage) Get() *TunnelMessage {
 	x, ok := p.pool.Get().(*TunnelMessage)
 	if !ok {
-		return &TunnelMessage{}
+		x = &TunnelMessage{}
 	}
 	return x
 }
@@ -125,8 +125,12 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 		}
 	}
 	if x.Envelope != nil {
-		z.Envelope = PoolMessageEnvelope.Get()
+		if z.Envelope == nil {
+			z.Envelope = PoolMessageEnvelope.Get()
+		}
 		x.Envelope.DeepCopy(z.Envelope)
+	} else {
+		z.Envelope = nil
 	}
 }
 
@@ -147,7 +151,7 @@ type poolRaftCommand struct {
 func (p *poolRaftCommand) Get() *RaftCommand {
 	x, ok := p.pool.Get().(*RaftCommand)
 	if !ok {
-		return &RaftCommand{}
+		x = &RaftCommand{}
 	}
 	return x
 }
@@ -178,8 +182,12 @@ func (x *RaftCommand) DeepCopy(z *RaftCommand) {
 		}
 	}
 	if x.Envelope != nil {
-		z.Envelope = PoolMessageEnvelope.Get()
+		if z.Envelope == nil {
+			z.Envelope = PoolMessageEnvelope.Get()
+		}
 		x.Envelope.DeepCopy(z.Envelope)
+	} else {
+		z.Envelope = nil
 	}
 }
 
@@ -200,7 +208,7 @@ type poolEdgeNode struct {
 func (p *poolEdgeNode) Get() *EdgeNode {
 	x, ok := p.pool.Get().(*EdgeNode)
 	if !ok {
-		return &EdgeNode{}
+		x = &EdgeNode{}
 	}
 	return x
 }
@@ -246,7 +254,7 @@ type poolPage struct {
 func (p *poolPage) Get() *Page {
 	x, ok := p.pool.Get().(*Page)
 	if !ok {
-		return &Page{}
+		x = &Page{}
 	}
 	return x
 }

@@ -19,7 +19,7 @@ type poolSingle1 struct {
 func (p *poolSingle1) Get() *Single1 {
 	x, ok := p.pool.Get().(*Single1)
 	if !ok {
-		return &Single1{}
+		x = &Single1{}
 	}
 	return x
 }
@@ -69,7 +69,7 @@ type poolSingle2 struct {
 func (p *poolSingle2) Get() *Single2 {
 	x, ok := p.pool.Get().(*Single2)
 	if !ok {
-		return &Single2{}
+		x = &Single2{}
 	}
 	return x
 }

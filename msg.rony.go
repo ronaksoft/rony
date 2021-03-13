@@ -17,7 +17,7 @@ type poolMessageEnvelope struct {
 func (p *poolMessageEnvelope) Get() *MessageEnvelope {
 	x, ok := p.pool.Get().(*MessageEnvelope)
 	if !ok {
-		return &MessageEnvelope{}
+		x = &MessageEnvelope{}
 	}
 	return x
 }
@@ -70,7 +70,7 @@ type poolKeyValue struct {
 func (p *poolKeyValue) Get() *KeyValue {
 	x, ok := p.pool.Get().(*KeyValue)
 	if !ok {
-		return &KeyValue{}
+		x = &KeyValue{}
 	}
 	return x
 }
@@ -108,7 +108,7 @@ type poolMessageContainer struct {
 func (p *poolMessageContainer) Get() *MessageContainer {
 	x, ok := p.pool.Get().(*MessageContainer)
 	if !ok {
-		return &MessageContainer{}
+		x = &MessageContainer{}
 	}
 	return x
 }
@@ -155,7 +155,7 @@ type poolError struct {
 func (p *poolError) Get() *Error {
 	x, ok := p.pool.Get().(*Error)
 	if !ok {
-		return &Error{}
+		x = &Error{}
 	}
 	return x
 }
@@ -195,7 +195,7 @@ type poolRedirect struct {
 func (p *poolRedirect) Get() *Redirect {
 	x, ok := p.pool.Get().(*Redirect)
 	if !ok {
-		return &Redirect{}
+		x = &Redirect{}
 	}
 	return x
 }
@@ -220,8 +220,12 @@ var PoolRedirect = poolRedirect{}
 func (x *Redirect) DeepCopy(z *Redirect) {
 	z.Reason = x.Reason
 	if x.Leader != nil {
-		z.Leader = PoolEdge.Get()
+		if z.Leader == nil {
+			z.Leader = PoolEdge.Get()
+		}
 		x.Leader.DeepCopy(z.Leader)
+	} else {
+		z.Leader = nil
 	}
 	for idx := range x.Followers {
 		if x.Followers[idx] != nil {
@@ -250,7 +254,7 @@ type poolEdge struct {
 func (p *poolEdge) Get() *Edge {
 	x, ok := p.pool.Get().(*Edge)
 	if !ok {
-		return &Edge{}
+		x = &Edge{}
 	}
 	return x
 }
@@ -292,7 +296,7 @@ type poolEdges struct {
 func (p *poolEdges) Get() *Edges {
 	x, ok := p.pool.Get().(*Edges)
 	if !ok {
-		return &Edges{}
+		x = &Edges{}
 	}
 	return x
 }

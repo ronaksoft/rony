@@ -78,7 +78,7 @@ func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
 	g.g.P(fmt.Sprintf("func (p *pool%s) Get() *%s {", messageName, messageName))
 	g.g.P(fmt.Sprintf("x, ok := p.pool.Get().(*%s)", messageName))
 	g.g.P("if !ok {")
-	g.g.P(fmt.Sprintf("return &%s{}", messageName))
+	g.g.P(fmt.Sprintf("x = &%s{}", messageName))
 	g.g.P("}") // end of if clause
 	g.g.P("return x")
 	g.g.P("}") // end of func Get()
@@ -169,13 +169,17 @@ func (g *Generator) genDeepCopy(m *protogen.Message) {
 			case protoreflect.MessageKind:
 				// If it is message we check if is nil then we leave it
 				// If it is from same package use Pool
-				g.g.P(fmt.Sprintf("if x.%s != nil {", ftName))
+				g.g.P("if x.", ftName, " != nil {")
+				g.g.P("if z.", ftName, " == nil {")
 				if ftPkg == "" {
 					g.g.P("z.", ftName, " = Pool", ftType, ".Get()")
 				} else {
 					g.g.P("z.", ftName, " = ", ftPkg, ".Pool", ftType, ".Get()")
 				}
+				g.g.P("}")
 				g.g.P("x.", ftName, ".DeepCopy(z.", ftName, ")")
+				g.g.P("} else {")
+				g.g.P("z.", ftName, "= nil")
 				g.g.P("}")
 			default:
 				g.g.P(fmt.Sprintf("z.%s = x.%s", ftName, ftName))

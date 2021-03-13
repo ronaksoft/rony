@@ -19,7 +19,7 @@ type poolModel1 struct {
 func (p *poolModel1) Get() *Model1 {
 	x, ok := p.pool.Get().(*Model1)
 	if !ok {
-		return &Model1{}
+		x = &Model1{}
 	}
 	return x
 }
@@ -69,7 +69,7 @@ type poolModel2 struct {
 func (p *poolModel2) Get() *Model2 {
 	x, ok := p.pool.Get().(*Model2)
 	if !ok {
-		return &Model2{}
+		x = &Model2{}
 	}
 	return x
 }

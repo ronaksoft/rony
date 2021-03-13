@@ -581,4 +581,3 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	tmIn.Envelope.DeepCopy(res)
 	return nil
 }
-

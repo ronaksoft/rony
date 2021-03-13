@@ -23,7 +23,7 @@ type poolEchoRequest struct {
 func (p *poolEchoRequest) Get() *EchoRequest {
 	x, ok := p.pool.Get().(*EchoRequest)
 	if !ok {
-		return &EchoRequest{}
+		x = &EchoRequest{}
 	}
 	return x
 }
@@ -67,7 +67,7 @@ type poolEchoResponse struct {
 func (p *poolEchoResponse) Get() *EchoResponse {
 	x, ok := p.pool.Get().(*EchoResponse)
 	if !ok {
-		return &EchoResponse{}
+		x = &EchoResponse{}
 	}
 	return x
 }
@@ -115,7 +115,7 @@ type poolMessage1 struct {
 func (p *poolMessage1) Get() *Message1 {
 	x, ok := p.pool.Get().(*Message1)
 	if !ok {
-		return &Message1{}
+		x = &Message1{}
 	}
 	return x
 }
@@ -141,8 +141,12 @@ func (x *Message1) DeepCopy(z *Message1) {
 	z.Param1 = x.Param1
 	z.Param2 = x.Param2
 	if x.M2 != nil {
-		z.M2 = PoolMessage2.Get()
+		if z.M2 == nil {
+			z.M2 = PoolMessage2.Get()
+		}
 		x.M2.DeepCopy(z.M2)
+	} else {
+		z.M2 = nil
 	}
 	for idx := range x.M2S {
 		if x.M2S[idx] != nil {
@@ -174,7 +178,7 @@ type poolMessage2 struct {
 func (p *poolMessage2) Get() *Message2 {
 	x, ok := p.pool.Get().(*Message2)
 	if !ok {
-		return &Message2{}
+		x = &Message2{}
 	}
 	return x
 }
@@ -198,8 +202,12 @@ func (x *Message2) DeepCopy(z *Message2) {
 	z.P2 = append(z.P2[:0], x.P2...)
 	z.P3 = append(z.P3[:0], x.P3...)
 	if x.M1 != nil {
-		z.M1 = PoolMessage1.Get()
+		if z.M1 == nil {
+			z.M1 = PoolMessage1.Get()
+		}
 		x.M1.DeepCopy(z.M1)
+	} else {
+		z.M1 = nil
 	}
 }
 
