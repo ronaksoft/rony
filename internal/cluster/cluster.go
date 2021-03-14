@@ -3,6 +3,7 @@ package cluster
 import (
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
+	"net"
 )
 
 /*
@@ -53,5 +54,6 @@ type Member interface {
 	ReplicaSet() uint64
 	GatewayAddr() []string
 	TunnelAddr() []string
+	TunnelConn() (net.Conn, error)
 	RaftPort() int
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"net"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -542,11 +541,7 @@ func (edge *Server) getReplicaMember(replicaSet uint64, onlyLeader bool) (target
 	return
 }
 func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
-	if len(target.TunnelAddr()) == 0 {
-		return ErrNoTunnelAddrs
-	}
-
-	conn, err := net.Dial("udp", target.TunnelAddr()[0])
+	conn, err := target.TunnelConn()
 	if err != nil {
 		return err
 	}

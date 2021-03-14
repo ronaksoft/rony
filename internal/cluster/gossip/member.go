@@ -2,9 +2,11 @@ package gossipCluster
 
 import (
 	"github.com/hashicorp/memberlist"
+	"github.com/pkg/errors"
 	"github.com/ronaksoft/rony"
 	"google.golang.org/protobuf/proto"
 	"net"
+	"sync"
 )
 
 /*
@@ -18,6 +20,8 @@ import (
 
 // Member
 type Member struct {
+	mtx         sync.RWMutex
+	idx         int
 	serverID    string
 	replicaSet  uint64
 	ShardRange  [2]uint32
@@ -75,6 +79,25 @@ func (m *Member) Merge(en *rony.EdgeNode) {
 
 }
 
+func (m *Member) TunnelConn() (net.Conn, error) {
+	if len(m.tunnelAddr) == 0 {
+		return nil, ErrNoTunnelAddrs
+	}
+
+	idx := m.idx
+	for {
+		conn, err := net.Dial("udp", m.tunnelAddr[idx])
+		if err == nil {
+			m.idx = idx
+			return conn, nil
+		}
+		idx = (idx + 1) % len(m.tunnelAddr)
+		if idx == m.idx {
+			return nil, err
+		}
+	}
+}
+
 func newMember(sm *memberlist.Node) (*Member, error) {
 	en := rony.PoolEdgeNode.Get()
 	defer rony.PoolEdgeNode.Put(en)
@@ -97,3 +120,7 @@ func newMember(sm *memberlist.Node) (*Member, error) {
 func extractNode(n *memberlist.Node, en *rony.EdgeNode) error {
 	return proto.UnmarshalOptions{}.Unmarshal(n.Meta, en)
 }
+
+var (
+	ErrNoTunnelAddrs = errors.New("tunnel address does not found")
+)
