@@ -329,9 +329,10 @@ func (g *Gateway) TotalConnections() int {
 
 func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
+	// TODO:: let developer choose
 	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	reqCtx.Response.Header.Set("Access-Control-Request-Method", "POST, GET, OPTIONS")
-	reqCtx.Response.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+	reqCtx.Response.Header.Set("Access-Control-Request-Method", "*")
+	reqCtx.Response.Header.Set("Access-Control-Allow-Headers", "*")
 	if reqCtx.Request.Header.IsOptions() {
 		reqCtx.SetStatusCode(http.StatusOK)
 		reqCtx.SetConnectionClose()
