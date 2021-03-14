@@ -41,6 +41,9 @@ func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHa
 		return nil
 	}
 	n := r.Search(path, conn)
+	if n == nil {
+		return nil
+	}
 	return n.Proxy
 }
 
