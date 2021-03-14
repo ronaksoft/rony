@@ -184,43 +184,45 @@ func (c *Cluster) addMember(m *Member) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	if m == nil {
-		return
-	}
-	if len(m.serverID) == 0 {
-		return
-	}
-
+	// set the raft leader if the newly added member is the leader and is in our replica set
 	if m.replicaSet == c.cfg.ReplicaSet && m.raftState == rony.RaftState_Leader {
 		c.replicaLeaderID = m.serverID
 	}
+
+	// add new member to the cluster
 	c.clusterMembers[m.serverID] = m
 	if c.replicaMembers[m.replicaSet] == nil {
-		c.replicaMembers[m.replicaSet] = make(map[string]*Member, 100)
+		c.replicaMembers[m.replicaSet] = make(map[string]*Member, 5)
 	}
 	c.replicaMembers[m.replicaSet][m.serverID] = m
 }
 
-func (c *Cluster) removeMember(m *Member) {
+func (c *Cluster) updateMember(en *rony.EdgeNode) (*Member, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
+	m := c.clusterMembers[tools.B2S(en.ServerID)]
 	if m == nil {
-		return
+		return nil, fmt.Errorf("update a node not exists: %s", tools.B2S(en.ServerID))
 	}
 
-	if len(m.serverID) == 0 {
-		return
-	}
+	m.Merge(en)
+	return m, nil
+}
 
-	if m.serverID == c.replicaLeaderID {
+func (c *Cluster) removeMember(en *rony.EdgeNode) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	serverID := tools.B2S(en.ServerID)
+	if serverID == c.replicaLeaderID {
 		c.replicaLeaderID = ""
 	}
 
-	delete(c.clusterMembers, m.serverID)
+	delete(c.clusterMembers, serverID)
 
-	if c.replicaMembers[m.replicaSet] != nil {
-		delete(c.replicaMembers[m.replicaSet], m.serverID)
+	if c.replicaMembers[en.ReplicaSet] != nil {
+		delete(c.replicaMembers[en.ReplicaSet], serverID)
 	}
 }
 
@@ -308,17 +310,25 @@ func (c *Cluster) RaftEnabled() bool {
 }
 
 func (c *Cluster) RaftState() raft.RaftState {
-	if c.cfg.Mode != cluster.MultiReplica {
+	switch c.cfg.Mode {
+	case cluster.SingleReplica:
 		return raft.Leader
+	case cluster.MultiReplica:
+		return c.raft.State()
+	default:
+		panic("unsupported replica mode")
 	}
-	return c.raft.State()
 }
 
 func (c *Cluster) RaftApply(cmd []byte) raft.ApplyFuture {
-	if c.cfg.Mode != cluster.MultiReplica {
+	switch c.cfg.Mode {
+	case cluster.SingleReplica:
 		return nil
+	case cluster.MultiReplica:
+		return c.raft.Apply(cmd, raftApplyTimeout)
+	default:
+		panic("unsupported replica mode")
 	}
-	return c.raft.Apply(cmd, raftApplyTimeout)
 }
 
 func (c *Cluster) RaftMembers(replicaSet uint64) []cluster.Member {

@@ -3,9 +3,6 @@ package gossipCluster
 import (
 	"github.com/hashicorp/memberlist"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/tools"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"net"
 )
@@ -30,7 +27,6 @@ type Member struct {
 	ClusterPort uint16
 	raftPort    int
 	raftState   rony.RaftState
-	node        *memberlist.Node
 }
 
 func (m *Member) ServerID() string {
@@ -68,26 +64,36 @@ func (m *Member) Proto(p *rony.Edge) *rony.Edge {
 	return p
 }
 
-func convertMember(sm *memberlist.Node) *Member {
-	edgeNode := &rony.EdgeNode{}
-	err := proto.UnmarshalOptions{}.Unmarshal(sm.Meta, edgeNode)
+func (m *Member) Merge(en *rony.EdgeNode) {
+	m.replicaSet = en.GetReplicaSet()
+	m.gatewayAddr = append(m.gatewayAddr[:0], en.GetGatewayAddr()...)
+	m.tunnelAddr = append(m.tunnelAddr[:0], en.GetTunnelAddr()...)
+
+	// merge raft
+	m.raftPort = int(en.GetRaftPort())
+	m.raftState = en.GetRaftState()
+
+}
+
+func newMember(sm *memberlist.Node) (*Member, error) {
+	en := rony.PoolEdgeNode.Get()
+	defer rony.PoolEdgeNode.Put(en)
+
+	err := extractNode(sm, en)
 	if err != nil {
-		log.Warn("Error On ConvertMember",
-			zap.Error(err),
-			zap.Int("Len", len(sm.Meta)),
-		)
-		return nil
+		return nil, err
 	}
 
-	return &Member{
-		serverID:    tools.ByteToStr(edgeNode.ServerID),
-		replicaSet:  edgeNode.GetReplicaSet(),
-		gatewayAddr: edgeNode.GatewayAddr,
-		tunnelAddr:  edgeNode.TunnelAddr,
-		raftPort:    int(edgeNode.GetRaftPort()),
-		raftState:   edgeNode.GetRaftState(),
+	m := &Member{
+		serverID:    string(en.ServerID),
 		ClusterAddr: sm.Addr,
 		ClusterPort: sm.Port,
-		node:        sm,
 	}
+	m.Merge(en)
+
+	return m, nil
+}
+
+func extractNode(n *memberlist.Node, en *rony.EdgeNode) error {
+	return proto.UnmarshalOptions{}.Unmarshal(n.Meta, en)
 }

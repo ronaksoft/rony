@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -24,7 +25,11 @@ type clusterDelegate struct {
 }
 
 func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
-	cm := convertMember(n)
+	cm, err := newMember(n)
+	if err != nil {
+		log.Warn("Error On Cluster Node Add", zap.Error(err))
+		return
+	}
 	d.c.addMember(cm)
 
 	if d.c.raft == nil {
@@ -50,8 +55,20 @@ func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 }
 
 func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
-	cm := convertMember(n)
-	d.c.addMember(cm)
+	en := rony.PoolEdgeNode.Get()
+	defer rony.PoolEdgeNode.Put(en)
+	err := extractNode(n, en)
+	if err != nil {
+		log.Warn("Error On Cluster Node Update", zap.Error(err))
+		return
+	}
+
+	cm, err := d.c.updateMember(en)
+	if err != nil {
+		log.Warn("Error On Cluster Node Update", zap.Error(err))
+		return
+	}
+
 	if d.c.raft == nil {
 		return
 	}
@@ -75,22 +92,6 @@ func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
 }
 
 func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
-	cm := convertMember(n)
-	d.c.addMember(cm)
-	if d.c.raft == nil {
-		return nil
-	}
-	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
-		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
-		if err == nil {
-			if ce := log.Check(log.DebugLevel, "Join Raft (NodeAlive)"); ce != nil {
-				ce.Write(
-					zap.ByteString("This", d.c.localServerID),
-					zap.String("NodeID", cm.serverID),
-				)
-			}
-		}
-	}
 	return nil
 }
 
@@ -126,13 +127,20 @@ func joinRaft(c *Cluster, nodeID, addr string) error {
 }
 
 func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
-	cm := convertMember(n)
-	d.c.removeMember(cm)
-	if d.c.raft == nil {
+	en := rony.PoolEdgeNode.Get()
+	defer rony.PoolEdgeNode.Put(en)
+	err := extractNode(n, en)
+	if err != nil {
+		log.Warn("Error On Cluster Node Update", zap.Error(err))
 		return
 	}
-	if cm.replicaSet == d.c.cfg.ReplicaSet {
-		_ = leaveRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
+
+	d.c.removeMember(en)
+
+	if d.c.raft != nil && en.ReplicaSet == d.c.cfg.ReplicaSet {
+		serverID := tools.B2S(en.ServerID)
+		addr := fmt.Sprintf("%s:%d", n.Addr.String(), en.RaftPort)
+		_ = leaveRaft(d.c, serverID, addr)
 	}
 }
 
