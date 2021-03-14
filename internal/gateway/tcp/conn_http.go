@@ -59,7 +59,7 @@ func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
 	if c.proxy != nil {
 		d, hdr := c.proxy.OnResponse(data)
 		for k, v := range hdr {
-			c.ctx.Response.Header.Set(k, v)
+			c.ctx.Response.Header.Add(k, v)
 		}
 		_, err = c.ctx.Write(d)
 	} else {
