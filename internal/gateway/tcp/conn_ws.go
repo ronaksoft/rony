@@ -118,7 +118,9 @@ func (wc *websocketConn) release(reason int) {
 	if !wc.closed {
 		g.CloseHandler(wc)
 		wc.closed = true
+		wc.conn = nil
 	}
+
 	wc.mtx.Unlock()
 	releaseWebsocketConn(wc)
 }
