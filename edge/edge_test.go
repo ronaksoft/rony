@@ -53,3 +53,11 @@ func TestConcurrent(t *testing.T) {
 
 	})
 }
+
+func BenchmarkEdge(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+
+	})
+}

@@ -114,6 +114,24 @@ func GetIntSlice(key string) []int {
 	return _Viper.GetIntSlice(key)
 }
 
+func GetInt32Slice(key string) []int32 {
+	ints := _Viper.GetIntSlice(key)
+	int32s := make([]int32, 0, len(ints))
+	for _, i := range ints {
+		int32s = append(int32s, int32(i))
+	}
+	return int32s
+}
+
+func GetInt64Slice(key string) []int64 {
+	ints := _Viper.GetIntSlice(key)
+	int64s := make([]int64, 0, len(ints))
+	for _, i := range ints {
+		int64s = append(int64s, int64(i))
+	}
+	return int64s
+}
+
 func GetStringSlice(key string) []string {
 	return _Viper.GetStringSlice(key)
 }

@@ -51,7 +51,6 @@ func BenchmarkEdge(b *testing.B) {
 	benches := map[string]func(*testing.B){
 		"Http-Client":            benchHttpClient,
 		"Http-Single-EdgeClient": benchHttpSingleEdgeClient,
-		// "Http-Parallel-EdgeClient": benchHttpMultiEdgeClient,
 		// "SingleWebsocket": benchSingleWebsocketClient,
 		// "MultiWebsocket":  benchMultiWebsocketClient,
 	}
@@ -135,39 +134,6 @@ func benchHttpSingleEdgeClient(b *testing.B) {
 	_ = edgeClient.Close()
 
 }
-func benchHttpMultiEdgeClient(b *testing.B) {
-	echoRequest := service.EchoRequest{
-		Int:       100,
-		Timestamp: 32809238402,
-	}
-	b.ResetTimer()
-	b.ReportAllocs()
-	// b.SetParallelism(5)
-	b.RunParallel(func(p *testing.PB) {
-		edgeClient := edgec.NewHttp(edgec.HttpConfig{
-			Name:            "Benchmark",
-			SeedHostPort:    "127.0.0.1:8080",
-			ReadTimeout:     time.Second,
-			WriteTimeout:    time.Second,
-			ContextTimeout:  time.Second,
-			RequestMaxRetry: 10,
-		})
-		err := edgeClient.Start()
-		if err != nil {
-			b.Fatal(err)
-		}
-		for p.Next() {
-			req := rony.PoolMessageEnvelope.Get()
-			res := rony.PoolMessageEnvelope.Get()
-			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
-			_ = edgeClient.Send(req, res, true)
-			rony.PoolMessageEnvelope.Put(req)
-			rony.PoolMessageEnvelope.Put(res)
-		}
-		_ = edgeClient.Close()
-	})
-}
-
 func benchMultiWebsocketClient(b *testing.B) {
 	echoRequest := service.EchoRequest{
 		Int:       100,
