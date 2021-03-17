@@ -110,7 +110,7 @@ func (bk *Allocator) Marshal(m proto.Message) []byte {
 
 // FillWith acquired a byte slice with the capacity of 'v' and append/copy v into it.
 func (bk *Allocator) FillWith(v []byte) []byte {
-	b := pools.Buffer.GetCap(cap(v))
+	b := pools.Buffer.GetCap(len(v))
 	b.Append(v)
 	bk.blocks = append(bk.blocks, b)
 	return *b.Bytes()
