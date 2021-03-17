@@ -17,7 +17,7 @@ import (
 */
 
 var (
-	metaPool       sync.Pool
+	connInfoPool   sync.Pool
 	ignoredHeaders = map[string]bool{
 		"Host":                     true,
 		"Upgrade":                  true,
@@ -61,7 +61,7 @@ func (m *connInfo) SetClientType(clientType []byte) {
 }
 
 func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
-	mt, ok := metaPool.Get().(*connInfo)
+	mt, ok := connInfoPool.Get().(*connInfo)
 	if !ok {
 		mt = newConnInfo()
 	}
@@ -88,7 +88,8 @@ func releaseConnInfo(m *connInfo) {
 	for _, kv := range m.kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
+	m.kvs = m.kvs[:0]
 	m.clientIP = m.clientIP[:0]
 	m.clientType = m.clientType[:0]
-	metaPool.Put(m)
+	connInfoPool.Put(m)
 }
