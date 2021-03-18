@@ -125,15 +125,15 @@ func Shutdown() {
 // for the user. Error returned by the function is relayed by the Update method.
 // It retries in case of badger.ErrConflict returned.
 func Update(fn func(txn *Txn) error) (err error) {
-	for retry := conflictRetry; retry > 0; retry-- {
-		err = db.Update(fn)
-		switch err {
-		case badger.ErrConflict:
+	retry := conflictRetry
+Retry:
+	err = db.Update(fn)
+	if err == badger.ErrConflict {
+		if retry-- ; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
-		default:
-			return
+			time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
+			goto Retry
 		}
-		time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 	}
 	return
 }
@@ -141,15 +141,15 @@ func Update(fn func(txn *Txn) error) (err error) {
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
 func View(fn func(txn *Txn) error) (err error) {
-	for retry := conflictRetry; retry > 0; retry-- {
-		err = db.View(fn)
-		switch err {
-		case badger.ErrConflict:
+	retry := conflictRetry
+Retry:
+	err = db.View(fn)
+	if err == badger.ErrConflict {
+		if retry-- ; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
-		default:
-			return
+			time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
+			goto Retry
 		}
-		time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 	}
 	return
 }
