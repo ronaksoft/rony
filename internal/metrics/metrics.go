@@ -12,6 +12,7 @@ const (
 	CntGatewayOutgoingWebsocketMessage = "gateway_outgoing_websocket_message"
 	CntTunnelIncomingMessage           = "tunnel_incoming_message"
 	CntTunnelOutgoingMessage           = "tunnel_outgoing_message"
+	CntStoreConflicts                  = "store_conflicts"
 
 	// Gauges & GaugeVectors
 	GaugeActiveWebsocketConnections = "gateway_active_websocket_conns"
@@ -40,7 +41,10 @@ func Init(constLabels map[string]string) {
 	_Prom.RegisterCounter(CntGatewayOutgoingWebsocketMessage, "number of outgoing websocket messages", nil)
 	_Prom.RegisterCounter(CntTunnelIncomingMessage, "number of incoming messages", nil)
 	_Prom.RegisterCounter(CntTunnelOutgoingMessage, "number of outgoing messages", nil)
+	_Prom.RegisterCounter(CntStoreConflicts, "number of txn conflicts", nil)
+
 	_Prom.RegisterGauge(GaugeActiveWebsocketConnections, "number of gateway active websocket connections", nil)
+
 	_Prom.RegisterHistogram(HistGatewayRequestTime, "the amount of process time for gateway requests", TimeBucketMS, nil)
 	_Prom.RegisterHistogram(HistTunnelRequestTime, "the amount of process time for tunnel requests", TimeBucketMS, nil)
 	_Prom.RegisterHistogram(HistTunnelRoundtripTime, "the roundtrip of a execute remote command", TimeBucketMS, nil)
