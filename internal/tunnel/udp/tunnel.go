@@ -167,5 +167,5 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 }
 
 func (t *Tunnel) Tick() (delay time.Duration, action gnet.Action) {
-	return 0, gnet.None
+	return time.Minute, gnet.None
 }
