@@ -292,9 +292,9 @@ func (g *Generator) genHasField(m *protogen.Message) {
 			case protoreflect.MessageKind, protoreflect.GroupKind:
 			case protoreflect.BytesKind:
 				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
-				g.g.P("for idx := range x.", f.Desc.Name(), "{")
-				g.g.P("if bytes.Equal(x.", f.Desc.Name(), "[idx], xx) {")
+				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
+				g.g.P("for idx := range x.", ftName, "{")
+				g.g.P("if bytes.Equal(x.", ftName, "[idx], xx) {")
 				g.g.P("return true")
 				g.g.P("}") // end of if
 				g.g.P("}") // end of for
@@ -303,9 +303,9 @@ func (g *Generator) genHasField(m *protogen.Message) {
 				g.g.P()
 			case protoreflect.EnumKind:
 				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", f.Enum.Desc.Name(), ") bool {")
-				g.g.P("for idx := range x.", f.Desc.Name(), "{")
-				g.g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", f.Enum.Desc.Name(), ") bool {")
+				g.g.P("for idx := range x.", ftName, "{")
+				g.g.P("if x.", ftName, "[idx] == xx {")
 				g.g.P("return true")
 				g.g.P("}") // end of if
 				g.g.P("}") // end of for
@@ -314,9 +314,9 @@ func (g *Generator) genHasField(m *protogen.Message) {
 				g.g.P()
 			default:
 				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", f.Desc.Name(), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
-				g.g.P("for idx := range x.", f.Desc.Name(), "{")
-				g.g.P("if x.", f.Desc.Name(), "[idx] == xx {")
+				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
+				g.g.P("for idx := range x.", ftName, "{")
+				g.g.P("if x.", ftName, "[idx] == xx {")
 				g.g.P("return true")
 				g.g.P("}") // end of if
 				g.g.P("}") // end of for
