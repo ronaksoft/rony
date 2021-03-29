@@ -11,7 +11,26 @@ import "time"
    Copyright Ronak Software Group 2020
 */
 
+var (
+	maxTry         = 10
+	slowSleep      = time.Second
+	fastSleep      = time.Millisecond * 100
+	superFastSleep = time.Microsecond
+)
+
 type RetryableFunc func() error
+
+func TrySlow(f RetryableFunc) error {
+	return Try(maxTry, slowSleep, f)
+}
+
+func TryFast(f RetryableFunc) error {
+	return Try(maxTry, fastSleep, f)
+}
+
+func TrySuperFast(f RetryableFunc) error {
+	return Try(maxTry, superFastSleep, f)
+}
 
 func Try(attempts int, waitTime time.Duration, f RetryableFunc) (err error) {
 	for attempts > 0 {
