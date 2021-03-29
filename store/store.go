@@ -129,7 +129,7 @@ func Update(fn func(txn *Txn) error) (err error) {
 Retry:
 	err = db.Update(fn)
 	if err == badger.ErrConflict {
-		if retry-- ; retry > 0 {
+		if retry--; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
 			time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 			goto Retry
@@ -145,7 +145,7 @@ func View(fn func(txn *Txn) error) (err error) {
 Retry:
 	err = db.View(fn)
 	if err == badger.ErrConflict {
-		if retry-- ; retry > 0 {
+		if retry--; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
 			time.Sleep(time.Duration(tools.RandomInt64(int64(conflictRetryInterval))))
 			goto Retry

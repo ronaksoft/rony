@@ -32,7 +32,6 @@ func TestNewTunnel(t *testing.T) {
 	Convey("Tunnel", t, func(c C) {
 		hostPort := "127.0.0.1:8080"
 		t, err := udpTunnel.New(udpTunnel.Config{
-			Concurrency:   10,
 			ListenAddress: hostPort,
 			ExternalAddrs: []string{hostPort},
 		})
@@ -154,7 +153,6 @@ func TestNewTunnel(t *testing.T) {
 func BenchmarkNew(b *testing.B) {
 	t, err := udpTunnel.New(udpTunnel.Config{
 		ServerID:      "",
-		Concurrency:   1000,
 		ListenAddress: "127.0.0.1:2374",
 		MaxBodySize:   1000,
 		ExternalAddrs: nil,

@@ -123,7 +123,6 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 					GossipPort: port,
 				}),
 				edge.WithUdpTunnel(edge.UdpTunnelConfig{
-					Concurrency:   10,
 					ListenAddress: "0.0.0.0:0",
 					MaxBodySize:   4096,
 				}),

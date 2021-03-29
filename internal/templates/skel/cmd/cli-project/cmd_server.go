@@ -40,7 +40,6 @@ var ServerCmd = &cobra.Command{
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{
 				ServerID:      config.GetString("server.id"),
-				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("tunnel.listen"),
 				ExternalAddrs: config.GetStringSlice("tunnel.advertise.url"),
 			}),
