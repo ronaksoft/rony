@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"reflect"
 )
 
 /*
@@ -12,6 +13,28 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+func DeleteItemFromSlice(slice interface{}, index int) {
+	v := reflect.ValueOf(slice)
+	if v.Kind() == reflect.Ptr {
+		v = reflect.Indirect(v)
+	}
+	vLength := v.Len()
+	if v.Kind() != reflect.Slice {
+		panic("slice is not valid")
+	}
+	if index >= vLength || index < 0 {
+		panic("invalid index")
+	}
+	switch vLength {
+	case 1:
+		v.SetLen(0)
+	default:
+		v.Index(index).Set(v.Index(v.Len() - 1))
+		v.SetLen(vLength - 1)
+	}
+}
+
 
 // SliceInt64Diff returns a - b and cb will be called on each found difference.
 func SliceInt64Diff(a, b []int64, cb func(int64)) {
