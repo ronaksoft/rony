@@ -30,7 +30,7 @@ func NewPipeCommands(cmds ...*exec.Cmd) (*cmdPipe, error) {
 
 	return &cmdPipe{
 		writeClosers: writeClosers,
-		cmds:         cmds,
+		commands:     cmds,
 	}, nil
 }
 
@@ -39,14 +39,14 @@ type cmdPipe struct {
 	Stdin        io.Reader
 	Stdout       io.Writer
 	writeClosers []io.WriteCloser
-	cmds         []*exec.Cmd
+	commands     []*exec.Cmd
 }
 
 func (c *cmdPipe) Start() error {
-	c.cmds[0].Stdin = c.Stdin
-	c.cmds[len(c.cmds)-1].Stdout = c.Stdout
-	for i := range c.cmds {
-		if err := c.cmds[i].Start(); err != nil {
+	c.commands[0].Stdin = c.Stdin
+	c.commands[len(c.commands)-1].Stdout = c.Stdout
+	for i := range c.commands {
+		if err := c.commands[i].Start(); err != nil {
 			return err
 		}
 	}
@@ -54,11 +54,11 @@ func (c *cmdPipe) Start() error {
 }
 
 func (c *cmdPipe) Wait() error {
-	for i := range c.cmds {
-		if err := c.cmds[i].Wait(); err != nil {
+	for i := range c.commands {
+		if err := c.commands[i].Wait(); err != nil {
 			return err
 		}
-		if i != len(c.cmds)-1 {
+		if i != len(c.commands)-1 {
 			if err := c.writeClosers[i].Close(); err != nil {
 				return err
 			}

@@ -15,6 +15,22 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+func AppendStrInt(sb *strings.Builder, x int) {
+	b := pools.TinyBytes.GetLen(8)
+	binary.BigEndian.PutUint64(b, uint64(x))
+	sb.Write(b)
+	pools.TinyBytes.Put(b)
+	return
+}
+
+func AppendStrUInt(sb *strings.Builder, x uint) {
+	b := pools.TinyBytes.GetLen(8)
+	binary.BigEndian.PutUint64(b, uint64(x))
+	sb.Write(b)
+	pools.TinyBytes.Put(b)
+	return
+}
+
 func AppendStrInt64(sb *strings.Builder, x int64) {
 	b := pools.TinyBytes.GetLen(8)
 	binary.BigEndian.PutUint64(b, uint64(x))
