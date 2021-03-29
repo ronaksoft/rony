@@ -1,7 +1,7 @@
 syntax = "proto3";
 package model;
 import "options.proto";
-option go_package = ".;model";
+option go_package = "./;model";
 
 
 enum Enum {
