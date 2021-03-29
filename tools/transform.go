@@ -168,15 +168,3 @@ func ToScreamingDelimited(s string, delimiter uint8, ignore uint8, screaming boo
 
 	return n.String()
 }
-
-// TruncateString cuts the over sized string str upto l.
-func TruncateString(str string, l int) string {
-	n := 0
-	for i := range str {
-		n++
-		if n > l {
-			return str[:i] + ".."
-		}
-	}
-	return str
-}
