@@ -63,3 +63,10 @@ message Edge {
 message Edges {
     repeated Edge Nodes = 1;
 }
+
+// GetNodes
+// @Function
+// @Return: Edges
+message GetNodes {
+    repeated uint64 ReplicaSet = 1;
+}

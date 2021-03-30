@@ -4,12 +4,6 @@ import "options.proto";
 import "msg.proto";
 option go_package = "github.com/ronaksoft/rony";
 
-// GetNodes
-// @Function
-// @Return: Edges
-message GetNodes {
-    repeated uint64 ReplicaSet = 1;
-}
 
 // GetPage
 // @Function

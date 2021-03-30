@@ -71,5 +71,3 @@ func MustSha256(in, out []byte) {
 	}
 	return
 }
-
-

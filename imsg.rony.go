@@ -9,42 +9,6 @@ import (
 	sync "sync"
 )
 
-const C_GetNodes int64 = 362407405
-
-type poolGetNodes struct {
-	pool sync.Pool
-}
-
-func (p *poolGetNodes) Get() *GetNodes {
-	x, ok := p.pool.Get().(*GetNodes)
-	if !ok {
-		x = &GetNodes{}
-	}
-	return x
-}
-
-func (p *poolGetNodes) Put(x *GetNodes) {
-	if x == nil {
-		return
-	}
-	x.ReplicaSet = x.ReplicaSet[:0]
-	p.pool.Put(x)
-}
-
-var PoolGetNodes = poolGetNodes{}
-
-func (x *GetNodes) DeepCopy(z *GetNodes) {
-	z.ReplicaSet = append(z.ReplicaSet[:0], x.ReplicaSet...)
-}
-
-func (x *GetNodes) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *GetNodes) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 const C_GetPage int64 = 3721890413
 
 type poolGetPage struct {
@@ -284,7 +248,6 @@ func (x *Page) Unmarshal(b []byte) error {
 }
 
 func init() {
-	registry.RegisterConstructor(362407405, "GetNodes")
 	registry.RegisterConstructor(3721890413, "GetPage")
 	registry.RegisterConstructor(3271476222, "TunnelMessage")
 	registry.RegisterConstructor(2919813429, "RaftCommand")
