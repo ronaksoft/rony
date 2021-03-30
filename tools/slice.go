@@ -14,6 +14,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// DeleteItemFromSlice deletes item from slice. 'slice' MUST be a slice otherwise panics.
+// 'index' MUST be valid otherwise panics.
 func DeleteItemFromSlice(slice interface{}, index int) {
 	v := reflect.ValueOf(slice)
 	if v.Kind() == reflect.Ptr {
@@ -34,7 +36,6 @@ func DeleteItemFromSlice(slice interface{}, index int) {
 		v.SetLen(vLength - 1)
 	}
 }
-
 
 // SliceInt64Diff returns a - b and cb will be called on each found difference.
 func SliceInt64Diff(a, b []int64, cb func(int64)) {

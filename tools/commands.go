@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	ErrNoCmds = errors.New("pipe: there were no commands provided")
+	ErrNoCommands = errors.New("pipe: there were no commands provided")
 )
 
 func NewPipeCommands(cmds ...*exec.Cmd) (*cmdPipe, error) {
 	if len(cmds) == 0 {
-		return nil, ErrNoCmds
+		return nil, ErrNoCommands
 	}
 
 	// Link each command's Stdout w/ the next command's
