@@ -68,7 +68,6 @@ func NewFlusherPool(maxWorkers, batchSize int32, f FlusherFunc) *FlusherPool {
 func (fp *FlusherPool) getFlusher(targetID string) *flusher {
 	fp.poolMtx.Lock()
 	f := fp.pool[targetID]
-	fp.poolMtx.Unlock()
 	if f == nil {
 		f = &flusher{
 			readyWorkers: fp.maxWorkers,
@@ -77,10 +76,9 @@ func (fp *FlusherPool) getFlusher(targetID string) *flusher {
 			entryChan:    make(chan FlushEntry, fp.batchSize),
 			targetID:     targetID,
 		}
-		fp.poolMtx.Lock()
 		fp.pool[targetID] = f
-		fp.poolMtx.Unlock()
 	}
+	fp.poolMtx.Unlock()
 	return f
 }
 
