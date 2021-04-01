@@ -3,6 +3,7 @@ package tools
 import (
 	"fmt"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 )
@@ -25,6 +26,7 @@ func BenchmarkRandomInt64(b *testing.B) {
 	})
 }
 
+
 func BenchmarkRandomID(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -44,4 +46,25 @@ func TestRandomID(t *testing.T) {
 	time.Sleep(time.Second)
 	runtime.GC()
 	fmt.Println(x)
+}
+
+func TestSecureRandomInt63(t *testing.T) {
+	size := 10000
+	mtx := SpinLock{}
+	wg := sync.WaitGroup{}
+	m := make(map[int64]struct{}, size)
+	for i := 0; i < size; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mtx.Lock()
+			x := SecureRandomInt63(0)
+			if _, ok := m[x]; ok {
+				t.Fatal("duplicate")
+			}
+			m[x] = struct{}{}
+			mtx.Unlock()
+		}()
+	}
+	wg.Wait()
 }
