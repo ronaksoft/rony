@@ -98,7 +98,6 @@ func SecureRandomInt63(n int64) (x int64) {
 
 func RandomInt(n int) (x int) {
 	rnd := rndGen.GetRand()
-
 	if n == 0 {
 		x = rnd.Int()
 	} else {
