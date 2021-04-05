@@ -59,6 +59,11 @@ type Server struct {
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
+	// Initialize metrics
+	metrics.Init(map[string]string{
+		"ServerID": serverID,
+	})
+
 	edgeServer := &Server{
 		dataDir:           "./_hdd",
 		handlers:          make(map[int64]*HandlerOption),
@@ -72,11 +77,6 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	// Initialize store
 	store.MustInit(store.DefaultConfig(edgeServer.dataDir))
-
-	// Initialize metrics
-	metrics.Init(map[string]string{
-		"ServerID": serverID,
-	})
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
