@@ -444,7 +444,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 		switch ms[idx].OpCode {
 		case ws.OpPong:
 		case ws.OpPing:
-			err = wc.write(ws.OpPing, ms[idx].Payload)
+			err = wc.write(ws.OpPong, ms[idx].Payload)
 			if err != nil {
 				log.Warn("Error On Write OpPing", zap.Error(err))
 			}

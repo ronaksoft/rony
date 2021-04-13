@@ -72,6 +72,24 @@ func TestGateway(t *testing.T) {
 	gw.Start()
 	defer gw.Shutdown()
 	Convey("Gateway Test", t, func(c C) {
+		Convey("Ping", func(c C) {
+			wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
+			if err != nil {
+				c.Println(err)
+			}
+			c.So(err, ShouldBeNil)
+			for j := 0; j < 20; j++ {
+				err := wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpPing, []byte{1, 2, 3, 4})
+				if err != nil {
+					c.Println(err)
+				}
+				c.So(err, ShouldBeNil)
+				m, err := wsutil.ReadMessage(wsc, ws.StateClientSide, nil)
+				c.So(err, ShouldBeNil)
+				c.So(m, ShouldHaveLength, 1)
+				c.So(m[0].OpCode, ShouldEqual, ws.OpPong)
+			}
+		})
 		Convey("Websocket Parallel", func(c C) {
 			wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
 			if err != nil {
@@ -192,5 +210,6 @@ func TestGateway(t *testing.T) {
 			wg.Wait()
 			time.Sleep(time.Second)
 		})
+
 	})
 }
