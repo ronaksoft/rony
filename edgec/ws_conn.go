@@ -262,6 +262,7 @@ SendLoop:
 	err = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpBinary, b)
 	c.mtx.Unlock()
 	if err != nil {
+		_ = c.conn.SetReadDeadline(time.Now())
 		c.pendingMtx.Lock()
 		delete(c.pending, req.GetRequestID())
 		c.pendingMtx.Unlock()
