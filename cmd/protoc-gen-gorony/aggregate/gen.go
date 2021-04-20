@@ -487,7 +487,9 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("}") // end of if
 	g.g.P("if cond == nil || cond(m) {")
 	g.g.P("res = append(res, m)")
-	g.g.P("}") // end of if cond
+	g.g.P("} else {") // end of if cond
+	g.g.P("limit++")
+	g.g.P("}")
 	g.g.P("return nil")
 	g.g.P("})") // end of iter.Value func
 	g.g.P("}")  // end of for

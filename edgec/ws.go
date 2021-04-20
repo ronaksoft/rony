@@ -35,9 +35,9 @@ type WebsocketConfig struct {
 	// Handler must not block in function because other incoming messages might get blocked.
 	// This handler must returns quickly and pass a deep copy of the MessageEnvelope to other
 	// routines.
-	Handler      MessageHandler
-	HeaderFunc   func() map[string]string
-	Secure       bool
+	Handler    MessageHandler
+	HeaderFunc func() map[string]string
+	Secure     bool
 	// RequestMaxRetry is the maximum number client sends a request if any network layer error occurs
 	RequestMaxRetry int
 	// RequestTimeout is the timeout for each individual request on each try.
