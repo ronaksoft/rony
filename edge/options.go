@@ -18,10 +18,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Option
 type Option func(edge *Server)
 
-// WithDataDir
 func WithDataDir(path string) Option {
 	return func(edge *Server) {
 		edge.dataDir = path

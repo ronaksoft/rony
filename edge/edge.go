@@ -320,19 +320,29 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 
+	var (
+		err error
+	)
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
-	err := edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
+	if !conn.ByPassDispatcher() {
+		err = edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
+	} else {
+		err = dispatchCtx.UnmarshalEnvelope(data)
+	}
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
 		return
 	}
+
 	err, isLeader := edge.executePrepare(dispatchCtx)
 	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		edge.gatewayDispatcher.Done(dispatchCtx)
+		if !conn.ByPassDispatcher() {
+			edge.gatewayDispatcher.Done(dispatchCtx)
+		}
 	}
 	releaseDispatchCtx(dispatchCtx)
 	return
@@ -389,7 +399,17 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
-		edge.gatewayDispatcher.OnMessage(ctx, envelope)
+		if ctx.Conn().ByPassDispatcher() {
+			mo := proto.MarshalOptions{UseCachedSize: true}
+			buf := pools.Buffer.GetCap(mo.Size(envelope))
+			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
+			buf.SetBytes(&bb)
+			_ = ctx.Conn().SendBinary(ctx.StreamID(), bb)
+			pools.Buffer.Put(buf)
+		} else {
+			edge.gatewayDispatcher.OnMessage(ctx, envelope)
+		}
+
 	case TunnelMessage:
 		ctx.BufferPush(envelope.Clone())
 	}

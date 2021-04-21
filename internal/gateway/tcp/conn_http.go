@@ -72,3 +72,7 @@ func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
 func (c *httpConn) Persistent() bool {
 	return false
 }
+
+func (c *httpConn) ByPassDispatcher() bool {
+	return c.proxy != nil
+}

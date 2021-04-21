@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"reflect"
@@ -302,18 +303,28 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, proto proto.Message, kvs ...*rony.KeyValue) {
+func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, kvs ...*rony.KeyValue) {
 	if ctx.dispatchCtx.kind == ReplicaMessage {
 		return
 	}
 
 	envelope := rony.PoolMessageEnvelope.Get()
-	envelope.Fill(requestID, constructor, proto)
+	envelope.Fill(requestID, constructor, message)
 	envelope.Header = append(envelope.Header[:0], kvs...)
 
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
-		ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		if ctx.dispatchCtx.Conn().ByPassDispatcher() {
+			mo := proto.MarshalOptions{UseCachedSize: true}
+			buf := pools.Buffer.GetCap(mo.Size(envelope))
+			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
+			buf.SetBytes(&bb)
+			_ = ctx.Conn().SendBinary(ctx.dispatchCtx.StreamID(), bb)
+			pools.Buffer.Put(buf)
+		} else {
+			ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		}
+
 	case TunnelMessage:
 		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}

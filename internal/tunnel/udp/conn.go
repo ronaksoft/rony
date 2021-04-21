@@ -67,3 +67,7 @@ func (u *udpConn) Set(key string, val interface{}) {
 	u.kv[key] = val
 	u.mtx.Unlock()
 }
+
+func (u *udpConn) ByPassDispatcher() bool {
+	return false
+}
