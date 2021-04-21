@@ -504,10 +504,14 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 	mn := g.m(m).Name
 	if len(g.m(m).Table.CKs) > 0 {
 		g.g.P(
-			"func List", mn, "By",
-			g.m(m).Table.StringPKs("", "And", false),
-			"(", g.m(m).FuncArgsPKs("", g.m(m).Table), ",",
-			g.m(m).FuncArgsCKs("offset", g.m(m).Table), ", lo *store.ListOption) ([]*", mn, ", error) {",
+			"func List", mn, "By", g.m(m).Table.StringPKs("", "And", false), "(",
+		)
+		g.g.P(
+			g.m(m).FuncArgsPKs("", g.m(m).Table), ",",
+			g.m(m).FuncArgsCKs("offset", g.m(m).Table), ", lo *store.ListOption, cond func(m *", mn, ") bool,",
+		)
+		g.g.P(
+			") ([]*", mn, ", error) {",
 		)
 		g.g.P("alloc := store.NewAllocator()")
 		g.g.P("defer alloc.ReleaseAll()")
@@ -534,7 +538,11 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("if err != nil {")
 		g.g.P("return err")
 		g.g.P("}") // end of if
+		g.g.P("if cond == nil || cond(m) {")
 		g.g.P("res = append(res, m)")
+		g.g.P("} else {") // end of if cond
+		g.g.P("limit++")
+		g.g.P("}")
 		g.g.P("return nil")
 		g.g.P("})") // end of item.Value
 		g.g.P("}")  // end of for
@@ -550,10 +558,14 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 			continue
 		}
 		g.g.P(
-			"func List", mn, "By",
-			g.m(m).Views[idx].StringPKs("", "And", false),
-			"(", g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ",",
-			g.m(m).FuncArgsCKs("offset", g.m(m).Views[idx]), ", lo *store.ListOption) ([]*", mn, ", error) {",
+			"func List", mn, "By", g.m(m).Views[idx].StringPKs("", "And", false), "(",
+		)
+		g.g.P(
+			g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ",",
+			g.m(m).FuncArgsCKs("offset", g.m(m).Views[idx]), ", lo *store.ListOption, cond func(m *", mn, ") bool,",
+		)
+		g.g.P(
+			") ([]*", mn, ", error) {",
 		)
 		g.g.P("alloc := store.NewAllocator()")
 		g.g.P("defer alloc.ReleaseAll()")
@@ -580,7 +592,11 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("if err != nil {")
 		g.g.P("return err")
 		g.g.P("}") // end of if
+		g.g.P("if cond == nil || cond(m) {")
 		g.g.P("res = append(res, m)")
+		g.g.P("} else {") // end of if cond
+		g.g.P("limit++")
+		g.g.P("}")
 		g.g.P("return nil")
 		g.g.P("})") // end of item.Value
 		g.g.P("}")  // end of for
@@ -604,8 +620,11 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 				// TODO:: support index on message fields
 			default:
 				ftNameS := inflection.Singular(ftName)
-				g.g.P("func List", g.m(m).Name, "By", ftNameS, "(", tools.ToLowerCamel(ftNameS), " ", g.m(m).FieldsGo[ftName], ", lo *store.ListOption) ([]*", mn, ", "+
-					"error) {")
+				g.g.P("func List", g.m(m).Name, "By", ftNameS, "(")
+				g.g.P(
+					tools.ToLowerCamel(ftNameS), " ", g.m(m).FieldsGo[ftName], ", lo *store.ListOption, cond func(m *", mn, ") bool,",
+				)
+				g.g.P(") ([]*", mn, ", error) {")
 				g.g.P("alloc := store.NewAllocator()")
 				g.g.P("defer alloc.ReleaseAll()")
 				g.g.P()
@@ -635,7 +654,11 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 				g.g.P("if err != nil {")
 				g.g.P("return err")
 				g.g.P("}") // end of if
+				g.g.P("if cond == nil || cond(m) {")
 				g.g.P("res = append(res, m)")
+				g.g.P("} else {") // end of if cond
+				g.g.P("limit++")
+				g.g.P("}")
 				g.g.P("return nil")
 				g.g.P("})") // end of item.Value
 				g.g.P("})") // end of iter.Value func

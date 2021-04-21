@@ -365,6 +365,8 @@ func ListModel1(
 				}
 				if cond == nil || cond(m) {
 					res = append(res, m)
+				} else {
+					limit++
 				}
 				return nil
 			})
@@ -435,7 +437,9 @@ func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func
 	return nil
 }
 
-func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Model1, error) {
+func ListModel1ByID(
+	id int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -461,7 +465,11 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Mo
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 		}
@@ -471,7 +479,9 @@ func ListModel1ByID(id int32, offsetShardKey int32, lo *store.ListOption) ([]*Mo
 	return res, err
 }
 
-func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption) ([]*Model1, error) {
+func ListModel1ByEnum(
+	enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -497,7 +507,11 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 		}
@@ -507,7 +521,9 @@ func ListModel1ByEnum(enum Enum, offsetShardKey int32, offsetID int32, lo *store
 	return res, err
 }
 
-func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
+func ListModel1ByP1(
+	p1 string, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -537,7 +553,11 @@ func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
 					if err != nil {
 						return err
 					}
-					res = append(res, m)
+					if cond == nil || cond(m) {
+						res = append(res, m)
+					} else {
+						limit++
+					}
 					return nil
 				})
 			})
@@ -548,7 +568,9 @@ func ListModel1ByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
 	return res, err
 }
 
-func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
+func ListModel1ByP2(
+	p2 string, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -578,7 +600,11 @@ func ListModel1ByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
 					if err != nil {
 						return err
 					}
-					res = append(res, m)
+					if cond == nil || cond(m) {
+						res = append(res, m)
+					} else {
+						limit++
+					}
 					return nil
 				})
 			})
@@ -825,6 +851,8 @@ func ListModel2(
 				}
 				if cond == nil || cond(m) {
 					res = append(res, m)
+				} else {
+					limit++
 				}
 				return nil
 			})
@@ -895,7 +923,9 @@ func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m
 	return nil
 }
 
-func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *store.ListOption) ([]*Model2, error) {
+func ListModel2ByIDAndShardKey(
+	id int64, shardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -921,7 +951,11 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *st
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 		}
@@ -931,7 +965,9 @@ func ListModel2ByIDAndShardKey(id int64, shardKey int32, offsetP1 string, lo *st
 	return res, err
 }
 
-func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption) ([]*Model2, error) {
+func ListModel2ByP1(
+	p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -957,7 +993,11 @@ func ListModel2ByP1(p1 string, offsetShardKey int32, offsetID int64, lo *store.L
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 		}

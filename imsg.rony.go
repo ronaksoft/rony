@@ -482,6 +482,8 @@ func ListPage(
 				}
 				if cond == nil || cond(m) {
 					res = append(res, m)
+				} else {
+					limit++
 				}
 				return nil
 			})
@@ -522,7 +524,9 @@ func IterPageByReplicaSet(txn *store.Txn, alloc *store.Allocator, replicaSet uin
 	return nil
 }
 
-func ListPageByReplicaSet(replicaSet uint64, offsetID uint32, lo *store.ListOption) ([]*Page, error) {
+func ListPageByReplicaSet(
+	replicaSet uint64, offsetID uint32, lo *store.ListOption, cond func(m *Page) bool,
+) ([]*Page, error) {
 	alloc := store.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -548,7 +552,11 @@ func ListPageByReplicaSet(replicaSet uint64, offsetID uint32, lo *store.ListOpti
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 		}
