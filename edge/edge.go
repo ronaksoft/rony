@@ -9,10 +9,10 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/internal/rest"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
+	"github.com/ronaksoft/rony/rest"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
@@ -606,12 +606,4 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	// deep copy
 	tmIn.Envelope.DeepCopy(res)
 	return nil
-}
-
-
-func NewRestFactory(
-	onRequest func(ctx *rest.Context),
-	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string),
-) *rest.Factory {
-	return rest.NewFactory(onRequest, onResponse)
 }
