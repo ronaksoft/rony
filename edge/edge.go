@@ -36,7 +36,6 @@ func init() {
 	log.Init(log.DefaultConfig)
 }
 
-// Server
 type Server struct {
 	// General
 	dataDir  string
@@ -607,4 +606,12 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	// deep copy
 	tmIn.Envelope.DeepCopy(res)
 	return nil
+}
+
+
+func NewRestFactory(
+	onRequest func(ctx *rest.Context),
+	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string),
+) *rest.Factory {
+	return rest.NewFactory(onRequest, onResponse)
 }

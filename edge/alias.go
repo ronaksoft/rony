@@ -43,8 +43,7 @@ const (
 	Websocket
 	Quic
 	Grpc
-	// Mixed
-	TCP GatewayProtocol = 0x0003 // Http & Websocket
+	TCP = Http | Websocket // Http & Websocket
 )
 
 // HTTP methods were copied from net/http.
