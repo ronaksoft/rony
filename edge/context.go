@@ -316,11 +316,8 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
 		if ctx.dispatchCtx.byPassDispatcher {
-			mo := proto.MarshalOptions{UseCachedSize: true}
-			buf := pools.Buffer.GetCap(mo.Size(envelope))
-			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-			buf.SetBytes(&bb)
-			_ = ctx.Conn().SendBinary(ctx.dispatchCtx.StreamID(), bb)
+			buf := pools.Buffer.FromProto(envelope)
+			_ = ctx.Conn().SendBinary(ctx.dispatchCtx.StreamID(), *buf.Bytes())
 			pools.Buffer.Put(buf)
 
 		} else {

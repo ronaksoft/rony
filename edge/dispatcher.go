@@ -3,7 +3,6 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
-	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -39,10 +38,8 @@ type Dispatcher interface {
 type defaultDispatcher struct{}
 
 func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	buf := pools.Buffer.GetCap(mo.Size(envelope))
-	eb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-	_ = ctx.Conn().SendBinary(ctx.StreamID(), eb)
+	buf := pools.Buffer.FromProto(envelope)
+	_ = ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
 	pools.Buffer.Put(buf)
 }
 

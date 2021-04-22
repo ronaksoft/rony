@@ -29,15 +29,15 @@ const (
 func TestNewAllocator(t *testing.T) {
 	Convey("Allocator", t, func(c C) {
 		alloc := store.NewAllocator()
-		b := alloc.GenKey(Alias_A2)
+		b := alloc.Gen(Alias_A2)
 		c.So(b, ShouldHaveLength, 4)
-		b = alloc.GenKey(Alias_A2, Alias_A1)
+		b = alloc.Gen(Alias_A2, Alias_A1)
 		c.So(b, ShouldHaveLength, 8)
-		b = alloc.GenKey(Alias_A1, "TXT1")
+		b = alloc.Gen(Alias_A1, "TXT1")
 		c.So(b, ShouldHaveLength, 8)
-		b = alloc.GenKey(Alias_A1, 3232)
+		b = alloc.Gen(Alias_A1, 3232)
 		c.So(b, ShouldHaveLength, 12)
-		b = alloc.GenKey(Alias_A1, 3232, []byte("TXT1"))
+		b = alloc.Gen(Alias_A1, 3232, []byte("TXT1"))
 		c.So(b, ShouldHaveLength, 16)
 		alloc.ReleaseAll()
 	})
@@ -47,7 +47,7 @@ func BenchmarkBulkKey_GenKey(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		bk := store.NewAllocator()
 		for pb.Next() {
-			d := bk.GenKey(tools.FastRand(), "tools.RandomID(10)", 3, 125)
+			d := bk.Gen(tools.FastRand(), "tools.RandomID(10)", 3, 125)
 			if len(d) != 38 {
 				b.Fatal("invalid size", len(d))
 			}
@@ -65,7 +65,7 @@ func BenchmarkAllocator_GenValue(b *testing.B) {
 		m.Message = append(m.Message, tools.StrToByte("Something here for test ONLY!")...)
 		bk := store.NewAllocator()
 		for pb.Next() {
-			d := bk.GenValue(m)
+			d := bk.Gen(m)
 			if len(d) != proto.Size(m) {
 				b.Fatal("invalid size", len(d))
 			}

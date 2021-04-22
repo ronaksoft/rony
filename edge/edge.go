@@ -16,7 +16,6 @@ import (
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -156,14 +155,8 @@ func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeade
 		raftCmd := rony.PoolRaftCommand.Get()
 		raftCmd.Envelope = rony.PoolMessageEnvelope.Get()
 		raftCmd.Fill(edge.serverID, dispatchCtx.req)
-		mo := proto.MarshalOptions{UseCachedSize: true}
-		buf := pools.Buffer.GetCap(mo.Size(raftCmd))
-		var raftCmdBytes []byte
-		raftCmdBytes, err = mo.MarshalAppend(*buf.Bytes(), raftCmd)
-		if err != nil {
-			return
-		}
-		f := edge.cluster.RaftApply(raftCmdBytes)
+		buf := pools.Buffer.FromProto(raftCmd)
+		f := edge.cluster.RaftApply(*buf.Bytes())
 		err = f.Error()
 		pools.Buffer.Put(buf)
 		rony.PoolRaftCommand.Put(raftCmd)
@@ -395,11 +388,9 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 		// TODO:: implement it
 		panic("not implemented, handle multiple tunnel message")
 	}
-
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	b := pools.Buffer.GetCap(mo.Size(tm))
-	bb, _ := mo.MarshalAppend(*b.Bytes(), tm)
-	_ = ctx.Conn().SendBinary(ctx.streamID, bb)
+	buf := pools.Buffer.FromProto(tm)
+	_ = ctx.Conn().SendBinary(ctx.streamID, *buf.Bytes())
+	pools.Buffer.Put(buf)
 }
 func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	envelope := rony.PoolMessageEnvelope.Get()
@@ -407,11 +398,8 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	switch ctx.kind {
 	case GatewayMessage:
 		if ctx.byPassDispatcher {
-			mo := proto.MarshalOptions{UseCachedSize: true}
-			buf := pools.Buffer.GetCap(mo.Size(envelope))
-			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-			buf.SetBytes(&bb)
-			_ = ctx.Conn().SendBinary(ctx.StreamID(), bb)
+			buf := pools.Buffer.FromProto(envelope)
+			_ = ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
 			pools.Buffer.Put(buf)
 		} else {
 			edge.gatewayDispatcher.OnMessage(ctx, envelope)
@@ -581,14 +569,12 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	tmOut.Fill(edge.serverID, edge.cluster.ReplicaSet(), req)
 
 	// Marshal and send over the wire
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	buf := pools.Buffer.GetCap(mo.Size(tmOut))
-	b, _ := mo.MarshalAppend(*buf.Bytes(), tmOut)
-	n, err := conn.Write(b)
+	buf := pools.Buffer.FromProto(tmOut)
+	n, err := conn.Write(*buf.Bytes())
+	pools.Buffer.Put(buf)
 	if err != nil {
 		return err
 	}
-	pools.Buffer.Put(buf)
 
 	// Wait for response and unmarshal it
 	buf = pools.Buffer.GetLen(4096)

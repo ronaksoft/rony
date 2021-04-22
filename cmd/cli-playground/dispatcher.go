@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/pools"
-	"google.golang.org/protobuf/proto"
 )
 
 type dispatcher struct{}
@@ -22,11 +21,8 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 	// log.Info("OnMessage", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
 	switch ctx.Kind() {
 	case edge.GatewayMessage, edge.TunnelMessage:
-		mo := proto.MarshalOptions{UseCachedSize: true}
-
-		buf := pools.Buffer.GetCap(mo.Size(envelope))
-		b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-		err := ctx.Conn().SendBinary(ctx.StreamID(), b)
+		buf := pools.Buffer.FromProto(envelope)
+		err := ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
 		if err != nil {
 			fmt.Println("Error On SendBinary", err)
 		}
