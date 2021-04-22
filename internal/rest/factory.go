@@ -20,6 +20,16 @@ type Factory struct {
 	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string)
 }
 
+func NewFactory(
+	onRequest func(ctx *Context),
+	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string),
+) *Factory {
+	return &Factory{
+		onRequest:  onRequest,
+		onResponse: onResponse,
+	}
+}
+
 func (f *Factory) Get() gateway.ProxyHandle {
 	return &Handle{
 		onRequest:  f.onRequest,
