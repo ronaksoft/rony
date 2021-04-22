@@ -304,7 +304,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage)
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage, false)
 	dispatchCtx.FillEnvelope(
 		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
 		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
@@ -316,18 +316,21 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	releaseDispatchCtx(dispatchCtx)
 	return nil
 }
-func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
+func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte, byPassDispatcher bool) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 
 	var (
 		err error
 	)
-	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
-	if !conn.ByPassDispatcher() {
-		err = edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
-	} else {
+
+	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
+	// byPassDispatcher argument
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage, byPassDispatcher)
+	if dispatchCtx.byPassDispatcher {
 		err = dispatchCtx.UnmarshalEnvelope(data)
+	} else {
+		err = edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
 	}
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
@@ -340,10 +343,12 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		if !conn.ByPassDispatcher() {
+		if !dispatchCtx.byPassDispatcher {
 			edge.gatewayDispatcher.Done(dispatchCtx)
 		}
 	}
+
+	// Release the dispatch context
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
@@ -357,7 +362,8 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage)
+	// Fill the dispatch context envelope from the received tunnel message
+	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage, false)
 	dispatchCtx.FillEnvelope(
 		tm.Envelope.GetRequestID(), tm.Envelope.GetConstructor(), tm.Envelope.Message,
 		tm.Envelope.Auth, tm.Envelope.Header...,
@@ -371,6 +377,8 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	} else {
 		edge.onTunnelDone(dispatchCtx)
 	}
+
+	// Release the dispatch context
 	releaseDispatchCtx(dispatchCtx)
 	return
 }
@@ -399,7 +407,7 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
-		if ctx.Conn().ByPassDispatcher() {
+		if ctx.byPassDispatcher {
 			mo := proto.MarshalOptions{UseCachedSize: true}
 			buf := pools.Buffer.GetCap(mo.Size(envelope))
 			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)

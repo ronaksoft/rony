@@ -46,13 +46,14 @@ func (c MessageKind) String() string {
 // DispatchCtx holds the context of the dispatcher's request. Each DispatchCtx could holds one or many RequestCtx.
 // DispatchCtx lives until the last of its RequestCtx children.
 type DispatchCtx struct {
-	edge     *Server
-	streamID int64
-	serverID []byte
-	conn     rony.Conn
-	req      *rony.MessageEnvelope
-	kind     MessageKind
-	buf      *tools.LinkedList
+	edge             *Server
+	streamID         int64
+	serverID         []byte
+	conn             rony.Conn
+	req              *rony.MessageEnvelope
+	kind             MessageKind
+	buf              *tools.LinkedList
+	byPassDispatcher bool
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
@@ -314,7 +315,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
-		if ctx.dispatchCtx.Conn().ByPassDispatcher() {
+		if ctx.dispatchCtx.byPassDispatcher {
 			mo := proto.MarshalOptions{UseCachedSize: true}
 			buf := pools.Buffer.GetCap(mo.Size(envelope))
 			bb, _ := mo.MarshalAppend(*buf.Bytes(), envelope)

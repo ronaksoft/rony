@@ -128,7 +128,7 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {}
+	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte, bypass bool) {}
 	g.CloseHandler = func(c rony.Conn) {}
 	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
@@ -378,12 +378,12 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	if g.httpProxy != nil {
 		conn.proxy = g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
 		if conn.proxy == nil {
-			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
+			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
 		} else {
 			g.httpProxy.handle(conn, reqCtx)
 		}
 	} else {
-		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
+		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
 	}
 
 	g.CloseHandler(conn)
@@ -452,7 +452,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.MessageHandler(wc, 0, ms[idx].Payload)
+				g.MessageHandler(wc, 0, ms[idx].Payload, false)
 				wg.Done()
 			})
 

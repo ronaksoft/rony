@@ -237,10 +237,6 @@ func (wc *websocketConn) Persistent() bool {
 	return true
 }
 
-func (wc *websocketConn) ByPassDispatcher() bool {
-	return false
-}
-
 // writeRequest
 type writeRequest struct {
 	wc      *websocketConn

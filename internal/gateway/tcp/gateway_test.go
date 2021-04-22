@@ -56,7 +56,7 @@ func TestGateway(t *testing.T) {
 			},
 		),
 	)
-	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
+	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte, bypass bool) {
 		if len(data) > 0 && data[0] == 'S' {
 			time.Sleep(time.Duration(len(data)) * time.Second)
 		}

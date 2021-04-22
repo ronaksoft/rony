@@ -16,7 +16,7 @@ import (
 */
 
 type Dispatcher interface {
-	// OnMessage is called on every message pushed to context.
+	// OnMessage is called on every message pushed to RequestCtx.
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
 	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)

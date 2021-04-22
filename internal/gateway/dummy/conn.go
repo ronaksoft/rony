@@ -54,7 +54,3 @@ func (c *Conn) Persistent() bool {
 func (c *Conn) SetPersistent(b bool) {
 	c.persistent = b
 }
-
-func (c *Conn) ByPassDispatcher() bool {
-	return false
-}

@@ -73,7 +73,7 @@ func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte) {
 		return
 	}
 
-	g.MessageHandler(conn, streamID, data)
+	g.MessageHandler(conn, streamID, data, false)
 }
 
 func (g *Gateway) Start() {

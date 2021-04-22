@@ -32,7 +32,7 @@ func (hp *HttpProxy) Set(method, path string, p gateway.ProxyHandle) {
 }
 
 func (hp *HttpProxy) handle(conn *httpConn, ctx *gateway.RequestCtx) {
-	hp.handler(conn, int64(ctx.ConnID()), conn.proxy.OnRequest(conn, ctx))
+	hp.handler(conn, int64(ctx.ConnID()), conn.proxy.OnRequest(conn, ctx), true)
 }
 
 func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyHandle {

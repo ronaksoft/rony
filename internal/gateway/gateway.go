@@ -54,7 +54,7 @@ type Gateway interface {
 type (
 	RequestCtx     = fasthttp.RequestCtx
 	ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue)
-	MessageHandler = func(c rony.Conn, streamID int64, data []byte)
+	MessageHandler = func(c rony.Conn, streamID int64, data []byte, bypass bool)
 	CloseHandler   = func(c rony.Conn)
 )
 
