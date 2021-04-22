@@ -24,12 +24,13 @@ type clusterDelegate struct {
 	c *Cluster
 }
 
-func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
+func (d *clusterDelegate) updateCluster(n *memberlist.Node) {
 	cm, err := newMember(n)
 	if err != nil {
 		log.Warn("Error On Cluster Node Add", zap.Error(err))
 		return
 	}
+
 	d.c.addMember(cm)
 
 	if d.c.raft == nil {
@@ -38,7 +39,7 @@ func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
 		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
 		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeJoin)"); ce != nil {
+			if ce := log.Check(log.DebugLevel, "Error On Join Raft"); ce != nil {
 				ce.Write(
 					zap.ByteString("This", d.c.localServerID),
 					zap.String("NodeID", cm.serverID),
@@ -46,52 +47,24 @@ func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 				)
 			}
 		} else {
-			log.Info("Join Raft (NodeJoin)",
+			log.Info("Join Raft",
 				zap.ByteString("This", d.c.localServerID),
 				zap.String("NodeID", cm.serverID),
 			)
 		}
 	}
+}
+
+func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
+	d.updateCluster(n)
 }
 
 func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {
-	en := rony.PoolEdgeNode.Get()
-	defer rony.PoolEdgeNode.Put(en)
-	err := extractNode(n, en)
-	if err != nil {
-		log.Warn("Error On Cluster Node Update", zap.Error(err))
-		return
-	}
-
-	cm, err := d.c.updateMember(en)
-	if err != nil {
-		log.Warn("Error On Cluster Node Update", zap.Error(err))
-		return
-	}
-
-	if d.c.raft == nil {
-		return
-	}
-	if cm.replicaSet != 0 && cm.replicaSet == d.c.cfg.ReplicaSet {
-		err := joinRaft(d.c, cm.serverID, fmt.Sprintf("%s:%d", cm.ClusterAddr.String(), cm.RaftPort()))
-		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error On Join Raft (NodeUpdate)"); ce != nil {
-				ce.Write(
-					zap.ByteString("This", d.c.localServerID),
-					zap.String("NodeID", cm.serverID),
-					zap.Error(err),
-				)
-			}
-		} else {
-			log.Info("Join Raft (NodeUpdate)",
-				zap.ByteString("This", d.c.localServerID),
-				zap.String("NodeID", cm.serverID),
-			)
-		}
-	}
+	d.updateCluster(n)
 }
 
 func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
+	d.updateCluster(n)
 	return nil
 }
 

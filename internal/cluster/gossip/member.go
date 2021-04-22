@@ -18,7 +18,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Member
 type Member struct {
 	mtx         sync.RWMutex
 	idx         int
@@ -76,7 +75,6 @@ func (m *Member) Merge(en *rony.EdgeNode) {
 	// merge raft
 	m.raftPort = int(en.GetRaftPort())
 	m.raftState = en.GetRaftState()
-
 }
 
 func (m *Member) TunnelConn() (net.Conn, error) {

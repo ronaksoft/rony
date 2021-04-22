@@ -197,19 +197,6 @@ func (c *Cluster) addMember(m *Member) {
 	c.replicaMembers[m.replicaSet][m.serverID] = m
 }
 
-func (c *Cluster) updateMember(en *rony.EdgeNode) (*Member, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	m := c.clusterMembers[tools.B2S(en.ServerID)]
-	if m == nil {
-		return nil, fmt.Errorf("update a node not exists: %s", tools.B2S(en.ServerID))
-	}
-
-	m.Merge(en)
-	return m, nil
-}
-
 func (c *Cluster) removeMember(en *rony.EdgeNode) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
