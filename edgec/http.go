@@ -183,7 +183,6 @@ func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope, leader
 	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout, leaderOnly)
 }
 
-// Send implements Client interface
 func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, retry int, timeout time.Duration, leaderOnly bool) (err error) {
 	rs := h.cfg.Router.GetRoute(req)
 	hc := h.getConn(rs, leaderOnly)

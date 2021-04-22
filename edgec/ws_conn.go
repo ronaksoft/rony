@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -28,17 +27,14 @@ import (
 
 type wsConn struct {
 	replicaSet uint64
-	id         string
-	stop       bool
+	serverID   string
 	ws         *Websocket
+	stop       bool
 	conn       net.Conn
 	dialer     ws.Dialer
 	connected  bool
-	mtx        sync.Mutex
 	hostPorts  []string
 	secure     bool
-	pendingMtx tools.SpinLock
-	pending    map[uint64]chan *rony.MessageEnvelope
 }
 
 func (c *wsConn) createDialer(timeout time.Duration) {
@@ -78,9 +74,6 @@ func (c *wsConn) createDialer(timeout time.Duration) {
 }
 
 func (c *wsConn) connect() {
-	if c.isConnected() {
-		return
-	}
 	urlPrefix := "ws://"
 	if c.secure {
 		urlPrefix = "wss://"
@@ -107,43 +100,10 @@ ConnectLoop:
 		goto ConnectLoop
 	}
 	c.conn = conn
-	c.mtx.Lock()
 	c.connected = true
-	c.mtx.Unlock()
 
 	go c.receiver()
 	return
-}
-
-func (c *wsConn) isConnected() bool {
-	c.mtx.Lock()
-	b := c.connected
-	c.mtx.Unlock()
-	return b
-}
-
-func (c *wsConn) reconnect() {
-	c.mtx.Lock()
-	c.connected = false
-	c.mtx.Unlock()
-	_ = c.conn.SetReadDeadline(time.Now())
-}
-
-func (c *wsConn) waitUntilConnect(retry int) error {
-	step := time.Duration(10)
-	for !c.stop {
-		if c.isConnected() {
-			break
-		}
-		if retry--; retry < 0 {
-			return rony.ErrRetriesExceeded(ErrNoConnection)
-		}
-		time.Sleep(time.Millisecond * step)
-		if step < 1000 {
-			step += 10
-		}
-	}
-	return nil
 }
 
 func (c *wsConn) receiver() {
@@ -158,9 +118,7 @@ func (c *wsConn) receiver() {
 		if err != nil {
 			_ = c.conn.Close()
 			if !c.stop {
-				c.mtx.Lock()
 				c.connected = false
-				c.mtx.Unlock()
 				c.connect()
 			}
 			break
@@ -201,12 +159,13 @@ func (c *wsConn) handler(e *rony.MessageEnvelope) {
 		return
 	}
 
-	c.pendingMtx.Lock()
-	h := c.pending[e.GetRequestID()]
-	delete(c.pending, e.GetRequestID())
-	c.pendingMtx.Unlock()
-	if h != nil {
-		h <- e.Clone()
+	c.ws.pendingMtx.Lock()
+	ch := c.ws.pending[e.GetRequestID()]
+	delete(c.ws.pending, e.GetRequestID())
+	c.ws.pendingMtx.Unlock()
+
+	if ch != nil {
+		ch <- e.Clone()
 	} else {
 		defaultHandler(e)
 	}
@@ -216,195 +175,21 @@ func (c *wsConn) close() error {
 	// by setting the stop flag, we are making sure no reconnection will happen
 	c.stop = true
 
-	c.mtx.Lock()
 	_ = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpClose, nil)
-	c.mtx.Unlock()
 
 	// by setting the read deadline we make the receiver() routine stops
 	return c.conn.SetReadDeadline(time.Now())
 }
 
-func (c *wsConn) send(req, res *rony.MessageEnvelope, waitToConnect bool, retry int, timeout time.Duration) (replicaSet uint64, err error) {
-	replicaSet = c.replicaSet
+func (c *wsConn) send(req *rony.MessageEnvelope) error {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	buf := pools.Buffer.GetCap(mo.Size(req))
 	defer pools.Buffer.Put(buf)
 
 	b, err := mo.MarshalAppend(*buf.Bytes(), req)
 	if err != nil {
-		return
+		return err
 	}
 
-	t := pools.AcquireTimer(timeout)
-	defer pools.ReleaseTimer(t)
-
-SendLoop:
-	// If we exceeds the maximum retry then we return
-	if retry--; retry < 0 {
-		err = rony.ErrRetriesExceeded(err)
-		return
-	}
-
-	// If it is required to wait until the connection is established before try sending the
-	// request over the wire
-	if waitToConnect {
-		err = c.waitUntilConnect(100)
-		if err != nil {
-			return
-		}
-	}
-
-	resChan := make(chan *rony.MessageEnvelope, 1)
-	c.pendingMtx.Lock()
-	c.pending[req.GetRequestID()] = resChan
-	c.pendingMtx.Unlock()
-	c.mtx.Lock()
-	err = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpBinary, b)
-	c.mtx.Unlock()
-	if err != nil {
-		_ = c.conn.SetReadDeadline(time.Now())
-		c.pendingMtx.Lock()
-		delete(c.pending, req.GetRequestID())
-		c.pendingMtx.Unlock()
-		goto SendLoop
-	}
-	pools.ResetTimer(t, timeout)
-
-	select {
-	case e := <-resChan:
-		switch e.GetConstructor() {
-		case rony.C_Redirect:
-			x := &rony.Redirect{}
-			err = proto.Unmarshal(e.Message, x)
-			if err != nil {
-				log.Warn("Error On Unmarshal Redirect", zap.Error(err))
-				goto SendLoop
-			}
-			replicaSet, err = c.redirect(x)
-			return
-		}
-		e.DeepCopy(res)
-		rony.PoolMessageEnvelope.Put(e)
-	case <-t.C:
-		log.Warn("Timeout, will retry", zap.Error(err), zap.Int("Retry", retry))
-		c.pendingMtx.Lock()
-		delete(c.pending, req.GetRequestID())
-		c.pendingMtx.Unlock()
-		err = ErrTimeout
-		goto SendLoop
-	}
-	return
-}
-
-func (c *wsConn) redirect(x *rony.Redirect) (replicaSet uint64, err error) {
-	replicaSet = c.replicaSet
-	if ce := log.Check(log.InfoLevel, "Redirect"); ce != nil {
-		ce.Write(
-			zap.Any("Leader", x.Leader),
-			zap.Any("Followers", x.Followers),
-			zap.Any("Wait", x.WaitInSec),
-		)
-	}
-
-	c.ws.pool.addConn(
-		x.Leader.ServerID, x.Leader.ReplicaSet, true,
-		c.ws.newConn(x.Leader.ServerID, x.Leader.ReplicaSet, x.Leader.HostPorts...),
-	)
-	replicaSet = x.Leader.ReplicaSet
-	for _, n := range x.Followers {
-		c.ws.pool.addConn(
-			n.ServerID, n.ReplicaSet, false,
-			c.ws.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...),
-		)
-	}
-
-	switch x.Reason {
-	case rony.RedirectReason_ReplicaMaster:
-		err = ErrReplicaMaster
-	case rony.RedirectReason_ReplicaSetSession:
-		c.ws.sessionReplica = replicaSet
-		err = ErrReplicaSetSession
-	case rony.RedirectReason_ReplicaSetRequest:
-		replicaSet = x.Leader.ReplicaSet
-		err = ErrReplicaSetRequest
-	default:
-		err = ErrUnknownResponse
-	}
-
-	return
-}
-
-type connPool struct {
-	mtx       sync.RWMutex
-	pool      map[uint64]map[string]*wsConn
-	leaderIDs map[uint64]string
-}
-
-func newConnPool() *connPool {
-	cp := &connPool{
-		pool:      make(map[uint64]map[string]*wsConn, 16),
-		leaderIDs: make(map[uint64]string, 16),
-	}
-	return cp
-}
-
-func (cp *connPool) addConn(serverID string, replicaSet uint64, leader bool, c *wsConn) {
-	log.Debug("Pool connection added",
-		zap.String("ServerID", serverID),
-		zap.Uint64("RS", replicaSet),
-		zap.Bool("Leader", leader),
-	)
-	cp.mtx.Lock()
-	defer cp.mtx.Unlock()
-
-	if cp.pool[replicaSet] == nil {
-		cp.pool[replicaSet] = make(map[string]*wsConn, 16)
-	}
-	cp.pool[replicaSet][serverID] = c
-	if leader || replicaSet == 0 {
-		cp.leaderIDs[replicaSet] = serverID
-	}
-}
-
-func (cp *connPool) removeConn(serverID string, replicaSet uint64) {
-	cp.mtx.Lock()
-	defer cp.mtx.Unlock()
-}
-
-func (cp *connPool) getConn(replicaSet uint64, onlyLeader bool) *wsConn {
-	cp.mtx.RLock()
-	defer cp.mtx.RUnlock()
-
-	if onlyLeader {
-		leaderID := cp.leaderIDs[replicaSet]
-		if leaderID == "" {
-			return nil
-		}
-		m := cp.pool[replicaSet]
-		if m != nil {
-			c := m[leaderID]
-			go c.connect()
-			return c
-		}
-	} else {
-		m := cp.pool[replicaSet]
-		if m != nil {
-			for _, c := range m {
-				go c.connect()
-				return c
-			}
-		}
-	}
-	return nil
-}
-
-func (cp *connPool) closeAll() {
-	cp.mtx.RLock()
-	defer cp.mtx.RUnlock()
-
-	for _, conns := range cp.pool {
-		for _, c := range conns {
-			_ = c.close()
-		}
-	}
+	return wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpBinary, b)
 }
