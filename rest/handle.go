@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
-	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -36,8 +35,7 @@ func (h *Handle) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 		_ = conn.SendBinary(0, tools.StrToByte(err.Error()))
 		return nil
 	}
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	h.inputBuf = pools.Buffer.GetCap(mo.Size(h.ctx.me))
+	h.inputBuf = pools.Buffer.FromProto(h.ctx.me)
 	rony.PoolMessageEnvelope.Put(h.ctx.me)
 	return *h.inputBuf.Bytes()
 }

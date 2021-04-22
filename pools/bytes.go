@@ -1,6 +1,7 @@
 package pools
 
 import (
+	"google.golang.org/protobuf/proto"
 	"sync"
 )
 
@@ -28,7 +29,7 @@ type byteSlicePool struct {
 	pool map[int]*sync.Pool
 }
 
-// New creates new byteSlicePool that reuses objects which size is in logarithmic range
+// NewByteSlice creates new byteSlicePool that reuses objects which size is in logarithmic range
 // [min, max].
 //
 // Note that it is a shortcut for Custom() constructor with Options provided by
@@ -192,6 +193,20 @@ func (p *byteBufferPool) GetCap(c int) *ByteBuffer {
 // and exactly len of n.
 func (p *byteBufferPool) GetLen(n int) *ByteBuffer {
 	return p.Get(n, n)
+}
+
+func (p *byteBufferPool) FromProto(m proto.Message) *ByteBuffer {
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	buf := p.GetCap(mo.Size(m))
+	bb, _ := mo.MarshalAppend(*buf.Bytes(), m)
+	buf.SetBytes(&bb)
+	return buf
+}
+
+func (p *byteBufferPool) FromBytes(b []byte) *ByteBuffer {
+	buf := p.GetCap(len(b))
+	buf.Append(b)
+	return buf
 }
 
 // logarithmicRange iterates from ceil to power of two min to max,
