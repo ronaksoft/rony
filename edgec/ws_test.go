@@ -1,11 +1,15 @@
 package edgec_test
 
 import (
-	"github.com/ronaksoft/rony/edge"
+	"flag"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
+	"github.com/ronaksoft/rony/registry"
+	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -24,29 +28,36 @@ func init() {
 	testEnv.Init()
 }
 
+func TestMain(m *testing.M) {
+	edgeServer := testEnv.InitEdgeServer("Adam", 8081, 100000)
+	rony.SetLogLevel(0)
+	service.RegisterSample(
+		&testEnv.Handlers{
+			ServerID: edgeServer.GetServerID(),
+		},
+		edgeServer,
+	)
+
+	edgeServer.Start()
+
+	flag.Parse()
+	code := m.Run()
+	edgeServer.Shutdown()
+	os.Exit(code)
+}
+
 func TestClient_Connect(t *testing.T) {
 	Convey("Websocket Client Tests", t, func(c C) {
-		e := testEnv.InitEdgeServer("Test.01", 8081, 10)
-		service.RegisterSample(
-			&testEnv.Handlers{
-				ServerID: e.GetServerID(),
-			}, e,
-		)
-
-		err := e.StartCluster()
-		if err != nil && err != edge.ErrClusterNotSet {
-			t.Fatal(err)
-		}
-		err = e.StartGateway()
-		c.So(err, ShouldBeNil)
-		defer e.Shutdown()
-
 		Convey("One Connection With Concurrent Request", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
+				Handler: func(m *rony.MessageEnvelope) {
+					c.Println("Received Uncaught Message", registry.ConstructorName(m.Constructor))
+				},
 			})
 			clnt := service.NewSampleClient(wsc)
-			err = wsc.Start()
+			err := wsc.Start()
+			_, _ = c.Println(wsc.Info())
 			c.So(err, ShouldBeNil)
 
 			wg := sync.WaitGroup{}
@@ -54,21 +65,26 @@ func TestClient_Connect(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					res, err := clnt.Echo(&service.EchoRequest{Int: 123})
+					x := tools.RandomInt64(0)
+					res, err := clnt.Echo(&service.EchoRequest{Int: x})
+					if err != nil {
+						c.Println(err.Error())
+					}
+					// _ = res
 					c.So(err, ShouldBeNil)
-					c.So(res.Int, ShouldEqual, 123)
+					c.So(res.Int, ShouldEqual, x)
 				}()
 			}
 			wg.Wait()
 			err = wsc.Close()
 			c.So(err, ShouldBeNil)
 		})
-		SkipConvey("One Connection With Slow Data-Rate", func(c C) {
+		Convey("One Connection With Slow Data-Rate", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
 			clnt := service.NewSampleClient(wsc)
-			err = wsc.Start()
+			err := wsc.Start()
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {
@@ -78,12 +94,12 @@ func TestClient_Connect(t *testing.T) {
 				time.Sleep(time.Second * 3)
 			}
 		})
-		SkipConvey("One Connection With Slow Request", func(c C) {
+		Convey("One Connection With Slow Request", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
 			clnt := service.NewSampleClient(wsc)
-			err = wsc.Start()
+			err := wsc.Start()
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {

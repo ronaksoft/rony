@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -74,6 +75,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		nextReqID:      tools.RandomUint64(0),
 		cfg:            config,
 		connsByReplica: make(map[uint64]map[string]*wsConn, 64),
+		connsByID:      make(map[string]*wsConn, 64),
 		leaderIDs:      make(map[uint64]string, 64),
 		pending:        make(map[uint64]chan *rony.MessageEnvelope, 1024),
 	}
@@ -121,7 +123,7 @@ func (ws *Websocket) Start() error {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
-	err := ws.Send(req, res, true)
+	err := ws.Send(req, res, false)
 	if err != nil {
 		return err
 	}
@@ -143,8 +145,7 @@ func (ws *Websocket) Start() error {
 			if !found {
 				for _, hp := range n.HostPorts {
 					if hp == initConn.hostPorts[0] {
-						wsc = initConn
-						wsc.hostPorts = n.HostPorts
+						ws.removeConn("", 0)
 						found = true
 					}
 				}
@@ -159,6 +160,7 @@ func (ws *Websocket) Start() error {
 		// If this connection is not our connsByReplica then we just close it.
 		if !found {
 			_ = initConn.close()
+			return ErrNoHost
 		}
 	default:
 		return ErrUnknownResponse
@@ -193,6 +195,7 @@ func (ws *Websocket) removeConn(serverID string, replicaSet uint64) {
 	if ws.connsByReplica[replicaSet] != nil {
 		delete(ws.connsByReplica[replicaSet], serverID)
 	}
+	delete(ws.connsByID, serverID)
 }
 
 func (ws *Websocket) getConnByReplica(replicaSet uint64, onlyLeader bool) *wsConn {
@@ -207,14 +210,12 @@ func (ws *Websocket) getConnByReplica(replicaSet uint64, onlyLeader bool) *wsCon
 		m := ws.connsByReplica[replicaSet]
 		if m != nil {
 			c := m[leaderID]
-			c.connect()
 			return c
 		}
 	} else {
 		m := ws.connsByReplica[replicaSet]
 		if m != nil {
 			for _, c := range m {
-				c.connect()
 				return c
 			}
 		}
@@ -265,6 +266,7 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 		ws.pending[ev.req.GetRequestID()] = ev.resChan
 		ws.pendingMtx.Unlock()
 		ev.req.DeepCopy(me)
+
 	default:
 		mc := rony.PoolMessageContainer.Get()
 		for _, e := range entries {
@@ -297,6 +299,7 @@ func (ws *Websocket) SendWithDetails(
 
 Loop:
 	wsc := ws.getConnByReplica(rs, leaderOnly)
+
 	if wsc == nil {
 		// TODO:: try to gather information about the target
 		return ErrNoConnection
@@ -376,6 +379,18 @@ func (ws *Websocket) Close() error {
 		}
 	}
 	return nil
+}
+
+func (ws *Websocket) Info() string {
+	sb := strings.Builder{}
+	sb.WriteString("\n-----\n")
+	ws.connsMtx.Lock()
+	for id, wsc := range ws.connsByID {
+		sb.WriteString(fmt.Sprintf("%s: [RS=%d] [HostPorts=%v] [Connected: %t]\n", id, wsc.replicaSet, wsc.hostPorts, wsc.connected))
+	}
+	ws.connsMtx.Unlock()
+	sb.WriteString("-----\n")
+	return sb.String()
 }
 
 type wsRouter struct {

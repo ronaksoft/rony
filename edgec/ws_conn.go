@@ -182,6 +182,9 @@ func (c *wsConn) close() error {
 }
 
 func (c *wsConn) send(req *rony.MessageEnvelope) error {
+	if !c.connected {
+		c.connect()
+	}
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	buf := pools.Buffer.GetCap(mo.Size(req))
 	defer pools.Buffer.Put(buf)

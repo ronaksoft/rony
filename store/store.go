@@ -92,6 +92,7 @@ func runVlogGC(db *badger.DB, threshold int64) {
 
 func newDB(config Config) (*badger.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
+	opt.Logger = nil
 	return badger.Open(opt)
 }
 

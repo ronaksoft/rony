@@ -15,6 +15,7 @@ import (
 
 var (
 	ErrNoConnection      = fmt.Errorf("no connection")
+	ErrNoHost            = fmt.Errorf("no host")
 	ErrTimeout           = fmt.Errorf("time out")
 	ErrReplicaMaster     = fmt.Errorf("leader redirect")
 	ErrReplicaSetSession = fmt.Errorf("replica redirect session")
