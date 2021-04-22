@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"strings"
@@ -311,6 +312,8 @@ Loop:
 	}
 	ws.flusherPool.Enter(wsc.serverID, tools.NewEntry(wsReq))
 
+	t := pools.AcquireTimer(timeout)
+	defer pools.ReleaseTimer(t)
 	select {
 	case x := <-wsReq.resChan:
 		switch x.GetConstructor() {
@@ -325,7 +328,7 @@ Loop:
 		default:
 			x.DeepCopy(res)
 		}
-	case <-time.After(timeout):
+	case <-t.C:
 		ws.pendingMtx.Lock()
 		delete(ws.pending, req.GetRequestID())
 		ws.pendingMtx.Unlock()
