@@ -16,12 +16,12 @@ import (
 */
 
 type Factory struct {
-	onRequest  func(ctx *Context)
+	onRequest  func(ctx *Context) error
 	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string)
 }
 
 func NewFactory(
-	onRequest func(ctx *Context),
+	onRequest func(ctx *Context) error,
 	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string),
 ) *Factory {
 	return &Factory{
