@@ -9,6 +9,7 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/internal/rest"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
@@ -122,15 +123,14 @@ func (edge *Server) GetHandler(constructor int64) *HandlerOption {
 	return edge.handlers[constructor]
 }
 
-// SetHttpProxy
-func (edge *Server) SetHttpProxy(
-	method, path string,
-	onRequest func(c rony.Conn, ctx *HttpRequest) []byte,
-	onResponse func(data []byte) ([]byte, map[string]string),
-) {
+// SetRestWrapper set a REST wrapper to expose RPCs in REST (Representational State Transfer) format
+func (edge *Server) SetRestWrapper(method string, path string, f *rest.Factory) {
 	switch gw := edge.gateway.(type) {
 	case *tcpGateway.Gateway:
-		gw.SetProxy(method, path, tcpGateway.CreateHandle(onRequest, onResponse))
+		if !gw.Support(gateway.Http) {
+			panic("tcp gateway does not support http protocol")
+		}
+		gw.SetProxy(method, path, f)
 	default:
 		panic("only works on tcp gateway")
 	}
@@ -516,7 +516,7 @@ func (edge *Server) Shutdown() {
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
 }
 
-// Shutdown blocks until any of the signals has been called
+// ShutdownWithSignal blocks until any of the signals has been called
 func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, signals...)

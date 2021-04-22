@@ -34,7 +34,7 @@ type UnsafeConn interface {
 	UnsafeConn() net.Conn
 }
 
-// Config
+// Config holds all the configuration for Gateway
 type Config struct {
 	Concurrency   int
 	ListenAddress string
@@ -42,36 +42,26 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      gateway.Protocol
 	ExternalAddrs []string
-	ProxyEnabled  bool
 }
 
-// Gateway
+// Gateway is one of the main components of the Rony framework. Basically Gateway is the component
+// that connects edge.Server with the external world. Clients which are not part of our cluster MUST
+// connect to our edge servers through Gateway.
+// This is an implementation of gateway.Gateway interface with support for **Http** and **Websocket** connections.
 type Gateway struct {
 	gateway.ConnectHandler
 	gateway.MessageHandler
 	gateway.CloseHandler
 
 	// Internals
-	transportMode gateway.Protocol
-	listenOn      string
-	listener      *wrapListener
-	addrsMtx      sync.RWMutex
-	addrs         []string
-	extAddrs      []string
-	concurrency   int
-	maxBodySize   int
-
-	// Http Internals
-	httpProxy *HttpProxy
-
-	// Websocket Internals
-	upgradeHandler     ws.Upgrader
-	maxIdleTime        int64
-	conns              map[uint64]*websocketConn
-	connsMtx           sync.RWMutex
-	connsTotal         int32
-	connsLastID        uint64
-	connGC             *websocketConnGC
+	transportMode      gateway.Protocol
+	listenOn           string
+	listener           *wrapListener
+	addrsMtx           sync.RWMutex
+	addrs              []string
+	extAddrs           []string
+	concurrency        int
+	maxBodySize        int
 	poller             netpoll.Poller
 	stop               int32
 	waitGroupAcceptors *sync.WaitGroup
@@ -79,9 +69,20 @@ type Gateway struct {
 	waitGroupWriters   *sync.WaitGroup
 	cntReads           uint64
 	cntWrites          uint64
+
+	// Http Internals
+	httpProxy *HttpProxy
+
+	// Websocket Internals
+	upgradeHandler ws.Upgrader
+	connGC         *websocketConnGC
+	maxIdleTime    int64
+	conns          map[uint64]*websocketConn
+	connsMtx       sync.RWMutex
+	connsTotal     int32
+	connsLastID    uint64
 }
 
-// New
 func New(config Config) (*Gateway, error) {
 	var (
 		err error
@@ -97,10 +98,7 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      gateway.TCP,
 		extAddrs:           config.ExternalAddrs,
-	}
-
-	if config.ProxyEnabled {
-		g.httpProxy = &HttpProxy{}
+		httpProxy:          &HttpProxy{},
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -240,10 +238,8 @@ func (g *Gateway) Start() {
 
 // Run is blocking and runs the server endless loop until a non-temporary error happens
 func (g *Gateway) Run() {
-	// if http proxy is set then, HttpProxy is responsible for handling the request
-	if g.httpProxy != nil {
-		g.httpProxy.handler = g.MessageHandler
-	}
+	// set the proxy handler
+	g.httpProxy.handler = g.MessageHandler
 
 	// initialize the fasthttp server.
 	server := fasthttp.Server{
@@ -263,7 +259,8 @@ func (g *Gateway) Run() {
 	}
 }
 
-// Shutdown
+// Shutdown closes the server by stopping services in sequence, in a way that all the flying request
+// will be served before server shutdown.
 func (g *Gateway) Shutdown() {
 	// 1. Stop Accepting New Connections, i.e. Stop ConnectionAcceptor routines
 	log.Info("Connection Acceptors are closing...")
@@ -320,6 +317,10 @@ func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	return c
 }
 
+func (g *Gateway) Support(p gateway.Protocol) bool {
+	return g.transportMode&p == p
+}
+
 func (g *Gateway) TotalConnections() int {
 	g.connsMtx.RLock()
 	n := len(g.conns)
@@ -344,7 +345,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 
 	// If this is a Http Upgrade then we handle websocket
 	if reqCtx.Request.Header.ConnectionUpgrade() {
-		if g.transportMode == gateway.Http {
+		if !g.Support(gateway.Websocket) {
 			reqCtx.SetConnectionClose()
 			reqCtx.SetStatusCode(http.StatusNotAcceptable)
 			return
@@ -362,10 +363,11 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 
 	// This is going to be an HTTP request
 	reqCtx.SetConnectionClose()
-	if g.transportMode == gateway.Websocket {
+	if !g.Support(gateway.Http) {
 		reqCtx.SetStatusCode(http.StatusNotAcceptable)
 		return
 	}
+
 	conn := acquireHttpConn(g, reqCtx)
 	conn.SetClientIP(meta.clientIP)
 	conn.SetClientType(meta.clientType)
@@ -376,11 +378,12 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	releaseConnInfo(meta)
 
 	if g.httpProxy != nil {
-		conn.proxy = g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
-		if conn.proxy == nil {
+		if proxyFactory := g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn); proxyFactory == nil {
 			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
 		} else {
+			conn.proxy = proxyFactory.Get()
 			g.httpProxy.handle(conn, reqCtx)
+			proxyFactory.Release(conn.proxy)
 		}
 	} else {
 		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
@@ -495,8 +498,8 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 	return nil
 }
 
-func (g *Gateway) SetProxy(
-	method, path string, handle gateway.ProxyHandle,
-) {
-	g.httpProxy.Set(method, path, handle)
+// SetProxy set http proxy handlers. This function MUST NOT used concurrent and MUST ONLY use it before
+// calling Start or Run.
+func (g *Gateway) SetProxy(method, path string, factory gateway.ProxyFactory) {
+	g.httpProxy.Set(method, path, factory)
 }

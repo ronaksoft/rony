@@ -322,6 +322,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 			buf.SetBytes(&bb)
 			_ = ctx.Conn().SendBinary(ctx.dispatchCtx.StreamID(), bb)
 			pools.Buffer.Put(buf)
+
 		} else {
 			ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
 		}

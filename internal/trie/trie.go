@@ -55,8 +55,8 @@ func NewTrie() *Trie {
 // See `WithHandler`, `WithTag` and `WithData`.
 type InsertOption func(*Node)
 
-// WithHandler sets the node's `Handler` field (useful for HTTP).
-func WithProxy(proxy gateway.ProxyHandle) InsertOption {
+// WithProxyFactory sets the node's `Handler` field (useful for HTTP).
+func WithProxyFactory(proxy gateway.ProxyFactory) InsertOption {
 	if proxy == nil {
 		panic("muxie/WithProxy: empty handler")
 	}
@@ -127,7 +127,7 @@ func resolveStaticPart(key string) string {
 	return key[:i]
 }
 
-func (t *Trie) insert(key, tag string, optionalData interface{}, proxy gateway.ProxyHandle) *Node {
+func (t *Trie) insert(key, tag string, optionalData interface{}, proxy gateway.ProxyFactory) *Node {
 	input := slowPathSplit(key)
 
 	n := t.root

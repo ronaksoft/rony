@@ -3,6 +3,7 @@ package tcpGateway
 import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 )
 
@@ -61,7 +62,8 @@ func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
 		for k, v := range hdr {
 			c.ctx.Response.Header.Add(k, v)
 		}
-		_, err = c.ctx.Write(d)
+		_, err = c.ctx.Write(*d.Bytes())
+		pools.Buffer.Put(d)
 	} else {
 		_, err = c.ctx.Write(data)
 	}

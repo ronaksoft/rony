@@ -41,7 +41,6 @@ func TestGateway(t *testing.T) {
 		MaxBodySize:   0,
 		MaxIdleTime:   0,
 		ExternalAddrs: []string{hostPort},
-		ProxyEnabled:  true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -51,8 +50,10 @@ func TestGateway(t *testing.T) {
 			func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 				return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
 			},
-			func(data []byte) ([]byte, map[string]string) {
-				return data, nil
+			func(data []byte) (*pools.ByteBuffer, map[string]string) {
+				buf := pools.Buffer.GetCap(len(data))
+				buf.Append(data)
+				return buf, nil
 			},
 		),
 	)
