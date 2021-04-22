@@ -161,7 +161,6 @@ func (ws *Websocket) Start() error {
 		// If this connection is not our connsByReplica then we just close it.
 		if !found {
 			_ = initConn.close()
-			return ErrNoHost
 		}
 	default:
 		return ErrUnknownResponse
