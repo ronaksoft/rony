@@ -344,7 +344,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	meta := acquireConnInfo(reqCtx)
 
 	// If this is a Http Upgrade then we handle websocket
-	if reqCtx.Request.Header.ConnectionUpgrade() {
+	if meta.Upgrade() {
 		if !g.Support(gateway.Websocket) {
 			reqCtx.SetConnectionClose()
 			reqCtx.SetStatusCode(http.StatusNotAcceptable)

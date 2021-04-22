@@ -1,9 +1,11 @@
 package tcpGateway
 
 import (
+	"bytes"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/tools"
+	"github.com/valyala/fasthttp"
 	"sync"
 )
 
@@ -17,6 +19,7 @@ import (
 */
 
 var (
+	ronyUpgrade    = []byte("Upgrade")
 	connInfoPool   sync.Pool
 	ignoredHeaders = map[string]bool{
 		"Host":                     true,
@@ -34,6 +37,7 @@ type connInfo struct {
 	kvs        []*rony.KeyValue
 	clientIP   []byte
 	clientType []byte
+	upgrade    bool
 }
 
 func newConnInfo() *connInfo {
@@ -60,6 +64,10 @@ func (m *connInfo) SetClientType(clientType []byte) {
 	m.clientType = append(m.clientType[:0], clientType...)
 }
 
+func (m *connInfo) Upgrade() bool {
+	return m.upgrade
+}
+
 func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 	mt, ok := connInfoPool.Get().(*connInfo)
 	if !ok {
@@ -81,6 +89,12 @@ func acquireConnInfo(reqCtx *gateway.RequestCtx) *connInfo {
 	})
 	mt.SetClientIP(tools.S2B(reqCtx.RemoteIP().To4().String()), true)
 
+	if reqCtx.Request.Header.ConnectionUpgrade() {
+		mt.upgrade = true
+	} else if bytes.Equal(reqCtx.Request.Header.Peek("X-Rony-Upgrade"), ronyUpgrade) {
+		reqCtx.Request.Header.SetBytesKV(tools.S2B(fasthttp.HeaderConnection), ronyUpgrade)
+		mt.upgrade = true
+	}
 	return mt
 }
 
@@ -88,6 +102,7 @@ func releaseConnInfo(m *connInfo) {
 	for _, kv := range m.kvs {
 		rony.PoolKeyValue.Put(kv)
 	}
+	m.upgrade = false
 	m.kvs = m.kvs[:0]
 	m.clientIP = m.clientIP[:0]
 	m.clientType = m.clientType[:0]
