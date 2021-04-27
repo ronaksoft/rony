@@ -142,7 +142,6 @@ func (g *Generator) createIndices(m *protogen.Message) {
 			}
 		}
 	}
-
 }
 func (g *Generator) genRead(m *protogen.Message) {
 	mn := g.m(m).Name
@@ -215,13 +214,7 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 	mn := g.m(m).Name
 	g.g.P("func Update", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", mn, ") error {")
 	g.blockAlloc()
-	g.g.P("om := &", mn, "{}")
-	g.g.P("err := store.Unmarshal(txn, alloc, om,", tableKey(g.m(m), "m."), ")")
-	g.g.P("if err != nil {")
-	g.g.P("return err")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("err = Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("om.", ",", false), ")")
+	g.g.P("err := Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ")")
 	g.g.P("if err != nil {")
 	g.g.P("return err")
 	g.g.P("}")
@@ -247,7 +240,8 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 func (g *Generator) genDelete(m *protogen.Message) {
 	mn := g.m(m).Name
 	g.g.P("func Delete", mn, "WithTxn(txn *store.Txn, alloc *store.Allocator, ", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
-	if len(g.m(m).Views) > 0 {
+
+	if len(g.m(m).Views) > 0 || g.m(m).HasIndex {
 		g.g.P("m := &", mn, "{}")
 		g.g.P("err := store.Unmarshal(txn, alloc, m, ", tableKey(g.m(m), ""), ")")
 		g.g.P("if err != nil {")
@@ -262,6 +256,35 @@ func (g *Generator) genDelete(m *protogen.Message) {
 	g.g.P("}")
 	g.g.P()
 
+	for _, f := range m.Fields {
+		ftName := string(f.Desc.Name())
+		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
+		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+		if index {
+			g.g.P("// delete field index ")
+			switch f.Desc.Kind() {
+			case protoreflect.MessageKind:
+				panicF("does not support index in Message: %s", m.Desc.Name())
+			default:
+				switch f.Desc.Cardinality() {
+				case protoreflect.Repeated:
+					g.g.P("for idx := range m.", ftName, "{")
+					g.g.P("err = store.Delete(txn, alloc, ", indexKey(g.m(m), ftName, "m.", "[idx]"), " )")
+					g.g.P("if err != nil {")
+					g.g.P("return err")
+					g.g.P("}")
+					g.g.P("}") // end of for
+				default:
+					g.g.P("err = store.Delete(txn, alloc, ", indexKey(g.m(m), ftName, "m.", ""), " )")
+					g.g.P("if err != nil {")
+					g.g.P("return err")
+					g.g.P("}")
+				}
+			}
+			g.g.P()
+		}
+	}
+
 	for idx := range g.m(m).Views {
 		g.g.P("err = store.Delete(txn, alloc,", viewKey(g.m(m), "m.", idx), ")")
 		g.g.P("if err != nil {")
@@ -269,6 +292,7 @@ func (g *Generator) genDelete(m *protogen.Message) {
 		g.g.P("}")
 		g.g.P()
 	}
+
 	g.g.P("return nil")
 	g.g.P("}") // end of DeleteWithTxn
 	g.g.P()
@@ -283,6 +307,7 @@ func (g *Generator) genDelete(m *protogen.Message) {
 	g.g.P("}")  // end of Delete func
 	g.g.P()
 }
+
 func (g *Generator) genHasField(m *protogen.Message) {
 	for _, f := range m.Fields {
 		ftName := string(f.Desc.Name())
