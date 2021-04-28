@@ -93,13 +93,15 @@ func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpo
 }
 
 func releaseWebsocketConn(wc *websocketConn) {
-	wc.clientIP = wc.clientIP[:0]
-	wc.conn = nil
-	for k := range wc.kv {
-		delete(wc.kv, k)
-	}
-	wc.closed = false
-	websocketConnPool.Put(wc)
+	// TODO:: fix data race before enabling it again
+	return
+	// wc.clientIP = wc.clientIP[:0]
+	// wc.conn = nil
+	// for k := range wc.kv {
+	// 	delete(wc.kv, k)
+	// }
+	// wc.closed = false
+	// websocketConnPool.Put(wc)
 }
 
 var websocketMessagePool sync.Pool
