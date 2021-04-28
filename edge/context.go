@@ -173,11 +173,8 @@ func (ctx *DispatchCtx) BufferPush(m *rony.MessageEnvelope) {
 }
 
 func (ctx *DispatchCtx) BufferPop() *rony.MessageEnvelope {
-	v := ctx.buf.PickHeadData()
-	if v != nil {
-		return v.(*rony.MessageEnvelope)
-	}
-	return nil
+	v, _ := ctx.buf.PickHeadData().(*rony.MessageEnvelope)
+	return v
 }
 
 func (ctx *DispatchCtx) BufferSize() int32 {
@@ -313,7 +310,11 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
-		ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		if ctx.Conn().Persistent() {
+			ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+		} else {
+			ctx.dispatchCtx.BufferPush(envelope.Clone())
+		}
 	case TunnelMessage:
 		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}

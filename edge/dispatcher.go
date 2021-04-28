@@ -18,6 +18,8 @@ type Dispatcher interface {
 	// OnMessage is called on every message pushed to RequestCtx.
 	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
 	// async functions, make sure to hard copy (clone) it before sending it.
+	// **NOTE**: This is not called on non-persistent connections, instead it is user's responsibility to check the
+	// ctx.BufferSize() and ctx.BufferPop() functions
 	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
 	// Interceptor is called before any handler called.
 	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
