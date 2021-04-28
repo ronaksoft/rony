@@ -44,14 +44,13 @@ func releaseRequestCtx(ctx *RequestCtx) {
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *Server, conn rony.Conn, streamID int64, serverID []byte, kind MessageKind, bypassDispatcher bool) *DispatchCtx {
+func acquireDispatchCtx(edge *Server, conn rony.Conn, streamID int64, serverID []byte, kind MessageKind) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)
 	} else {
 		ctx = v.(*DispatchCtx)
 	}
-	ctx.byPassDispatcher = bypassDispatcher
 	ctx.conn = conn
 	ctx.kind = kind
 	ctx.streamID = streamID

@@ -184,6 +184,7 @@ func (wc *websocketConn) write(opCode ws.OpCode, payload []byte) (err error) {
 	wc.mtx.Unlock()
 	return
 }
+
 func (wc *websocketConn) Get(key string) interface{} {
 	wc.kvLock.Lock()
 	v := wc.kv[key]

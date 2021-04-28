@@ -224,13 +224,7 @@ func UpdateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) erro
 		defer alloc.ReleaseAll()
 	}
 
-	om := &Model1{}
-	err := store.Unmarshal(txn, alloc, om, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
-	if err != nil {
-		return err
-	}
-
-	err = DeleteModel1WithTxn(txn, alloc, om.ID, om.ShardKey)
+	err := DeleteModel1WithTxn(txn, alloc, m.ID, m.ShardKey)
 	if err != nil {
 		return err
 	}
@@ -261,6 +255,20 @@ func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shard
 	err = store.Delete(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	if err != nil {
 		return err
+	}
+
+	// delete field index
+	err = store.Delete(txn, alloc, 'I', C_Model1, uint64(4843779728911368192), m.P1, m.ID, m.ShardKey)
+	if err != nil {
+		return err
+	}
+
+	// delete field index
+	for idx := range m.P2 {
+		err = store.Delete(txn, alloc, 'I', C_Model1, uint64(4749204136736587776), m.P2[idx], m.ID, m.ShardKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = store.Delete(txn, alloc, 'M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID)
@@ -710,13 +718,7 @@ func UpdateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) erro
 		defer alloc.ReleaseAll()
 	}
 
-	om := &Model2{}
-	err := store.Unmarshal(txn, alloc, om, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
-	if err != nil {
-		return err
-	}
-
-	err = DeleteModel2WithTxn(txn, alloc, om.ID, om.ShardKey, om.P1)
+	err := DeleteModel2WithTxn(txn, alloc, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return err
 	}

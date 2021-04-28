@@ -296,7 +296,7 @@ func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
 	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
 	// defer task.End()
 
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage, false)
+	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage)
 	dispatchCtx.FillEnvelope(
 		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
 		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
@@ -318,8 +318,8 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 
 	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
 	// byPassDispatcher argument
-	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage, byPassDispatcher)
-	if dispatchCtx.byPassDispatcher {
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
+	if byPassDispatcher {
 		err = dispatchCtx.UnmarshalEnvelope(data)
 	} else {
 		err = edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
@@ -335,9 +335,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		if !dispatchCtx.byPassDispatcher {
-			edge.gatewayDispatcher.Done(dispatchCtx)
-		}
+		edge.gatewayDispatcher.Done(dispatchCtx)
 	}
 
 	// Release the dispatch context
@@ -355,7 +353,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	// defer task.End()
 
 	// Fill the dispatch context envelope from the received tunnel message
-	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage, false)
+	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage)
 	dispatchCtx.FillEnvelope(
 		tm.Envelope.GetRequestID(), tm.Envelope.GetConstructor(), tm.Envelope.Message,
 		tm.Envelope.Auth, tm.Envelope.Header...,
@@ -397,14 +395,7 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
-		if ctx.byPassDispatcher {
-			buf := pools.Buffer.FromProto(envelope)
-			_ = ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
-			pools.Buffer.Put(buf)
-		} else {
-			edge.gatewayDispatcher.OnMessage(ctx, envelope)
-		}
-
+		edge.gatewayDispatcher.OnMessage(ctx, envelope)
 	case TunnelMessage:
 		ctx.BufferPush(envelope.Clone())
 	}

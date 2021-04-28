@@ -350,13 +350,7 @@ func UpdatePageWithTxn(txn *store.Txn, alloc *store.Allocator, m *Page) error {
 		defer alloc.ReleaseAll()
 	}
 
-	om := &Page{}
-	err := store.Unmarshal(txn, alloc, om, 'M', C_Page, 299066170, m.ID)
-	if err != nil {
-		return err
-	}
-
-	err = DeletePageWithTxn(txn, alloc, om.ID)
+	err := DeletePageWithTxn(txn, alloc, m.ID)
 	if err != nil {
 		return err
 	}
