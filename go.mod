@@ -11,7 +11,7 @@ require (
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
-	github.com/gobuffalo/plush/v4 v4.0.0
+	github.com/gobuffalo/plush/v4 v4.1.4
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
 	github.com/hashicorp/go-hclog v0.9.1
