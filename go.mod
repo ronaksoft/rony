@@ -14,12 +14,11 @@ require (
 	github.com/gobuffalo/plush/v4 v4.0.0
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
-	github.com/golang/protobuf v1.4.1
 	github.com/hashicorp/go-hclog v0.9.1
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5
-	github.com/hashicorp/memberlist v0.2.2
-	github.com/hashicorp/raft v1.2.0
+	github.com/hashicorp/memberlist v0.2.4
+	github.com/hashicorp/raft v1.3.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
@@ -34,7 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/valyala/fasthttp v1.22.0
+	github.com/valyala/fasthttp v1.24.0
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.0 // indirect

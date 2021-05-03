@@ -27,7 +27,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Config
 type Config struct {
 	ServerID   []byte
 	Bootstrap  bool
@@ -37,7 +36,6 @@ type Config struct {
 	GossipPort int
 }
 
-// Cluster
 type Cluster struct {
 	cluster.ReplicaMessageHandler
 	dataPath         string
@@ -51,10 +49,9 @@ type Cluster struct {
 	clusterMembers   map[string]*Member
 
 	// Raft & Gossip
-	raftFSM raftFSM
-	raft    *raft.Raft
-	gossip  *memberlist.Memberlist
-	// badgerStore   *raftbadger.BadgerStore
+	raftFSM       raftFSM
+	raft          *raft.Raft
+	gossip        *memberlist.Memberlist
 	rateLimitChan chan struct{}
 }
 
