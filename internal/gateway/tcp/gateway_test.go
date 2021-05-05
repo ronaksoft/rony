@@ -52,7 +52,7 @@ func TestGateway(t *testing.T) {
 			},
 			func(data []byte) (*pools.ByteBuffer, map[string]string) {
 				buf := pools.Buffer.GetCap(len(data))
-				buf.Append(data)
+				buf.AppendFrom(data)
 				return buf, nil
 			},
 		),

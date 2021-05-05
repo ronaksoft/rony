@@ -437,7 +437,7 @@ func writeFrame(w io.Writer, s ws.State, op ws.OpCode, fin bool, p []byte) error
 		// Should copy bytes to prevent corruption of caller data.
 		buf := pools.Buffer.GetLen(len(p))
 		defer pools.Buffer.Put(buf)
-		buf.Copy(p)
+		buf.CopyFrom(p)
 		frame = ws.NewFrame(op, fin, *buf.Bytes())
 		frame = ws.MaskFrameInPlace(frame)
 	} else {

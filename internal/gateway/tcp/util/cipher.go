@@ -61,7 +61,7 @@ func (c *CipherWriter) Reset(w io.Writer, mask [4]byte) {
 // initialization to every sent byte. It does not modify original slice.
 func (c *CipherWriter) Write(p []byte) (n int, err error) {
 	buf := pools.Buffer.GetLen(len(p))
-	buf.Copy(p)
+	buf.CopyFrom(p)
 	ws.Cipher(*buf.Bytes(), c.mask, c.pos)
 	n, err = c.w.Write(*buf.Bytes())
 	c.pos += n

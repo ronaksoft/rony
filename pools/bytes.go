@@ -224,7 +224,7 @@ func (p *byteBufferPool) FromProto(m proto.Message) *ByteBuffer {
 
 func (p *byteBufferPool) FromBytes(b []byte) *ByteBuffer {
 	buf := p.GetCap(len(b))
-	buf.Append(b)
+	buf.AppendFrom(b)
 	return buf
 }
 
