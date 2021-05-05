@@ -38,7 +38,7 @@ func init() {
 	RootCmd.AddCommand(
 		DemoStartCmd, StartCmd, BenchCmd, ListCmd, Members,
 		EchoCmd, EchoLeaderOnlyCmd, EchoTunnelCmd,
-		Trace, MemProf, LogLevel,
+		Trace, MemProf, LogLevel, ClusterCmd,
 	)
 
 	RootCmd.PersistentFlags().Int(FlagLogLevel, 0, "")
@@ -477,6 +477,53 @@ var Members = &cobra.Command{
 			)
 		}
 		cmd.Println(columnize.SimpleFormat(rows))
+	},
+}
+
+var ClusterCmd = &cobra.Command{
+	Use: "cluster-info",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+			return
+		}
+		e1 := Edges[serverID]
+		if e1 == nil {
+			cmd.Println("Invalid Args")
+			return
+		}
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			cmd.Println("No Gateway Addr", gatewayAddrs)
+			return
+		}
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			Handler: func(m *rony.MessageEnvelope) {
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
+			},
+			Secure:          false,
+			RequestTimeout:  time.Second * 10,
+			RequestMaxRetry: 1,
+		})
+		err := ec.Start()
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		defer ec.Close()
+
+		edges, err := ec.ClusterInfo(replicaSet)
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		for idx, n := range edges.Nodes {
+			cmd.Println(fmt.Sprintf("%d: %s[%d] %t -- %v", idx, n.ServerID, n.ReplicaSet, n.Leader, n.HostPorts))
+		}
+
 	},
 }
 

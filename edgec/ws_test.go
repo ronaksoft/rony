@@ -57,7 +57,7 @@ func TestClient_Connect(t *testing.T) {
 			})
 			clnt := service.NewSampleClient(wsc)
 			err := wsc.Start()
-			_, _ = c.Println(wsc.Info())
+			_, _ = c.Println(wsc.ConnInfo())
 			c.So(err, ShouldBeNil)
 
 			wg := sync.WaitGroup{}

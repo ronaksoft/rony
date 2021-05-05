@@ -383,7 +383,7 @@ func (ws *Websocket) Close() error {
 	return nil
 }
 
-func (ws *Websocket) Info() string {
+func (ws *Websocket) ConnInfo() string {
 	sb := strings.Builder{}
 	sb.WriteString("\n-----\n")
 	ws.connsMtx.Lock()
@@ -393,6 +393,29 @@ func (ws *Websocket) Info() string {
 	ws.connsMtx.Unlock()
 	sb.WriteString("-----\n")
 	return sb.String()
+}
+
+func (ws *Websocket) ClusterInfo(replicaSets ...uint64) (*rony.Edges, error) {
+	req := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(req)
+	res := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(res)
+	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{ReplicaSet: replicaSets})
+	err := ws.Send(req, res, false)
+	if err != nil {
+		return nil, err
+	}
+	switch res.GetConstructor() {
+	case rony.C_Edges:
+		x := &rony.Edges{}
+		_ = x.Unmarshal(res.GetMessage())
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(res.GetMessage())
+		return nil, x
+	}
+	return nil, ErrUnknownResponse
 }
 
 type wsRouter struct {
