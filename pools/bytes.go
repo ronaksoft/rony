@@ -131,16 +131,18 @@ func (bb *ByteBuffer) CopyFrom(data []byte) {
 	copy(bb.b, data)
 }
 
-func (bb *ByteBuffer) CopyTo(data []byte) {
+func (bb *ByteBuffer) CopyTo(data []byte) []byte {
 	copy(data, bb.b)
+	return data
 }
 
 func (bb *ByteBuffer) AppendFrom(data []byte) {
 	bb.b = append(bb.b, data...)
 }
 
-func (bb *ByteBuffer) AppendTo(data []byte) {
+func (bb *ByteBuffer) AppendTo(data []byte) []byte {
 	data = append(data, bb.b...)
+	return data
 }
 
 func (bb *ByteBuffer) Len() int {
