@@ -2,6 +2,7 @@ package pools
 
 import (
 	"google.golang.org/protobuf/proto"
+	"io"
 	"sync"
 )
 
@@ -87,7 +88,16 @@ func (p *byteSlicePool) GetLen(n int) []byte {
 }
 
 type ByteBuffer struct {
-	b []byte
+	ri int
+	b  []byte
+}
+
+func (bb *ByteBuffer) Read(p []byte) (n int, err error) {
+	if bb.ri == len(bb.b) - 1 {
+		return 0, io.EOF
+	}
+	n = copy(p, bb.b[bb.ri:])
+	return n, nil
 }
 
 func newByteBuffer(n, c int) *ByteBuffer {
@@ -98,7 +108,8 @@ func newByteBuffer(n, c int) *ByteBuffer {
 }
 
 func (bb *ByteBuffer) Reset() {
-	bb.b = bb.b[:0]
+	bb.ri = 0
+	bb.b = bb.b[:bb.ri]
 }
 
 func (bb *ByteBuffer) Bytes() *[]byte {
