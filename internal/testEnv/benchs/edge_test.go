@@ -51,8 +51,8 @@ func BenchmarkEdge(b *testing.B) {
 	benches := map[string]func(*testing.B){
 		"Http-Client":            benchHttpClient,
 		"Http-Single-EdgeClient": benchHttpSingleEdgeClient,
-		// "SingleWebsocket": benchSingleWebsocketClient,
-		// "MultiWebsocket":  benchMultiWebsocketClient,
+		"SingleWebsocket":        benchSingleWebsocketClient,
+		"MultiWebsocket":         benchMultiWebsocketClient,
 	}
 	for k, f := range benches {
 		b.Run(k, f)

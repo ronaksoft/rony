@@ -23,7 +23,6 @@ type Builtin struct {
 	cluster  cluster.Cluster
 	gateway  gateway.Gateway
 	serverID string
-	rs       uint64
 }
 
 func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster) *Builtin {

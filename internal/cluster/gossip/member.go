@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"google.golang.org/protobuf/proto"
 	"net"
-	"sync"
 )
 
 /*
@@ -19,7 +18,6 @@ import (
 */
 
 type Member struct {
-	mtx         sync.RWMutex
 	idx         int
 	serverID    string
 	replicaSet  uint64

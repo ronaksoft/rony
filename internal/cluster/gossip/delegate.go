@@ -177,5 +177,4 @@ func (d *clusterDelegate) LocalState(join bool) []byte {
 }
 
 func (d *clusterDelegate) MergeRemoteState(buf []byte, join bool) {
-	return
 }

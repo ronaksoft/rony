@@ -171,7 +171,7 @@ func (wc *websocketConn) read(ms []wsutil.Message) ([]wsutil.Message, error) {
 	var err error
 	wc.mtx.Lock()
 	if wc.conn != nil {
-		err = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
+		_ = wc.conn.SetReadDeadline(time.Now().Add(defaultReadTimout))
 		ms, err = wsutil.ReadMessage(wc.conn, ws.StateServerSide, ms)
 	} else {
 		err = ErrConnectionClosed
@@ -183,7 +183,7 @@ func (wc *websocketConn) read(ms []wsutil.Message) ([]wsutil.Message, error) {
 func (wc *websocketConn) write(opCode ws.OpCode, payload []byte) (err error) {
 	wc.mtx.Lock()
 	if wc.conn != nil {
-		err = wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
+		_ = wc.conn.SetWriteDeadline(time.Now().Add(defaultWriteTimeout))
 		err = wsutil.WriteMessage(wc.conn, ws.StateServerSide, opCode, payload)
 	} else {
 		err = ErrWriteToClosedConn

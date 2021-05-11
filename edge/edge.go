@@ -557,7 +557,7 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 
 	// Marshal and send over the wire
 	buf := pools.Buffer.FromProto(tmOut)
-	n, err := conn.Write(*buf.Bytes())
+	_, err = conn.Write(*buf.Bytes())
 	pools.Buffer.Put(buf)
 	if err != nil {
 		return err
@@ -566,7 +566,7 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	// Wait for response and unmarshal it
 	buf = pools.Buffer.GetLen(4096)
 	_ = conn.SetReadDeadline(time.Now().Add(time.Second * 3))
-	n, err = bufio.NewReader(conn).Read(*buf.Bytes())
+	n, err := bufio.NewReader(conn).Read(*buf.Bytes())
 	if err != nil || n == 0 {
 		return err
 	}

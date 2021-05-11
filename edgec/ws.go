@@ -214,10 +214,8 @@ func (ws *Websocket) getConnByReplica(replicaSet uint64, onlyLeader bool) *wsCon
 		}
 	} else {
 		m := ws.connsByReplica[replicaSet]
-		if m != nil {
-			for _, c := range m {
-				return c
-			}
+		for _, c := range m {
+			return c
 		}
 	}
 	return nil
