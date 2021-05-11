@@ -179,7 +179,6 @@ func BenchmarkNew(b *testing.B) {
 		if err != nil {
 			panic(err)
 		}
-		return
 	}
 	t.Start()
 	b.ReportAllocs()

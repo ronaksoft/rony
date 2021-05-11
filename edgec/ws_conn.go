@@ -103,7 +103,6 @@ ConnectLoop:
 	c.connected = true
 
 	go c.receiver()
-	return
 }
 
 func (c *wsConn) receiver() {

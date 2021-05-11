@@ -2,12 +2,9 @@ package tcpGateway
 
 import (
 	"github.com/gobwas/ws"
-	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony/internal/gateway"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	"github.com/ronaksoft/rony/tools"
-	"net"
 	"sync"
 )
 
@@ -67,41 +64,6 @@ func releaseWriteRequest(wr *writeRequest) {
 	wr.wc = nil
 	wr.payload = wr.payload[:0]
 	writeRequestPool.Put(wr)
-}
-
-var websocketConnPool sync.Pool
-
-func acquireWebsocketConn(gw *Gateway, connID uint64, conn net.Conn, desc *netpoll.Desc) *websocketConn {
-	c, ok := websocketConnPool.Get().(*websocketConn)
-	if !ok {
-		return &websocketConn{
-			connID:       connID,
-			gateway:      gw,
-			conn:         conn,
-			desc:         desc,
-			closed:       false,
-			kv:           make(map[string]interface{}, 4),
-			lastActivity: tools.CPUTicks(),
-		}
-	}
-	c.gateway = gw
-	c.connID = connID
-	c.desc = desc
-	c.conn = conn
-	c.lastActivity = tools.CPUTicks()
-	return c
-}
-
-func releaseWebsocketConn(wc *websocketConn) {
-	// TODO:: fix data race before enabling it again
-	return
-	// wc.clientIP = wc.clientIP[:0]
-	// wc.conn = nil
-	// for k := range wc.kv {
-	// 	delete(wc.kv, k)
-	// }
-	// wc.closed = false
-	// websocketConnPool.Put(wc)
 }
 
 var websocketMessagePool sync.Pool

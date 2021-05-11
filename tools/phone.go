@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	exp1, err := regexp.Compile("^[+\\d]\\d*$")
+	exp1, err := regexp.Compile(`^[+\d]\d*$`)
 	if err != nil {
 		panic(err)
 	}

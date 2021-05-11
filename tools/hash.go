@@ -41,7 +41,6 @@ func MustSha512(in, out []byte) {
 	if err != nil {
 		panic(err)
 	}
-	return
 }
 
 var poolSha256 = sync.Pool{
@@ -69,5 +68,4 @@ func MustSha256(in, out []byte) {
 	if err != nil {
 		panic(err)
 	}
-	return
 }

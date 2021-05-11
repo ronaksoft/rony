@@ -66,7 +66,6 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		}
 	}
 	ctx.PushMessage(rony.C_Edges, res)
-	return
 }
 
 func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {

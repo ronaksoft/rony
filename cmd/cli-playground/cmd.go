@@ -202,7 +202,7 @@ var EchoCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: gatewayAddrs[0],
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
@@ -262,7 +262,7 @@ var EchoLeaderOnlyCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: gatewayAddrs[0],
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
@@ -323,7 +323,7 @@ var EchoTunnelCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: gatewayAddrs[0],
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},
@@ -500,7 +500,7 @@ var ClusterCmd = &cobra.Command{
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: fmt.Sprintf("%s", gatewayAddrs[0]),
+			SeedHostPort: gatewayAddrs[0],
 			Handler: func(m *rony.MessageEnvelope) {
 				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
 			},

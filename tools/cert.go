@@ -92,10 +92,8 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(rootKey),
 	})
 
-	ioutil.WriteFile(certPath, rootCertPEM, os.ModePerm)
-	ioutil.WriteFile(keyPath, rootKeyPEM, os.ModePerm)
-
-	return
+	_ = ioutil.WriteFile(certPath, rootCertPEM, os.ModePerm)
+	_ = ioutil.WriteFile(keyPath, rootKeyPEM, os.ModePerm)
 }
 
 func GetCertificate(keyPath, certPath string) tls.Certificate {

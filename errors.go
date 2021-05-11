@@ -53,6 +53,6 @@ var (
 
 func wrapError(txt string) func(err error) error {
 	return func(err error) error {
-		return errors.New(fmt.Sprintf("%s: %v", txt, err))
+		return fmt.Errorf("%s: %v", txt, err)
 	}
 }

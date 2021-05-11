@@ -25,7 +25,6 @@ func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
 	errMessage.Items = errItem
 	out.Fill(reqID, C_Error, errMessage)
 	PoolError.Put(errMessage)
-	return
 }
 
 func (x *MessageEnvelope) Clone() *MessageEnvelope {

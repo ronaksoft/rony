@@ -144,7 +144,7 @@ func (edge *Server) Gateway() gateway.Gateway {
 	return edge.gateway
 }
 
-func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (err error, isLeader bool) {
+func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (isLeader bool, err error) {
 	// If server is standalone then we are the leader anyway
 	isLeader = true
 	if edge.cluster == nil || !edge.cluster.RaftEnabled() {
@@ -276,8 +276,6 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	case TunnelMessage:
 		metrics.ObserveHistogram(metrics.HistTunnelRequestTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
 	}
-
-	return
 }
 func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if r := recover(); r != nil {
@@ -329,7 +327,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		return
 	}
 
-	err, isLeader := edge.executePrepare(dispatchCtx)
+	isLeader, err := edge.executePrepare(dispatchCtx)
 	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
@@ -340,7 +338,6 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 
 	// Release the dispatch context
 	releaseDispatchCtx(dispatchCtx)
-	return
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
 	edge.gatewayDispatcher.OnOpen(conn, kvs...)
@@ -359,7 +356,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 		tm.Envelope.Auth, tm.Envelope.Header...,
 	)
 
-	err, isLeader := edge.executePrepare(dispatchCtx)
+	isLeader, err := edge.executePrepare(dispatchCtx)
 	if err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
@@ -370,7 +367,6 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 
 	// Release the dispatch context
 	releaseDispatchCtx(dispatchCtx)
-	return
 }
 func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 	tm := rony.PoolTunnelMessage.Get()
@@ -496,7 +492,7 @@ func (edge *Server) Shutdown() {
 
 // ShutdownWithSignal blocks until any of the signals has been called
 func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, signals...)
 
 	// Wait for signal

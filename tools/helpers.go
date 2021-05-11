@@ -41,10 +41,7 @@ func (errs *mErrors) Add(err error) {
 }
 
 func (errs *mErrors) HasError() bool {
-	if len(errs.errs) > 0 {
-		return true
-	}
-	return false
+	return len(errs.errs) > 0
 }
 
 func RunInSequence(fns ...func() error) error {

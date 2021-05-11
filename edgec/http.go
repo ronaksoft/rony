@@ -101,10 +101,8 @@ func (h *Http) getConn(replicaSet uint64, onlyLeader bool) *httpConn {
 		}
 	} else {
 		m := h.hosts[replicaSet]
-		if m != nil {
-			for _, c := range m {
-				return c
-			}
+		for _, c := range m {
+			return c
 		}
 	}
 	return nil

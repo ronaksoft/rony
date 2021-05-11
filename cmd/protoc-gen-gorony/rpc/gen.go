@@ -354,7 +354,6 @@ func (g *Generator) createClientCli(s *protogen.Service) {
 			sb.WriteRune(',')
 		}
 		g.g.P(sb.String())
-		names = names[:0]
 	}
 	g.g.P(")") // end of rootCmd.AddCommand
 	g.g.P("}") // end of Register func block

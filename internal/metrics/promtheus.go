@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"sync"
 )
 
 /*
@@ -14,9 +13,7 @@ import (
    Copyright Ronak Software Group 2018
 */
 
-// Prometheus
 type Prometheus struct {
-	mtx            sync.RWMutex
 	ns             string
 	labels         map[string]string
 	counters       map[string]prometheus.Counter

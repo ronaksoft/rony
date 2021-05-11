@@ -152,10 +152,7 @@ func (l *lexer) run() {
 
 // atRightDelim reports whether the lexer is at a right delimiter, possibly preceded by a trim marker.
 func (l *lexer) atRightDelim() (delim bool) {
-	if strings.HasPrefix(l.input[l.pos:], rightDelim) { // Without trim marker.
-		return true
-	}
-	return false
+	return strings.HasPrefix(l.input[l.pos:], rightDelim)
 }
 
 // atTerminator reports whether the input is at valid termination character to

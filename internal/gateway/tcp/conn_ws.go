@@ -130,7 +130,6 @@ func (wc *websocketConn) release(reason int) {
 	}
 
 	wc.mtx.Unlock()
-	releaseWebsocketConn(wc)
 }
 
 func (wc *websocketConn) startEvent(event netpoll.Event) {

@@ -66,7 +66,6 @@ func WithTcpGateway(config TcpGatewayConfig) Option {
 		gatewayTcp.CloseHandler = edge.onGatewayClose
 		edge.gatewayProtocol = config.Protocol
 		edge.gateway = gatewayTcp
-		return
 	}
 }
 
@@ -88,7 +87,6 @@ func WithTestGateway(config DummyGatewayConfig) Option {
 		gatewayDummy.CloseHandler = edge.onGatewayClose
 		edge.gatewayProtocol = gateway.Dummy
 		edge.gateway = gatewayDummy
-		return
 	}
 }
 

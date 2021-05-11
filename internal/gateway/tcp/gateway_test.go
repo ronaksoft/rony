@@ -122,6 +122,7 @@ func TestGateway(t *testing.T) {
 
 			wg.Wait()
 			err = wsc.Close()
+			c.So(err, ShouldBeNil)
 		})
 		Convey("Websocket / With Normal Handler", func(c C) {
 			wg := pools.AcquireWaitGroup()
@@ -141,6 +142,7 @@ func TestGateway(t *testing.T) {
 						c.So(err, ShouldBeNil)
 					}
 					err = wsc.Close()
+					c.So(err, ShouldBeNil)
 					wg.Done()
 				}()
 			}

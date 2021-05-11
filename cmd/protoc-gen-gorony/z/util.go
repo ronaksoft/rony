@@ -28,7 +28,7 @@ func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protorefle
 func Name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
 	p, t := DescName(file, g, desc)
 	if p == "" {
-		return fmt.Sprintf("%s", t)
+		return t
 	} else {
 		return fmt.Sprintf("%s.%s", p, t)
 	}
