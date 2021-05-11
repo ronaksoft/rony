@@ -25,8 +25,8 @@ faster there is an executable to makes the life easier for you.
 Use go get to install the Go client-and-server generator:
 
 ```
-go get -u github.com/ronaksoft/rony/cmd/rony
-go get -u github.com/ronaksoft/rony/cmd/protoc-gen-rony
+GO111MODULE=on go get -u github.com/ronaksoft/rony/cmd/rony
+GO111MODULE=on go get -u github.com/ronaksoft/rony/cmd/protoc-gen-gorony
 ```
 
 You will also need:
