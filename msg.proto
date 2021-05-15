@@ -34,9 +34,8 @@ message Error {
 
 // RedirectReason
 enum RedirectReason {
-    ReplicaMaster = 0;
-    ReplicaSetSession = 1;
-    ReplicaSetRequest = 2;
+    ReplicaSetSession = 0;
+    ReplicaSetRequest = 1;
     Reserved1 = 3;
     Reserved2 = 4;
     Reserved3 = 5;
@@ -46,8 +45,7 @@ enum RedirectReason {
 // Redirect
 message Redirect {
     RedirectReason Reason = 100;
-    Edge Leader = 1;
-    repeated Edge Followers = 2;
+    repeated Edge Edges = 2;
     uint32 WaitInSec = 3;
 }
 
@@ -56,7 +54,6 @@ message Edge {
     uint64 ReplicaSet = 1;
     string ServerID = 2;
     repeated string HostPorts = 3;
-    bool Leader = 4;
 }
 
 // Edges

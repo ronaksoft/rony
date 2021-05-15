@@ -61,7 +61,6 @@ func (m *Member) Proto(p *rony.Edge) *rony.Edge {
 	p.ReplicaSet = m.replicaSet
 	p.ServerID = m.serverID
 	p.HostPorts = append(p.HostPorts, m.gatewayAddr...)
-	p.Leader = m.raftState == rony.RaftState_Leader
 	return p
 }
 

@@ -181,7 +181,7 @@ func (g *Generator) genClient(s *protogen.Service) {
 		g.g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
 		g.g.P("out.Fill(c.c.GetRequestID(), C_", methodName, ", req, kvs...)")
-		g.g.P("err := c.c.Send(out, in, true)")
+		g.g.P("err := c.c.Send(out, in)")
 		g.g.P("if err != nil {")
 		g.g.P("return nil, err")
 		g.g.P("}")

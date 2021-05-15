@@ -49,7 +49,6 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			ReplicaSet: 0,
 			ServerID:   pm.serverID,
 			HostPorts:  pm.gateway.Addr(),
-			Leader:     true,
 		})
 	} else if len(req.ReplicaSet) == 0 {
 		members := pm.cluster.RaftMembers(pm.cluster.ReplicaSet())

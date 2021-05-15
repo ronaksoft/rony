@@ -205,12 +205,10 @@ func (p *poolRedirect) Put(x *Redirect) {
 		return
 	}
 	x.Reason = 0
-	PoolEdge.Put(x.Leader)
-	x.Leader = nil
-	for _, z := range x.Followers {
+	for _, z := range x.Edges {
 		PoolEdge.Put(z)
 	}
-	x.Followers = x.Followers[:0]
+	x.Edges = x.Edges[:0]
 	x.WaitInSec = 0
 	p.pool.Put(x)
 }
@@ -219,19 +217,11 @@ var PoolRedirect = poolRedirect{}
 
 func (x *Redirect) DeepCopy(z *Redirect) {
 	z.Reason = x.Reason
-	if x.Leader != nil {
-		if z.Leader == nil {
-			z.Leader = PoolEdge.Get()
-		}
-		x.Leader.DeepCopy(z.Leader)
-	} else {
-		z.Leader = nil
-	}
-	for idx := range x.Followers {
-		if x.Followers[idx] != nil {
+	for idx := range x.Edges {
+		if x.Edges[idx] != nil {
 			xx := PoolEdge.Get()
-			x.Followers[idx].DeepCopy(xx)
-			z.Followers = append(z.Followers, xx)
+			x.Edges[idx].DeepCopy(xx)
+			z.Edges = append(z.Edges, xx)
 		}
 	}
 	z.WaitInSec = x.WaitInSec
@@ -266,7 +256,6 @@ func (p *poolEdge) Put(x *Edge) {
 	x.ReplicaSet = 0
 	x.ServerID = ""
 	x.HostPorts = x.HostPorts[:0]
-	x.Leader = false
 	p.pool.Put(x)
 }
 
@@ -276,7 +265,6 @@ func (x *Edge) DeepCopy(z *Edge) {
 	z.ReplicaSet = x.ReplicaSet
 	z.ServerID = x.ServerID
 	z.HostPorts = append(z.HostPorts[:0], x.HostPorts...)
-	z.Leader = x.Leader
 }
 
 func (x *Edge) Marshal() ([]byte, error) {

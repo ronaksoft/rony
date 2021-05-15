@@ -267,22 +267,10 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 	members := ctx.Cluster().RaftMembers(replicaSet)
 	for _, m := range members {
 		ni := m.Proto(rony.PoolEdge.Get())
-		if ni.Leader {
-			r.Leader = ni
-		} else {
-			r.Followers = append(r.Followers, ni)
-		}
+		r.Edges = append(r.Edges, ni)
 	}
 	ctx.PushMessage(rony.C_Redirect, r)
 	rony.PoolRedirect.Put(r)
-}
-
-func (ctx *RequestCtx) PushRedirectLeader() {
-	if leaderID := ctx.Cluster().RaftLeaderID(); leaderID == "" {
-		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRaftLeader)
-		return
-	}
-	ctx.pushRedirect(rony.RedirectReason_ReplicaMaster, ctx.Cluster().ReplicaSet())
 }
 
 func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64, wait time.Duration) {

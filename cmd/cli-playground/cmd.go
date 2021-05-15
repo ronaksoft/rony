@@ -521,7 +521,7 @@ var ClusterCmd = &cobra.Command{
 			return
 		}
 		for idx, n := range edges.Nodes {
-			cmd.Println(fmt.Sprintf("%d: %s[%d] %t -- %v", idx, n.ServerID, n.ReplicaSet, n.Leader, n.HostPorts))
+			cmd.Println(fmt.Sprintf("%d: %s[%d] -- %v", idx, n.ServerID, n.ReplicaSet, n.HostPorts))
 		}
 
 	},

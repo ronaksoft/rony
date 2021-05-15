@@ -84,25 +84,22 @@ SendLoop:
 func (c *httpConn) redirect(x *rony.Redirect) (replicaSet uint64, err error) {
 	if ce := log.Check(log.InfoLevel, "Redirect"); ce != nil {
 		ce.Write(
-			zap.Any("Leader", x.Leader),
-			zap.Any("Followers", x.Followers),
+			zap.Any("Edges", x.Edges),
 			zap.Any("Wait", x.WaitInSec),
 		)
 	}
-	c.h.addConn(x.Leader.ServerID, x.Leader.ReplicaSet, true, c.h.newConn(x.Leader.ServerID, x.Leader.ReplicaSet, x.Leader.HostPorts...))
-	replicaSet = x.Leader.ReplicaSet
-	for _, n := range x.Followers {
-		c.h.addConn(n.ServerID, n.ReplicaSet, false, c.h.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...))
+
+	replicaSet = x.Edges[0].ReplicaSet
+	for _, n := range x.Edges {
+		c.h.addConn(n.ServerID, n.ReplicaSet, c.h.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...))
 	}
 
 	switch x.Reason {
-	case rony.RedirectReason_ReplicaMaster:
-		err = ErrReplicaMaster
 	case rony.RedirectReason_ReplicaSetSession:
 		c.h.sessionReplica = replicaSet
 		err = ErrReplicaSetSession
 	case rony.RedirectReason_ReplicaSetRequest:
-		replicaSet = x.Leader.ReplicaSet
+		replicaSet = x.Edges[0].ReplicaSet
 		err = ErrReplicaSetRequest
 	default:
 		err = ErrUnknownResponse

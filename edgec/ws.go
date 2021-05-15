@@ -61,7 +61,6 @@ type Websocket struct {
 	connsMtx       sync.RWMutex
 	connsByReplica map[uint64]map[string]*wsConn
 	connsByID      map[string]*wsConn
-	leaderIDs      map[uint64]string
 
 	// FLusher
 	flusherPool *tools.FlusherPool
@@ -77,7 +76,6 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		cfg:            config,
 		connsByReplica: make(map[uint64]map[string]*wsConn, 64),
 		connsByID:      make(map[string]*wsConn, 64),
-		leaderIDs:      make(map[uint64]string, 64),
 		pending:        make(map[uint64]chan *rony.MessageEnvelope, 1024),
 	}
 
@@ -117,14 +115,14 @@ func (ws *Websocket) GetRequestID() uint64 {
 
 func (ws *Websocket) Start() error {
 	initConn := ws.newConn("", 0, ws.cfg.SeedHostPort)
-	ws.addConn("", 0, true, initConn)
+	ws.addConn("", 0, initConn)
 
 	req := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(req)
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
-	err := ws.Send(req, res, false)
+	err := ws.Send(req, res)
 	if err != nil {
 		return err
 	}
@@ -138,7 +136,6 @@ func (ws *Websocket) Start() error {
 				ce.Write(
 					zap.String("ServerID", n.ServerID),
 					zap.Uint64("RS", n.ReplicaSet),
-					zap.Bool("Leader", n.Leader),
 					zap.Strings("HostPorts", n.HostPorts),
 				)
 			}
@@ -152,10 +149,8 @@ func (ws *Websocket) Start() error {
 				}
 			}
 
-			ws.addConn(n.ServerID, n.ReplicaSet, n.Leader, wsc)
-			if n.Leader {
-				ws.sessionReplica = n.ReplicaSet
-			}
+			ws.addConn(n.ServerID, n.ReplicaSet, wsc)
+			ws.sessionReplica = n.ReplicaSet
 		}
 
 		// If this connection is not our connsByReplica then we just close it.
@@ -169,11 +164,10 @@ func (ws *Websocket) Start() error {
 	return nil
 }
 
-func (ws *Websocket) addConn(serverID string, replicaSet uint64, leader bool, wsc *wsConn) {
+func (ws *Websocket) addConn(serverID string, replicaSet uint64, wsc *wsConn) {
 	log.Debug("Pool connection added",
 		zap.String("ServerID", serverID),
 		zap.Uint64("RS", replicaSet),
-		zap.Bool("Leader", leader),
 	)
 	ws.connsMtx.Lock()
 	defer ws.connsMtx.Unlock()
@@ -183,9 +177,6 @@ func (ws *Websocket) addConn(serverID string, replicaSet uint64, leader bool, ws
 	}
 	ws.connsByID[serverID] = wsc
 	ws.connsByReplica[replicaSet][serverID] = wsc
-	if leader || replicaSet == 0 {
-		ws.leaderIDs[replicaSet] = serverID
-	}
 }
 
 func (ws *Websocket) removeConn(serverID string, replicaSet uint64) {
@@ -198,26 +189,15 @@ func (ws *Websocket) removeConn(serverID string, replicaSet uint64) {
 	delete(ws.connsByID, serverID)
 }
 
-func (ws *Websocket) getConnByReplica(replicaSet uint64, onlyLeader bool) *wsConn {
+func (ws *Websocket) getConnByReplica(replicaSet uint64) *wsConn {
 	ws.connsMtx.RLock()
 	defer ws.connsMtx.RUnlock()
 
-	if onlyLeader {
-		leaderID := ws.leaderIDs[replicaSet]
-		if leaderID == "" {
-			return nil
-		}
-		m := ws.connsByReplica[replicaSet]
-		if m != nil {
-			c := m[leaderID]
-			return c
-		}
-	} else {
-		m := ws.connsByReplica[replicaSet]
-		for _, c := range m {
-			return c
-		}
+	m := ws.connsByReplica[replicaSet]
+	for _, c := range m {
+		return c
 	}
+
 	return nil
 }
 
@@ -285,18 +265,18 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 
 }
 
-func (ws *Websocket) Send(req, res *rony.MessageEnvelope, leaderOnly bool) (err error) {
-	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, leaderOnly)
+func (ws *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
+	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout)
 	return
 }
 
 func (ws *Websocket) SendWithDetails(
-	req, res *rony.MessageEnvelope, retry int, timeout time.Duration, leaderOnly bool,
+	req, res *rony.MessageEnvelope, retry int, timeout time.Duration,
 ) error {
 	rs := ws.cfg.Router.GetRoute(req)
 
 Loop:
-	wsc := ws.getConnByReplica(rs, leaderOnly)
+	wsc := ws.getConnByReplica(rs)
 
 	if wsc == nil {
 		// TODO:: try to gather information about the target
@@ -317,7 +297,7 @@ Loop:
 		case rony.C_Redirect:
 			xx := &rony.Redirect{}
 			_ = xx.Unmarshal(x.GetMessage())
-			rs, leaderOnly = ws.redirect(xx, leaderOnly)
+			rs = ws.redirect(xx)
 			if retry--; retry < 0 {
 				return rony.ErrRetriesExceeded(fmt.Errorf("redirect"))
 			}
@@ -335,33 +315,24 @@ Loop:
 	return nil
 }
 
-func (ws *Websocket) redirect(x *rony.Redirect, leaderOnly bool) (replicaSet uint64, switchToLeader bool) {
+func (ws *Websocket) redirect(x *rony.Redirect) (replicaSet uint64) {
 	if ce := log.Check(log.InfoLevel, "EdgeClient (Websocket) received Redirect"); ce != nil {
 		ce.Write(
-			zap.Any("Leader", x.Leader),
-			zap.Any("Followers", x.Followers),
+			zap.Any("Edges", x.Edges),
 			zap.Any("Wait", x.WaitInSec),
 		)
 	}
 
-	ws.addConn(
-		x.Leader.ServerID, x.Leader.ReplicaSet, true,
-		ws.newConn(x.Leader.ServerID, x.Leader.ReplicaSet, x.Leader.HostPorts...),
-	)
-	for _, n := range x.Followers {
+	for _, n := range x.Edges {
 		ws.addConn(
-			n.ServerID, n.ReplicaSet, false,
+			n.ServerID, n.ReplicaSet,
 			ws.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...),
 		)
 	}
 
-	switchToLeader = leaderOnly
-	replicaSet = x.Leader.ReplicaSet
 	switch x.Reason {
-	case rony.RedirectReason_ReplicaMaster:
-		switchToLeader = true
 	case rony.RedirectReason_ReplicaSetSession:
-		ws.sessionReplica = x.Leader.ReplicaSet
+		ws.sessionReplica = x.Edges[0].ReplicaSet
 	case rony.RedirectReason_ReplicaSetRequest:
 	default:
 	}
@@ -399,7 +370,7 @@ func (ws *Websocket) ClusterInfo(replicaSets ...uint64) (*rony.Edges, error) {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{ReplicaSet: replicaSets})
-	err := ws.Send(req, res, false)
+	err := ws.Send(req, res)
 	if err != nil {
 		return nil, err
 	}

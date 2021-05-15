@@ -41,7 +41,6 @@ type Http struct {
 	mtx            sync.RWMutex
 	sessionReplica uint64
 	hosts          map[uint64]map[string]*httpConn // holds host by replicaSet/hostID
-	leaders        map[uint64]string
 }
 
 func NewHttp(config HttpConfig) *Http {
@@ -54,8 +53,7 @@ func NewHttp(config HttpConfig) *Http {
 			WriteTimeout:              config.WriteTimeout,
 			MaxResponseBodySize:       0,
 		},
-		hosts:   make(map[uint64]map[string]*httpConn, 32),
-		leaders: make(map[uint64]string, 32),
+		hosts: make(map[uint64]map[string]*httpConn, 32),
 	}
 	if h.cfg.Router == nil {
 		h.cfg.Router = &httpRouter{
@@ -72,7 +70,7 @@ func NewHttp(config HttpConfig) *Http {
 	return h
 }
 
-func (h *Http) addConn(serverID string, replicaSet uint64, leader bool, c *httpConn) {
+func (h *Http) addConn(serverID string, replicaSet uint64, c *httpConn) {
 	h.mtx.Lock()
 	defer h.mtx.Unlock()
 
@@ -80,31 +78,17 @@ func (h *Http) addConn(serverID string, replicaSet uint64, leader bool, c *httpC
 		h.hosts[replicaSet] = make(map[string]*httpConn, 16)
 	}
 	h.hosts[replicaSet][serverID] = c
-	if leader || replicaSet == 0 {
-		h.leaders[replicaSet] = serverID
-	}
 }
 
-func (h *Http) getConn(replicaSet uint64, onlyLeader bool) *httpConn {
+func (h *Http) getConn(replicaSet uint64) *httpConn {
 	h.mtx.RLock()
 	defer h.mtx.RUnlock()
 
-	if onlyLeader {
-		leaderID := h.leaders[replicaSet]
-		if leaderID == "" {
-			return nil
-		}
-		m := h.hosts[replicaSet]
-		if m != nil {
-			c := m[leaderID]
-			return c
-		}
-	} else {
-		m := h.hosts[replicaSet]
-		for _, c := range m {
-			return c
-		}
+	m := h.hosts[replicaSet]
+	for _, c := range m {
+		return c
 	}
+
 	return nil
 }
 
@@ -148,7 +132,6 @@ func (h *Http) initConn() error {
 				ce.Write(
 					zap.String("ServerID", n.ServerID),
 					zap.Uint64("RS", n.ReplicaSet),
-					zap.Bool("Leader", n.Leader),
 					zap.Strings("HostPorts", n.HostPorts),
 				)
 			}
@@ -163,10 +146,8 @@ func (h *Http) initConn() error {
 				}
 			}
 
-			h.addConn(n.ServerID, n.ReplicaSet, n.Leader, httpc)
-			if n.Leader {
-				h.sessionReplica = n.ReplicaSet
-			}
+			h.addConn(n.ServerID, n.ReplicaSet, httpc)
+			h.sessionReplica = n.ReplicaSet
 		}
 	default:
 		fmt.Println(res)
@@ -177,13 +158,13 @@ func (h *Http) initConn() error {
 	return nil
 }
 
-func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope, leaderOnly bool) error {
-	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout, leaderOnly)
+func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) error {
+	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout)
 }
 
-func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, retry int, timeout time.Duration, leaderOnly bool) (err error) {
+func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, retry int, timeout time.Duration) (err error) {
 	rs := h.cfg.Router.GetRoute(req)
-	hc := h.getConn(rs, leaderOnly)
+	hc := h.getConn(rs)
 	if hc == nil {
 		return ErrNoConnection
 	}
@@ -193,7 +174,6 @@ SendLoop:
 		ce.Write(
 			zap.Uint64("ReqID", req.RequestID),
 			zap.Uint64("RS", rs),
-			zap.Bool("LeaderOnly", leaderOnly),
 			zap.Int("Retry", retry),
 		)
 	}
@@ -202,9 +182,6 @@ SendLoop:
 	switch err {
 	case nil:
 		return nil
-	case ErrReplicaMaster:
-		leaderOnly = true
-		hc = h.getConn(rs, leaderOnly)
 	case ErrReplicaSetSession, ErrReplicaSetRequest:
 		rs = h.sessionReplica
 	}
