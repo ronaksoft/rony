@@ -2,7 +2,6 @@ package edge
 
 import (
 	"bufio"
-	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
@@ -144,31 +143,7 @@ func (edge *Server) Gateway() gateway.Gateway {
 	return edge.gateway
 }
 
-func (edge *Server) executePrepare(dispatchCtx *DispatchCtx) (isLeader bool, err error) {
-	// If server is standalone then we are the leader anyway
-	isLeader = true
-	if edge.cluster == nil || !edge.cluster.RaftEnabled() {
-		return
-	}
-
-	if edge.cluster.RaftState() == raft.Leader {
-		raftCmd := rony.PoolRaftCommand.Get()
-		raftCmd.Envelope = rony.PoolMessageEnvelope.Get()
-		raftCmd.Fill(edge.serverID, dispatchCtx.req)
-		buf := pools.Buffer.FromProto(raftCmd)
-		f := edge.cluster.RaftApply(*buf.Bytes())
-		err = f.Error()
-		pools.Buffer.Put(buf)
-		rony.PoolRaftCommand.Put(raftCmd)
-		if err != nil {
-			return
-		}
-	} else {
-		isLeader = false
-	}
-	return
-}
-func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error) {
+func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	waitGroup := pools.AcquireWaitGroup()
 	switch dispatchCtx.req.GetConstructor() {
 	case rony.C_MessageContainer:
@@ -183,7 +158,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 			nextChan := make(chan struct{}, 1)
 			waitGroup.Add(1)
 			go func(ctx *RequestCtx, idx int) {
-				edge.executeFunc(ctx, x.Envelopes[idx], isLeader)
+				edge.executeFunc(ctx, x.Envelopes[idx])
 				nextChan <- struct{}{}
 				waitGroup.Done()
 				releaseRequestCtx(ctx)
@@ -196,14 +171,14 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx, isLeader bool) (err error)
 		}
 	default:
 		ctx := acquireRequestCtx(dispatchCtx, false)
-		edge.executeFunc(ctx, dispatchCtx.req, isLeader)
+		edge.executeFunc(ctx, dispatchCtx.req)
 		releaseRequestCtx(ctx)
 	}
 	waitGroup.Wait()
 	pools.ReleaseWaitGroup(waitGroup)
 	return nil
 }
-func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope, isLeader bool) {
+func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope) {
 	defer edge.recoverPanic(requestCtx, in)
 
 	startTime := tools.CPUTicks()
@@ -215,21 +190,6 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	if !ok {
 		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
 		return
-	}
-
-	switch requestCtx.Kind() {
-	case ReplicaMessage:
-	default:
-		if !isLeader && !ho.inconsistentRead {
-			if ce := log.Check(log.DebugLevel, "Redirect To Leader"); ce != nil {
-				ce.Write(
-					zap.String("RaftLeaderID", edge.cluster.RaftLeaderID()),
-					zap.String("State", edge.cluster.RaftState().String()),
-				)
-			}
-			requestCtx.PushRedirectLeader()
-			return
-		}
 	}
 
 	// Run the handler
@@ -290,22 +250,6 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
-func (edge *Server) onReplicaMessage(raftCmd *rony.RaftCommand) error {
-	// _, task := trace.NewTask(context.Background(), "onReplicaMessage")
-	// defer task.End()
-
-	dispatchCtx := acquireDispatchCtx(edge, nil, 0, raftCmd.Sender, ReplicaMessage)
-	dispatchCtx.FillEnvelope(
-		raftCmd.Envelope.GetRequestID(), raftCmd.Envelope.GetConstructor(), raftCmd.Envelope.Message,
-		raftCmd.Envelope.Auth, raftCmd.Envelope.Header...,
-	)
-	err := edge.execute(dispatchCtx, false)
-	if err != nil {
-		return err
-	}
-	releaseDispatchCtx(dispatchCtx)
-	return nil
-}
 func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte, byPassDispatcher bool) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
@@ -327,10 +271,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		return
 	}
 
-	isLeader, err := edge.executePrepare(dispatchCtx)
-	if err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
-	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
+	if err := edge.execute(dispatchCtx); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
 		edge.gatewayDispatcher.Done(dispatchCtx)
@@ -356,10 +297,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 		tm.Envelope.Auth, tm.Envelope.Header...,
 	)
 
-	isLeader, err := edge.executePrepare(dispatchCtx)
-	if err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
-	} else if err = edge.execute(dispatchCtx, isLeader); err != nil {
+	if err := edge.execute(dispatchCtx); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
 		edge.onTunnelDone(dispatchCtx)

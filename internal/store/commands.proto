@@ -1,0 +1,21 @@
+syntax = "proto3";
+package rony;
+option go_package = "github.com/ronaksoft/rony";
+
+// StoreCommandType
+enum StoreCommandType {
+    Set = 0;
+    Get = 1;
+    Delete = 2;
+}
+
+// RaftCommand
+message StoreCommand {
+    StoreCommandType Type = 1;
+    repeated KeyValue KVs = 2;
+}
+
+message KeyValue {
+    bytes Key = 1;
+    bytes Value = 2;
+}

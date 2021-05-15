@@ -34,10 +34,10 @@ type Config struct {
 	ReplicaSet uint64
 	Mode       cluster.Mode
 	GossipPort int
+	Store      raft.FSM
 }
 
 type Cluster struct {
-	cluster.ReplicaMessageHandler
 	dataPath         string
 	cfg              Config
 	mtx              sync.RWMutex
@@ -49,7 +49,7 @@ type Cluster struct {
 	clusterMembers   map[string]*Member
 
 	// Raft & Gossip
-	raftFSM       raftFSM
+	raftFSM       raft.FSM
 	raft          *raft.Raft
 	gossip        *memberlist.Memberlist
 	rateLimitChan chan struct{}
@@ -72,9 +72,9 @@ func New(dataPath string, cfg Config) *Cluster {
 		clusterMembers: make(map[string]*Member, 100),
 		replicaMembers: make(map[uint64]map[string]*Member, 100),
 		rateLimitChan:  make(chan struct{}, clusterMessageRateLimit),
+		raftFSM:        cfg.Store,
 	}
 
-	c.raftFSM = raftFSM{c: c}
 	return c
 }
 

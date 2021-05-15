@@ -206,70 +206,6 @@ func (x *TunnelMessage) GetEnvelope() *MessageEnvelope {
 	return nil
 }
 
-// RaftCommand
-type RaftCommand struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Sender   []byte           `protobuf:"bytes,1,opt,name=Sender,proto3" json:"Sender,omitempty"`
-	Store    []*KeyValue      `protobuf:"bytes,2,rep,name=Store,proto3" json:"Store,omitempty"`
-	Envelope *MessageEnvelope `protobuf:"bytes,3,opt,name=Envelope,proto3" json:"Envelope,omitempty"`
-}
-
-func (x *RaftCommand) Reset() {
-	*x = RaftCommand{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_imsg_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RaftCommand) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RaftCommand) ProtoMessage() {}
-
-func (x *RaftCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_imsg_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RaftCommand.ProtoReflect.Descriptor instead.
-func (*RaftCommand) Descriptor() ([]byte, []int) {
-	return file_imsg_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *RaftCommand) GetSender() []byte {
-	if x != nil {
-		return x.Sender
-	}
-	return nil
-}
-
-func (x *RaftCommand) GetStore() []*KeyValue {
-	if x != nil {
-		return x.Store
-	}
-	return nil
-}
-
-func (x *RaftCommand) GetEnvelope() *MessageEnvelope {
-	if x != nil {
-		return x.Envelope
-	}
-	return nil
-}
-
 // EdgeNode
 type EdgeNode struct {
 	state         protoimpl.MessageState
@@ -287,7 +223,7 @@ type EdgeNode struct {
 func (x *EdgeNode) Reset() {
 	*x = EdgeNode{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_imsg_proto_msgTypes[3]
+		mi := &file_imsg_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -300,7 +236,7 @@ func (x *EdgeNode) String() string {
 func (*EdgeNode) ProtoMessage() {}
 
 func (x *EdgeNode) ProtoReflect() protoreflect.Message {
-	mi := &file_imsg_proto_msgTypes[3]
+	mi := &file_imsg_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -313,7 +249,7 @@ func (x *EdgeNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EdgeNode.ProtoReflect.Descriptor instead.
 func (*EdgeNode) Descriptor() ([]byte, []int) {
-	return file_imsg_proto_rawDescGZIP(), []int{3}
+	return file_imsg_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *EdgeNode) GetServerID() []byte {
@@ -371,7 +307,7 @@ type Page struct {
 func (x *Page) Reset() {
 	*x = Page{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_imsg_proto_msgTypes[4]
+		mi := &file_imsg_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -384,7 +320,7 @@ func (x *Page) String() string {
 func (*Page) ProtoMessage() {}
 
 func (x *Page) ProtoReflect() protoreflect.Message {
-	mi := &file_imsg_proto_msgTypes[4]
+	mi := &file_imsg_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -397,7 +333,7 @@ func (x *Page) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Page.ProtoReflect.Descriptor instead.
 func (*Page) Descriptor() ([]byte, []int) {
-	return file_imsg_proto_rawDescGZIP(), []int{4}
+	return file_imsg_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Page) GetID() uint32 {
@@ -433,14 +369,6 @@ var file_imsg_proto_rawDesc = []byte{
 	0x72, 0x65, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x72, 0x6f, 0x6e, 0x79, 0x2e,
 	0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x05, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x12,
 	0x31, 0x0a, 0x08, 0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x15, 0x2e, 0x72, 0x6f, 0x6e, 0x79, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
-	0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x52, 0x08, 0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f,
-	0x70, 0x65, 0x22, 0x7e, 0x0a, 0x0b, 0x52, 0x61, 0x66, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
-	0x64, 0x12, 0x16, 0x0a, 0x06, 0x53, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0c, 0x52, 0x06, 0x53, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x12, 0x24, 0x0a, 0x05, 0x53, 0x74, 0x6f,
-	0x72, 0x65, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x72, 0x6f, 0x6e, 0x79, 0x2e,
-	0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x05, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x12,
-	0x31, 0x0a, 0x08, 0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x15, 0x2e, 0x72, 0x6f, 0x6e, 0x79, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
 	0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x52, 0x08, 0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f,
 	0x70, 0x65, 0x22, 0xd3, 0x01, 0x0a, 0x08, 0x45, 0x64, 0x67, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x12,
@@ -485,28 +413,25 @@ func file_imsg_proto_rawDescGZIP() []byte {
 }
 
 var file_imsg_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_imsg_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_imsg_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_imsg_proto_goTypes = []interface{}{
 	(RaftState)(0),          // 0: rony.RaftState
 	(*GetPage)(nil),         // 1: rony.GetPage
 	(*TunnelMessage)(nil),   // 2: rony.TunnelMessage
-	(*RaftCommand)(nil),     // 3: rony.RaftCommand
-	(*EdgeNode)(nil),        // 4: rony.EdgeNode
-	(*Page)(nil),            // 5: rony.Page
-	(*KeyValue)(nil),        // 6: rony.KeyValue
-	(*MessageEnvelope)(nil), // 7: rony.MessageEnvelope
+	(*EdgeNode)(nil),        // 3: rony.EdgeNode
+	(*Page)(nil),            // 4: rony.Page
+	(*KeyValue)(nil),        // 5: rony.KeyValue
+	(*MessageEnvelope)(nil), // 6: rony.MessageEnvelope
 }
 var file_imsg_proto_depIdxs = []int32{
-	6, // 0: rony.TunnelMessage.Store:type_name -> rony.KeyValue
-	7, // 1: rony.TunnelMessage.Envelope:type_name -> rony.MessageEnvelope
-	6, // 2: rony.RaftCommand.Store:type_name -> rony.KeyValue
-	7, // 3: rony.RaftCommand.Envelope:type_name -> rony.MessageEnvelope
-	0, // 4: rony.EdgeNode.RaftState:type_name -> rony.RaftState
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	5, // 0: rony.TunnelMessage.Store:type_name -> rony.KeyValue
+	6, // 1: rony.TunnelMessage.Envelope:type_name -> rony.MessageEnvelope
+	0, // 2: rony.EdgeNode.RaftState:type_name -> rony.RaftState
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_imsg_proto_init() }
@@ -542,18 +467,6 @@ func file_imsg_proto_init() {
 			}
 		}
 		file_imsg_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RaftCommand); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_imsg_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EdgeNode); i {
 			case 0:
 				return &v.state
@@ -565,7 +478,7 @@ func file_imsg_proto_init() {
 				return nil
 			}
 		}
-		file_imsg_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_imsg_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Page); i {
 			case 0:
 				return &v.state
@@ -584,7 +497,7 @@ func file_imsg_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_imsg_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

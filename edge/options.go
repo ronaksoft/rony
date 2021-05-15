@@ -40,7 +40,6 @@ type GossipClusterConfig = gossipCluster.Config
 func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
 		c := gossipCluster.New(edge.dataDir, cfg)
-		c.ReplicaMessageHandler = edge.onReplicaMessage
 		edge.cluster = c
 	}
 }

@@ -4,7 +4,6 @@ import "options.proto";
 import "msg.proto";
 option go_package = "github.com/ronaksoft/rony";
 
-
 // GetPage
 // @Function
 // @Return: Page
@@ -13,20 +12,12 @@ message GetPage {
     uint64 ReplicaSet = 2;
 }
 
-
 // TunnelMessage
 message TunnelMessage {
     bytes SenderID = 1;
     uint64 SenderReplicaSet = 2;
     repeated KeyValue Store = 3;
     MessageEnvelope Envelope = 4;
-}
-
-// RaftCommand
-message RaftCommand {
-    bytes Sender = 1;
-    repeated KeyValue Store = 2;
-    MessageEnvelope Envelope = 3;
 }
 
 // RaftState
@@ -47,7 +38,6 @@ message EdgeNode {
     repeated string GatewayAddr = 7;
     repeated string TunnelAddr = 8;
 }
-
 
 // Page
 message Page {

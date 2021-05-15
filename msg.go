@@ -81,15 +81,6 @@ func (x *MessageContainer) Add(reqID uint64, constructor int64, p proto.Message,
 	x.Length += 1
 }
 
-func (x *RaftCommand) Fill(senderID []byte, e *MessageEnvelope, kvs ...*KeyValue) {
-	x.Sender = append(x.Sender[:0], senderID...)
-	x.Store = append(x.Store[:0], kvs...)
-	if x.Envelope == nil {
-		x.Envelope = PoolMessageEnvelope.Get()
-	}
-	e.DeepCopy(x.Envelope)
-}
-
 func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *MessageEnvelope, kvs ...*KeyValue) {
 	x.SenderID = append(x.SenderID[:0], senderID...)
 	x.SenderReplicaSet = senderReplicaSet

@@ -106,63 +106,6 @@ func (x *TunnelMessage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-const C_RaftCommand int64 = 2919813429
-
-type poolRaftCommand struct {
-	pool sync.Pool
-}
-
-func (p *poolRaftCommand) Get() *RaftCommand {
-	x, ok := p.pool.Get().(*RaftCommand)
-	if !ok {
-		x = &RaftCommand{}
-	}
-	return x
-}
-
-func (p *poolRaftCommand) Put(x *RaftCommand) {
-	if x == nil {
-		return
-	}
-	x.Sender = x.Sender[:0]
-	for _, z := range x.Store {
-		PoolKeyValue.Put(z)
-	}
-	x.Store = x.Store[:0]
-	PoolMessageEnvelope.Put(x.Envelope)
-	x.Envelope = nil
-	p.pool.Put(x)
-}
-
-var PoolRaftCommand = poolRaftCommand{}
-
-func (x *RaftCommand) DeepCopy(z *RaftCommand) {
-	z.Sender = append(z.Sender[:0], x.Sender...)
-	for idx := range x.Store {
-		if x.Store[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.Store[idx].DeepCopy(xx)
-			z.Store = append(z.Store, xx)
-		}
-	}
-	if x.Envelope != nil {
-		if z.Envelope == nil {
-			z.Envelope = PoolMessageEnvelope.Get()
-		}
-		x.Envelope.DeepCopy(z.Envelope)
-	} else {
-		z.Envelope = nil
-	}
-}
-
-func (x *RaftCommand) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *RaftCommand) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 const C_EdgeNode int64 = 999040174
 
 type poolEdgeNode struct {
@@ -250,7 +193,6 @@ func (x *Page) Unmarshal(b []byte) error {
 func init() {
 	registry.RegisterConstructor(3721890413, "GetPage")
 	registry.RegisterConstructor(3271476222, "TunnelMessage")
-	registry.RegisterConstructor(2919813429, "RaftCommand")
 	registry.RegisterConstructor(999040174, "EdgeNode")
 	registry.RegisterConstructor(3023575326, "Page")
 }

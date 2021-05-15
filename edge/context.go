@@ -26,14 +26,12 @@ type MessageKind byte
 const (
 	_ MessageKind = iota
 	GatewayMessage
-	ReplicaMessage
 	TunnelMessage
 )
 
 var (
 	messageKindNames = map[MessageKind]string{
 		GatewayMessage: "GatewayMessage",
-		ReplicaMessage: "ReplicatedMessage",
 		TunnelMessage:  "TunnelMessage",
 	}
 )
@@ -300,10 +298,6 @@ func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
 }
 
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, kvs ...*rony.KeyValue) {
-	if ctx.dispatchCtx.kind == ReplicaMessage {
-		return
-	}
-
 	envelope := rony.PoolMessageEnvelope.Get()
 	envelope.Fill(requestID, constructor, message)
 	envelope.Header = append(envelope.Header[:0], kvs...)

@@ -15,8 +15,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type ReplicaMessageHandler func(raftCmd *rony.RaftCommand) error
-
 type Mode string
 
 const (
