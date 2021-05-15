@@ -21,7 +21,6 @@ type (
 type HandlerOption struct {
 	constructors     map[int64]struct{}
 	handlers         []Handler
-	inconsistentRead bool
 	tunnel           bool
 	gateway          bool
 
@@ -35,7 +34,6 @@ func NewHandlerOptions() *HandlerOption {
 		handlers:         nil,
 		gateway:          true,
 		tunnel:           true,
-		inconsistentRead: false,
 	}
 }
 
@@ -68,12 +66,6 @@ func (ho *HandlerOption) GatewayOnly() *HandlerOption {
 func (ho *HandlerOption) TunnelOnly() *HandlerOption {
 	ho.tunnel = true
 	ho.gateway = false
-	return ho
-}
-
-// InconsistentRead makes this method (constructor) available on edges in follower state
-func (ho *HandlerOption) InconsistentRead() *HandlerOption {
-	ho.inconsistentRead = true
 	return ho
 }
 
