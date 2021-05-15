@@ -345,7 +345,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 		}
 	}
 
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper).InconsistentRead())
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoLeaderOnly).SetHandler(handlerFunc(C_SampleEchoLeaderOnly)...).Append(sw.echoLeaderOnlyWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(handlerFunc(C_SampleEchoTunnel)...).Append(sw.echoTunnelWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(handlerFunc(C_SampleEchoInternal)...).Append(sw.echoInternalWrapper).TunnelOnly())
@@ -374,7 +374,7 @@ func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, false, out, in)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -398,7 +398,7 @@ func ExecuteRemoteSampleEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, 
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoLeaderOnly, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -446,7 +446,7 @@ func ExecuteRemoteSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, re
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoInternal, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func ExecuteRemoteSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoDelay, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, true, out, in)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -504,7 +504,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleEcho, req, kvs...)
-	err := c.c.Send(out, in, false)
+	err := c.c.Send(out, in, true)
 	if err != nil {
 		return nil, err
 	}

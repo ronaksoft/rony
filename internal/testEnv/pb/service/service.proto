@@ -5,9 +5,7 @@ import "options.proto";
 
 service Sample {
     option (rony_cobra_cmd) = true;
-    rpc Echo (EchoRequest) returns (EchoResponse) {
-        option (rony_inconsistent_read) = true;
-    };
+    rpc Echo (EchoRequest) returns (EchoResponse);
     rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse) {};
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {

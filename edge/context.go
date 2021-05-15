@@ -333,12 +333,12 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 	return ctx.dispatchCtx.edge.cluster
 }
 
-func (ctx *RequestCtx) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryExecuteRemote(attempts, retryWait, replicaSet, onlyLeader, req, res)
+func (ctx *RequestCtx) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryExecuteRemote(attempts, retryWait, replicaSet, req, res)
 }
 
-func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
+func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryExecuteRemote(1, 0, replicaSet, req, res)
 }
 
 func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.Edges, error) {
@@ -347,7 +347,7 @@ func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(tools.RandomUint64(0), rony.C_GetNodes, &rony.GetNodes{})
-	err := ctx.ExecuteRemote(replicaSet, true, req, res)
+	err := ctx.ExecuteRemote(replicaSet, req, res)
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +390,7 @@ func (ctx *RequestCtx) FindReplicaSet(pageID uint32) (uint64, error) {
 		getPage.PageID = pageID
 		getPage.ReplicaSet = ctx.Cluster().ReplicaSet()
 		req.Fill(uint64(tools.FastRand()<<31|tools.FastRand()), rony.C_GetPage, getPage)
-		err = ctx.ExecuteRemote(1, true, req, res)
+		err = ctx.ExecuteRemote(1, req, res)
 		if err != nil {
 			return 0, err
 		}

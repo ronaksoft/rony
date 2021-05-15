@@ -78,7 +78,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
-	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetNodes).Append(builtin.GetNodes).InconsistentRead().setBuiltin())
+	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetNodes).Append(builtin.GetNodes))
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetPage).Append(builtin.GetPage).setBuiltin())
 
 	return edgeServer
@@ -447,13 +447,13 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 }
 
 // ExecuteRemote sends and receives a request through the Tunnel interface of the receiver Edge node.
-func (edge *Server) ExecuteRemote(replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
-	return edge.TryExecuteRemote(1, 0, replicaSet, onlyLeader, req, res)
+func (edge *Server) ExecuteRemote(replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return edge.TryExecuteRemote(1, 0, replicaSet, req, res)
 }
-func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, onlyLeader bool, req, res *rony.MessageEnvelope) error {
+func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
 	startTime := tools.CPUTicks()
 	err := tools.Try(attempts, retryWait, func() error {
-		target := edge.getReplicaMember(replicaSet, onlyLeader)
+		target := edge.getReplicaMember(replicaSet)
 		if target == nil {
 			return ErrMemberNotFound
 		}
@@ -463,20 +463,14 @@ func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, repl
 	metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
 	return err
 }
-func (edge *Server) getReplicaMember(replicaSet uint64, onlyLeader bool) (target cluster.Member) {
+func (edge *Server) getReplicaMember(replicaSet uint64) (target cluster.Member) {
 	members := edge.cluster.RaftMembers(replicaSet)
 	if len(members) == 0 {
 		return nil
 	}
 	for idx := range members {
-		if onlyLeader {
-			if members[idx].RaftState() == rony.RaftState_Leader {
-				target = members[idx]
-				break
-			}
-		} else {
-			target = members[idx]
-		}
+		target = members[idx]
+		break
 	}
 	return
 }

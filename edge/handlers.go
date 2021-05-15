@@ -19,10 +19,10 @@ type (
 
 // HandlerOption is a structure holds all the information required for a handler.
 type HandlerOption struct {
-	constructors     map[int64]struct{}
-	handlers         []Handler
-	tunnel           bool
-	gateway          bool
+	constructors map[int64]struct{}
+	handlers     []Handler
+	tunnel       bool
+	gateway      bool
 
 	// internal user
 	builtin bool
@@ -30,10 +30,10 @@ type HandlerOption struct {
 
 func NewHandlerOptions() *HandlerOption {
 	return &HandlerOption{
-		constructors:     map[int64]struct{}{},
-		handlers:         nil,
-		gateway:          true,
-		tunnel:           true,
+		constructors: map[int64]struct{}{},
+		handlers:     nil,
+		gateway:      true,
+		tunnel:       true,
 	}
 }
 

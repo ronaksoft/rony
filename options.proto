@@ -14,9 +14,6 @@ extend google.protobuf.ServiceOptions {
 }
 
 extend google.protobuf.MethodOptions {
-    // rony_inconsistent_read marks this method that it could be called on nodes with FOLLOWER state. Otherwise methods could only
-    // be executed on LEADER nodes.
-    optional bool rony_inconsistent_read = 50001;
     // rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
     // this command is not exposed to external clients connected through th gateway.
     optional bool rony_internal = 50002;

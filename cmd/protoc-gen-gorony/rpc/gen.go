@@ -123,9 +123,6 @@ func (g *Generator) genServer(s *protogen.Service) {
 		methodName := string(m.Desc.Name())
 		sb := strings.Builder{}
 		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		if proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool) {
-			sb.WriteString(".InconsistentRead()")
-		}
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			sb.WriteString(".TunnelOnly()")
 		}
@@ -178,18 +175,13 @@ func (g *Generator) genClient(s *protogen.Service) {
 		outputName := z.Name(g.f, g.g, m.Desc.Output())
 		outputPkg, outputType := z.DescName(g.f, g.g, m.Desc.Output())
 
-		leaderOnlyText := "true"
-		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
-		if leaderOnly {
-			leaderOnlyText = "false"
-		}
 		g.g.P("func (c *", s.Desc.Name(), "Client) ", methodLocalName, "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 		g.g.P("out := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(out)")
 		g.g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
 		g.g.P("out.Fill(c.c.GetRequestID(), C_", methodName, ", req, kvs...)")
-		g.g.P("err := c.c.Send(out, in, ", leaderOnlyText, ")")
+		g.g.P("err := c.c.Send(out, in, true)")
 		g.g.P("if err != nil {")
 		g.g.P("return nil, err")
 		g.g.P("}")
@@ -217,12 +209,6 @@ func (g *Generator) genClient(s *protogen.Service) {
 }
 func (g *Generator) genExecuteRemote(s *protogen.Service) {
 	for _, m := range s.Methods {
-		leaderOnlyText := "true"
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		leaderOnly := proto.GetExtension(opt, rony.E_RonyInconsistentRead).(bool)
-		if leaderOnly {
-			leaderOnlyText = "false"
-		}
 		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
 		inputName := z.Name(g.f, g.g, m.Desc.Input())
 		outputName := z.Name(g.f, g.g, m.Desc.Output())
@@ -234,7 +220,7 @@ func (g *Generator) genExecuteRemote(s *protogen.Service) {
 		g.g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
 		g.g.P("out.Fill(ctx.ReqID(), C_", methodName, ", req, kvs...)")
-		g.g.P("err := ctx.ExecuteRemote(replicaSet, ", leaderOnlyText, ", out, in)")
+		g.g.P("err := ctx.ExecuteRemote(replicaSet, out, in)")
 		g.g.P("if err != nil {")
 		g.g.P("return err")
 		g.g.P("}")
