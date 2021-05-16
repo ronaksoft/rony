@@ -93,6 +93,7 @@ func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
 		case protoreflect.Repeated:
 			switch ft.Desc.Kind() {
 			case protoreflect.BytesKind:
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 				g.g.P("for _, z := range x.", ftName, "{")
 				g.g.P("pools.Bytes.Put(z)")
 				g.g.P("}") // end of for/range

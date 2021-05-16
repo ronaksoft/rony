@@ -4,7 +4,6 @@ package badgerStore
 
 import (
 	edge "github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
@@ -237,10 +236,8 @@ func (p *poolSet) Put(x *Set) {
 		return
 	}
 	x.TxnID = 0
-	for _, z := range x.KVs {
-		PoolKeyValue.Put(z)
-	}
-	x.KVs = x.KVs[:0]
+	PoolKeyValue.Put(x.KV)
+	x.KV = nil
 	p.pool.Put(x)
 }
 
@@ -248,12 +245,13 @@ var PoolSet = poolSet{}
 
 func (x *Set) DeepCopy(z *Set) {
 	z.TxnID = x.TxnID
-	for idx := range x.KVs {
-		if x.KVs[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.KVs[idx].DeepCopy(xx)
-			z.KVs = append(z.KVs, xx)
+	if x.KV != nil {
+		if z.KV == nil {
+			z.KV = PoolKeyValue.Get()
 		}
+		x.KV.DeepCopy(z.KV)
+	} else {
+		z.KV = nil
 	}
 }
 
@@ -288,10 +286,7 @@ func (p *poolDelete) Put(x *Delete) {
 		return
 	}
 	x.TxnID = 0
-	for _, z := range x.Keys {
-		pools.Bytes.Put(z)
-	}
-	x.Keys = x.Keys[:0]
+	x.Key = x.Key[:0]
 	p.pool.Put(x)
 }
 
@@ -299,7 +294,7 @@ var PoolDelete = poolDelete{}
 
 func (x *Delete) DeepCopy(z *Delete) {
 	z.TxnID = x.TxnID
-	z.Keys = append(z.Keys[:0], x.Keys...)
+	z.Key = append(z.Key[:0], x.Key...)
 }
 
 func (x *Delete) Marshal() ([]byte, error) {
@@ -333,10 +328,7 @@ func (p *poolGet) Put(x *Get) {
 		return
 	}
 	x.TxnID = 0
-	for _, z := range x.Keys {
-		pools.Bytes.Put(z)
-	}
-	x.Keys = x.Keys[:0]
+	x.Key = x.Key[:0]
 	p.pool.Put(x)
 }
 
@@ -344,7 +336,7 @@ var PoolGet = poolGet{}
 
 func (x *Get) DeepCopy(z *Get) {
 	z.TxnID = x.TxnID
-	z.Keys = append(z.Keys[:0], x.Keys...)
+	z.Key = append(z.Key[:0], x.Key...)
 }
 
 func (x *Get) Marshal() ([]byte, error) {

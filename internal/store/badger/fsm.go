@@ -1,6 +1,7 @@
 package badgerStore
 
 import (
+	"github.com/dgraph-io/badger/v3"
 	"github.com/hashicorp/raft"
 	"io"
 )
@@ -33,6 +34,9 @@ func (fsm *Store) Apply(raftLog *raft.Log) interface{} {
 		return fsm.applySetTxn(storeCmd.Payload)
 	case CommandType_CTDelete:
 		return fsm.applyDeleteTxn(storeCmd.Payload)
+	case CommandType_CTGet:
+		kvs, _ := fsm.applyGetTxn(storeCmd.Payload)
+		return kvs
 	}
 
 	// TODO:: error err ?
@@ -126,11 +130,9 @@ func (fsm *Store) applySetTxn(data []byte) error {
 		return ErrTxnNotFound
 	}
 
-	for _, kv := range x.KVs {
-		err = txn.Set(kv.Key, kv.Value)
-		if err != nil {
-			return err
-		}
+	err = txn.Set(x.KV.Key, x.KV.Value)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -153,14 +155,46 @@ func (fsm *Store) applyDeleteTxn(data []byte) error {
 		return ErrTxnNotFound
 	}
 
-	for _, k:= range x.Keys {
-		err = txn.Delete(k)
-		if err != nil {
-			return err
-		}
+	err = txn.Delete(x.Key)
+	if err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func (fsm *Store) applyGetTxn(data []byte) (*KeyValue, error) {
+	req := PoolGet.Get()
+	defer PoolGet.Put(req)
+	res := &KeyValue{}
+
+	err := req.Unmarshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	fsm.openTxnMtx.RLock()
+	defer fsm.openTxnMtx.RUnlock()
+
+	txn, ok := fsm.openTxn[req.TxnID]
+	if ok {
+		return nil, ErrTxnNotFound
+	}
+
+	item, err := txn.Get(req.Key)
+	switch err {
+	case nil:
+	case badger.ErrKeyNotFound:
+		return res, nil
+	default:
+		return nil, err
+	}
+	res.Key = append(res.Key, req.Key...)
+	_ = item.Value(func(val []byte) error {
+		res.Value = append(res.Value, val...)
+		return nil
+	})
+	return res, nil
 }
 
 func (fsm *Store) Snapshot() (raft.FSMSnapshot, error) {

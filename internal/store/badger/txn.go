@@ -15,15 +15,16 @@ import (
 */
 
 type Txn struct {
-	ID    int64
-	store *Store
+	ID     int64
+	store  *Store
+	update bool
 }
 
 func (txn *Txn) Delete(alloc *store.Allocator, keyParts ...interface{}) error {
 	req := PoolDelete.Get()
 	defer PoolDelete.Put(req)
 	key := alloc.Gen(keyParts...)
-	req.Keys = append(req.Keys, key)
+	req.Key = append(req.Key, key...)
 	req.TxnID = txn.ID
 	b := pools.Buffer.FromProto(req)
 	f := txn.store.c.RaftApply(*b.Bytes())
@@ -51,10 +52,8 @@ func (txn *Txn) Set(alloc *store.Allocator, val []byte, keyParts ...interface{})
 	req := PoolSet.Get()
 	defer PoolSet.Put(req)
 	key := alloc.Gen(keyParts...)
-	req.KVs = append(req.KVs, &KeyValue{
-		Key:   key,
-		Value: val,
-	})
+	req.KV.Key = append(req.KV.Key, key...)
+	req.KV.Value = append(req.KV.Value, val...)
 	req.TxnID = txn.ID
 	b := pools.Buffer.FromProto(req)
 	f := txn.store.c.RaftApply(*b.Bytes())
@@ -79,37 +78,37 @@ func (txn *Txn) Set(alloc *store.Allocator, val []byte, keyParts ...interface{})
 }
 
 func (txn *Txn) Get(alloc *store.Allocator, keyParts ...interface{}) ([]byte, error) {
-	item, err := txn.Get(alloc.Gen(keyParts...))
+	req := PoolGet.Get()
+	defer PoolGet.Put(req)
+	key := alloc.Gen(keyParts...)
+	req.Key = append(req.Key, key...)
+	req.TxnID = txn.ID
+	b := pools.Buffer.FromProto(req)
+	f := txn.store.c.RaftApply(*b.Bytes())
+	pools.Buffer.Put(b)
+
+	err := f.Error()
 	if err != nil {
 		return nil, err
 	}
 
-	var b []byte
-	_ = item.Value(func(val []byte) error {
-		b = alloc.FillWith(val)
-		return nil
-	})
-	return b, nil
-}
-
-func (txn *Txn) GetByKey(alloc *store.Allocator, key []byte) ([]byte, error) {
-	item, err := txn.Get(key)
-	if err != nil {
-		return nil, err
+	res := f.Response()
+	if res == nil {
+		return nil, ErrUnknown
 	}
 
-	var b []byte
-	_ = item.Value(func(val []byte) error {
-		b = alloc.FillWith(val)
-		return nil
-	})
-	return b, nil
+	switch x := res.(type) {
+	case error:
+		return nil, x
+	case *KeyValue:
+		return x.Value, nil
+	default:
+		return nil, ErrUnknown
+	}
+
 }
 
 func (txn *Txn) Exists(alloc *store.Allocator, keyParts ...interface{}) bool {
-	_, err := txn.store.db.Get(txn, alloc, keyParts...)
-	if err != nil && err == ErrKeyNotFound {
-		return false
-	}
-	return true
+	_, err := txn.Get(alloc, keyParts...)
+	return err == nil
 }

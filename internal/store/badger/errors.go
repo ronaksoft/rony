@@ -16,5 +16,5 @@ import (
 var (
 	ErrDuplicateID = fmt.Errorf("duplicate id")
 	ErrTxnNotFound = fmt.Errorf("txn not found")
-	ErrUnknown = fmt.Errorf("unknown")
+	ErrUnknown     = fmt.Errorf("unknown")
 )

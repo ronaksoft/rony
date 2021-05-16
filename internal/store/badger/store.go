@@ -3,7 +3,9 @@ package badgerStore
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -20,9 +22,6 @@ import (
 //go:generate protoc -I=. --go_out=paths=source_relative:. commands.proto
 //go:generate protoc -I=. --gorony_out=paths=source_relative:. commands.proto
 
-type Config struct {
-}
-
 // Store is the finite state machine which will be used when Raft is enabled.
 type Store struct {
 	c  cluster.Cluster
@@ -35,15 +34,104 @@ type Store struct {
 	openTxn               map[int64]*badger.Txn
 }
 
-func New(cfg *Config) *Store {
-	return &Store{
+func New(cfg *Config) (*Store, error) {
+	st := &Store{
 		openTxn: map[int64]*badger.Txn{},
+	}
+	db, err := newDB(cfg)
+	if err != nil {
+		return nil, err
+	}
+	st.db = db
+	return st, nil
+}
+
+func newDB(config *Config) (*badger.DB, error) {
+	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
+	opt.Logger = nil
+	return badger.Open(opt)
+}
+
+func (fsm *Store) newTxn(update bool) *Txn {
+	return &Txn{
+		ID:     tools.RandomInt64(0),
+		store:  fsm,
+		update: update,
 	}
 }
 
-func (fsm *Store) newTxn() *Txn {
-	return &Txn{
-		ID:    tools.RandomInt64(0),
-		store: fsm,
+func (fsm *Store) Update(fn func(*Txn) error) error {
+	txn := fsm.newTxn(true)
+	err := fsm.startTxn(txn)
+	if err != nil {
+		return err
+	}
+
+	err = fn(txn)
+	return fsm.stopTxn(txn, err == nil)
+}
+
+func (fsm *Store) View(fn func(*Txn) error) error {
+	txn := fsm.newTxn(false)
+	err := fsm.startTxn(txn)
+	if err != nil {
+		return err
+	}
+
+	err = fn(txn)
+	return fsm.stopTxn(txn, err == nil)
+}
+
+func (fsm *Store) startTxn(txn *Txn) error {
+	req := PoolStartTxn.Get()
+	defer PoolStartTxn.Put(req)
+	req.ID = txn.ID
+	req.Update = txn.update
+	b := pools.Buffer.FromProto(req)
+	f := txn.store.c.RaftApply(*b.Bytes())
+	pools.Buffer.Put(b)
+
+	err := f.Error()
+	if err != nil {
+		return err
+	}
+
+	res := f.Response()
+	if res == nil {
+		return nil
+	}
+
+	switch x := res.(type) {
+	case error:
+		return x
+	default:
+		return ErrUnknown
+	}
+}
+
+func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
+	req := PoolStopTxn.Get()
+	defer PoolStopTxn.Put(req)
+	req.ID = txn.ID
+	req.Commit = commit
+	b := pools.Buffer.FromProto(req)
+	f := txn.store.c.RaftApply(*b.Bytes())
+	pools.Buffer.Put(b)
+
+	err := f.Error()
+	if err != nil {
+		return err
+	}
+
+	res := f.Response()
+	if res == nil {
+		return nil
+	}
+
+	switch x := res.(type) {
+	case error:
+		return x
+	default:
+		return ErrUnknown
 	}
 }

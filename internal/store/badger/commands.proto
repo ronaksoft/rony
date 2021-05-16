@@ -9,6 +9,7 @@ enum CommandType {
     CTCommitTxn = 2;
     CTSet = 3;
     CTDelete = 4;
+    CTGet = 5;
 }
 
 // RaftCommand
@@ -17,7 +18,6 @@ message StoreCommand {
     bytes Payload = 2;
 }
 
-// KeyValue
 message KeyValue {
     bytes Key = 1;
     bytes Value = 2;
@@ -39,10 +39,15 @@ message CommitTxn {
 
 message Set {
     int64 TxnID = 1;
-    repeated KeyValue KVs = 2;
+    KeyValue KV = 2;
 }
 
 message Delete {
     int64 TxnID = 1;
-    repeated bytes Keys = 2;
+    bytes Key = 2;
+}
+
+message Get {
+    int64 TxnID = 1;
+    bytes Key = 2;
 }
