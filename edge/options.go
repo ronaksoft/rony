@@ -29,7 +29,7 @@ func WithDataDir(path string) Option {
 // WithDispatcher enables custom dispatcher to write your specific event handlers.
 func WithDispatcher(d Dispatcher) Option {
 	return func(edge *Server) {
-		edge.gatewayDispatcher = d
+		edge.dispatcher = d
 	}
 }
 
@@ -50,7 +50,7 @@ type TcpGatewayConfig = tcpGateway.Config
 // Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithTcpGateway(config TcpGatewayConfig) Option {
 	return func(edge *Server) {
-		if edge.gatewayProtocol != gateway.Undefined {
+		if edge.gateway != nil {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
 		if config.Protocol == gateway.Undefined {

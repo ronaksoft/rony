@@ -8,11 +8,12 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/rest"
-	"github.com/ronaksoft/rony/store"
+	legacyStore "github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"os"
@@ -44,16 +45,15 @@ type Server struct {
 	handlers     map[int64]*HandlerOption
 	postHandlers []Handler
 
+	// Edge components
+	cluster    cluster.Cluster
+	tunnel     tunnel.Tunnel
+	store      store.Store
+	gateway    gateway.Gateway
+	dispatcher Dispatcher
+
 	// Gateway's Configs
-	gatewayProtocol   gateway.Protocol
-	gateway           gateway.Gateway
-	gatewayDispatcher Dispatcher
-
-	// Cluster Configs
-	cluster cluster.Cluster
-
-	// Tunnel Configs
-	tunnel tunnel.Tunnel
+	gatewayProtocol gateway.Protocol
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -63,18 +63,18 @@ func NewServer(serverID string, opts ...Option) *Server {
 	})
 
 	edgeServer := &Server{
-		dataDir:           "./_hdd",
-		handlers:          make(map[int64]*HandlerOption),
-		serverID:          []byte(serverID),
-		gatewayDispatcher: &defaultDispatcher{},
+		dataDir:    "./_hdd",
+		handlers:   make(map[int64]*HandlerOption),
+		serverID:   []byte(serverID),
+		dispatcher: &defaultDispatcher{},
 	}
 
 	for _, opt := range opts {
 		opt(edgeServer)
 	}
 
-	// Initialize store
-	store.MustInit(store.DefaultConfig(edgeServer.dataDir))
+	// TODO:: remove it
+	legacyStore.MustInit(legacyStore.DefaultConfig(edgeServer.dataDir))
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
@@ -264,7 +264,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	if byPassDispatcher {
 		err = dispatchCtx.UnmarshalEnvelope(data)
 	} else {
-		err = edge.gatewayDispatcher.Interceptor(dispatchCtx, data)
+		err = edge.dispatcher.Interceptor(dispatchCtx, data)
 	}
 	if err != nil {
 		releaseDispatchCtx(dispatchCtx)
@@ -274,17 +274,17 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	if err := edge.execute(dispatchCtx); err != nil {
 		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
 	} else {
-		edge.gatewayDispatcher.Done(dispatchCtx)
+		edge.dispatcher.Done(dispatchCtx)
 	}
 
 	// Release the dispatch context
 	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
-	edge.gatewayDispatcher.OnOpen(conn, kvs...)
+	edge.dispatcher.OnOpen(conn, kvs...)
 }
 func (edge *Server) onGatewayClose(conn rony.Conn) {
-	edge.gatewayDispatcher.OnClose(conn)
+	edge.dispatcher.OnClose(conn)
 }
 func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
@@ -329,7 +329,7 @@ func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
-		edge.gatewayDispatcher.OnMessage(ctx, envelope)
+		edge.dispatcher.OnMessage(ctx, envelope)
 	case TunnelMessage:
 		ctx.BufferPush(envelope.Clone())
 	}
@@ -421,8 +421,10 @@ func (edge *Server) Shutdown() {
 		edge.cluster.Shutdown()
 	}
 
-	// Shutdown the underlying store
-	store.Shutdown()
+	// Shutdown the store
+	if edge.store != nil {
+		edge.store.Shutdown()
+	}
 
 	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))

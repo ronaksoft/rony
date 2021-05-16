@@ -128,6 +128,10 @@ func (bb *ByteBuffer) Fill(data []byte, start, end int) {
 	copy(bb.b[start:end], data)
 }
 
+func (bb *ByteBuffer) CopyFromWithOffset(data []byte, offset int) {
+	copy(bb.b[offset:], data)
+}
+
 func (bb *ByteBuffer) CopyFrom(data []byte) {
 	copy(bb.b, data)
 }

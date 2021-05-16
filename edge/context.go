@@ -293,7 +293,7 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 	switch ctx.dispatchCtx.kind {
 	case GatewayMessage:
 		if ctx.Conn().Persistent() {
-			ctx.edge.gatewayDispatcher.OnMessage(ctx.dispatchCtx, envelope)
+			ctx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
 		} else {
 			ctx.dispatchCtx.BufferPush(envelope.Clone())
 		}
