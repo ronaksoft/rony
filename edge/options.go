@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
+	"github.com/ronaksoft/rony/internal/store/badgerLocal"
 	"github.com/ronaksoft/rony/internal/store/badgerRaft"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 )
@@ -106,11 +107,21 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 	}
 }
 
-type BadgerStoreConfig = badgerRaft.Config
-
-func WithBadgerStore(config BadgerStoreConfig) Option {
+func WithLocalStore() Option {
 	return func(edge *Server) {
-		s, err := badgerRaft.New(config)
+		s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
+		if err != nil {
+			panic(err)
+		}
+		edge.store = s
+	}
+}
+
+type RaftStoreConfig = badgerRaft.Config
+
+func WithRaftStore() Option {
+	return func(edge *Server) {
+		s, err := badgerRaft.New(badgerRaft.DefaultConfig(edge.dataDir))
 		if err != nil {
 			panic(err)
 		}

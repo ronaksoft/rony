@@ -9,11 +9,11 @@ import (
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/store"
+	"github.com/ronaksoft/rony/internal/store/badgerLocal"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/rest"
-	legacyStore "github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"os"
@@ -73,8 +73,9 @@ func NewServer(serverID string, opts ...Option) *Server {
 		opt(edgeServer)
 	}
 
-	// TODO:: remove it
-	legacyStore.MustInit(legacyStore.DefaultConfig(edgeServer.dataDir))
+	if edgeServer.store == nil {
+		edgeServer.store, _ = badgerLocal.New(badgerLocal.DefaultConfig(edgeServer.dataDir))
+	}
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
