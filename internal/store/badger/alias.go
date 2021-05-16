@@ -14,7 +14,6 @@ import (
 */
 
 type (
-	Txn   = badger.Txn
 	Entry = badger.Entry
 )
 

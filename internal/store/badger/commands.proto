@@ -3,20 +3,46 @@ package badgerStore;
 option go_package = "github.com/ronaksoft/rony/internal/store/badger;badgerStore";
 
 // StoreCommandType
-enum StoreCommandType {
-    Set = 0;
-    Get = 1;
-    Delete = 2;
+enum CommandType {
+    CTStartTxn = 0;
+    CTStopTxn = 1;
+    CTCommitTxn = 2;
+    CTSet = 3;
+    CTDelete = 4;
 }
 
 // RaftCommand
 message StoreCommand {
-    StoreCommandType Type = 1;
-    repeated KeyValue KVs = 2;
+    CommandType Type = 1;
+    bytes Payload = 2;
 }
 
 // KeyValue
 message KeyValue {
     bytes Key = 1;
     bytes Value = 2;
+}
+
+message StartTxn {
+    int64 ID = 1;
+    bool Update = 2;
+}
+
+message StopTxn {
+    int64 ID = 1;
+    bool Commit = 2;
+}
+
+message CommitTxn {
+    int64 ID = 1;
+}
+
+message Set {
+    int64 TxnID = 1;
+    repeated KeyValue KVs = 2;
+}
+
+message Delete {
+    int64 TxnID = 1;
+    repeated bytes Keys = 2;
 }

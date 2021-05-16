@@ -2,11 +2,9 @@ package badgerStore
 
 import (
 	"github.com/dgraph-io/badger/v3"
-	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony/internal/cluster"
-	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
-	"io"
+	"sync"
 	"time"
 )
 
@@ -33,82 +31,19 @@ type Store struct {
 	// configs
 	conflictRetry         int
 	conflictRetryInterval time.Duration
+	openTxnMtx            sync.RWMutex
+	openTxn               map[int64]*badger.Txn
 }
 
 func New(cfg *Config) *Store {
-	return &Store{}
-}
-
-// Update executes a function, creating and managing a read-write transaction
-// for the user. Error returned by the function is relayed by the Update method.
-// It retries in case of badger.ErrConflict returned.
-func (fsm *Store) Update(fn func(txn *Txn) error) (err error) {
-	retry := fsm.conflictRetry
-Retry:
-	err = fsm.db.Update(fn)
-	if err == badger.ErrConflict {
-		if retry--; retry > 0 {
-			metrics.IncCounter(metrics.CntStoreConflicts)
-			time.Sleep(time.Duration(tools.RandomInt64(int64(fsm.conflictRetryInterval))))
-			goto Retry
-		}
+	return &Store{
+		openTxn: map[int64]*badger.Txn{},
 	}
-	return
 }
 
-// View executes a function creating and managing a read-only transaction for the user. Error
-// returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
-func (fsm *Store) View(fn func(txn *Txn) error) (err error) {
-	retry := fsm.conflictRetry
-Retry:
-	err = fsm.db.View(fn)
-	if err == badger.ErrConflict {
-		if retry--; retry > 0 {
-			metrics.IncCounter(metrics.CntStoreConflicts)
-			time.Sleep(time.Duration(tools.RandomInt64(int64(fsm.conflictRetryInterval))))
-			goto Retry
-		}
+func (fsm *Store) newTxn() *Txn {
+	return &Txn{
+		ID:    tools.RandomInt64(0),
+		store: fsm,
 	}
-	return
-}
-
-func (fsm *Store) Apply(raftLog *raft.Log) interface{} {
-	storeCmd := PoolStoreCommand.Get()
-	err := storeCmd.Unmarshal(raftLog.Data)
-	if err != nil {
-		return err
-	}
-
-	switch storeCmd.Type {
-	case StoreCommandType_Set:
-	case StoreCommandType_Get:
-	case StoreCommandType_Delete:
-
-	}
-
-	PoolStoreCommand.Put(storeCmd)
-	return nil
-}
-
-func (fsm *Store) Snapshot() (raft.FSMSnapshot, error) {
-	return &SnapshotBuilder{}, nil
-}
-
-func (fsm *Store) Restore(rd io.ReadCloser) error {
-
-	return nil
-}
-
-// SnapshotBuilder is used for snapshot of Raft logs
-type SnapshotBuilder struct{}
-
-func (s SnapshotBuilder) Persist(sink raft.SnapshotSink) error {
-	_, err := sink.Write([]byte{})
-	if err != nil {
-		return err
-	}
-	return sink.Close()
-}
-
-func (s SnapshotBuilder) Release() {
 }

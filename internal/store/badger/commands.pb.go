@@ -21,52 +21,61 @@ const (
 )
 
 // StoreCommandType
-type StoreCommandType int32
+type CommandType int32
 
 const (
-	StoreCommandType_Set    StoreCommandType = 0
-	StoreCommandType_Get    StoreCommandType = 1
-	StoreCommandType_Delete StoreCommandType = 2
+	CommandType_CTStartTxn  CommandType = 0
+	CommandType_CTStopTxn   CommandType = 1
+	CommandType_CTCommitTxn CommandType = 2
+	CommandType_CTSet       CommandType = 3
+	CommandType_CTDelete    CommandType = 4
+	CommandType_CTGet       CommandType = 5
 )
 
-// Enum value maps for StoreCommandType.
+// Enum value maps for CommandType.
 var (
-	StoreCommandType_name = map[int32]string{
-		0: "Set",
-		1: "Get",
-		2: "Delete",
+	CommandType_name = map[int32]string{
+		0: "CTStartTxn",
+		1: "CTStopTxn",
+		2: "CTCommitTxn",
+		3: "CTSet",
+		4: "CTDelete",
+		5: "CTGet",
 	}
-	StoreCommandType_value = map[string]int32{
-		"Set":    0,
-		"Get":    1,
-		"Delete": 2,
+	CommandType_value = map[string]int32{
+		"CTStartTxn":  0,
+		"CTStopTxn":   1,
+		"CTCommitTxn": 2,
+		"CTSet":       3,
+		"CTDelete":    4,
+		"CTGet":       5,
 	}
 )
 
-func (x StoreCommandType) Enum() *StoreCommandType {
-	p := new(StoreCommandType)
+func (x CommandType) Enum() *CommandType {
+	p := new(CommandType)
 	*p = x
 	return p
 }
 
-func (x StoreCommandType) String() string {
+func (x CommandType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (StoreCommandType) Descriptor() protoreflect.EnumDescriptor {
+func (CommandType) Descriptor() protoreflect.EnumDescriptor {
 	return file_commands_proto_enumTypes[0].Descriptor()
 }
 
-func (StoreCommandType) Type() protoreflect.EnumType {
+func (CommandType) Type() protoreflect.EnumType {
 	return &file_commands_proto_enumTypes[0]
 }
 
-func (x StoreCommandType) Number() protoreflect.EnumNumber {
+func (x CommandType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use StoreCommandType.Descriptor instead.
-func (StoreCommandType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use CommandType.Descriptor instead.
+func (CommandType) EnumDescriptor() ([]byte, []int) {
 	return file_commands_proto_rawDescGZIP(), []int{0}
 }
 
@@ -76,8 +85,8 @@ type StoreCommand struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Type StoreCommandType `protobuf:"varint,1,opt,name=Type,proto3,enum=badgerStore.StoreCommandType" json:"Type,omitempty"`
-	KVs  []*KeyValue      `protobuf:"bytes,2,rep,name=KVs,proto3" json:"KVs,omitempty"`
+	Type    CommandType `protobuf:"varint,1,opt,name=Type,proto3,enum=badgerStore.CommandType" json:"Type,omitempty"`
+	Payload []byte      `protobuf:"bytes,2,opt,name=Payload,proto3" json:"Payload,omitempty"`
 }
 
 func (x *StoreCommand) Reset() {
@@ -112,16 +121,16 @@ func (*StoreCommand) Descriptor() ([]byte, []int) {
 	return file_commands_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *StoreCommand) GetType() StoreCommandType {
+func (x *StoreCommand) GetType() CommandType {
 	if x != nil {
 		return x.Type
 	}
-	return StoreCommandType_Set
+	return CommandType_CTStartTxn
 }
 
-func (x *StoreCommand) GetKVs() []*KeyValue {
+func (x *StoreCommand) GetPayload() []byte {
 	if x != nil {
-		return x.KVs
+		return x.Payload
 	}
 	return nil
 }
@@ -182,29 +191,372 @@ func (x *KeyValue) GetValue() []byte {
 	return nil
 }
 
+type StartTxn struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID     int64 `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Update bool  `protobuf:"varint,2,opt,name=Update,proto3" json:"Update,omitempty"`
+}
+
+func (x *StartTxn) Reset() {
+	*x = StartTxn{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StartTxn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartTxn) ProtoMessage() {}
+
+func (x *StartTxn) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartTxn.ProtoReflect.Descriptor instead.
+func (*StartTxn) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StartTxn) GetID() int64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+func (x *StartTxn) GetUpdate() bool {
+	if x != nil {
+		return x.Update
+	}
+	return false
+}
+
+type StopTxn struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID     int64 `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Commit bool  `protobuf:"varint,2,opt,name=Commit,proto3" json:"Commit,omitempty"`
+}
+
+func (x *StopTxn) Reset() {
+	*x = StopTxn{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StopTxn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopTxn) ProtoMessage() {}
+
+func (x *StopTxn) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopTxn.ProtoReflect.Descriptor instead.
+func (*StopTxn) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StopTxn) GetID() int64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+func (x *StopTxn) GetCommit() bool {
+	if x != nil {
+		return x.Commit
+	}
+	return false
+}
+
+type CommitTxn struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID int64 `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+}
+
+func (x *CommitTxn) Reset() {
+	*x = CommitTxn{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CommitTxn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitTxn) ProtoMessage() {}
+
+func (x *CommitTxn) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitTxn.ProtoReflect.Descriptor instead.
+func (*CommitTxn) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CommitTxn) GetID() int64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+type Set struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TxnID int64       `protobuf:"varint,1,opt,name=TxnID,proto3" json:"TxnID,omitempty"`
+	KVs   []*KeyValue `protobuf:"bytes,2,rep,name=KVs,proto3" json:"KVs,omitempty"`
+}
+
+func (x *Set) Reset() {
+	*x = Set{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Set) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Set) ProtoMessage() {}
+
+func (x *Set) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Set.ProtoReflect.Descriptor instead.
+func (*Set) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Set) GetTxnID() int64 {
+	if x != nil {
+		return x.TxnID
+	}
+	return 0
+}
+
+func (x *Set) GetKVs() []*KeyValue {
+	if x != nil {
+		return x.KVs
+	}
+	return nil
+}
+
+type Delete struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TxnID int64    `protobuf:"varint,1,opt,name=TxnID,proto3" json:"TxnID,omitempty"`
+	Keys  [][]byte `protobuf:"bytes,2,rep,name=Keys,proto3" json:"Keys,omitempty"`
+}
+
+func (x *Delete) Reset() {
+	*x = Delete{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Delete) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Delete) ProtoMessage() {}
+
+func (x *Delete) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Delete.ProtoReflect.Descriptor instead.
+func (*Delete) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Delete) GetTxnID() int64 {
+	if x != nil {
+		return x.TxnID
+	}
+	return 0
+}
+
+func (x *Delete) GetKeys() [][]byte {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
+type Get struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TxnID int64    `protobuf:"varint,1,opt,name=TxnID,proto3" json:"TxnID,omitempty"`
+	Keys  [][]byte `protobuf:"bytes,2,rep,name=Keys,proto3" json:"Keys,omitempty"`
+}
+
+func (x *Get) Reset() {
+	*x = Get{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_commands_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Get) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Get) ProtoMessage() {}
+
+func (x *Get) ProtoReflect() protoreflect.Message {
+	mi := &file_commands_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Get.ProtoReflect.Descriptor instead.
+func (*Get) Descriptor() ([]byte, []int) {
+	return file_commands_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Get) GetTxnID() int64 {
+	if x != nil {
+		return x.TxnID
+	}
+	return 0
+}
+
+func (x *Get) GetKeys() [][]byte {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
 var File_commands_proto protoreflect.FileDescriptor
 
 var file_commands_proto_rawDesc = []byte{
 	0x0a, 0x0e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x12, 0x0b, 0x62, 0x61, 0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x22, 0x6a, 0x0a,
-	0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x31, 0x0a,
-	0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1d, 0x2e, 0x62, 0x61,
-	0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43,
-	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65,
-	0x12, 0x27, 0x0a, 0x03, 0x4b, 0x56, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e,
-	0x62, 0x61, 0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4b, 0x65, 0x79, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x52, 0x03, 0x4b, 0x56, 0x73, 0x22, 0x32, 0x0a, 0x08, 0x4b, 0x65, 0x79,
-	0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x2a, 0x30, 0x0a,
-	0x10, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x54, 0x79, 0x70,
-	0x65, 0x12, 0x07, 0x0a, 0x03, 0x53, 0x65, 0x74, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x47, 0x65,
-	0x74, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x10, 0x02, 0x42,
-	0x3d, 0x5a, 0x3b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x6f,
-	0x6e, 0x61, 0x6b, 0x73, 0x6f, 0x66, 0x74, 0x2f, 0x72, 0x6f, 0x6e, 0x79, 0x2f, 0x69, 0x6e, 0x74,
-	0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x62, 0x61, 0x64, 0x67,
-	0x65, 0x72, 0x3b, 0x62, 0x61, 0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x12, 0x0b, 0x62, 0x61, 0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x22, 0x56, 0x0a,
+	0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x2c, 0x0a,
+	0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x18, 0x2e, 0x62, 0x61,
+	0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x50,
+	0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07, 0x50, 0x61,
+	0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0x32, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75,
+	0x65, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03,
+	0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x32, 0x0a, 0x08, 0x53, 0x74, 0x61,
+	0x72, 0x74, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x03, 0x52, 0x02, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x22, 0x31, 0x0a,
+	0x07, 0x53, 0x74, 0x6f, 0x70, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x43, 0x6f, 0x6d, 0x6d,
+	0x69, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74,
+	0x22, 0x1b, 0x0a, 0x09, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a,
+	0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x22, 0x44, 0x0a,
+	0x03, 0x53, 0x65, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x12, 0x27, 0x0a, 0x03, 0x4b, 0x56,
+	0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x62, 0x61, 0x64, 0x67, 0x65, 0x72,
+	0x53, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x03,
+	0x4b, 0x56, 0x73, 0x22, 0x32, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x14, 0x0a,
+	0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x54, 0x78,
+	0x6e, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x4b, 0x65, 0x79, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
+	0x0c, 0x52, 0x04, 0x4b, 0x65, 0x79, 0x73, 0x22, 0x2f, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x14,
+	0x0a, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x54,
+	0x78, 0x6e, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x4b, 0x65, 0x79, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x0c, 0x52, 0x04, 0x4b, 0x65, 0x79, 0x73, 0x2a, 0x61, 0x0a, 0x0b, 0x43, 0x6f, 0x6d, 0x6d,
+	0x61, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0e, 0x0a, 0x0a, 0x43, 0x54, 0x53, 0x74, 0x61,
+	0x72, 0x74, 0x54, 0x78, 0x6e, 0x10, 0x00, 0x12, 0x0d, 0x0a, 0x09, 0x43, 0x54, 0x53, 0x74, 0x6f,
+	0x70, 0x54, 0x78, 0x6e, 0x10, 0x01, 0x12, 0x0f, 0x0a, 0x0b, 0x43, 0x54, 0x43, 0x6f, 0x6d, 0x6d,
+	0x69, 0x74, 0x54, 0x78, 0x6e, 0x10, 0x02, 0x12, 0x09, 0x0a, 0x05, 0x43, 0x54, 0x53, 0x65, 0x74,
+	0x10, 0x03, 0x12, 0x0c, 0x0a, 0x08, 0x43, 0x54, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x10, 0x04,
+	0x12, 0x09, 0x0a, 0x05, 0x43, 0x54, 0x47, 0x65, 0x74, 0x10, 0x05, 0x42, 0x3d, 0x5a, 0x3b, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x6f, 0x6e, 0x61, 0x6b, 0x73,
+	0x6f, 0x66, 0x74, 0x2f, 0x72, 0x6f, 0x6e, 0x79, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61,
+	0x6c, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x62, 0x61, 0x64, 0x67, 0x65, 0x72, 0x3b, 0x62,
+	0x61, 0x64, 0x67, 0x65, 0x72, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -220,15 +572,21 @@ func file_commands_proto_rawDescGZIP() []byte {
 }
 
 var file_commands_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_commands_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_commands_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_commands_proto_goTypes = []interface{}{
-	(StoreCommandType)(0), // 0: badgerStore.StoreCommandType
-	(*StoreCommand)(nil),  // 1: badgerStore.StoreCommand
-	(*KeyValue)(nil),      // 2: badgerStore.KeyValue
+	(CommandType)(0),     // 0: badgerStore.CommandType
+	(*StoreCommand)(nil), // 1: badgerStore.StoreCommand
+	(*KeyValue)(nil),     // 2: badgerStore.KeyValue
+	(*StartTxn)(nil),     // 3: badgerStore.StartTxn
+	(*StopTxn)(nil),      // 4: badgerStore.StopTxn
+	(*CommitTxn)(nil),    // 5: badgerStore.CommitTxn
+	(*Set)(nil),          // 6: badgerStore.Set
+	(*Delete)(nil),       // 7: badgerStore.Delete
+	(*Get)(nil),          // 8: badgerStore.Get
 }
 var file_commands_proto_depIdxs = []int32{
-	0, // 0: badgerStore.StoreCommand.Type:type_name -> badgerStore.StoreCommandType
-	2, // 1: badgerStore.StoreCommand.KVs:type_name -> badgerStore.KeyValue
+	0, // 0: badgerStore.StoreCommand.Type:type_name -> badgerStore.CommandType
+	2, // 1: badgerStore.Set.KVs:type_name -> badgerStore.KeyValue
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -266,6 +624,78 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
+		file_commands_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StartTxn); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_commands_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StopTxn); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_commands_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CommitTxn); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_commands_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Set); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_commands_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Delete); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_commands_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Get); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -273,7 +703,7 @@ func file_commands_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_commands_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
