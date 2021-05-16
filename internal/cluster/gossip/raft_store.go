@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-msgpack/codec"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"github.com/ronaksoft/rony/internal/store"
+	"github.com/ronaksoft/rony/store"
 )
 
 /*

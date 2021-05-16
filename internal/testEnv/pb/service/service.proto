@@ -6,12 +6,31 @@ import "options.proto";
 service Sample {
     option (rony_cobra_cmd) = true;
     rpc Echo (EchoRequest) returns (EchoResponse);
-    rpc EchoLeaderOnly (EchoRequest) returns (EchoResponse);
-    rpc EchoTunnel (EchoRequest) returns (EchoResponse) {};
+    rpc Set (SetRequest) returns (SetResponse);
+    rpc Get (GetRequest) returns (GetResponse);
+    rpc EchoTunnel (EchoRequest) returns (EchoResponse);
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {
         option (rony_internal) = true;
     }
     rpc EchoDelay (EchoRequest) returns (EchoResponse);
+}
+
+message GetRequest {
+    bytes Key = 1;
+}
+
+message GetResponse {
+    bytes Key = 1;
+    bytes Value = 2;
+}
+
+message SetRequest {
+    bytes Key = 1;
+    bytes Value = 2;
+}
+
+message SetResponse {
+    bool OK = 1;
 }
 
 message EchoRequest {

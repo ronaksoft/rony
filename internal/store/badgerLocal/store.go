@@ -3,8 +3,7 @@ package badgerLocal
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/internal/store"
-	staticStore "github.com/ronaksoft/rony/store"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
 	"time"
@@ -40,7 +39,7 @@ func New(cfg Config) (*Store, error) {
 	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
 	go runVlogGC(db, 1<<30)
 
-	staticStore.Init(staticStore.Config{
+	store.Init(store.Config{
 		DB:                  db,
 		ConflictRetries:     cfg.ConflictRetries,
 		ConflictMaxInterval: cfg.ConflictMaxInterval,
@@ -51,13 +50,13 @@ func New(cfg Config) (*Store, error) {
 	return st, nil
 }
 
-func newDB(config Config) (*store.DB, error) {
+func newDB(config Config) (*badger.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
 	opt.Logger = nil
 	return badger.Open(opt)
 }
 
-func runVlogGC(db *store.DB, threshold int64) {
+func runVlogGC(db *badger.DB, threshold int64) {
 	// Get initial size on start.
 	_, lastVlogSize := db.Size()
 
@@ -132,6 +131,6 @@ func (s *Store) Shutdown() {
 	}
 }
 
-func (s *Store) DB() *store.DB {
+func (s *Store) DB() *store.LocalDB {
 	return s.db
 }

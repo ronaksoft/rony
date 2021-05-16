@@ -201,12 +201,12 @@ func init() {
 func CreatePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.Txn) error {
+	return store.Update(func(txn *store.LTxn) error {
 		return CreatePageWithTxn(txn, alloc, m)
 	})
 }
 
-func CreatePageWithTxn(txn *store.Txn, alloc *tools.Allocator, m *Page) (err error) {
+func CreatePageWithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Page) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -233,7 +233,7 @@ func CreatePageWithTxn(txn *store.Txn, alloc *tools.Allocator, m *Page) (err err
 
 }
 
-func ReadPageWithTxn(txn *store.Txn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
+func ReadPageWithTxn(txn *store.LTxn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -254,14 +254,14 @@ func ReadPage(id uint32, m *Page) (*Page, error) {
 		m = &Page{}
 	}
 
-	err := store.View(func(txn *store.Txn) (err error) {
+	err := store.View(func(txn *store.LTxn) (err error) {
 		m, err = ReadPageWithTxn(txn, alloc, id, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadPageByReplicaSetAndIDWithTxn(txn *store.Txn, alloc *tools.Allocator, replicaSet uint64, id uint32, m *Page) (*Page, error) {
+func ReadPageByReplicaSetAndIDWithTxn(txn *store.LTxn, alloc *tools.Allocator, replicaSet uint64, id uint32, m *Page) (*Page, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -280,14 +280,14 @@ func ReadPageByReplicaSetAndID(replicaSet uint64, id uint32, m *Page) (*Page, er
 	if m == nil {
 		m = &Page{}
 	}
-	err := store.View(func(txn *store.Txn) (err error) {
+	err := store.View(func(txn *store.LTxn) (err error) {
 		m, err = ReadPageByReplicaSetAndIDWithTxn(txn, alloc, replicaSet, id, m)
 		return err
 	})
 	return m, err
 }
 
-func UpdatePageWithTxn(txn *store.Txn, alloc *tools.Allocator, m *Page) error {
+func UpdatePageWithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Page) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -309,13 +309,13 @@ func UpdatePage(id uint32, m *Page) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *store.Txn) (err error) {
+	err := store.View(func(txn *store.LTxn) (err error) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	})
 	return err
 }
 
-func DeletePageWithTxn(txn *store.Txn, alloc *tools.Allocator, id uint32) error {
+func DeletePageWithTxn(txn *store.LTxn, alloc *tools.Allocator, id uint32) error {
 	m := &Page{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
 	if err != nil {
@@ -338,12 +338,12 @@ func DeletePage(id uint32) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *store.Txn) error {
+	return store.Update(func(txn *store.LTxn) error {
 		return DeletePageWithTxn(txn, alloc, id)
 	})
 }
 
-func SavePageWithTxn(txn *store.Txn, alloc *tools.Allocator, m *Page) (err error) {
+func SavePageWithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Page) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	} else {
@@ -354,12 +354,12 @@ func SavePageWithTxn(txn *store.Txn, alloc *tools.Allocator, m *Page) (err error
 func SavePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.Txn) error {
+	return store.Update(func(txn *store.LTxn) error {
 		return SavePageWithTxn(txn, alloc, m)
 	})
 }
 
-func IterPages(txn *store.Txn, alloc *tools.Allocator, cb func(m *Page) bool) error {
+func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -396,7 +396,7 @@ func ListPage(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
+	err := store.View(func(txn *store.LTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
 		opt.Reverse = lo.Backward()
@@ -431,7 +431,7 @@ func ListPage(
 	return res, err
 }
 
-func IterPageByReplicaSet(txn *store.Txn, alloc *tools.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
+func IterPageByReplicaSet(txn *store.LTxn, alloc *tools.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -468,7 +468,7 @@ func ListPageByReplicaSet(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *store.Txn) error {
+	err := store.View(func(txn *store.LTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, replicaSet)
 		opt.Reverse = lo.Backward()

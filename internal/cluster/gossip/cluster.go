@@ -8,7 +8,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/internal/store"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"io/ioutil"

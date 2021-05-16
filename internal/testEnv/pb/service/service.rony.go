@@ -14,6 +14,170 @@ import (
 	sync "sync"
 )
 
+const C_GetRequest int64 = 3359917651
+
+type poolGetRequest struct {
+	pool sync.Pool
+}
+
+func (p *poolGetRequest) Get() *GetRequest {
+	x, ok := p.pool.Get().(*GetRequest)
+	if !ok {
+		x = &GetRequest{}
+	}
+	return x
+}
+
+func (p *poolGetRequest) Put(x *GetRequest) {
+	if x == nil {
+		return
+	}
+	x.Key = x.Key[:0]
+	p.pool.Put(x)
+}
+
+var PoolGetRequest = poolGetRequest{}
+
+func (x *GetRequest) DeepCopy(z *GetRequest) {
+	z.Key = append(z.Key[:0], x.Key...)
+}
+
+func (x *GetRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *GetRequest) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_GetRequest, x)
+}
+
+const C_GetResponse int64 = 2891601577
+
+type poolGetResponse struct {
+	pool sync.Pool
+}
+
+func (p *poolGetResponse) Get() *GetResponse {
+	x, ok := p.pool.Get().(*GetResponse)
+	if !ok {
+		x = &GetResponse{}
+	}
+	return x
+}
+
+func (p *poolGetResponse) Put(x *GetResponse) {
+	if x == nil {
+		return
+	}
+	x.Key = x.Key[:0]
+	x.Value = x.Value[:0]
+	p.pool.Put(x)
+}
+
+var PoolGetResponse = poolGetResponse{}
+
+func (x *GetResponse) DeepCopy(z *GetResponse) {
+	z.Key = append(z.Key[:0], x.Key...)
+	z.Value = append(z.Value[:0], x.Value...)
+}
+
+func (x *GetResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *GetResponse) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_GetResponse, x)
+}
+
+const C_SetRequest int64 = 3858851777
+
+type poolSetRequest struct {
+	pool sync.Pool
+}
+
+func (p *poolSetRequest) Get() *SetRequest {
+	x, ok := p.pool.Get().(*SetRequest)
+	if !ok {
+		x = &SetRequest{}
+	}
+	return x
+}
+
+func (p *poolSetRequest) Put(x *SetRequest) {
+	if x == nil {
+		return
+	}
+	x.Key = x.Key[:0]
+	x.Value = x.Value[:0]
+	p.pool.Put(x)
+}
+
+var PoolSetRequest = poolSetRequest{}
+
+func (x *SetRequest) DeepCopy(z *SetRequest) {
+	z.Key = append(z.Key[:0], x.Key...)
+	z.Value = append(z.Value[:0], x.Value...)
+}
+
+func (x *SetRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *SetRequest) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *SetRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_SetRequest, x)
+}
+
+const C_SetResponse int64 = 2994069984
+
+type poolSetResponse struct {
+	pool sync.Pool
+}
+
+func (p *poolSetResponse) Get() *SetResponse {
+	x, ok := p.pool.Get().(*SetResponse)
+	if !ok {
+		x = &SetResponse{}
+	}
+	return x
+}
+
+func (p *poolSetResponse) Put(x *SetResponse) {
+	if x == nil {
+		return
+	}
+	x.OK = false
+	p.pool.Put(x)
+}
+
+var PoolSetResponse = poolSetResponse{}
+
+func (x *SetResponse) DeepCopy(z *SetResponse) {
+	z.OK = x.OK
+}
+
+func (x *SetResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *SetResponse) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *SetResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_SetResponse, x)
+}
+
 const C_EchoRequest int64 = 1904100324
 
 type poolEchoRequest struct {
@@ -224,18 +388,24 @@ func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
 }
 
 const C_SampleEcho int64 = 3852587671
-const C_SampleEchoLeaderOnly int64 = 2252175833
+const C_SampleSet int64 = 569822863
+const C_SampleGet int64 = 987350307
 const C_SampleEchoTunnel int64 = 2071541407
 const C_SampleEchoInternal int64 = 3655883317
 const C_SampleEchoDelay int64 = 1737692531
 
 func init() {
+	registry.RegisterConstructor(3359917651, "GetRequest")
+	registry.RegisterConstructor(2891601577, "GetResponse")
+	registry.RegisterConstructor(3858851777, "SetRequest")
+	registry.RegisterConstructor(2994069984, "SetResponse")
 	registry.RegisterConstructor(1904100324, "EchoRequest")
 	registry.RegisterConstructor(4192619139, "EchoResponse")
 	registry.RegisterConstructor(3131464828, "Message1")
 	registry.RegisterConstructor(598674886, "Message2")
 	registry.RegisterConstructor(3852587671, "SampleEcho")
-	registry.RegisterConstructor(2252175833, "SampleEchoLeaderOnly")
+	registry.RegisterConstructor(569822863, "SampleSet")
+	registry.RegisterConstructor(987350307, "SampleGet")
 	registry.RegisterConstructor(2071541407, "SampleEchoTunnel")
 	registry.RegisterConstructor(3655883317, "SampleEchoInternal")
 	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
@@ -243,7 +413,8 @@ func init() {
 
 type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
-	EchoLeaderOnly(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
+	Set(ctx *edge.RequestCtx, req *SetRequest, res *SetResponse)
+	Get(ctx *edge.RequestCtx, req *GetRequest, res *GetResponse)
 	EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoInternal(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
@@ -270,20 +441,37 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	}
 }
 
-func (sw *sampleWrapper) echoLeaderOnlyWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-	req := PoolEchoRequest.Get()
-	defer PoolEchoRequest.Put(req)
-	res := PoolEchoResponse.Get()
-	defer PoolEchoResponse.Put(res)
+func (sw *sampleWrapper) setWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolSetRequest.Get()
+	defer PoolSetRequest.Put(req)
+	res := PoolSetResponse.Get()
+	defer PoolSetResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
 	}
 
-	sw.h.EchoLeaderOnly(ctx, req, res)
+	sw.h.Set(ctx, req, res)
 	if !ctx.Stopped() {
-		ctx.PushMessage(C_EchoResponse, res)
+		ctx.PushMessage(C_SetResponse, res)
+	}
+}
+
+func (sw *sampleWrapper) getWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	req := PoolGetRequest.Get()
+	defer PoolGetRequest.Put(req)
+	res := PoolGetResponse.Get()
+	defer PoolGetResponse.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	sw.h.Get(ctx, req, res)
+	if !ctx.Stopped() {
+		ctx.PushMessage(C_GetResponse, res)
 	}
 }
 
@@ -346,7 +534,8 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	}
 
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoLeaderOnly).SetHandler(handlerFunc(C_SampleEchoLeaderOnly)...).Append(sw.echoLeaderOnlyWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleSet).SetHandler(handlerFunc(C_SampleSet)...).Append(sw.setWrapper))
+	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleGet).SetHandler(handlerFunc(C_SampleGet)...).Append(sw.getWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(handlerFunc(C_SampleEchoTunnel)...).Append(sw.echoTunnelWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(handlerFunc(C_SampleEchoInternal)...).Append(sw.echoInternalWrapper).TunnelOnly())
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
@@ -392,19 +581,43 @@ func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	}
 }
 
-func ExecuteRemoteSampleEchoLeaderOnly(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func ExecuteRemoteSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEchoLeaderOnly, req, kvs...)
+	out.Fill(ctx.ReqID(), C_SampleSet, req, kvs...)
 	err := ctx.ExecuteRemote(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
 
 	switch in.GetConstructor() {
-	case C_EchoResponse:
+	case C_SetResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return edge.ErrUnexpectedTunnelResponse
+	}
+}
+
+func ExecuteRemoteSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleGet, req, kvs...)
+	err := ctx.ExecuteRemote(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_GetResponse:
 		_ = res.Unmarshal(in.GetMessage())
 		return nil
 	case rony.C_Error:
@@ -522,19 +735,43 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 	}
 }
 
-func (c *SampleClient) EchoLeaderOnly(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+func (c *SampleClient) Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_SampleEchoLeaderOnly, req, kvs...)
+	out.Fill(c.c.GetRequestID(), C_SampleSet, req, kvs...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
 	}
 	switch in.GetConstructor() {
-	case C_EchoResponse:
-		x := &EchoResponse{}
+	case C_SetResponse:
+		x := &SetResponse{}
+		_ = proto.Unmarshal(in.Message, x)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = proto.Unmarshal(in.Message, x)
+		return nil, fmt.Errorf("%s:%s", x.GetCode(), x.GetItems())
+	default:
+		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
+	}
+}
+
+func (c *SampleClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(c.c.GetRequestID(), C_SampleGet, req, kvs...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
+	}
+	switch in.GetConstructor() {
+	case C_GetResponse:
+		x := &GetResponse{}
 		_ = proto.Unmarshal(in.Message, x)
 		return x, nil
 	case rony.C_Error:
@@ -623,21 +860,37 @@ var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	return cmd
 }
 
-var genSampleEchoLeaderOnlyCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSampleSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "echo-leader-only",
+		Use: "set",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli, err := prepareSampleCommand(cmd, c)
 			if err != nil {
 				return err
 			}
-			return h.EchoLeaderOnly(cli, cmd, args)
+			return h.Set(cli, cmd, args)
 		},
 	}
 	config.SetFlags(cmd,
-		config.Int64Flag("int", 0, ""),
-		config.Int64Flag("timestamp", 0, ""),
-		config.Uint64Flag("replicaSet", 0, ""),
+		config.StringFlag("key", "", ""),
+		config.StringFlag("value", "", ""),
+	)
+	return cmd
+}
+
+var genSampleGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "get",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cli, err := prepareSampleCommand(cmd, c)
+			if err != nil {
+				return err
+			}
+			return h.Get(cli, cmd, args)
+		},
+	}
+	config.SetFlags(cmd,
+		config.StringFlag("key", "", ""),
 	)
 	return cmd
 }
@@ -682,14 +935,15 @@ var genSampleEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 
 type ISampleCli interface {
 	Echo(cli *SampleClient, cmd *cobra.Command, args []string) error
-	EchoLeaderOnly(cli *SampleClient, cmd *cobra.Command, args []string) error
+	Set(cli *SampleClient, cmd *cobra.Command, args []string) error
+	Get(cli *SampleClient, cmd *cobra.Command, args []string) error
 	EchoTunnel(cli *SampleClient, cmd *cobra.Command, args []string) error
 	EchoDelay(cli *SampleClient, cmd *cobra.Command, args []string) error
 }
 
 func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 	rootCmd.AddCommand(
-		genSampleEchoCmd(h, c), genSampleEchoLeaderOnlyCmd(h, c), genSampleEchoTunnelCmd(h, c),
-		genSampleEchoDelayCmd(h, c),
+		genSampleEchoCmd(h, c), genSampleSetCmd(h, c), genSampleGetCmd(h, c),
+		genSampleEchoTunnelCmd(h, c), genSampleEchoDelayCmd(h, c),
 	)
 }

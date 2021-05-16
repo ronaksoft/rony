@@ -21,6 +21,14 @@ type SampleServer struct {
 	es *edge.Server
 }
 
+func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *service.SetResponse) {
+	panic("implement me")
+}
+
+func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *service.GetResponse) {
+	panic("implement me")
+}
+
 func (h *SampleServer) EchoInternal(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {
 	panic("implement me")
 }

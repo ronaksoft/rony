@@ -37,7 +37,7 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		DemoStartCmd, StartCmd, BenchCmd, ListCmd, Members,
-		EchoCmd, EchoLeaderOnlyCmd, EchoTunnelCmd,
+		EchoCmd, EchoTunnelCmd,
 		Trace, MemProf, LogLevel, ClusterCmd,
 	)
 
@@ -226,66 +226,6 @@ var EchoCmd = &cobra.Command{
 			wg.Add(1)
 			go func() {
 				res, err := c.Echo(req)
-				switch err {
-				case nil:
-					atomic.AddInt64(&cnt, 1)
-					cmd.Println(res)
-				default:
-					cmd.Println("Error:", err)
-				}
-
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-		cmd.Println("N:", cnt)
-	},
-}
-
-var EchoLeaderOnlyCmd = &cobra.Command{
-	Use: "echo-leader",
-	Run: func(cmd *cobra.Command, args []string) {
-		serverID, _ := cmd.Flags().GetString(FlagServerID)
-		n, _ := cmd.Flags().GetInt("n")
-		if len(serverID) == 0 {
-			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
-			return
-		}
-		e1 := Edges[serverID]
-		if e1 == nil {
-			cmd.Println("Invalid Args")
-			return
-		}
-		gatewayAddrs := e1.Stats().GatewayAddr
-		if len(gatewayAddrs) == 0 {
-			cmd.Println("No Gateway Addr", gatewayAddrs)
-			return
-		}
-		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: gatewayAddrs[0],
-			Handler: func(m *rony.MessageEnvelope) {
-				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
-			},
-			Secure:         false,
-			ContextTimeout: time.Second * 3,
-		})
-		err := ec.Start()
-		if err != nil {
-			cmd.Println(err)
-			return
-		}
-		defer ec.Close()
-		c := service.NewSampleClient(ec)
-		req := service.PoolEchoRequest.Get()
-		defer service.PoolEchoRequest.Put(req)
-		req.Int = tools.RandomInt64(0)
-		req.Timestamp = tools.NanoTime()
-		var cnt int64
-		wg := sync.WaitGroup{}
-		for i := 0; i < n; i++ {
-			wg.Add(1)
-			go func() {
-				res, err := c.EchoLeaderOnly(req)
 				switch err {
 				case nil:
 					atomic.AddInt64(&cnt, 1)

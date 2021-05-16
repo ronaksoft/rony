@@ -8,12 +8,12 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/internal/store/badgerLocal"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/rest"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"os"
@@ -137,6 +137,10 @@ func (edge *Server) SetRestWrapper(method string, path string, f *rest.Factory) 
 // Cluster returns a reference to the underlying cluster of the Edge server
 func (edge *Server) Cluster() cluster.Cluster {
 	return edge.cluster
+}
+
+func (edge *Server) Store() store.Store {
+	return edge.store
 }
 
 // Gateway returns a reference to the underlying gateway of the Edge server

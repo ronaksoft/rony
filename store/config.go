@@ -1,7 +1,6 @@
 package store
 
 import (
-	"github.com/ronaksoft/rony/internal/store"
 	"time"
 )
 
@@ -22,7 +21,7 @@ const (
 )
 
 type Config struct {
-	DB                  *store.DB
+	DB                  *LocalDB
 	ConflictRetries     int
 	ConflictMaxInterval time.Duration
 	BatchWorkers        int

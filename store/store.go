@@ -3,7 +3,6 @@ package store
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/tools"
 	"time"
 )
@@ -18,12 +17,10 @@ import (
 */
 
 var (
-	db                    *store.DB
+	db                    *badger.DB
 	flusher               *tools.FlusherPool
 	conflictRetry         int
 	conflictRetryInterval time.Duration
-	vlogTicker            *time.Ticker // runs every 1m, check size of vlog and run GC conditionally.
-	mandatoryVlogTicker   *time.Ticker // runs every 10m, we always run vlog GC.
 )
 
 func Init(config Config) {
@@ -59,14 +56,14 @@ func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
 }
 
 // DB returns the underlying object of the database
-func DB() *badger.DB {
+func DB() *LocalDB {
 	return db
 }
 
 // Update executes a function, creating and managing a read-write transaction
 // for the user. Error returned by the function is relayed by the Update method.
 // It retries in case of badger.ErrConflict returned.
-func Update(fn func(txn *Txn) error) (err error) {
+func Update(fn func(txn *LTxn) error) (err error) {
 	retry := conflictRetry
 Retry:
 	err = db.Update(fn)
@@ -82,7 +79,7 @@ Retry:
 
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
-func View(fn func(txn *Txn) error) (err error) {
+func View(fn func(txn *LTxn) error) (err error) {
 	retry := conflictRetry
 Retry:
 	err = db.View(fn)
