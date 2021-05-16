@@ -41,6 +41,26 @@ type GossipClusterConfig = gossipCluster.Config
 // no need to a central key-value store or any other 3rd party service to run the cluster
 func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
+		switch cfg.Mode {
+		case MultiReplica:
+			s, err := badgerRaft.New(badgerRaft.DefaultConfig(edge.dataDir))
+			if err != nil {
+				panic(err)
+			}
+			edge.store = s
+			cfg.Store = s
+			cfg.FSM = s
+		case SingleReplica:
+			s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
+			if err != nil {
+				panic(err)
+			}
+			edge.store = s
+			cfg.Store = s
+			cfg.FSM = s
+		default:
+			panic("invalid cluster mode")
+		}
 		c := gossipCluster.New(edge.dataDir, cfg)
 		edge.cluster = c
 	}
@@ -104,27 +124,5 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
-	}
-}
-
-func WithLocalStore() Option {
-	return func(edge *Server) {
-		s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
-		if err != nil {
-			panic(err)
-		}
-		edge.store = s
-	}
-}
-
-type RaftStoreConfig = badgerRaft.Config
-
-func WithRaftStore() Option {
-	return func(edge *Server) {
-		s, err := badgerRaft.New(badgerRaft.DefaultConfig(edge.dataDir))
-		if err != nil {
-			panic(err)
-		}
-		edge.store = s
 	}
 }

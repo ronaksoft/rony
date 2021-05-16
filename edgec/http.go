@@ -126,7 +126,6 @@ func (h *Http) initConn() error {
 	case rony.C_Edges:
 		x := &rony.Edges{}
 		_ = x.Unmarshal(res.Message)
-		found := false
 		for _, n := range x.Nodes {
 			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
 				ce.Write(
@@ -136,16 +135,6 @@ func (h *Http) initConn() error {
 				)
 			}
 			httpc := h.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
-			if !found {
-				for _, hp := range n.HostPorts {
-					if hp == initConn.hostPorts[0] {
-						httpc = initConn
-						httpc.hostPorts = n.HostPorts
-						found = true
-					}
-				}
-			}
-
 			h.addConn(n.ServerID, n.ReplicaSet, httpc)
 			h.sessionReplica = n.ReplicaSet
 		}

@@ -126,7 +126,6 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 					ListenAddress: "0.0.0.0:0",
 					MaxBodySize:   4096,
 				}),
-				edge.WithLocalStore(),
 			)
 		}
 
@@ -516,7 +515,15 @@ var ClusterCmd = &cobra.Command{
 		}
 		defer ec.Close()
 
-		edges, err := ec.ClusterInfo(replicaSet)
+		var (
+			edges *rony.Edges
+		)
+		if replicaSet != 0 {
+			edges, err = ec.ClusterInfo(replicaSet)
+		} else {
+			edges, err = ec.ClusterInfo()
+		}
+
 		if err != nil {
 			cmd.Println(err)
 			return

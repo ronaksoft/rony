@@ -130,7 +130,8 @@ func (ws *Websocket) Start() error {
 	case rony.C_Edges:
 		x := &rony.Edges{}
 		_ = x.Unmarshal(res.Message)
-		found := false
+		_ = initConn.close()
+		ws.removeConn("", 0)
 		for _, n := range x.Nodes {
 			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
 				ce.Write(
@@ -140,23 +141,11 @@ func (ws *Websocket) Start() error {
 				)
 			}
 			wsc := ws.newConn(n.ServerID, n.ReplicaSet, n.HostPorts...)
-			if !found {
-				for _, hp := range n.HostPorts {
-					if hp == initConn.hostPorts[0] {
-						ws.removeConn("", 0)
-						found = true
-					}
-				}
-			}
 
 			ws.addConn(n.ServerID, n.ReplicaSet, wsc)
 			ws.sessionReplica = n.ReplicaSet
 		}
 
-		// If this connection is not our connsByReplica then we just close it.
-		if !found {
-			_ = initConn.close()
-		}
 	default:
 		return ErrUnknownResponse
 

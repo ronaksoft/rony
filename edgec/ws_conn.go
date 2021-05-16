@@ -174,6 +174,10 @@ func (c *wsConn) close() error {
 	// by setting the stop flag, we are making sure no reconnection will happen
 	c.stop = true
 
+	if c.conn == nil {
+		return nil
+	}
+
 	_ = wsutil.WriteMessage(c.conn, ws.StateClientSide, ws.OpClose, nil)
 
 	// by setting the read deadline we make the receiver() routine stops

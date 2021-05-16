@@ -19,6 +19,11 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+var (
+	vlogTicker          *time.Ticker // runs every 1m, check size of vlog and run GC conditionally.
+	mandatoryVlogTicker *time.Ticker // runs every 10m, we always run vlog GC.
+)
+
 type Store struct {
 	db *badger.DB
 }
@@ -31,6 +36,10 @@ func New(cfg Config) (*Store, error) {
 	}
 	st.db = db
 
+	vlogTicker = time.NewTicker(time.Minute)
+	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
+	go runVlogGC(db, 1<<30)
+
 	staticStore.Init(staticStore.Config{
 		DB:                  db,
 		ConflictRetries:     cfg.ConflictRetries,
@@ -42,10 +51,37 @@ func New(cfg Config) (*Store, error) {
 	return st, nil
 }
 
-func newDB(config Config) (*badger.DB, error) {
+func newDB(config Config) (*store.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
 	opt.Logger = nil
 	return badger.Open(opt)
+}
+
+func runVlogGC(db *store.DB, threshold int64) {
+	// Get initial size on start.
+	_, lastVlogSize := db.Size()
+
+	runGC := func() {
+		var err error
+		for err == nil {
+			// If a GC is successful, immediately run it again.
+			err = db.RunValueLogGC(0.7)
+		}
+		_, lastVlogSize = db.Size()
+	}
+
+	for {
+		select {
+		case <-vlogTicker.C:
+			_, currentVlogSize := db.Size()
+			if currentVlogSize < lastVlogSize+threshold {
+				continue
+			}
+			runGC()
+		case <-mandatoryVlogTicker.C:
+			runGC()
+		}
+	}
 }
 
 func (s *Store) ViewLocal(fn func(txn *store.LTxn) error) error {
@@ -85,7 +121,15 @@ func (s *Store) Update(fn func(store.Txn) error) error {
 }
 
 func (s *Store) Shutdown() {
-	panic("implement me")
+	if vlogTicker != nil {
+		vlogTicker.Stop()
+	}
+	if mandatoryVlogTicker != nil {
+		mandatoryVlogTicker.Stop()
+	}
+	if s.db != nil {
+		_ = s.db.Close()
+	}
 }
 
 func (s *Store) DB() *store.DB {
