@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/ronaksoft/rony/internal/store"
 	"time"
 )
 
@@ -21,19 +22,9 @@ const (
 )
 
 type Config struct {
-	DirPath             string
+	DB                  *store.DB
 	ConflictRetries     int
 	ConflictMaxInterval time.Duration
 	BatchWorkers        int
 	BatchSize           int
-}
-
-func DefaultConfig(dataPath string) Config {
-	return Config{
-		DirPath:             dataPath,
-		ConflictRetries:     100,
-		ConflictMaxInterval: time.Millisecond,
-		BatchSize:           defaultBatchSize,
-		BatchWorkers:        defaultBatchWorkers,
-	}
 }

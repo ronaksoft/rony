@@ -2,7 +2,6 @@ package testEnv
 
 import (
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/store"
 	"os"
 )
 
@@ -38,11 +37,4 @@ func Init() {
 
 	_ = os.RemoveAll("./_hdd")
 	_ = os.MkdirAll("./_hdd", os.ModePerm)
-	store.MustInit(store.Config{
-		DirPath:             "./_hdd",
-		ConflictRetries:     0,
-		ConflictMaxInterval: 0,
-		BatchWorkers:        0,
-		BatchSize:           0,
-	})
 }

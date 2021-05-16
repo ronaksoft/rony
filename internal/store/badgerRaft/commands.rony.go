@@ -46,44 +46,6 @@ func (x *StoreCommand) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-const C_KeyValue int64 = 4276272820
-
-type poolKeyValue struct {
-	pool sync.Pool
-}
-
-func (p *poolKeyValue) Get() *KeyValue {
-	x, ok := p.pool.Get().(*KeyValue)
-	if !ok {
-		x = &KeyValue{}
-	}
-	return x
-}
-
-func (p *poolKeyValue) Put(x *KeyValue) {
-	if x == nil {
-		return
-	}
-	x.Key = x.Key[:0]
-	x.Value = x.Value[:0]
-	p.pool.Put(x)
-}
-
-var PoolKeyValue = poolKeyValue{}
-
-func (x *KeyValue) DeepCopy(z *KeyValue) {
-	z.Key = append(z.Key[:0], x.Key...)
-	z.Value = append(z.Value[:0], x.Value...)
-}
-
-func (x *KeyValue) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *KeyValue) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 const C_StartTxn int64 = 605208098
 
 type poolStartTxn struct {
@@ -215,8 +177,8 @@ func (p *poolSet) Put(x *Set) {
 		return
 	}
 	x.TxnID = 0
-	PoolKeyValue.Put(x.KV)
-	x.KV = nil
+	x.Key = x.Key[:0]
+	x.Value = x.Value[:0]
 	p.pool.Put(x)
 }
 
@@ -224,14 +186,8 @@ var PoolSet = poolSet{}
 
 func (x *Set) DeepCopy(z *Set) {
 	z.TxnID = x.TxnID
-	if x.KV != nil {
-		if z.KV == nil {
-			z.KV = PoolKeyValue.Get()
-		}
-		x.KV.DeepCopy(z.KV)
-	} else {
-		z.KV = nil
-	}
+	z.Key = append(z.Key[:0], x.Key...)
+	z.Value = append(z.Value[:0], x.Value...)
 }
 
 func (x *Set) Marshal() ([]byte, error) {
@@ -320,7 +276,6 @@ func (x *Get) Unmarshal(b []byte) error {
 
 func init() {
 	registry.RegisterConstructor(3294788005, "StoreCommand")
-	registry.RegisterConstructor(4276272820, "KeyValue")
 	registry.RegisterConstructor(605208098, "StartTxn")
 	registry.RegisterConstructor(1239816782, "StopTxn")
 	registry.RegisterConstructor(15774688, "CommitTxn")

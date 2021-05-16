@@ -18,11 +18,6 @@ message StoreCommand {
     bytes Payload = 2;
 }
 
-message KeyValue {
-    bytes Key = 1;
-    bytes Value = 2;
-}
-
 message StartTxn {
     int64 ID = 1;
     bool Update = 2;
@@ -39,7 +34,8 @@ message CommitTxn {
 
 message Set {
     int64 TxnID = 1;
-    KeyValue KV = 2;
+    bytes Key = 2;
+    bytes Value = 3;
 }
 
 message Delete {

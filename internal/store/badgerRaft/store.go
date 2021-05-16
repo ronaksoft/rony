@@ -47,16 +47,14 @@ func New(cfg Config) (*Store, error) {
 	}
 	st.db = db
 
-	err = staticStore.Init(staticStore.Config{
-		DirPath:             cfg.DirPath,
+	staticStore.Init(staticStore.Config{
+		DB:                  db,
 		ConflictRetries:     cfg.ConflictRetries,
 		ConflictMaxInterval: cfg.ConflictMaxInterval,
 		BatchWorkers:        cfg.BatchWorkers,
 		BatchSize:           cfg.BatchSize,
 	})
-	if err != nil {
-		return nil, err
-	}
+
 	return st, nil
 }
 

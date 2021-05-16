@@ -3,6 +3,7 @@ package badgerRaft
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/hashicorp/raft"
+	"github.com/ronaksoft/rony"
 	"io"
 )
 
@@ -130,7 +131,7 @@ func (fsm *Store) applySetTxn(data []byte) error {
 		return ErrTxnNotFound
 	}
 
-	err = txn.Set(x.KV.Key, x.KV.Value)
+	err = txn.Set(x.Key, x.Value)
 	if err != nil {
 		return err
 	}
@@ -163,10 +164,10 @@ func (fsm *Store) applyDeleteTxn(data []byte) error {
 	return nil
 }
 
-func (fsm *Store) applyGetTxn(data []byte) (*KeyValue, error) {
+func (fsm *Store) applyGetTxn(data []byte) (*rony.KeyValue, error) {
 	req := PoolGet.Get()
 	defer PoolGet.Put(req)
-	res := &KeyValue{}
+	res := &rony.KeyValue{}
 
 	err := req.Unmarshal(data)
 	if err != nil {
@@ -189,9 +190,11 @@ func (fsm *Store) applyGetTxn(data []byte) (*KeyValue, error) {
 	default:
 		return nil, err
 	}
-	res.Key = append(res.Key, req.Key...)
+
+	res.Key = string(req.Key)
+
 	_ = item.Value(func(val []byte) error {
-		res.Value = append(res.Value, val...)
+		res.Value = string(val)
 		return nil
 	})
 	return res, nil

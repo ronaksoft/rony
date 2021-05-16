@@ -3,8 +3,8 @@ package store
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/tools"
-	"path/filepath"
 	"time"
 )
 
@@ -18,7 +18,7 @@ import (
 */
 
 var (
-	db                    *Store
+	db                    *store.DB
 	flusher               *tools.FlusherPool
 	conflictRetry         int
 	conflictRetryInterval time.Duration
@@ -26,22 +26,12 @@ var (
 	mandatoryVlogTicker   *time.Ticker // runs every 10m, we always run vlog GC.
 )
 
-func MustInit(config Config) {
-	err := Init(config)
-	if err != nil {
-		panic(err)
-	}
-
-}
-
-func Init(config Config) (err error) {
+func Init(config Config) {
 	if db != nil {
 		return
 	}
-	db, err = newDB(config)
-	if err != nil {
-		return
-	}
+	db = config.DB
+
 	if config.ConflictRetries == 0 {
 		config.ConflictRetries = defaultConflictRetries
 	}
@@ -60,7 +50,7 @@ func Init(config Config) (err error) {
 	vlogTicker = time.NewTicker(time.Minute)
 	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
 	go runVlogGC(db, 1<<30)
-	return nil
+	return
 }
 
 func runVlogGC(db *badger.DB, threshold int64) {
@@ -88,12 +78,6 @@ func runVlogGC(db *badger.DB, threshold int64) {
 			runGC()
 		}
 	}
-}
-
-func newDB(config Config) (*badger.DB, error) {
-	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
-	opt.Logger = nil
-	return badger.Open(opt)
 }
 
 func writeFlushFunc(targetID string, entries []tools.FlushEntry) {

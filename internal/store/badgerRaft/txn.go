@@ -1,6 +1,7 @@
 package badgerRaft
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 )
@@ -52,8 +53,9 @@ func (txn *Txn) Set(alloc *tools.Allocator, val []byte, keyParts ...interface{})
 	req := PoolSet.Get()
 	defer PoolSet.Put(req)
 	key := alloc.Gen(keyParts...)
-	req.KV.Key = append(req.KV.Key, key...)
-	req.KV.Value = append(req.KV.Value, val...)
+
+	req.Key = append(req.Key, key...)
+	req.Value = append(req.Value, val...)
 	req.TxnID = txn.ID
 	b := pools.Buffer.FromProto(req)
 	f := txn.store.c.RaftApply(*b.Bytes())
@@ -100,8 +102,8 @@ func (txn *Txn) Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, er
 	switch x := res.(type) {
 	case error:
 		return nil, x
-	case *KeyValue:
-		return x.Value, nil
+	case *rony.KeyValue:
+		return []byte(x.Value), nil
 	default:
 		return nil, ErrUnknown
 	}
