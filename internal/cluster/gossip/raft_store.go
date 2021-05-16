@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-msgpack/codec"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
-	"github.com/ronaksoft/rony/store"
+	"github.com/ronaksoft/rony/internal/store"
 )
 
 /*
@@ -31,12 +31,14 @@ var (
 // BadgerStore provides access to Badger for Raft to store and retrieve
 // log entries. It also provides key/value storage, and can be used as
 // a LogStore and StableStore.
-type BadgerStore struct{}
+type BadgerStore struct {
+	s store.Store
+}
 
 // FirstIndex returns the first known index from the Raft log.
 func (b *BadgerStore) FirstIndex() (uint64, error) {
 	var value uint64
-	err := store.View(func(txn *badger.Txn) error {
+	err := b.s.ViewLocal(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.IteratorOptions{
 			PrefetchValues: false,
 			Reverse:        false,
@@ -58,7 +60,7 @@ func (b *BadgerStore) FirstIndex() (uint64, error) {
 // LastIndex returns the last known index from the Raft log.
 func (b *BadgerStore) LastIndex() (uint64, error) {
 	var value uint64
-	err := store.View(func(txn *badger.Txn) error {
+	err := b.s.ViewLocal(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.IteratorOptions{
 			PrefetchValues: false,
 			Reverse:        true,
@@ -79,7 +81,7 @@ func (b *BadgerStore) LastIndex() (uint64, error) {
 
 // GetLog gets a log entry from Badger at a given index.
 func (b *BadgerStore) GetLog(index uint64, log *raft.Log) error {
-	return store.View(func(txn *badger.Txn) error {
+	return b.s.ViewLocal(func(txn *badger.Txn) error {
 		item, err := txn.Get(append(prefixLogs, uint64ToBytes(index)...))
 		if err != nil {
 			switch err {
@@ -103,14 +105,14 @@ func (b *BadgerStore) StoreLog(log *raft.Log) error {
 	if err != nil {
 		return err
 	}
-	return store.Update(func(txn *badger.Txn) error {
+	return b.s.UpdateLocal(func(txn *badger.Txn) error {
 		return txn.Set(append(prefixLogs, uint64ToBytes(log.Index)...), val.Bytes())
 	})
 }
 
 // StoreLogs stores a set of raft logs.
 func (b *BadgerStore) StoreLogs(logs []*raft.Log) error {
-	return store.Update(func(txn *badger.Txn) error {
+	return b.s.UpdateLocal(func(txn *badger.Txn) error {
 		for _, log := range logs {
 			key := append(prefixLogs, uint64ToBytes(log.Index)...)
 			val, err := encodeMsgPack(log)
@@ -128,7 +130,7 @@ func (b *BadgerStore) StoreLogs(logs []*raft.Log) error {
 // DeleteRange deletes logs within a given range inclusively.
 func (b *BadgerStore) DeleteRange(min, max uint64) error {
 	// we manage the transaction manually in order to avoid ErrTxnTooBig errors
-	txn := store.DB().NewTransaction(true)
+	txn := b.s.DB().NewTransaction(true)
 	it := txn.NewIterator(badger.IteratorOptions{
 		PrefetchValues: false,
 		Reverse:        false,
@@ -165,7 +167,7 @@ func (b *BadgerStore) DeleteRange(min, max uint64) error {
 
 // Set is used to set a key/value set outside of the raft log.
 func (b *BadgerStore) Set(key []byte, val []byte) error {
-	return store.Update(func(txn *badger.Txn) error {
+	return b.s.UpdateLocal(func(txn *badger.Txn) error {
 		return txn.Set(append(prefixConf, key...), val)
 	})
 }
@@ -173,7 +175,7 @@ func (b *BadgerStore) Set(key []byte, val []byte) error {
 // Get is used to retrieve a value from the k/v store by key
 func (b *BadgerStore) Get(key []byte) ([]byte, error) {
 	var value []byte
-	err := store.View(func(txn *badger.Txn) error {
+	err := b.s.ViewLocal(func(txn *badger.Txn) error {
 		item, err := txn.Get(append(prefixConf, key...))
 		if err != nil {
 			switch err {

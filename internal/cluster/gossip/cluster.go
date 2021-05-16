@@ -8,6 +8,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -34,7 +35,8 @@ type Config struct {
 	ReplicaSet uint64
 	Mode       cluster.Mode
 	GossipPort int
-	Store      raft.FSM
+	FSM        raft.FSM
+	Store      store.Store
 }
 
 type Cluster struct {
@@ -47,6 +49,7 @@ type Cluster struct {
 	replicaLeaderID  string
 	replicaMembers   map[uint64]map[string]*Member
 	clusterMembers   map[string]*Member
+	store            store.Store
 
 	// Raft & Gossip
 	raftFSM       raft.FSM
@@ -72,7 +75,8 @@ func New(dataPath string, cfg Config) *Cluster {
 		clusterMembers: make(map[string]*Member, 100),
 		replicaMembers: make(map[uint64]map[string]*Member, 100),
 		rateLimitChan:  make(chan struct{}, clusterMessageRateLimit),
-		raftFSM:        cfg.Store,
+		raftFSM:        cfg.FSM,
+		store:          cfg.Store,
 	}
 
 	return c
@@ -148,7 +152,9 @@ func (c *Cluster) startRaft(notifyChan chan bool) (err error) {
 		return err
 	}
 
-	badgerStore := &BadgerStore{}
+	badgerStore := &BadgerStore{
+		s: c.store,
+	}
 	c.raft, err = raft.NewRaft(raftConfig, c.raftFSM, badgerStore, badgerStore, raftSnapshot, raftTransport)
 	if err != nil {
 		return err

@@ -1,10 +1,12 @@
-package badgerStore
+package badgerRaft
 
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/pools"
+	staticStore "github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
 	"sync"
@@ -44,6 +46,17 @@ func New(cfg Config) (*Store, error) {
 		return nil, err
 	}
 	st.db = db
+
+	err = staticStore.Init(staticStore.Config{
+		DirPath:             cfg.DirPath,
+		ConflictRetries:     cfg.ConflictRetries,
+		ConflictMaxInterval: cfg.ConflictMaxInterval,
+		BatchWorkers:        cfg.BatchWorkers,
+		BatchSize:           cfg.BatchSize,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return st, nil
 }
 
@@ -59,6 +72,38 @@ func (fsm *Store) newTxn(update bool) *Txn {
 		store:  fsm,
 		update: update,
 	}
+}
+
+func (fsm *Store) ViewLocal(fn func(txn *store.LTxn) error) error {
+	retry := defaultConflictRetries
+Retry:
+	err := fsm.db.View(fn)
+	if err == badger.ErrConflict {
+		if retry--; retry > 0 {
+			metrics.IncCounter(metrics.CntStoreConflicts)
+			time.Sleep(time.Duration(tools.RandomInt64(int64(defaultMaxInterval))))
+			goto Retry
+		}
+	}
+	return err
+}
+
+func (fsm *Store) UpdateLocal(fn func(txn *store.LTxn) error) error {
+	retry := defaultConflictRetries
+Retry:
+	err := fsm.db.Update(fn)
+	if err == badger.ErrConflict {
+		if retry--; retry > 0 {
+			metrics.IncCounter(metrics.CntStoreConflicts)
+			time.Sleep(time.Duration(tools.RandomInt64(int64(defaultMaxInterval))))
+			goto Retry
+		}
+	}
+	return err
+}
+
+func (fsm *Store) DB() *store.DB {
+	return fsm.db
 }
 
 func (fsm *Store) Update(fn func(store.Txn) error) error {

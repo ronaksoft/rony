@@ -1,6 +1,6 @@
 syntax = "proto3";
-package badgerStore;
-option go_package = "github.com/ronaksoft/rony/internal/store/badger;badgerStore";
+package badgerRaft;
+option go_package = "github.com/ronaksoft/rony/internal/store/badgerRaft";
 
 // StoreCommandType
 enum CommandType {

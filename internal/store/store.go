@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/tools"
 )
 
@@ -13,6 +14,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type (
+	DB   = badger.DB
+	LTxn = badger.Txn
+)
 type Txn interface {
 	Delete(alloc *tools.Allocator, keyParts ...interface{}) error
 	Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error
@@ -23,5 +28,8 @@ type Txn interface {
 type Store interface {
 	View(fn func(Txn) error) error
 	Update(fn func(Txn) error) error
+	ViewLocal(fn func(txn *LTxn) error) error
+	UpdateLocal(fn func(txn *LTxn) error) error
+	DB() *DB
 	Shutdown()
 }

@@ -1,4 +1,4 @@
-package badgerStore
+package badgerRaft
 
 import (
 	"github.com/ronaksoft/rony/pools"
