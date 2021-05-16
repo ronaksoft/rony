@@ -19,14 +19,16 @@ import (
 */
 
 type Generator struct {
-	f *protogen.File
-	g *protogen.GeneratedFile
+	f       *protogen.File
+	g       *protogen.GeneratedFile
+	plugins map[string]struct{}
 }
 
-func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
+func New(f *protogen.File, g *protogen.GeneratedFile, plugins map[string]struct{}) *Generator {
 	return &Generator{
-		f: f,
-		g: g,
+		f:       f,
+		g:       g,
+		plugins: plugins,
 	}
 }
 
@@ -35,7 +37,7 @@ func (g *Generator) Generate() {
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "sync"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/registry"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
-	if g.f.GoPackageName != "rony" {
+	if _, ok := g.plugins["no_edge_dep"]; !ok {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 	}
 
@@ -47,10 +49,9 @@ func (g *Generator) Generate() {
 		g.genMarshal(m)
 		g.genUnmarshal(m)
 
-		if g.f.GoPackageName != "rony" {
+		if _, ok := g.plugins["no_edge_dep"]; !ok {
 			g.genPushToContext(m)
 		}
-
 	}
 	for _, st := range g.f.Services {
 		for _, m := range st.Methods {

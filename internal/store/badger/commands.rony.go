@@ -3,7 +3,6 @@
 package badgerStore
 
 import (
-	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
@@ -47,10 +46,6 @@ func (x *StoreCommand) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *StoreCommand) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_StoreCommand, x)
-}
-
 const C_KeyValue int64 = 4276272820
 
 type poolKeyValue struct {
@@ -87,10 +82,6 @@ func (x *KeyValue) Marshal() ([]byte, error) {
 
 func (x *KeyValue) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *KeyValue) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_KeyValue, x)
 }
 
 const C_StartTxn int64 = 605208098
@@ -131,10 +122,6 @@ func (x *StartTxn) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *StartTxn) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_StartTxn, x)
-}
-
 const C_StopTxn int64 = 1239816782
 
 type poolStopTxn struct {
@@ -173,10 +160,6 @@ func (x *StopTxn) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *StopTxn) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_StopTxn, x)
-}
-
 const C_CommitTxn int64 = 15774688
 
 type poolCommitTxn struct {
@@ -211,10 +194,6 @@ func (x *CommitTxn) Marshal() ([]byte, error) {
 
 func (x *CommitTxn) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *CommitTxn) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_CommitTxn, x)
 }
 
 const C_Set int64 = 3730400060
@@ -263,10 +242,6 @@ func (x *Set) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Set) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Set, x)
-}
-
 const C_Delete int64 = 1035893169
 
 type poolDelete struct {
@@ -305,10 +280,6 @@ func (x *Delete) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Delete) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Delete, x)
-}
-
 const C_Get int64 = 3312871568
 
 type poolGet struct {
@@ -345,10 +316,6 @@ func (x *Get) Marshal() ([]byte, error) {
 
 func (x *Get) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
-func (x *Get) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Get, x)
 }
 
 func init() {

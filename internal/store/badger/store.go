@@ -3,6 +3,7 @@ package badgerStore
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony/internal/store"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
@@ -20,7 +21,7 @@ import (
 */
 
 //go:generate protoc -I=. --go_out=paths=source_relative:. commands.proto
-//go:generate protoc -I=. --gorony_out=paths=source_relative:. commands.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative,option=no_edge_dep:. commands.proto
 
 // Store is the finite state machine which will be used when Raft is enabled.
 type Store struct {
@@ -34,7 +35,7 @@ type Store struct {
 	openTxn               map[int64]*badger.Txn
 }
 
-func New(cfg *Config) (*Store, error) {
+func New(cfg Config) (*Store, error) {
 	st := &Store{
 		openTxn: map[int64]*badger.Txn{},
 	}
@@ -46,7 +47,7 @@ func New(cfg *Config) (*Store, error) {
 	return st, nil
 }
 
-func newDB(config *Config) (*badger.DB, error) {
+func newDB(config Config) (*badger.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
 	opt.Logger = nil
 	return badger.Open(opt)
@@ -60,7 +61,7 @@ func (fsm *Store) newTxn(update bool) *Txn {
 	}
 }
 
-func (fsm *Store) Update(fn func(*Txn) error) error {
+func (fsm *Store) Update(fn func(store.Txn) error) error {
 	txn := fsm.newTxn(true)
 	err := fsm.startTxn(txn)
 	if err != nil {
@@ -71,7 +72,7 @@ func (fsm *Store) Update(fn func(*Txn) error) error {
 	return fsm.stopTxn(txn, err == nil)
 }
 
-func (fsm *Store) View(fn func(*Txn) error) error {
+func (fsm *Store) View(fn func(store.Txn) error) error {
 	txn := fsm.newTxn(false)
 	err := fsm.startTxn(txn)
 	if err != nil {
@@ -134,4 +135,8 @@ func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
 	default:
 		return ErrUnknown
 	}
+}
+
+func (fsm *Store) Shutdown() {
+	_ = fsm.db.Close()
 }

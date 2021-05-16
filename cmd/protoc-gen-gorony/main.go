@@ -15,7 +15,7 @@ func main() {
 	pgo := protogen.Options{
 		ParamFunc: func(name, value string) error {
 			switch name {
-			case "plugin":
+			case "option":
 				for _, p := range strings.Split(value, "|") {
 					plugins[p] = struct{}{}
 				}
@@ -43,7 +43,7 @@ func main() {
 			g.P()
 
 			// Generate all the helper functions
-			g1 := helper.New(f, g)
+			g1 := helper.New(f, g, plugins)
 			g1.Generate()
 
 			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option

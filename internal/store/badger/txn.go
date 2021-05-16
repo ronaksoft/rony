@@ -1,7 +1,7 @@
 package badgerStore
 
 import (
-	"github.com/ronaksoft/rony/internal/store"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
 )
 
@@ -20,7 +20,7 @@ type Txn struct {
 	update bool
 }
 
-func (txn *Txn) Delete(alloc *store.Allocator, keyParts ...interface{}) error {
+func (txn *Txn) Delete(alloc *rony.Allocator, keyParts ...interface{}) error {
 	req := PoolDelete.Get()
 	defer PoolDelete.Put(req)
 	key := alloc.Gen(keyParts...)
@@ -48,7 +48,7 @@ func (txn *Txn) Delete(alloc *store.Allocator, keyParts ...interface{}) error {
 	return nil
 }
 
-func (txn *Txn) Set(alloc *store.Allocator, val []byte, keyParts ...interface{}) error {
+func (txn *Txn) Set(alloc *rony.Allocator, val []byte, keyParts ...interface{}) error {
 	req := PoolSet.Get()
 	defer PoolSet.Put(req)
 	key := alloc.Gen(keyParts...)
@@ -77,7 +77,7 @@ func (txn *Txn) Set(alloc *store.Allocator, val []byte, keyParts ...interface{})
 	return nil
 }
 
-func (txn *Txn) Get(alloc *store.Allocator, keyParts ...interface{}) ([]byte, error) {
+func (txn *Txn) Get(alloc *rony.Allocator, keyParts ...interface{}) ([]byte, error) {
 	req := PoolGet.Get()
 	defer PoolGet.Put(req)
 	key := alloc.Gen(keyParts...)
@@ -108,7 +108,7 @@ func (txn *Txn) Get(alloc *store.Allocator, keyParts ...interface{}) ([]byte, er
 
 }
 
-func (txn *Txn) Exists(alloc *store.Allocator, keyParts ...interface{}) bool {
+func (txn *Txn) Exists(alloc *rony.Allocator, keyParts ...interface{}) bool {
 	_, err := txn.Get(alloc, keyParts...)
 	return err == nil
 }

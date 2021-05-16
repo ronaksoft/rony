@@ -22,7 +22,6 @@ var (
 	crc64Table = crc64.MakeTable(crc64.ISO)
 )
 
-// ConstructorOf
 func ConstructorOf(x interface{}) int64 {
 	return int64(crc64.Checksum(tools.StrToByte(reflect.ValueOf(x).Type().Name()), crc64Table))
 }
@@ -36,7 +35,6 @@ func SetLogLevel(l int) {
 	log.SetLevel(log.Level(l))
 }
 
-// RegisterPrometheus
 func RegisterPrometheus(registerer prometheus.Registerer) {
 	metrics.Register(registerer)
 }

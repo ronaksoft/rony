@@ -16,7 +16,7 @@ import (
 */
 
 //go:generate protoc -I=. --go_out=paths=source_relative:. imsg.proto msg.proto options.proto
-//go:generate protoc -I=. --gorony_out=paths=source_relative:. imsg.proto msg.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative,option=no_edge_dep:. imsg.proto msg.proto
 func init() {}
 
 func ErrorMessage(out *MessageEnvelope, reqID uint64, errCode, errItem string) {
