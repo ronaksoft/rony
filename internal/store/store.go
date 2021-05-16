@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/tools"
 )
 
 /*
@@ -14,10 +14,10 @@ import (
 */
 
 type Txn interface {
-	Delete(alloc *rony.Allocator, keyParts ...interface{}) error
-	Set(alloc *rony.Allocator, val []byte, keyParts ...interface{}) error
-	Get(alloc *rony.Allocator, keyParts ...interface{}) ([]byte, error)
-	Exists(alloc *rony.Allocator, keyParts ...interface{}) bool
+	Delete(alloc *tools.Allocator, keyParts ...interface{}) error
+	Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error
+	Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error)
+	Exists(alloc *tools.Allocator, keyParts ...interface{}) bool
 }
 
 type Store interface {

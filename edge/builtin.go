@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/store"
+	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -82,7 +83,7 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		return
 	}
 
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	err = store.Update(func(txn *badger.Txn) (err error) {

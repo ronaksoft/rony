@@ -1,8 +1,7 @@
-package store_test
+package tools_test
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
@@ -28,7 +27,7 @@ const (
 
 func TestNewAllocator(t *testing.T) {
 	Convey("Allocator", t, func(c C) {
-		alloc := store.NewAllocator()
+		alloc := tools.NewAllocator()
 		b := alloc.Gen(Alias_A2)
 		c.So(b, ShouldHaveLength, 4)
 		b = alloc.Gen(Alias_A2, Alias_A1)
@@ -45,7 +44,7 @@ func TestNewAllocator(t *testing.T) {
 func BenchmarkBulkKey_GenKey(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
-		bk := store.NewAllocator()
+		bk := tools.NewAllocator()
 		for pb.Next() {
 			d := bk.Gen(tools.FastRand(), "tools.RandomID(10)", 3, 125)
 			if len(d) != 38 {
@@ -63,7 +62,7 @@ func BenchmarkAllocator_GenValue(b *testing.B) {
 		m.RequestID = tools.RandomUint64(0)
 		m.Constructor = 3232
 		m.Message = append(m.Message, tools.StrToByte("Something here for test ONLY!")...)
-		bk := store.NewAllocator()
+		bk := tools.NewAllocator()
 		for pb.Next() {
 			d := bk.Gen(m)
 			if len(d) != proto.Size(m) {

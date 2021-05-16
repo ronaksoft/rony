@@ -6,6 +6,7 @@ import (
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
+	tools "github.com/ronaksoft/rony/tools"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -113,9 +114,9 @@ func init() {
 	registry.RegisterConstructor(2982774902, "Single2")
 }
 
-func SaveSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (err error) {
+func SaveSingle1WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Single1) (err error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -127,16 +128,16 @@ func SaveSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (err
 }
 
 func SaveSingle1(m *Single1) (err error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return SaveSingle1WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (*Single1, error) {
+func ReadSingle1WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -148,7 +149,7 @@ func ReadSingle1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single1) (*Si
 }
 
 func ReadSingle1(m *Single1) (*Single1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
@@ -162,9 +163,9 @@ func ReadSingle1(m *Single1) (*Single1, error) {
 	return m, err
 }
 
-func SaveSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (err error) {
+func SaveSingle2WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Single2) (err error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -176,16 +177,16 @@ func SaveSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (err
 }
 
 func SaveSingle2(m *Single2) (err error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return SaveSingle2WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (*Single2, error) {
+func ReadSingle2WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -197,7 +198,7 @@ func ReadSingle2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Single2) (*Si
 }
 
 func ReadSingle2(m *Single2) (*Single2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {

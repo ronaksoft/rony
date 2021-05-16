@@ -6,6 +6,7 @@ import (
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
+	tools "github.com/ronaksoft/rony/tools"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -114,16 +115,16 @@ func init() {
 }
 
 func CreateModel1(m *Model1) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return CreateModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func CreateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
+func CreateModel1WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model1) (err error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -164,9 +165,9 @@ func CreateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err
 
 }
 
-func ReadModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
+func ReadModel1WithTxn(txn *store.Txn, alloc *tools.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -178,7 +179,7 @@ func ReadModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKe
 }
 
 func ReadModel1(id int32, shardKey int32, m *Model1) (*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
@@ -192,9 +193,9 @@ func ReadModel1(id int32, shardKey int32, m *Model1) (*Model1, error) {
 	return m, err
 }
 
-func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *tools.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -206,7 +207,7 @@ func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Alloca
 }
 
 func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	if m == nil {
 		m = &Model1{}
@@ -218,9 +219,9 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	return m, err
 }
 
-func UpdateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) error {
+func UpdateModel1WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model1) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -233,7 +234,7 @@ func UpdateModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) erro
 }
 
 func UpdateModel1(id int32, shardKey int32, m *Model1) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
@@ -246,7 +247,7 @@ func UpdateModel1(id int32, shardKey int32, m *Model1) error {
 	return err
 }
 
-func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shardKey int32) error {
+func DeleteModel1WithTxn(txn *store.Txn, alloc *tools.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
 	if err != nil {
@@ -280,7 +281,7 @@ func DeleteModel1WithTxn(txn *store.Txn, alloc *store.Allocator, id int32, shard
 }
 
 func DeleteModel1(id int32, shardKey int32) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	return store.Update(func(txn *store.Txn) error {
@@ -297,7 +298,7 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
-func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err error) {
+func SaveModel1WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model1) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey) {
 		return UpdateModel1WithTxn(txn, alloc, m)
 	} else {
@@ -306,16 +307,16 @@ func SaveModel1WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model1) (err e
 }
 
 func SaveModel1(m *Model1) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return SaveModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool) error {
+func IterModel1(txn *store.Txn, alloc *tools.Allocator, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -346,7 +347,7 @@ func IterModel1(txn *store.Txn, alloc *store.Allocator, cb func(m *Model1) bool)
 func ListModel1(
 	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
@@ -385,9 +386,9 @@ func ListModel1(
 	return res, err
 }
 
-func IterModel1ByID(txn *store.Txn, alloc *store.Allocator, id int32, cb func(m *Model1) bool) error {
+func IterModel1ByID(txn *store.Txn, alloc *tools.Allocator, id int32, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -415,9 +416,9 @@ func IterModel1ByID(txn *store.Txn, alloc *store.Allocator, id int32, cb func(m 
 	return nil
 }
 
-func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func(m *Model1) bool) error {
+func IterModel1ByEnum(txn *store.Txn, alloc *tools.Allocator, enum Enum, cb func(m *Model1) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -448,7 +449,7 @@ func IterModel1ByEnum(txn *store.Txn, alloc *store.Allocator, enum Enum, cb func
 func ListModel1ByID(
 	id int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
@@ -490,7 +491,7 @@ func ListModel1ByID(
 func ListModel1ByEnum(
 	enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
@@ -532,7 +533,7 @@ func ListModel1ByEnum(
 func ListModel1ByP1(
 	p1 string, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
@@ -579,7 +580,7 @@ func ListModel1ByP1(
 func ListModel1ByP2(
 	p2 string, lo *store.ListOption, cond func(m *Model1) bool,
 ) ([]*Model1, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
@@ -624,16 +625,16 @@ func ListModel1ByP2(
 }
 
 func CreateModel2(m *Model2) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return CreateModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func CreateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
+func CreateModel2WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model2) (err error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -658,9 +659,9 @@ func CreateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err
 
 }
 
-func ReadModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
+func ReadModel2WithTxn(txn *store.Txn, alloc *tools.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -672,7 +673,7 @@ func ReadModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKe
 }
 
 func ReadModel2(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
@@ -686,9 +687,9 @@ func ReadModel2(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error)
 	return m, err
 }
 
-func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *tools.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -700,7 +701,7 @@ func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.Txn, alloc *store.Allocato
 }
 
 func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	if m == nil {
 		m = &Model2{}
@@ -712,9 +713,9 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	return m, err
 }
 
-func UpdateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) error {
+func UpdateModel2WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model2) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -727,7 +728,7 @@ func UpdateModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) erro
 }
 
 func UpdateModel2(id int64, shardKey int32, p1 string, m *Model2) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
@@ -740,7 +741,7 @@ func UpdateModel2(id int64, shardKey int32, p1 string, m *Model2) error {
 	return err
 }
 
-func DeleteModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, p1 string) error {
+func DeleteModel2WithTxn(txn *store.Txn, alloc *tools.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
 	if err != nil {
@@ -760,7 +761,7 @@ func DeleteModel2WithTxn(txn *store.Txn, alloc *store.Allocator, id int64, shard
 }
 
 func DeleteModel2(id int64, shardKey int32, p1 string) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	return store.Update(func(txn *store.Txn) error {
@@ -777,7 +778,7 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
-func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err error) {
+func SaveModel2WithTxn(txn *store.Txn, alloc *tools.Allocator, m *Model2) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1) {
 		return UpdateModel2WithTxn(txn, alloc, m)
 	} else {
@@ -786,16 +787,16 @@ func SaveModel2WithTxn(txn *store.Txn, alloc *store.Allocator, m *Model2) (err e
 }
 
 func SaveModel2(m *Model2) error {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	return store.Update(func(txn *store.Txn) error {
 		return SaveModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool) error {
+func IterModel2(txn *store.Txn, alloc *tools.Allocator, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -826,7 +827,7 @@ func IterModel2(txn *store.Txn, alloc *store.Allocator, cb func(m *Model2) bool)
 func ListModel2(
 	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
 ) ([]*Model2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
@@ -865,9 +866,9 @@ func ListModel2(
 	return res, err
 }
 
-func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *store.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *tools.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -895,9 +896,9 @@ func IterModel2ByIDAndShardKey(txn *store.Txn, alloc *store.Allocator, id int64,
 	return nil
 }
 
-func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m *Model2) bool) error {
+func IterModel2ByP1(txn *store.Txn, alloc *tools.Allocator, p1 string, cb func(m *Model2) bool) error {
 	if alloc == nil {
-		alloc = store.NewAllocator()
+		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
@@ -928,7 +929,7 @@ func IterModel2ByP1(txn *store.Txn, alloc *store.Allocator, p1 string, cb func(m
 func ListModel2ByIDAndShardKey(
 	id int64, shardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
 ) ([]*Model2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
@@ -970,7 +971,7 @@ func ListModel2ByIDAndShardKey(
 func ListModel2ByP1(
 	p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption, cond func(m *Model2) bool,
 ) ([]*Model2, error) {
-	alloc := store.NewAllocator()
+	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())

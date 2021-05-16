@@ -35,6 +35,7 @@ func (g *Generator) Generate() {
 		singleton := proto.GetExtension(opt, rony.E_RonySingleton).(bool)
 		if singleton {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.genSave(m)
 			g.genRead(m)
 			continue
@@ -44,9 +45,9 @@ func (g *Generator) Generate() {
 
 func (g *Generator) genSave(m *protogen.Message) {
 	// SaveWithTxn func
-	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (err error) {")
+	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (err error) {")
 	g.g.P("if alloc == nil {")
-	g.g.P("alloc = store.NewAllocator()")
+	g.g.P("alloc = tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("}") // end of if block
 	g.g.P()
@@ -58,7 +59,11 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P("}") // end of SaveWithTxn func
 	g.g.P()
 	g.g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("return store.Update(func(txn *store.Txn) error {")
 	g.g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
@@ -67,9 +72,9 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P()
 }
 func (g *Generator) genRead(m *protogen.Message) {
-	g.g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.Txn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
 	g.g.P("if alloc == nil {")
-	g.g.P("alloc = store.NewAllocator()")
+	g.g.P("alloc = tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("}") // end of if block
 	g.g.P()
@@ -81,7 +86,11 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("}") // end of ReadWithTxn func
 	g.g.P()
 	g.g.P("func Read", m.Desc.Name(), "(m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("if m == nil {")

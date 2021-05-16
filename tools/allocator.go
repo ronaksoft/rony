@@ -1,10 +1,9 @@
-package rony
+package tools
 
 import (
 	"encoding/binary"
 	"fmt"
 	"github.com/ronaksoft/rony/pools"
-	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"reflect"
 )
@@ -76,7 +75,7 @@ func (bk *Allocator) Gen(v ...interface{}) []byte {
 			}
 
 		case reflect.String:
-			xb := tools.StrToByte(reflect.ValueOf(x).String())
+			xb := StrToByte(reflect.ValueOf(x).String())
 			b.Fill(xb, idx, idx+len(xb))
 			idx += len(xb)
 		default:
@@ -130,7 +129,7 @@ func getSize(v ...interface{}) int {
 			}
 
 		case reflect.String:
-			xb := tools.StrToByte(reflect.ValueOf(x).String())
+			xb := StrToByte(reflect.ValueOf(x).String())
 			s += len(xb)
 		default:
 			panic(fmt.Sprintf("unsupported type: %s", reflect.TypeOf(x).Kind()))

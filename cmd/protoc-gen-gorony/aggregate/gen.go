@@ -45,6 +45,7 @@ func (g *Generator) Generate() {
 		g.createModel(m)
 		if g.m(m) != nil {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.genCreate(m)
 			g.genRead(m)
 			g.genUpdate(m)
@@ -63,7 +64,11 @@ func (g *Generator) Generate() {
 func (g *Generator) genCreate(m *protogen.Message) {
 	// Create func
 	g.g.P("func Create", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("return store.Update(func(txn *store.Txn) error {")
 	g.g.P("return Create", g.model(m).Name, "WithTxn (txn, alloc, m)")
@@ -72,7 +77,7 @@ func (g *Generator) genCreate(m *protogen.Message) {
 	g.g.P()
 
 	// CreateWithTxn func
-	g.g.P("func Create", g.model(m).Name, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", g.model(m).Name, ") (err error) {")
+	g.g.P("func Create", g.model(m).Name, "WithTxn (txn *store.Txn, alloc *tools.Allocator, m*", g.model(m).Name, ") (err error) {")
 	g.blockAlloc()
 	g.g.P("if store.Exists(txn, alloc, ", tableKey(g.m(m), "m."), ") {")
 	g.g.P("return store.ErrAlreadyExists")
@@ -147,7 +152,7 @@ func (g *Generator) genRead(m *protogen.Message) {
 	mn := g.m(m).Name
 
 	// ReadWithTxn Func
-	g.g.P("func Read", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
+	g.g.P("func Read", mn, "WithTxn (txn *store.Txn, alloc *tools.Allocator,", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
 	g.blockAlloc()
 	g.g.P("err := store.Unmarshal(txn, alloc, m,", tableKey(g.m(m), ""), ")")
 	g.g.P("if err != nil {")
@@ -159,7 +164,11 @@ func (g *Generator) genRead(m *protogen.Message) {
 
 	// Read Func
 	g.g.P("func Read", mn, "(", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("if m == nil {")
@@ -181,7 +190,7 @@ func (g *Generator) readViews(m *protogen.Message) {
 	for idx, pk := range g.m(m).Views {
 		g.g.P(
 			"func Read", mn, "By", pk.String("", "And", false), "WithTxn",
-			"(txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
+			"(txn *store.Txn, alloc *tools.Allocator,", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
 			"( *", mn, ", error) {")
 		g.blockAlloc()
 		g.g.P("err := store.Unmarshal(txn, alloc, m,", viewKey(g.m(m), "", idx), " )")
@@ -196,7 +205,11 @@ func (g *Generator) readViews(m *protogen.Message) {
 			"(", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
 			"( *", mn, ", error) {",
 		)
-		g.g.P("alloc := store.NewAllocator()")
+		if g.f.GoPackageName != "rony" {
+			g.g.P("alloc := tools.NewAllocator()")
+		} else {
+			g.g.P("alloc := tools.NewAllocator()")
+		}
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P("if m == nil {")
 		g.g.P("m = &", mn, "{}")
@@ -212,7 +225,7 @@ func (g *Generator) readViews(m *protogen.Message) {
 }
 func (g *Generator) genUpdate(m *protogen.Message) {
 	mn := g.m(m).Name
-	g.g.P("func Update", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator, m *", mn, ") error {")
+	g.g.P("func Update", mn, "WithTxn (txn *store.Txn, alloc *tools.Allocator, m *", mn, ") error {")
 	g.blockAlloc()
 	g.g.P("err := Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ")")
 	g.g.P("if err != nil {")
@@ -223,7 +236,11 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 	g.g.P("}") // end of UpdateWithTxn func
 	g.g.P()
 	g.g.P("func Update", mn, "(", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") error {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("if m == nil {")
@@ -239,7 +256,7 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 }
 func (g *Generator) genDelete(m *protogen.Message) {
 	mn := g.m(m).Name
-	g.g.P("func Delete", mn, "WithTxn(txn *store.Txn, alloc *store.Allocator, ", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
+	g.g.P("func Delete", mn, "WithTxn(txn *store.Txn, alloc *tools.Allocator, ", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
 
 	if len(g.m(m).Views) > 0 || g.m(m).HasIndex {
 		g.g.P("m := &", mn, "{}")
@@ -298,7 +315,11 @@ func (g *Generator) genDelete(m *protogen.Message) {
 	g.g.P()
 
 	g.g.P("func Delete", mn, "(", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("return store.Update(func(txn *store.Txn) error {")
@@ -357,7 +378,7 @@ func (g *Generator) genHasField(m *protogen.Message) {
 func (g *Generator) genSave(m *protogen.Message) {
 	mn := g.m(m).Name
 	// SaveWithTxn func
-	g.g.P("func Save", mn, "WithTxn (txn *store.Txn, alloc *store.Allocator, m*", mn, ") (err error) {")
+	g.g.P("func Save", mn, "WithTxn (txn *store.Txn, alloc *tools.Allocator, m*", mn, ") (err error) {")
 	g.g.P("if store.Exists(txn, alloc, ", tableKey(g.m(m), "m."), ") {")
 	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
 	g.g.P("} else {")
@@ -368,7 +389,11 @@ func (g *Generator) genSave(m *protogen.Message) {
 
 	// Save func
 	g.g.P("func Save", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("return store.Update(func(txn *store.Txn) error {")
 	g.g.P("return Save", g.model(m).Name, "WithTxn (txn, alloc, m)")
@@ -378,7 +403,7 @@ func (g *Generator) genSave(m *protogen.Message) {
 }
 func (g *Generator) genIter(m *protogen.Message) {
 	mn := g.m(m).Name
-	g.g.P("func Iter", inflection.Plural(mn), "(txn *store.Txn, alloc *store.Allocator, cb func(m *", mn, ") bool, )  error {")
+	g.g.P("func Iter", inflection.Plural(mn), "(txn *store.Txn, alloc *tools.Allocator, cb func(m *", mn, ") bool, )  error {")
 	g.blockAlloc()
 
 	g.g.P("exitLoop := false")
@@ -412,7 +437,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Table.StringPKs("", "And", false),
-			"(txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Table), ", cb func(m *", mn, ") bool) error {",
+			"(txn *store.Txn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Table), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.blockAlloc()
 		g.g.P("exitLoop := false")
@@ -447,10 +472,11 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Views[idx].StringPKs("", "And", false),
-			"(txn *store.Txn, alloc *store.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ", cb func(m *", mn, ") bool) error {",
+			"(txn *store.Txn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.g.P("if alloc == nil {")
-		g.g.P("alloc = store.NewAllocator()")
+
+		g.g.P("alloc = tools.NewAllocator()")
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P("}")
 		g.g.P()
@@ -485,7 +511,11 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("func List", mn, "(")
 	g.g.P(g.m(m).FuncArgs("offset", g.m(m).Table), ", lo *store.ListOption, cond func(m *", mn, ") bool, ")
 	g.g.P(") ([]*", mn, ", error) {")
-	g.g.P("alloc := store.NewAllocator()")
+	if g.f.GoPackageName != "rony" {
+		g.g.P("alloc := tools.NewAllocator()")
+	} else {
+		g.g.P("alloc := tools.NewAllocator()")
+	}
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
@@ -538,7 +568,11 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P(
 			") ([]*", mn, ", error) {",
 		)
-		g.g.P("alloc := store.NewAllocator()")
+		if g.f.GoPackageName != "rony" {
+			g.g.P("alloc := tools.NewAllocator()")
+		} else {
+			g.g.P("alloc := tools.NewAllocator()")
+		}
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
@@ -592,7 +626,11 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P(
 			") ([]*", mn, ", error) {",
 		)
-		g.g.P("alloc := store.NewAllocator()")
+		if g.f.GoPackageName != "rony" {
+			g.g.P("alloc := tools.NewAllocator()")
+		} else {
+			g.g.P("alloc := tools.NewAllocator()")
+		}
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
@@ -650,7 +688,11 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 					tools.ToLowerCamel(ftNameS), " ", g.m(m).FieldsGo[ftName], ", lo *store.ListOption, cond func(m *", mn, ") bool,",
 				)
 				g.g.P(") ([]*", mn, ", error) {")
-				g.g.P("alloc := store.NewAllocator()")
+				if g.f.GoPackageName != "rony" {
+					g.g.P("alloc := tools.NewAllocator()")
+				} else {
+					g.g.P("alloc := tools.NewAllocator()")
+				}
 				g.g.P("defer alloc.ReleaseAll()")
 				g.g.P()
 				g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
@@ -804,7 +846,7 @@ func (g *Generator) m(m *protogen.Message) *Aggregate {
 
 func (g *Generator) blockAlloc() {
 	g.g.P("if alloc == nil {")
-	g.g.P("alloc = store.NewAllocator()")
+	g.g.P("alloc = tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("}") // end of if block
 	g.g.P()
