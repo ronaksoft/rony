@@ -31,6 +31,19 @@ func (d *clusterDelegate) updateCluster(n *memberlist.Node) {
 	d.c.addMember(cm)
 }
 
+func (d *clusterDelegate) nodeData() []byte {
+	n := rony.EdgeNode{
+		ServerID:    d.c.localServerID,
+		ReplicaSet:  d.c.cfg.ReplicaSet,
+		GatewayAddr: d.c.localGatewayAddr,
+		TunnelAddr:  d.c.localTunnelAddr,
+	}
+
+	b, _ := proto.Marshal(&n)
+
+	return b
+}
+
 func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	d.updateCluster(n)
 }
@@ -57,14 +70,7 @@ func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 }
 
 func (d *clusterDelegate) NodeMeta(limit int) []byte {
-	n := rony.EdgeNode{
-		ServerID:    d.c.localServerID,
-		ReplicaSet:  d.c.cfg.ReplicaSet,
-		GatewayAddr: d.c.localGatewayAddr,
-		TunnelAddr:  d.c.localTunnelAddr,
-	}
-
-	b, _ := proto.Marshal(&n)
+	b := d.nodeData()
 	if len(b) > limit {
 		log.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
 		return nil
@@ -79,7 +85,7 @@ func (d *clusterDelegate) GetBroadcasts(overhead, limit int) [][]byte {
 }
 
 func (d *clusterDelegate) LocalState(join bool) []byte {
-	return nil
+	return d.nodeData()
 }
 
 func (d *clusterDelegate) MergeRemoteState(buf []byte, join bool) {

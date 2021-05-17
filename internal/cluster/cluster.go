@@ -33,5 +33,5 @@ type Member interface {
 	ReplicaSet() uint64
 	GatewayAddr() []string
 	TunnelAddr() []string
-	TunnelConn() (net.Conn, error)
+	Dial() (net.Conn, error)
 }

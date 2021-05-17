@@ -478,7 +478,7 @@ func (edge *Server) getReplicaMember(replicaSet uint64) (target cluster.Member) 
 	return
 }
 func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
-	conn, err := target.TunnelConn()
+	conn, err := target.Dial()
 	if err != nil {
 		return err
 	}

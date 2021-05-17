@@ -60,7 +60,7 @@ func (m *Member) Merge(en *rony.EdgeNode) {
 	m.tunnelAddr = append(m.tunnelAddr[:0], en.GetTunnelAddr()...)
 }
 
-func (m *Member) TunnelConn() (net.Conn, error) {
+func (m *Member) Dial() (net.Conn, error) {
 	if len(m.tunnelAddr) == 0 {
 		return nil, ErrNoTunnelAddrs
 	}
