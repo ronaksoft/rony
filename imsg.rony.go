@@ -167,6 +167,7 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 	}
 	x.ServerID = x.ServerID[:0]
 	x.ReplicaSet = 0
+	x.Hash = 0
 	x.GatewayAddr = x.GatewayAddr[:0]
 	x.TunnelAddr = x.TunnelAddr[:0]
 	p.pool.Put(x)
@@ -177,6 +178,7 @@ var PoolEdgeNode = poolEdgeNode{}
 func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.ServerID = append(z.ServerID[:0], x.ServerID...)
 	z.ReplicaSet = x.ReplicaSet
+	z.Hash = x.Hash
 	z.GatewayAddr = append(z.GatewayAddr[:0], x.GatewayAddr...)
 	z.TunnelAddr = append(z.TunnelAddr[:0], x.TunnelAddr...)
 }

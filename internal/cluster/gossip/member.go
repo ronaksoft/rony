@@ -21,7 +21,7 @@ type Member struct {
 	idx         int
 	serverID    string
 	replicaSet  uint64
-	ShardRange  [2]uint32
+	hash        uint64
 	gatewayAddr []string
 	tunnelAddr  []string
 	ClusterAddr net.IP
@@ -90,6 +90,7 @@ func newMember(sm *memberlist.Node) (*Member, error) {
 
 	m := &Member{
 		serverID:    string(en.ServerID),
+		hash:        en.Hash,
 		ClusterAddr: sm.Addr,
 		ClusterPort: sm.Port,
 	}

@@ -16,15 +16,19 @@ import (
 
 type Cluster interface {
 	Start()
+	Shutdown()
+	Join(addr ...string) (int, error)
 	Members() []Member
 	MembersByReplicaSet(replicaSets ...uint64) []Member
-	Join(addr ...string) (int, error)
-	Shutdown()
+	MemberByID(string) Member
+	MemberByHash(uint64) Member
 	ReplicaSet() uint64
+	ServerID() []byte
 	TotalReplicas() int
 	Addr() string
 	SetGatewayAddrs(hostPorts []string) error
 	SetTunnelAddrs(hostPorts []string) error
+	Subscribe(d Delegate)
 }
 
 type Member interface {
@@ -34,4 +38,9 @@ type Member interface {
 	GatewayAddr() []string
 	TunnelAddr() []string
 	Dial() (net.Conn, error)
+}
+
+type Delegate interface {
+	OnJoin(hash uint64)
+	OnLeave(hash uint64)
 }

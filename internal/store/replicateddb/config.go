@@ -1,6 +1,7 @@
 package replicateddb
 
 import (
+	"github.com/ronaksoft/rony/internal/cluster"
 	"time"
 )
 
@@ -21,6 +22,7 @@ const (
 )
 
 type Config struct {
+	Cluster             cluster.Cluster
 	DirPath             string
 	ConflictRetries     int
 	ConflictMaxInterval time.Duration

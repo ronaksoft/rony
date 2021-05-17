@@ -33,8 +33,10 @@ message TunnelMessage {
 message EdgeNode {
     bytes ServerID = 1;
     uint64 ReplicaSet = 2;
+    uint64 Hash = 3;
     repeated string GatewayAddr = 7;
     repeated string TunnelAddr = 8;
+
 }
 
 // Page
