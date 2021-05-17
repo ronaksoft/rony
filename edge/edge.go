@@ -8,7 +8,7 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/internal/store/badgerLocal"
+	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
@@ -71,7 +71,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	}
 
 	if edgeServer.store == nil {
-		edgeServer.store, _ = badgerLocal.New(badgerLocal.DefaultConfig(edgeServer.dataDir))
+		edgeServer.store, _ = localdb.New(localdb.DefaultConfig(edgeServer.dataDir))
 	}
 
 	// register builtin rony handlers

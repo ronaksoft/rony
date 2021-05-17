@@ -1,4 +1,4 @@
-package badgerLocal
+package localdb
 
 import (
 	"github.com/dgraph-io/badger/v3"

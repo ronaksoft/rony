@@ -6,7 +6,7 @@ import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
-	"github.com/ronaksoft/rony/internal/store/badgerLocal"
+	"github.com/ronaksoft/rony/internal/store/localdb"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 )
 
@@ -40,7 +40,7 @@ type GossipClusterConfig = gossipCluster.Config
 // no need to a central key-value store or any other 3rd party service to run the cluster
 func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
-		s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
+		s, err := localdb.New(localdb.DefaultConfig(edge.dataDir))
 		if err != nil {
 			panic(err)
 		}

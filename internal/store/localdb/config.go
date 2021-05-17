@@ -1,4 +1,4 @@
-package badgerLocal
+package localdb
 
 import (
 	"time"

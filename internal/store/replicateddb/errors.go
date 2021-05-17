@@ -1,4 +1,4 @@
-package badgerRaft
+package replicateddb
 
 import (
 	"fmt"

@@ -40,6 +40,6 @@ type Store interface {
 	Update(fn func(Txn) error) error
 	ViewLocal(fn func(txn *LTxn) error) error
 	UpdateLocal(fn func(txn *LTxn) error) error
-	DB() *badger.DB
+	DB() *LocalDB
 	Shutdown()
 }
