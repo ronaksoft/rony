@@ -198,49 +198,10 @@ func (x *Delete) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-const C_Get int64 = 3312871568
-
-type poolGet struct {
-	pool sync.Pool
-}
-
-func (p *poolGet) Get() *Get {
-	x, ok := p.pool.Get().(*Get)
-	if !ok {
-		x = &Get{}
-	}
-	return x
-}
-
-func (p *poolGet) Put(x *Get) {
-	if x == nil {
-		return
-	}
-	x.TxnID = 0
-	x.Key = x.Key[:0]
-	p.pool.Put(x)
-}
-
-var PoolGet = poolGet{}
-
-func (x *Get) DeepCopy(z *Get) {
-	z.TxnID = x.TxnID
-	z.Key = append(z.Key[:0], x.Key...)
-}
-
-func (x *Get) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *Get) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 func init() {
 	registry.RegisterConstructor(605208098, "StartTxn")
 	registry.RegisterConstructor(1239816782, "StopTxn")
 	registry.RegisterConstructor(15774688, "CommitTxn")
 	registry.RegisterConstructor(3730400060, "Set")
 	registry.RegisterConstructor(1035893169, "Delete")
-	registry.RegisterConstructor(3312871568, "Get")
 }

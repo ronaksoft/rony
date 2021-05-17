@@ -26,8 +26,3 @@ message Delete {
     int64 TxnID = 1;
     bytes Key = 2;
 }
-
-message Get {
-    int64 TxnID = 1;
-    bytes Key = 2;
-}

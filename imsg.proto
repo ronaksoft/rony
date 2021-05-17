@@ -13,12 +13,10 @@ message GetPage {
 }
 
 // StoreMessage
-// @Function
-// @Returns:
+// This is dummy message, we only use its constructor. The actual message is
+// raftpb.Message
 message StoreMessage {
-    int64 Constructor = 1;
-    bytes Payload = 2;
-    bool Request = 3;
+    bool Dummy = 1;
 }
 
 // TunnelMessage

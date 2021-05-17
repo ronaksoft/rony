@@ -112,17 +112,6 @@ func (pm *Builtin) StoreMessage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if pm.store == nil {
 		return
 	}
-	req := rony.PoolStoreMessage.Get()
-	defer rony.PoolStoreMessage.Put(req)
-	res := rony.PoolStoreMessage.Get()
-	defer rony.PoolStoreMessage.Put(res)
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
-	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
-		return
-	}
 
-	pm.store.Apply(req, res)
-
-	ctx.PushMessage(rony.C_StoreMessage, res)
+	pm.store.Step(in.Message)
 }

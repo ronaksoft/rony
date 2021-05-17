@@ -4,15 +4,12 @@ import (
 	"context"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/store/replicateddb/raftwal"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.etcd.io/etcd/raft/v3"
 	"go.etcd.io/etcd/raft/v3/raftpb"
-	"go.uber.org/zap"
 	"hash/crc64"
 
 	"path/filepath"
@@ -53,7 +50,7 @@ type Store struct {
 	conflictRetry         int
 	conflictRetryInterval time.Duration
 	openTxnMtx            sync.RWMutex
-	openTxn               map[int64]*badger.Txn
+	openTxn               map[int64]*store.LTxn
 }
 
 func (fsm *Store) OnJoin(hash uint64) {
@@ -156,82 +153,6 @@ func newDB(config Config) (*badger.DB, error) {
 	return badger.Open(opt)
 }
 
-func (fsm *Store) raftLoop() {
-	t := time.NewTicker(time.Second)
-	for {
-		select {
-		case <-t.C:
-			fsm.raft.Tick()
-		case rd := <-fsm.raft.Ready():
-
-			err := fsm.wal.Save(&rd.HardState, rd.Entries, &rd.Snapshot)
-			if err != nil {
-				log.Warn("Error On Storage Save", zap.Error(err))
-			}
-
-			if rd.MustSync {
-				err = fsm.wal.Sync()
-				if err != nil {
-					log.Warn("Error On Storage Sync", zap.Error(err))
-				}
-			}
-
-			wg := &sync.WaitGroup{}
-			wg.Add(2)
-			go fsm.sendMessages(wg, rd.Messages)
-			go fsm.handleCommittedEntries(wg, rd.CommittedEntries)
-			wg.Wait()
-			fsm.raft.Advance()
-
-		}
-	}
-}
-
-func (fsm *Store) sendMessages(wg *sync.WaitGroup, msgs []raftpb.Message) {
-	defer wg.Done()
-
-	for _, m := range msgs {
-
-		// err := e.net.Send(e.id, m.To, m)
-		// if err != nil {
-		// 	e.log("Error On SendMessage: %v", err)
-		// }
-		switch m.Type {
-		case raftpb.MsgSnap:
-			// if err != nil {
-			// 	fsm.raft.ReportSnapshot(m.From, raft.SnapshotFailure)
-			// } else {
-			// 	fsm.raft.ReportSnapshot(m.From, raft.SnapshotFinish)
-			// }
-		}
-	}
-
-}
-
-func (fsm *Store) handleCommittedEntries(wg *sync.WaitGroup, entries []raftpb.Entry) {
-	defer wg.Done()
-	for _, ce := range entries {
-		switch ce.Type {
-		case raftpb.EntryNormal:
-			// TODO:: handle entry
-		case raftpb.EntryConfChange:
-			cc := raftpb.ConfChange{}
-			_ = cc.Unmarshal(ce.Data)
-			fsm.state = fsm.raft.ApplyConfChange(cc)
-		}
-
-	}
-
-}
-
-func (fsm *Store) newTxn(update bool) *Txn {
-	return &Txn{
-		ID:     tools.RandomInt64(0),
-		store:  fsm,
-		update: update,
-	}
-}
-
 func (fsm *Store) ViewLocal(fn func(txn *store.LTxn) error) error {
 	retry := defaultConflictRetries
 Retry:
@@ -284,28 +205,6 @@ func (fsm *Store) View(fn func(store.Txn) error) error {
 
 	err = fn(txn)
 	return fsm.stopTxn(txn, err == nil)
-}
-
-func (fsm *Store) startTxn(txn *Txn) error {
-	req := PoolStartTxn.Get()
-	defer PoolStartTxn.Put(req)
-	req.ID = txn.ID
-	req.Update = txn.update
-	b := pools.Buffer.FromProto(req)
-	err := fsm.raft.Propose(context.TODO(), *b.Bytes())
-	pools.Buffer.Put(b)
-	return err
-}
-
-func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
-	req := PoolStopTxn.Get()
-	defer PoolStopTxn.Put(req)
-	req.ID = txn.ID
-	req.Commit = commit
-	b := pools.Buffer.FromProto(req)
-	err := fsm.raft.Propose(context.TODO(), *b.Bytes())
-	pools.Buffer.Put(b)
-	return err
 }
 
 func (fsm *Store) Shutdown() {

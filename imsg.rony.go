@@ -66,18 +66,14 @@ func (p *poolStoreMessage) Put(x *StoreMessage) {
 	if x == nil {
 		return
 	}
-	x.Constructor = 0
-	x.Payload = x.Payload[:0]
-	x.Request = false
+	x.Dummy = false
 	p.pool.Put(x)
 }
 
 var PoolStoreMessage = poolStoreMessage{}
 
 func (x *StoreMessage) DeepCopy(z *StoreMessage) {
-	z.Constructor = x.Constructor
-	z.Payload = append(z.Payload[:0], x.Payload...)
-	z.Request = x.Request
+	z.Dummy = x.Dummy
 }
 
 func (x *StoreMessage) Marshal() ([]byte, error) {

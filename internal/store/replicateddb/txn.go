@@ -1,6 +1,9 @@
 package replicateddb
 
 import (
+	"context"
+	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 )
 
@@ -13,6 +16,40 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+func (fsm *Store) newTxn(update bool) *Txn {
+	return &Txn{
+		ID:     tools.RandomInt64(0),
+		store:  fsm,
+		update: update,
+	}
+}
+
+func (fsm *Store) startTxn(txn *Txn) error {
+	req := PoolStartTxn.Get()
+	defer PoolStartTxn.Put(req)
+	req.ID = txn.ID
+	req.Update = txn.update
+	b := pools.Buffer.FromProto(req)
+	ctx, cf := context.WithTimeout(context.TODO(), ProposeTimeout)
+	defer cf()
+	err := fsm.raft.Propose(ctx, *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
+}
+
+func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
+	req := PoolStopTxn.Get()
+	defer PoolStopTxn.Put(req)
+	req.ID = txn.ID
+	req.Commit = commit
+	b := pools.Buffer.FromProto(req)
+	ctx, cf := context.WithTimeout(context.TODO(), ProposeTimeout)
+	defer cf()
+	err := fsm.raft.Propose(ctx, *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
+}
+
 type Txn struct {
 	ID     int64
 	store  *Store
@@ -20,92 +57,49 @@ type Txn struct {
 }
 
 func (txn *Txn) Delete(alloc *tools.Allocator, keyParts ...interface{}) error {
-	req := PoolDelete.Get()
-	defer PoolDelete.Put(req)
-	key := alloc.Gen(keyParts...)
-	req.Key = append(req.Key, key...)
-	req.TxnID = txn.ID
-	// b := pools.Buffer.FromProto(req)
-	// f := txn.store.c.RaftApply(*b.Bytes())
-	// pools.Buffer.Put(b)
-	//
-	// err := f.Error()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// res := f.Response()
-	// if res != nil {
-	// 	switch x := res.(type) {
-	// 	case nil:
-	// 	case error:
-	// 		return x
-	// 	default:
-	// 		return ErrUnknown
-	// 	}
-	// }
-	return nil
+	me := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(me)
+	me.Fill(0, C_Delete, &Delete{
+		TxnID: txn.ID,
+		Key:   alloc.Gen(keyParts),
+	})
+
+	b := pools.Buffer.FromProto(me)
+	ctx, cf := context.WithTimeout(context.TODO(), ProposeTimeout)
+	defer cf()
+	err := txn.store.raft.Propose(ctx, *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
 }
 
 func (txn *Txn) Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error {
-	req := PoolSet.Get()
-	defer PoolSet.Put(req)
-	key := alloc.Gen(keyParts...)
+	me := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(me)
+	me.Fill(0, C_Set, &Set{
+		TxnID: txn.ID,
+		Key:   alloc.Gen(keyParts),
+		Value: val,
+	})
 
-	req.Key = append(req.Key, key...)
-	req.Value = append(req.Value, val...)
-	req.TxnID = txn.ID
-	// b := pools.Buffer.FromProto(req)
-	// f := txn.store.c.RaftApply(*b.Bytes())
-	// pools.Buffer.Put(b)
-	//
-	// err := f.Error()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// res := f.Response()
-	// if res != nil {
-	// 	switch x := res.(type) {
-	// 	case nil:
-	// 	case error:
-	// 		return x
-	// 	default:
-	// 		return ErrUnknown
-	// 	}
-	// }
-	return nil
+	b := pools.Buffer.FromProto(me)
+	ctx, cf := context.WithTimeout(context.TODO(), ProposeTimeout)
+	defer cf()
+	err := txn.store.raft.Propose(ctx, *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
 }
 
-func (txn *Txn) Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error) {
-	req := PoolGet.Get()
-	defer PoolGet.Put(req)
-	key := alloc.Gen(keyParts...)
-	req.Key = append(req.Key, key...)
-	req.TxnID = txn.ID
-	// b := pools.Buffer.FromProto(req)
-	// f := txn.store.c.RaftApply(*b.Bytes())
-	// pools.Buffer.Put(b)
-	//
-	// err := f.Error()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// res := f.Response()
-	// if res == nil {
-	// 	return nil, ErrUnknown
-	// }
-	//
-	// switch x := res.(type) {
-	// case error:
-	// 	return nil, x
-	// case *rony.KeyValue:
-	// 	return []byte(x.Value), nil
-	// default:
-	// 	return nil, ErrUnknown
-	// }
-	return nil, ErrUnknown
+func (txn *Txn) Get(alloc *tools.Allocator, keyParts ...interface{}) (v []byte, err error) {
+	txn.store.openTxnMtx.Lock()
+	ltxn := txn.store.openTxn[txn.ID]
+	txn.store.openTxnMtx.Unlock()
+
+	item, err := ltxn.Get(alloc.Gen(keyParts...))
+	if err != nil {
+		return nil, err
+	}
+	v, err = item.ValueCopy(v)
+	return
 }
 
 func (txn *Txn) Exists(alloc *tools.Allocator, keyParts ...interface{}) bool {

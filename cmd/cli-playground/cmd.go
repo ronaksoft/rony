@@ -116,6 +116,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 					ListenAddress: "0.0.0.0:0",
 					MaxBodySize:   4096,
 				}),
+				edge.WithReplicatedStore(edge.ReplicatedStoreConfig{}),
 			)
 		}
 
