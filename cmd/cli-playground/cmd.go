@@ -37,7 +37,7 @@ func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
 		DemoStartCmd, StartCmd, BenchCmd, ListCmd, Members,
-		EchoCmd, EchoTunnelCmd,
+		EchoCmd, EchoTunnelCmd, SetCmd, GetCmd,
 		Trace, MemProf, LogLevel, ClusterCmd,
 	)
 
@@ -52,6 +52,8 @@ func init() {
 	RootCmd.PersistentFlags().Int(FlagConcurrency, 1000, "")
 	RootCmd.PersistentFlags().Int(FlagDemoReplicaFactor, 1, "")
 	RootCmd.PersistentFlags().Int(FlagDemoReplica, 3, "")
+	RootCmd.PersistentFlags().String(FlagKey, "k", "")
+	RootCmd.PersistentFlags().String(FlagValue, "v", "")
 
 }
 
@@ -297,6 +299,130 @@ var EchoTunnelCmd = &cobra.Command{
 				default:
 					cmd.Println("Error:", err)
 				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		cmd.Println("N:", cnt)
+	},
+}
+
+var SetCmd = &cobra.Command{
+	Use: "set",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		n, _ := cmd.Flags().GetInt("n")
+		key, _ := cmd.Flags().GetString("key")
+		val, _ := cmd.Flags().GetString("val")
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+			return
+		}
+		e1 := Edges[serverID]
+		if e1 == nil {
+			cmd.Println("Invalid Args")
+			return
+		}
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			cmd.Println("No Gateway Addr", gatewayAddrs)
+			return
+		}
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: gatewayAddrs[0],
+			Handler: func(m *rony.MessageEnvelope) {
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
+			},
+			Secure:         false,
+			ContextTimeout: time.Second * 3,
+		})
+		err := ec.Start()
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		defer ec.Close()
+		c := service.NewSampleClient(ec)
+		req := service.PoolSetRequest.Get()
+		defer service.PoolSetRequest.Put(req)
+		req.Key = tools.S2B(key)
+		req.Value = tools.S2B(val)
+
+		var cnt int64
+		wg := sync.WaitGroup{}
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func() {
+				res, err := c.Set(req)
+				switch err {
+				case nil:
+					atomic.AddInt64(&cnt, 1)
+					cmd.Println(res)
+				default:
+					cmd.Println("Error:", err)
+				}
+
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		cmd.Println("N:", cnt)
+	},
+}
+
+var GetCmd = &cobra.Command{
+	Use: "get",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		n, _ := cmd.Flags().GetInt("n")
+		key, _ := cmd.Flags().GetString("key")
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+			return
+		}
+		e1 := Edges[serverID]
+		if e1 == nil {
+			cmd.Println("Invalid Args")
+			return
+		}
+		gatewayAddrs := e1.Stats().GatewayAddr
+		if len(gatewayAddrs) == 0 {
+			cmd.Println("No Gateway Addr", gatewayAddrs)
+			return
+		}
+		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
+			SeedHostPort: gatewayAddrs[0],
+			Handler: func(m *rony.MessageEnvelope) {
+				cmd.Println("Uncaught Response", registry.ConstructorName(m.Constructor), m.RequestID)
+			},
+			Secure:         false,
+			ContextTimeout: time.Second * 3,
+		})
+		err := ec.Start()
+		if err != nil {
+			cmd.Println(err)
+			return
+		}
+		defer ec.Close()
+		c := service.NewSampleClient(ec)
+		req := service.PoolGetRequest.Get()
+		defer service.PoolGetRequest.Put(req)
+		req.Key = tools.S2B(key)
+
+		var cnt int64
+		wg := sync.WaitGroup{}
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func() {
+				res, err := c.Get(req)
+				switch err {
+				case nil:
+					atomic.AddInt64(&cnt, 1)
+					cmd.Println(res)
+				default:
+					cmd.Println("Error:", err)
+				}
+
 				wg.Done()
 			}()
 		}

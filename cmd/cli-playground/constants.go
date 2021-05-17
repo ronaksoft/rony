@@ -21,4 +21,6 @@ const (
 	FlagConcurrency       = "concurrency"
 	FlagDemoReplicaFactor = "demoRF"
 	FlagDemoReplica       = "demoR"
+	FlagKey               = "key"
+	FlagValue             = "value"
 )

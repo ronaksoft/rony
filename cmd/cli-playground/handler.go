@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"time"
 )
@@ -22,11 +23,35 @@ type SampleServer struct {
 }
 
 func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *service.SetResponse) {
-	panic("implement me")
+	err := ctx.Store().Update(func(txn store.Txn) error {
+		alloc := tools.NewAllocator()
+		defer alloc.ReleaseAll()
+		return txn.Set(alloc, req.Value, req.Key)
+	})
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		return
+	}
+	res.OK = true
+	res.PushToContext(ctx)
 }
 
 func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *service.GetResponse) {
-	panic("implement me")
+	err := ctx.Store().View(func(txn store.Txn) error {
+		alloc := tools.NewAllocator()
+		defer alloc.ReleaseAll()
+		v, err := txn.Get(alloc, req.Key)
+		if err != nil {
+			return err
+		}
+		res.Value = append(res.Value, v...)
+		return nil
+	})
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		return
+	}
+	res.PushToContext(ctx)
 }
 
 func (h *SampleServer) EchoInternal(ctx *edge.RequestCtx, req *service.EchoRequest, res *service.EchoResponse) {

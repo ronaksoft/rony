@@ -226,3 +226,7 @@ func (fsm *Store) Shutdown() {
 		_ = fsm.db.Close()
 	}
 }
+
+func (fsm *Store) SetCluster(c cluster.Cluster) {
+	fsm.c = c
+}

@@ -255,18 +255,30 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 }
 
 func (ws *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
-	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout)
+	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, "")
 	return
 }
 
+func (ws *Websocket) SendTo(req, res *rony.MessageEnvelope, serverID string) error {
+	return ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, serverID)
+}
+
 func (ws *Websocket) SendWithDetails(
-	req, res *rony.MessageEnvelope, retry int, timeout time.Duration,
+	req, res *rony.MessageEnvelope, retry int, timeout time.Duration, serverID string,
 ) error {
-	rs := ws.cfg.Router.GetRoute(req)
+	var (
+		wsc *wsConn
+		rs  uint64
+	)
+
+	if serverID != "" {
+		wsc = ws.getConnByID(serverID)
+	} else {
+		rs = ws.cfg.Router.GetRoute(req)
+		wsc = ws.getConnByReplica(rs)
+	}
 
 Loop:
-	wsc := ws.getConnByReplica(rs)
-
 	if wsc == nil {
 		// TODO:: try to gather information about the target
 		return ErrNoConnection
@@ -286,10 +298,11 @@ Loop:
 		case rony.C_Redirect:
 			xx := &rony.Redirect{}
 			_ = xx.Unmarshal(x.GetMessage())
-			rs = ws.redirect(xx)
 			if retry--; retry < 0 {
 				return rony.ErrRetriesExceeded(fmt.Errorf("redirect"))
 			}
+			rs = ws.redirect(xx)
+			wsc = ws.getConnByReplica(rs)
 			goto Loop
 		default:
 			x.DeepCopy(res)

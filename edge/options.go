@@ -50,6 +50,8 @@ func WithGossipCluster(cfg GossipClusterConfig) Option {
 			edge.store = s
 			cfg.Store = s
 			cfg.FSM = s
+			edge.cluster = gossipCluster.New(edge.dataDir, cfg)
+			s.SetCluster(edge.cluster)
 		case SingleReplica:
 			s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
 			if err != nil {
@@ -58,11 +60,11 @@ func WithGossipCluster(cfg GossipClusterConfig) Option {
 			edge.store = s
 			cfg.Store = s
 			cfg.FSM = s
+			edge.cluster = gossipCluster.New(edge.dataDir, cfg)
 		default:
 			panic("invalid cluster mode")
 		}
-		c := gossipCluster.New(edge.dataDir, cfg)
-		edge.cluster = c
+
 	}
 }
 
