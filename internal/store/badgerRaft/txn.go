@@ -1,8 +1,6 @@
 package badgerRaft
 
 import (
-	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 )
 
@@ -27,25 +25,25 @@ func (txn *Txn) Delete(alloc *tools.Allocator, keyParts ...interface{}) error {
 	key := alloc.Gen(keyParts...)
 	req.Key = append(req.Key, key...)
 	req.TxnID = txn.ID
-	b := pools.Buffer.FromProto(req)
-	f := txn.store.c.RaftApply(*b.Bytes())
-	pools.Buffer.Put(b)
-
-	err := f.Error()
-	if err != nil {
-		return err
-	}
-
-	res := f.Response()
-	if res != nil {
-		switch x := res.(type) {
-		case nil:
-		case error:
-			return x
-		default:
-			return ErrUnknown
-		}
-	}
+	// b := pools.Buffer.FromProto(req)
+	// f := txn.store.c.RaftApply(*b.Bytes())
+	// pools.Buffer.Put(b)
+	//
+	// err := f.Error()
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// res := f.Response()
+	// if res != nil {
+	// 	switch x := res.(type) {
+	// 	case nil:
+	// 	case error:
+	// 		return x
+	// 	default:
+	// 		return ErrUnknown
+	// 	}
+	// }
 	return nil
 }
 
@@ -57,25 +55,25 @@ func (txn *Txn) Set(alloc *tools.Allocator, val []byte, keyParts ...interface{})
 	req.Key = append(req.Key, key...)
 	req.Value = append(req.Value, val...)
 	req.TxnID = txn.ID
-	b := pools.Buffer.FromProto(req)
-	f := txn.store.c.RaftApply(*b.Bytes())
-	pools.Buffer.Put(b)
-
-	err := f.Error()
-	if err != nil {
-		return err
-	}
-
-	res := f.Response()
-	if res != nil {
-		switch x := res.(type) {
-		case nil:
-		case error:
-			return x
-		default:
-			return ErrUnknown
-		}
-	}
+	// b := pools.Buffer.FromProto(req)
+	// f := txn.store.c.RaftApply(*b.Bytes())
+	// pools.Buffer.Put(b)
+	//
+	// err := f.Error()
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// res := f.Response()
+	// if res != nil {
+	// 	switch x := res.(type) {
+	// 	case nil:
+	// 	case error:
+	// 		return x
+	// 	default:
+	// 		return ErrUnknown
+	// 	}
+	// }
 	return nil
 }
 
@@ -85,29 +83,29 @@ func (txn *Txn) Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, er
 	key := alloc.Gen(keyParts...)
 	req.Key = append(req.Key, key...)
 	req.TxnID = txn.ID
-	b := pools.Buffer.FromProto(req)
-	f := txn.store.c.RaftApply(*b.Bytes())
-	pools.Buffer.Put(b)
-
-	err := f.Error()
-	if err != nil {
-		return nil, err
-	}
-
-	res := f.Response()
-	if res == nil {
-		return nil, ErrUnknown
-	}
-
-	switch x := res.(type) {
-	case error:
-		return nil, x
-	case *rony.KeyValue:
-		return []byte(x.Value), nil
-	default:
-		return nil, ErrUnknown
-	}
-
+	// b := pools.Buffer.FromProto(req)
+	// f := txn.store.c.RaftApply(*b.Bytes())
+	// pools.Buffer.Put(b)
+	//
+	// err := f.Error()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// res := f.Response()
+	// if res == nil {
+	// 	return nil, ErrUnknown
+	// }
+	//
+	// switch x := res.(type) {
+	// case error:
+	// 	return nil, x
+	// case *rony.KeyValue:
+	// 	return []byte(x.Value), nil
+	// default:
+	// 	return nil, ErrUnknown
+	// }
+	return nil, ErrUnknown
 }
 
 func (txn *Txn) Exists(alloc *tools.Allocator, keyParts ...interface{}) bool {

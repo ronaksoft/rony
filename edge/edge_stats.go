@@ -16,8 +16,6 @@ import (
 // Stats exports some internal metrics data
 type Stats struct {
 	Address         string
-	RaftMembers     int
-	RaftState       string
 	ReplicaSet      uint64
 	Members         int
 	MembershipScore int
@@ -43,8 +41,6 @@ func (edge *Server) Stats() *Stats {
 		s.ReplicaSet = edge.cluster.ReplicaSet()
 		s.Address = edge.cluster.Addr()
 		s.Members = len(edge.cluster.Members())
-		s.RaftMembers = len(edge.cluster.RaftMembers(s.ReplicaSet))
-		s.RaftState = edge.cluster.RaftState().String()
 	}
 
 	return &s

@@ -4,7 +4,6 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
@@ -166,26 +165,27 @@ func (fsm *Store) startTxn(txn *Txn) error {
 	defer PoolStartTxn.Put(req)
 	req.ID = txn.ID
 	req.Update = txn.update
-	b := pools.Buffer.FromProto(req)
-	f := txn.store.c.RaftApply(*b.Bytes())
-	pools.Buffer.Put(b)
-
-	err := f.Error()
-	if err != nil {
-		return err
-	}
-
-	res := f.Response()
-	if res == nil {
-		return nil
-	}
-
-	switch x := res.(type) {
-	case error:
-		return x
-	default:
-		return ErrUnknown
-	}
+	// b := pools.Buffer.FromProto(req)
+	// f := txn.store.c.RaftApply(*b.Bytes())
+	// pools.Buffer.Put(b)
+	//
+	// err := f.Error()
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// res := f.Response()
+	// if res == nil {
+	// 	return nil
+	// }
+	//
+	// switch x := res.(type) {
+	// case error:
+	// 	return x
+	// default:
+	// 	return ErrUnknown
+	// }
+	return nil
 }
 
 func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
@@ -193,26 +193,27 @@ func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
 	defer PoolStopTxn.Put(req)
 	req.ID = txn.ID
 	req.Commit = commit
-	b := pools.Buffer.FromProto(req)
-	f := txn.store.c.RaftApply(*b.Bytes())
-	pools.Buffer.Put(b)
-
-	err := f.Error()
-	if err != nil {
-		return err
-	}
-
-	res := f.Response()
-	if res == nil {
-		return nil
-	}
-
-	switch x := res.(type) {
-	case error:
-		return x
-	default:
-		return ErrUnknown
-	}
+	// b := pools.Buffer.FromProto(req)
+	// f := txn.store.c.RaftApply(*b.Bytes())
+	// pools.Buffer.Put(b)
+	//
+	// err := f.Error()
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// res := f.Response()
+	// if res == nil {
+	// 	return nil
+	// }
+	//
+	// switch x := res.(type) {
+	// case error:
+	// 	return x
+	// default:
+	// 	return ErrUnknown
+	// }
+	return nil
 }
 
 func (fsm *Store) Shutdown() {

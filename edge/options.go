@@ -7,7 +7,6 @@ import (
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/store/badgerLocal"
-	"github.com/ronaksoft/rony/internal/store/badgerRaft"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 )
 
@@ -41,30 +40,12 @@ type GossipClusterConfig = gossipCluster.Config
 // no need to a central key-value store or any other 3rd party service to run the cluster
 func WithGossipCluster(cfg GossipClusterConfig) Option {
 	return func(edge *Server) {
-		switch cfg.Mode {
-		case MultiReplica:
-			s, err := badgerRaft.New(badgerRaft.DefaultConfig(edge.dataDir))
-			if err != nil {
-				panic(err)
-			}
-			edge.store = s
-			cfg.Store = s
-			cfg.FSM = s
-			edge.cluster = gossipCluster.New(edge.dataDir, cfg)
-			s.SetCluster(edge.cluster)
-		case SingleReplica:
-			s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
-			if err != nil {
-				panic(err)
-			}
-			edge.store = s
-			cfg.Store = s
-			cfg.FSM = s
-			edge.cluster = gossipCluster.New(edge.dataDir, cfg)
-		default:
-			panic("invalid cluster mode")
+		s, err := badgerLocal.New(badgerLocal.DefaultConfig(edge.dataDir))
+		if err != nil {
+			panic(err)
 		}
-
+		edge.store = s
+		edge.cluster = gossipCluster.New(edge.dataDir, cfg)
 	}
 }
 

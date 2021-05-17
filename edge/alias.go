@@ -21,18 +21,9 @@ type (
 	GatewayProtocol = gateway.Protocol
 	Tunnel          = tunnel.Tunnel
 	Cluster         = cluster.Cluster
-	ClusterMode     = cluster.Mode
 	ProxyHandle     = gateway.ProxyHandle
 	HttpProxy       = tcpGateway.HttpProxy
 	HttpRequest     = gateway.RequestCtx
-)
-
-// Cluster Modes
-const (
-	// SingleReplica if set then each replica set is only one node. i.e. raft is OFF.
-	SingleReplica ClusterMode = "singleReplica"
-	// MultiReplica if set then each replica set is a raft cluster
-	MultiReplica ClusterMode = "multiReplica"
 )
 
 // Gateway Protocols

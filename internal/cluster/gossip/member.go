@@ -26,16 +26,10 @@ type Member struct {
 	tunnelAddr  []string
 	ClusterAddr net.IP
 	ClusterPort uint16
-	raftPort    int
-	raftState   rony.RaftState
 }
 
 func (m *Member) ServerID() string {
 	return m.serverID
-}
-
-func (m *Member) RaftState() rony.RaftState {
-	return m.raftState
 }
 
 func (m *Member) ReplicaSet() uint64 {
@@ -48,10 +42,6 @@ func (m *Member) GatewayAddr() []string {
 
 func (m *Member) TunnelAddr() []string {
 	return m.tunnelAddr
-}
-
-func (m *Member) RaftPort() int {
-	return m.raftPort
 }
 
 func (m *Member) Proto(p *rony.Edge) *rony.Edge {
@@ -68,10 +58,6 @@ func (m *Member) Merge(en *rony.EdgeNode) {
 	m.replicaSet = en.GetReplicaSet()
 	m.gatewayAddr = append(m.gatewayAddr[:0], en.GetGatewayAddr()...)
 	m.tunnelAddr = append(m.tunnelAddr[:0], en.GetTunnelAddr()...)
-
-	// merge raft
-	m.raftPort = int(en.GetRaftPort())
-	m.raftState = en.GetRaftState()
 }
 
 func (m *Member) TunnelConn() (net.Conn, error) {

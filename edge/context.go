@@ -269,7 +269,7 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 	r.Reason = reason
 	r.WaitInSec = 0
 
-	members := ctx.Cluster().RaftMembers(replicaSet)
+	members := ctx.Cluster().MembersByReplicaSet(replicaSet)
 	for _, m := range members {
 		ni := m.Proto(rony.PoolEdge.Get())
 		r.Edges = append(r.Edges, ni)

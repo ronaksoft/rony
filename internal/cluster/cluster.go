@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"github.com/hashicorp/raft"
 	"github.com/ronaksoft/rony"
 	"net"
 )
@@ -15,19 +14,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Mode string
-
-const (
-	// SingleReplica if set then each replica set is only one node. i.e. raft is OFF.
-	SingleReplica Mode = "singleReplica"
-	// MultiReplica if set then each replica set is a raft cluster
-	MultiReplica Mode = "multiReplica"
-)
-
 type Cluster interface {
-	Raft
 	Start()
 	Members() []Member
+	MembersByReplicaSet(replicaSets ...uint64) []Member
 	Join(addr ...string) (int, error)
 	Shutdown()
 	ReplicaSet() uint64
@@ -37,21 +27,11 @@ type Cluster interface {
 	SetTunnelAddrs(hostPorts []string) error
 }
 
-type Raft interface {
-	RaftEnabled() bool
-	RaftMembers(replicaSet uint64) []Member
-	RaftState() raft.RaftState
-	RaftApply(cmd []byte) raft.ApplyFuture
-	RaftLeaderID() string
-}
-
 type Member interface {
 	Proto(info *rony.Edge) *rony.Edge
 	ServerID() string
-	RaftState() rony.RaftState
 	ReplicaSet() uint64
 	GatewayAddr() []string
 	TunnelAddr() []string
 	TunnelConn() (net.Conn, error)
-	RaftPort() int
 }

@@ -24,7 +24,6 @@ func main() {
 		config.StringFlag("tunnel.listen", "0.0.0.0:81", ""),
 		config.StringSliceFlag("tunnel.advertise.url", nil, ""),
 		config.DurationFlag("idle-time", time.Minute, ""),
-		config.IntFlag("raft.port", 7080, ""),
 		config.Uint64Flag("replica-set", 1, ""),
 		config.IntFlag("gossip.port", 7081, ""),
 		config.StringFlag("data.path", "./_hdd", ""),

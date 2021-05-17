@@ -467,7 +467,7 @@ func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, repl
 	return err
 }
 func (edge *Server) getReplicaMember(replicaSet uint64) (target cluster.Member) {
-	members := edge.cluster.RaftMembers(replicaSet)
+	members := edge.cluster.MembersByReplicaSet(replicaSet)
 	if len(members) == 0 {
 		return nil
 	}

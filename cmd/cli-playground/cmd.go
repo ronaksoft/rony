@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
-	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
@@ -45,7 +44,6 @@ func init() {
 	RootCmd.PersistentFlags().String(FlagServerID, "", "")
 	RootCmd.PersistentFlags().String(FlagTargetID, "", "")
 	RootCmd.PersistentFlags().Uint64(FlagReplicaSet, 0, "")
-	RootCmd.PersistentFlags().String(FlagReplicaMode, string(cluster.MultiReplica), "")
 	RootCmd.PersistentFlags().Int(FlagGossipPort, 800, "")
 	RootCmd.PersistentFlags().Bool(FlagBootstrap, false, "")
 	RootCmd.PersistentFlags().Int("n", 5, "")
@@ -62,10 +60,6 @@ var DemoStartCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		n, _ := cmd.Flags().GetInt(FlagDemoReplicaFactor)
 		s, _ := cmd.Flags().GetInt(FlagDemoReplica)
-		cm := cluster.SingleReplica
-		if n > 1 {
-			cm = cluster.MultiReplica
-		}
 		if s < 1 {
 			s = 1
 		}
@@ -78,11 +72,8 @@ var DemoStartCmd = &cobra.Command{
 		for i := 0; i < s; i++ {
 			replicaSet := uint64(i + 1)
 			for j := 0; j < n; j++ {
-				startFunc(cmd, fmt.Sprintf("%c.%d", a, j), replicaSet, gossipPort, j == 0, cm)
+				startFunc(cmd, fmt.Sprintf("%c.%d", a, j), replicaSet, gossipPort, j == 0)
 				gossipPort += 10
-				if j == 0 && j < n-1 {
-					time.Sleep(time.Second * 3)
-				}
 			}
 			a++
 		}
@@ -94,15 +85,14 @@ var StartCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
-		replicaMod, _ := cmd.Flags().GetString(FlagReplicaMode)
 		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		raftBootstrap, _ := cmd.Flags().GetBool(FlagBootstrap)
 
-		startFunc(cmd, serverID, replicaSet, gossipPort, raftBootstrap, cluster.Mode(replicaMod))
+		startFunc(cmd, serverID, replicaSet, gossipPort, raftBootstrap)
 	},
 }
 
-func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int, bootstrap bool, mode cluster.Mode) {
+func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int, bootstrap bool) {
 	if _, ok := Edges[serverID]; !ok {
 		opts := make([]edge.Option, 0)
 		opts = append(opts,
@@ -119,9 +109,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 				edge.WithGossipCluster(edge.GossipClusterConfig{
 					ServerID:   []byte(serverID),
 					Bootstrap:  bootstrap,
-					RaftPort:   port + 1,
 					ReplicaSet: replicaSet,
-					Mode:       mode,
 					GossipPort: port,
 				}),
 				edge.WithUdpTunnel(edge.UdpTunnelConfig{
@@ -172,8 +160,8 @@ func listFunc(cmd *cobra.Command) {
 	for _, s := range ea {
 		edgeStats := s.Stats()
 		rows = append(rows,
-			fmt.Sprintf("%s | %d | %d | %s | %d | %s | %s(%s)", s.GetServerID(),
-				edgeStats.ReplicaSet, edgeStats.RaftMembers, edgeStats.RaftState,
+			fmt.Sprintf("%s | %d | %d | %s | %s(%s)", s.GetServerID(),
+				edgeStats.ReplicaSet,
 				edgeStats.Members,
 				edgeStats.TunnelAddr,
 				edgeStats.GatewayProtocol.String(), edgeStats.GatewayAddr,
@@ -537,8 +525,8 @@ var Members = &cobra.Command{
 
 		for _, m := range e1.Cluster().Members() {
 			rows = append(rows,
-				fmt.Sprintf("%s | %d | %s | %d | %v",
-					m.ServerID(), m.ReplicaSet(), m.RaftState().String(), m.RaftPort(), m.GatewayAddr(),
+				fmt.Sprintf("%s | %d |  %v",
+					m.ServerID(), m.ReplicaSet(), m.GatewayAddr(),
 				),
 			)
 		}

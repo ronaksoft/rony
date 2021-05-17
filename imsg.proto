@@ -20,21 +20,10 @@ message TunnelMessage {
     MessageEnvelope Envelope = 4;
 }
 
-// RaftState
-enum RaftState {
-    None = 0;
-    Follower = 1;
-    Candidate = 2;
-    Leader = 3;
-    Shutdown = 4;
-}
-
 // EdgeNode
 message EdgeNode {
     bytes ServerID = 1;
     uint64 ReplicaSet = 2;
-    uint32 RaftPort = 5;
-    RaftState RaftState = 6;
     repeated string GatewayAddr = 7;
     repeated string TunnelAddr = 8;
 }

@@ -52,16 +52,14 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			HostPorts:  pm.gateway.Addr(),
 		})
 	} else if len(req.ReplicaSet) == 0 {
-		members := pm.cluster.RaftMembers(pm.cluster.ReplicaSet())
+		members := pm.cluster.MembersByReplicaSet(pm.cluster.ReplicaSet())
 		for _, m := range members {
 			res.Nodes = append(res.Nodes, m.Proto(nil))
 		}
 	} else {
-		for _, rs := range req.ReplicaSet {
-			members := pm.cluster.RaftMembers(rs)
-			for _, m := range members {
-				res.Nodes = append(res.Nodes, m.Proto(nil))
-			}
+		members := pm.cluster.MembersByReplicaSet(req.ReplicaSet...)
+		for _, m := range members {
+			res.Nodes = append(res.Nodes, m.Proto(nil))
 		}
 	}
 
