@@ -328,6 +328,10 @@ func (g *Gateway) TotalConnections() int {
 	return n
 }
 
+func (g *Gateway) Protocol() gateway.Protocol {
+	return g.transportMode
+}
+
 func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	// TODO:: let developer choose

@@ -49,6 +49,7 @@ type Gateway interface {
 	Shutdown()
 	GetConn(connID uint64) rony.Conn
 	Addr() []string
+	Protocol() Protocol
 }
 
 type (

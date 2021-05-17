@@ -100,3 +100,7 @@ func (g *Gateway) GetConn(connID uint64) rony.Conn {
 func (g *Gateway) Addr() []string {
 	return []string{"TEST"}
 }
+
+func (g *Gateway) Protocol() gateway.Protocol {
+	return gateway.Dummy
+}

@@ -87,7 +87,6 @@ func WithTcpGateway(config TcpGatewayConfig) Option {
 		gatewayTcp.MessageHandler = edge.onGatewayMessage
 		gatewayTcp.ConnectHandler = edge.onGatewayConnect
 		gatewayTcp.CloseHandler = edge.onGatewayClose
-		edge.gatewayProtocol = config.Protocol
 		edge.gateway = gatewayTcp
 	}
 }
@@ -98,7 +97,7 @@ type DummyGatewayConfig = dummyGateway.Config
 // Only one gateway could be set and if you set another gateway it panics on runtime.
 func WithTestGateway(config DummyGatewayConfig) Option {
 	return func(edge *Server) {
-		if edge.gatewayProtocol != gateway.Undefined {
+		if edge.gateway != nil {
 			panic(rony.ErrGatewayAlreadyInitialized)
 		}
 		gatewayDummy, err := dummyGateway.New(config)
@@ -108,7 +107,6 @@ func WithTestGateway(config DummyGatewayConfig) Option {
 		gatewayDummy.MessageHandler = edge.onGatewayMessage
 		gatewayDummy.ConnectHandler = edge.onGatewayConnect
 		gatewayDummy.CloseHandler = edge.onGatewayClose
-		edge.gatewayProtocol = gateway.Dummy
 		edge.gateway = gatewayDummy
 	}
 }

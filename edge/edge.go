@@ -51,9 +51,6 @@ type Server struct {
 	store      store.Store
 	gateway    gateway.Gateway
 	dispatcher Dispatcher
-
-	// Gateway's Configs
-	gatewayProtocol gateway.Protocol
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -366,7 +363,7 @@ func (edge *Server) StartGateway() error {
 
 	log.Info("Edge Server:: Gateway Started",
 		zap.ByteString("ServerID", edge.serverID),
-		zap.String("Protocol", edge.gatewayProtocol.String()),
+		zap.String("Protocol", edge.gateway.Protocol().String()),
 		zap.Strings("Addr", edge.gateway.Addr()),
 	)
 
@@ -431,7 +428,6 @@ func (edge *Server) Shutdown() {
 		edge.store.Shutdown()
 	}
 
-	edge.gatewayProtocol = gateway.Undefined
 	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
 }
 
