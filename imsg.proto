@@ -12,6 +12,15 @@ message GetPage {
     uint64 ReplicaSet = 2;
 }
 
+// StoreMessage
+// @Function
+// @Returns:
+message StoreMessage {
+    int64 Constructor = 1;
+    bytes Payload = 2;
+    bool Request = 3;
+}
+
 // TunnelMessage
 message TunnelMessage {
     bytes SenderID = 1;

@@ -2,22 +2,6 @@ syntax = "proto3";
 package replicateddb;
 option go_package = "github.com/ronaksoft/rony/internal/store/replicateddb";
 
-// StoreCommandType
-enum CommandType {
-    CTStartTxn = 0;
-    CTStopTxn = 1;
-    CTCommitTxn = 2;
-    CTSet = 3;
-    CTDelete = 4;
-    CTGet = 5;
-}
-
-// RaftCommand
-message StoreCommand {
-    CommandType Type = 1;
-    bytes Payload = 2;
-}
-
 message StartTxn {
     int64 ID = 1;
     bool Update = 2;

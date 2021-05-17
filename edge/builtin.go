@@ -103,3 +103,41 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 	ctx.PushMessage(rony.C_Page, res)
 }
+
+func (pm *Builtin) StoreMessage(ctx *RequestCtx, in *rony.MessageEnvelope) {
+	if pm.cluster.ReplicaSet() != 1 {
+		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRequest)
+		return
+	}
+
+	req := rony.PoolGetPage.Get()
+	defer rony.PoolGetPage.Put(req)
+	res := rony.PoolPage.Get()
+	defer rony.PoolPage.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	err = store.Update(func(txn *badger.Txn) (err error) {
+		_, err = rony.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
+		if err == nil {
+			return
+		}
+		if req.GetReplicaSet() == 0 {
+			return err
+		}
+		res.ReplicaSet = req.GetReplicaSet()
+		res.ID = req.GetPageID()
+		return rony.SavePageWithTxn(txn, alloc, res)
+	})
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		return
+	}
+	ctx.PushMessage(rony.C_Page, res)
+}

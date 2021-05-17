@@ -8,44 +8,6 @@ import (
 	sync "sync"
 )
 
-const C_StoreCommand int64 = 3294788005
-
-type poolStoreCommand struct {
-	pool sync.Pool
-}
-
-func (p *poolStoreCommand) Get() *StoreCommand {
-	x, ok := p.pool.Get().(*StoreCommand)
-	if !ok {
-		x = &StoreCommand{}
-	}
-	return x
-}
-
-func (p *poolStoreCommand) Put(x *StoreCommand) {
-	if x == nil {
-		return
-	}
-	x.Type = 0
-	x.Payload = x.Payload[:0]
-	p.pool.Put(x)
-}
-
-var PoolStoreCommand = poolStoreCommand{}
-
-func (x *StoreCommand) DeepCopy(z *StoreCommand) {
-	z.Type = x.Type
-	z.Payload = append(z.Payload[:0], x.Payload...)
-}
-
-func (x *StoreCommand) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
-func (x *StoreCommand) Unmarshal(b []byte) error {
-	return proto.UnmarshalOptions{}.Unmarshal(b, x)
-}
-
 const C_StartTxn int64 = 605208098
 
 type poolStartTxn struct {
@@ -275,7 +237,6 @@ func (x *Get) Unmarshal(b []byte) error {
 }
 
 func init() {
-	registry.RegisterConstructor(3294788005, "StoreCommand")
 	registry.RegisterConstructor(605208098, "StartTxn")
 	registry.RegisterConstructor(1239816782, "StopTxn")
 	registry.RegisterConstructor(15774688, "CommitTxn")

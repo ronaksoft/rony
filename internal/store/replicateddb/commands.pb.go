@@ -20,121 +20,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// StoreCommandType
-type CommandType int32
-
-const (
-	CommandType_CTStartTxn  CommandType = 0
-	CommandType_CTStopTxn   CommandType = 1
-	CommandType_CTCommitTxn CommandType = 2
-	CommandType_CTSet       CommandType = 3
-	CommandType_CTDelete    CommandType = 4
-	CommandType_CTGet       CommandType = 5
-)
-
-// Enum value maps for CommandType.
-var (
-	CommandType_name = map[int32]string{
-		0: "CTStartTxn",
-		1: "CTStopTxn",
-		2: "CTCommitTxn",
-		3: "CTSet",
-		4: "CTDelete",
-		5: "CTGet",
-	}
-	CommandType_value = map[string]int32{
-		"CTStartTxn":  0,
-		"CTStopTxn":   1,
-		"CTCommitTxn": 2,
-		"CTSet":       3,
-		"CTDelete":    4,
-		"CTGet":       5,
-	}
-)
-
-func (x CommandType) Enum() *CommandType {
-	p := new(CommandType)
-	*p = x
-	return p
-}
-
-func (x CommandType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (CommandType) Descriptor() protoreflect.EnumDescriptor {
-	return file_commands_proto_enumTypes[0].Descriptor()
-}
-
-func (CommandType) Type() protoreflect.EnumType {
-	return &file_commands_proto_enumTypes[0]
-}
-
-func (x CommandType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use CommandType.Descriptor instead.
-func (CommandType) EnumDescriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{0}
-}
-
-// RaftCommand
-type StoreCommand struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Type    CommandType `protobuf:"varint,1,opt,name=Type,proto3,enum=replicateddb.CommandType" json:"Type,omitempty"`
-	Payload []byte      `protobuf:"bytes,2,opt,name=Payload,proto3" json:"Payload,omitempty"`
-}
-
-func (x *StoreCommand) Reset() {
-	*x = StoreCommand{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *StoreCommand) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StoreCommand) ProtoMessage() {}
-
-func (x *StoreCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StoreCommand.ProtoReflect.Descriptor instead.
-func (*StoreCommand) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *StoreCommand) GetType() CommandType {
-	if x != nil {
-		return x.Type
-	}
-	return CommandType_CTStartTxn
-}
-
-func (x *StoreCommand) GetPayload() []byte {
-	if x != nil {
-		return x.Payload
-	}
-	return nil
-}
-
 type StartTxn struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -147,7 +32,7 @@ type StartTxn struct {
 func (x *StartTxn) Reset() {
 	*x = StartTxn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[1]
+		mi := &file_commands_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -160,7 +45,7 @@ func (x *StartTxn) String() string {
 func (*StartTxn) ProtoMessage() {}
 
 func (x *StartTxn) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[1]
+	mi := &file_commands_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -173,7 +58,7 @@ func (x *StartTxn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartTxn.ProtoReflect.Descriptor instead.
 func (*StartTxn) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{1}
+	return file_commands_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *StartTxn) GetID() int64 {
@@ -202,7 +87,7 @@ type StopTxn struct {
 func (x *StopTxn) Reset() {
 	*x = StopTxn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[2]
+		mi := &file_commands_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -215,7 +100,7 @@ func (x *StopTxn) String() string {
 func (*StopTxn) ProtoMessage() {}
 
 func (x *StopTxn) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[2]
+	mi := &file_commands_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +113,7 @@ func (x *StopTxn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopTxn.ProtoReflect.Descriptor instead.
 func (*StopTxn) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{2}
+	return file_commands_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *StopTxn) GetID() int64 {
@@ -256,7 +141,7 @@ type CommitTxn struct {
 func (x *CommitTxn) Reset() {
 	*x = CommitTxn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[3]
+		mi := &file_commands_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -269,7 +154,7 @@ func (x *CommitTxn) String() string {
 func (*CommitTxn) ProtoMessage() {}
 
 func (x *CommitTxn) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[3]
+	mi := &file_commands_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -282,7 +167,7 @@ func (x *CommitTxn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitTxn.ProtoReflect.Descriptor instead.
 func (*CommitTxn) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{3}
+	return file_commands_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CommitTxn) GetID() int64 {
@@ -305,7 +190,7 @@ type Set struct {
 func (x *Set) Reset() {
 	*x = Set{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[4]
+		mi := &file_commands_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -318,7 +203,7 @@ func (x *Set) String() string {
 func (*Set) ProtoMessage() {}
 
 func (x *Set) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[4]
+	mi := &file_commands_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +216,7 @@ func (x *Set) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Set.ProtoReflect.Descriptor instead.
 func (*Set) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{4}
+	return file_commands_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Set) GetTxnID() int64 {
@@ -367,7 +252,7 @@ type Delete struct {
 func (x *Delete) Reset() {
 	*x = Delete{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[5]
+		mi := &file_commands_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -380,7 +265,7 @@ func (x *Delete) String() string {
 func (*Delete) ProtoMessage() {}
 
 func (x *Delete) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[5]
+	mi := &file_commands_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +278,7 @@ func (x *Delete) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Delete.ProtoReflect.Descriptor instead.
 func (*Delete) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{5}
+	return file_commands_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Delete) GetTxnID() int64 {
@@ -422,7 +307,7 @@ type Get struct {
 func (x *Get) Reset() {
 	*x = Get{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_commands_proto_msgTypes[6]
+		mi := &file_commands_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -435,7 +320,7 @@ func (x *Get) String() string {
 func (*Get) ProtoMessage() {}
 
 func (x *Get) ProtoReflect() protoreflect.Message {
-	mi := &file_commands_proto_msgTypes[6]
+	mi := &file_commands_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +333,7 @@ func (x *Get) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Get.ProtoReflect.Descriptor instead.
 func (*Get) Descriptor() ([]byte, []int) {
-	return file_commands_proto_rawDescGZIP(), []int{6}
+	return file_commands_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Get) GetTxnID() int64 {
@@ -469,42 +354,30 @@ var File_commands_proto protoreflect.FileDescriptor
 
 var file_commands_proto_rawDesc = []byte{
 	0x0a, 0x0e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x12, 0x0c, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x64, 0x64, 0x62, 0x22, 0x57,
-	0x0a, 0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x2d,
-	0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x19, 0x2e, 0x72,
-	0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x64, 0x64, 0x62, 0x2e, 0x43, 0x6f, 0x6d, 0x6d,
-	0x61, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x18, 0x0a,
-	0x07, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07,
-	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0x32, 0x0a, 0x08, 0x53, 0x74, 0x61, 0x72, 0x74,
-	0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
-	0x02, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x08, 0x52, 0x06, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x22, 0x31, 0x0a, 0x07, 0x53,
-	0x74, 0x6f, 0x70, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x22, 0x1b,
-	0x0a, 0x09, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49,
-	0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x22, 0x43, 0x0a, 0x03, 0x53,
-	0x65, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61,
-	0x6c, 0x75, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x22, 0x30, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78,
-	0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44,
-	0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b,
-	0x65, 0x79, 0x22, 0x2d, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e,
+	0x12, 0x0c, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x64, 0x64, 0x62, 0x22, 0x32,
+	0x0a, 0x08, 0x53, 0x74, 0x61, 0x72, 0x74, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x55, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x55, 0x70, 0x64, 0x61,
+	0x74, 0x65, 0x22, 0x31, 0x0a, 0x07, 0x53, 0x74, 0x6f, 0x70, 0x54, 0x78, 0x6e, 0x12, 0x0e, 0x0a,
+	0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x12, 0x16, 0x0a,
+	0x06, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x43,
+	0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x22, 0x1b, 0x0a, 0x09, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x54,
+	0x78, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02,
+	0x49, 0x44, 0x22, 0x43, 0x0a, 0x03, 0x53, 0x65, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e,
 	0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x12,
 	0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65,
-	0x79, 0x2a, 0x61, 0x0a, 0x0b, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65,
-	0x12, 0x0e, 0x0a, 0x0a, 0x43, 0x54, 0x53, 0x74, 0x61, 0x72, 0x74, 0x54, 0x78, 0x6e, 0x10, 0x00,
-	0x12, 0x0d, 0x0a, 0x09, 0x43, 0x54, 0x53, 0x74, 0x6f, 0x70, 0x54, 0x78, 0x6e, 0x10, 0x01, 0x12,
-	0x0f, 0x0a, 0x0b, 0x43, 0x54, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x54, 0x78, 0x6e, 0x10, 0x02,
-	0x12, 0x09, 0x0a, 0x05, 0x43, 0x54, 0x53, 0x65, 0x74, 0x10, 0x03, 0x12, 0x0c, 0x0a, 0x08, 0x43,
-	0x54, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x10, 0x04, 0x12, 0x09, 0x0a, 0x05, 0x43, 0x54, 0x47,
-	0x65, 0x74, 0x10, 0x05, 0x42, 0x37, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x72, 0x6f, 0x6e, 0x61, 0x6b, 0x73, 0x6f, 0x66, 0x74, 0x2f, 0x72, 0x6f, 0x6e,
-	0x79, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x2f, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x64, 0x64, 0x62, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x30, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74,
+	0x65, 0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03,
+	0x52, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x22, 0x2d, 0x0a, 0x03, 0x47, 0x65, 0x74,
+	0x12, 0x14, 0x0a, 0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x05, 0x54, 0x78, 0x6e, 0x49, 0x44, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x42, 0x37, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x6f, 0x6e, 0x61, 0x6b, 0x73, 0x6f, 0x66, 0x74,
+	0x2f, 0x72, 0x6f, 0x6e, 0x79, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x2f, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x64, 0x64,
+	0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -519,25 +392,21 @@ func file_commands_proto_rawDescGZIP() []byte {
 	return file_commands_proto_rawDescData
 }
 
-var file_commands_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_commands_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_commands_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_commands_proto_goTypes = []interface{}{
-	(CommandType)(0),     // 0: replicateddb.CommandType
-	(*StoreCommand)(nil), // 1: replicateddb.StoreCommand
-	(*StartTxn)(nil),     // 2: replicateddb.StartTxn
-	(*StopTxn)(nil),      // 3: replicateddb.StopTxn
-	(*CommitTxn)(nil),    // 4: replicateddb.CommitTxn
-	(*Set)(nil),          // 5: replicateddb.Set
-	(*Delete)(nil),       // 6: replicateddb.Delete
-	(*Get)(nil),          // 7: replicateddb.Get
+	(*StartTxn)(nil),  // 0: replicateddb.StartTxn
+	(*StopTxn)(nil),   // 1: replicateddb.StopTxn
+	(*CommitTxn)(nil), // 2: replicateddb.CommitTxn
+	(*Set)(nil),       // 3: replicateddb.Set
+	(*Delete)(nil),    // 4: replicateddb.Delete
+	(*Get)(nil),       // 5: replicateddb.Get
 }
 var file_commands_proto_depIdxs = []int32{
-	0, // 0: replicateddb.StoreCommand.Type:type_name -> replicateddb.CommandType
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_commands_proto_init() }
@@ -547,18 +416,6 @@ func file_commands_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_commands_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*StoreCommand); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_commands_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*StartTxn); i {
 			case 0:
 				return &v.state
@@ -570,7 +427,7 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
-		file_commands_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_commands_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*StopTxn); i {
 			case 0:
 				return &v.state
@@ -582,7 +439,7 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
-		file_commands_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_commands_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CommitTxn); i {
 			case 0:
 				return &v.state
@@ -594,7 +451,7 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
-		file_commands_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_commands_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Set); i {
 			case 0:
 				return &v.state
@@ -606,7 +463,7 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
-		file_commands_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_commands_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Delete); i {
 			case 0:
 				return &v.state
@@ -618,7 +475,7 @@ func file_commands_proto_init() {
 				return nil
 			}
 		}
-		file_commands_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_commands_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Get); i {
 			case 0:
 				return &v.state
@@ -636,14 +493,13 @@ func file_commands_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_commands_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   7,
+			NumEnums:      0,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_commands_proto_goTypes,
 		DependencyIndexes: file_commands_proto_depIdxs,
-		EnumInfos:         file_commands_proto_enumTypes,
 		MessageInfos:      file_commands_proto_msgTypes,
 	}.Build()
 	File_commands_proto = out.File

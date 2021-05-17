@@ -48,6 +48,46 @@ func (x *GetPage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+const C_StoreMessage int64 = 4229276430
+
+type poolStoreMessage struct {
+	pool sync.Pool
+}
+
+func (p *poolStoreMessage) Get() *StoreMessage {
+	x, ok := p.pool.Get().(*StoreMessage)
+	if !ok {
+		x = &StoreMessage{}
+	}
+	return x
+}
+
+func (p *poolStoreMessage) Put(x *StoreMessage) {
+	if x == nil {
+		return
+	}
+	x.Constructor = 0
+	x.Payload = x.Payload[:0]
+	x.Request = false
+	p.pool.Put(x)
+}
+
+var PoolStoreMessage = poolStoreMessage{}
+
+func (x *StoreMessage) DeepCopy(z *StoreMessage) {
+	z.Constructor = x.Constructor
+	z.Payload = append(z.Payload[:0], x.Payload...)
+	z.Request = x.Request
+}
+
+func (x *StoreMessage) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *StoreMessage) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
 const C_TunnelMessage int64 = 3271476222
 
 type poolTunnelMessage struct {
@@ -189,6 +229,7 @@ func (x *Page) Unmarshal(b []byte) error {
 
 func init() {
 	registry.RegisterConstructor(3721890413, "GetPage")
+	registry.RegisterConstructor(4229276430, "StoreMessage")
 	registry.RegisterConstructor(3271476222, "TunnelMessage")
 	registry.RegisterConstructor(999040174, "EdgeNode")
 	registry.RegisterConstructor(3023575326, "Page")
