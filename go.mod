@@ -14,11 +14,9 @@ require (
 	github.com/gobuffalo/plush/v4 v4.1.4
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
-	github.com/hashicorp/go-hclog v0.9.1
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
-	github.com/hashicorp/go-msgpack v0.5.5
+	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/memberlist v0.2.4
-	github.com/hashicorp/raft v1.3.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
