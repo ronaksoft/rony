@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/ronaksoft/rony/internal/store/replicateddb"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -23,15 +24,18 @@ import (
 type Builtin struct {
 	cluster  cluster.Cluster
 	gateway  gateway.Gateway
+	store    *replicateddb.Store
 	serverID string
 }
 
-func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster) *Builtin {
-	return &Builtin{
+func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster, s store.Store) *Builtin {
+	b := &Builtin{
 		cluster:  c,
 		gateway:  gw,
 		serverID: serverID,
 	}
+	b.store, _ = s.(*replicateddb.Store)
+	return b
 }
 
 func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
@@ -105,39 +109,20 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (pm *Builtin) StoreMessage(ctx *RequestCtx, in *rony.MessageEnvelope) {
-	if pm.cluster.ReplicaSet() != 1 {
-		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRequest)
+	if pm.store == nil {
 		return
 	}
-
-	req := rony.PoolGetPage.Get()
-	defer rony.PoolGetPage.Put(req)
-	res := rony.PoolPage.Get()
-	defer rony.PoolPage.Put(res)
+	req := rony.PoolStoreMessage.Get()
+	defer rony.PoolStoreMessage.Put(req)
+	res := rony.PoolStoreMessage.Get()
+	defer rony.PoolStoreMessage.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
 		return
 	}
 
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
+	pm.store.Apply(req, res)
 
-	err = store.Update(func(txn *badger.Txn) (err error) {
-		_, err = rony.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
-		if err == nil {
-			return
-		}
-		if req.GetReplicaSet() == 0 {
-			return err
-		}
-		res.ReplicaSet = req.GetReplicaSet()
-		res.ID = req.GetPageID()
-		return rony.SavePageWithTxn(txn, alloc, res)
-	})
-	if err != nil {
-		ctx.PushError(rony.ErrCodeInternal, err.Error())
-		return
-	}
-	ctx.PushMessage(rony.C_Page, res)
+	ctx.PushMessage(rony.C_StoreMessage, res)
 }

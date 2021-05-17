@@ -52,12 +52,8 @@ func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message,
 	x.Constructor = constructor
 	x.Header = append(x.Header[:0], kvs...)
 
-	mo := proto.MarshalOptions{
-		UseCachedSize: true,
-	}
-	buf := pools.Buffer.GetCap(mo.Size(p))
-	b, _ := mo.MarshalAppend(*buf.Bytes(), p)
-	x.Message = append(x.Message[:0], b...)
+	buf := pools.Buffer.FromProto(p)
+	x.Message = append(x.Message[:0], *buf.Bytes()...)
 	pools.Buffer.Put(buf)
 }
 

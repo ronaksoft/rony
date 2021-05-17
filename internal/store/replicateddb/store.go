@@ -1,10 +1,12 @@
 package replicateddb
 
 import (
+	"context"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/store/replicateddb/raftwal"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.etcd.io/etcd/raft/v3"
@@ -134,27 +136,10 @@ func (fsm *Store) startTxn(txn *Txn) error {
 	defer PoolStartTxn.Put(req)
 	req.ID = txn.ID
 	req.Update = txn.update
-	// b := pools.Buffer.FromProto(req)
-	// f := txn.store.c.RaftApply(*b.Bytes())
-	// pools.Buffer.Put(b)
-	//
-	// err := f.Error()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// res := f.Response()
-	// if res == nil {
-	// 	return nil
-	// }
-	//
-	// switch x := res.(type) {
-	// case error:
-	// 	return x
-	// default:
-	// 	return ErrUnknown
-	// }
-	return nil
+	b := pools.Buffer.FromProto(req)
+	err := fsm.raft.Propose(context.TODO(), *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
 }
 
 func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
@@ -162,27 +147,10 @@ func (fsm *Store) stopTxn(txn *Txn, commit bool) error {
 	defer PoolStopTxn.Put(req)
 	req.ID = txn.ID
 	req.Commit = commit
-	// b := pools.Buffer.FromProto(req)
-	// f := txn.store.c.RaftApply(*b.Bytes())
-	// pools.Buffer.Put(b)
-	//
-	// err := f.Error()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// res := f.Response()
-	// if res == nil {
-	// 	return nil
-	// }
-	//
-	// switch x := res.(type) {
-	// case error:
-	// 	return x
-	// default:
-	// 	return ErrUnknown
-	// }
-	return nil
+	b := pools.Buffer.FromProto(req)
+	err := fsm.raft.Propose(context.TODO(), *b.Bytes())
+	pools.Buffer.Put(b)
+	return err
 }
 
 func (fsm *Store) Shutdown() {
