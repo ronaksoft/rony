@@ -70,6 +70,32 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	ctx.PushMessage(rony.C_Edges, res)
 }
 
+func (pm *Builtin) GetAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
+	req := rony.PoolGetNodes.Get()
+	defer rony.PoolGetNodes.Put(req)
+	res := rony.PoolEdges.Get()
+	defer rony.PoolEdges.Put(res)
+	err := req.Unmarshal(in.Message)
+	if err != nil {
+		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		return
+	}
+
+	if pm.cluster == nil {
+		res.Nodes = append(res.Nodes, &rony.Edge{
+			ReplicaSet: 0,
+			ServerID:   pm.serverID,
+			HostPorts:  pm.gateway.Addr(),
+		})
+	} else {
+		members := pm.cluster.Members()
+		for _, m := range members {
+			res.Nodes = append(res.Nodes, m.Proto(nil))
+		}
+	}
+	ctx.PushMessage(rony.C_Edges, res)
+}
+
 func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if pm.cluster.ReplicaSet() != 1 {
 		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRequest)

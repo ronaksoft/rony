@@ -356,6 +356,40 @@ func (x *GetNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+const C_GetAllNodes int64 = 3267106379
+
+type poolGetAllNodes struct {
+	pool sync.Pool
+}
+
+func (p *poolGetAllNodes) Get() *GetAllNodes {
+	x, ok := p.pool.Get().(*GetAllNodes)
+	if !ok {
+		x = &GetAllNodes{}
+	}
+	return x
+}
+
+func (p *poolGetAllNodes) Put(x *GetAllNodes) {
+	if x == nil {
+		return
+	}
+	p.pool.Put(x)
+}
+
+var PoolGetAllNodes = poolGetAllNodes{}
+
+func (x *GetAllNodes) DeepCopy(z *GetAllNodes) {
+}
+
+func (x *GetAllNodes) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *GetAllNodes) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
 func init() {
 	registry.RegisterConstructor(535232465, "MessageEnvelope")
 	registry.RegisterConstructor(4276272820, "KeyValue")
@@ -365,4 +399,5 @@ func init() {
 	registry.RegisterConstructor(3576986712, "Edge")
 	registry.RegisterConstructor(2120950449, "Edges")
 	registry.RegisterConstructor(362407405, "GetNodes")
+	registry.RegisterConstructor(3267106379, "GetAllNodes")
 }

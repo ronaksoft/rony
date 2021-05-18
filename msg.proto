@@ -67,3 +67,8 @@ message Edges {
 message GetNodes {
     repeated uint64 ReplicaSet = 1;
 }
+
+// GetNodes
+// @Function
+// @Return: Edges
+message GetAllNodes {}
