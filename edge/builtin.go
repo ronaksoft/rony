@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/internal/store/replicateddb"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -24,17 +23,15 @@ import (
 type Builtin struct {
 	cluster  cluster.Cluster
 	gateway  gateway.Gateway
-	store    *replicateddb.Store
 	serverID string
 }
 
-func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster, s store.Store) *Builtin {
+func newBuiltin(serverID string, gw gateway.Gateway, c cluster.Cluster) *Builtin {
 	b := &Builtin{
 		cluster:  c,
 		gateway:  gw,
 		serverID: serverID,
 	}
-	b.store, _ = s.(*replicateddb.Store)
 	return b
 }
 
@@ -132,12 +129,4 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		return
 	}
 	ctx.PushMessage(rony.C_Page, res)
-}
-
-func (pm *Builtin) StoreMessage(ctx *RequestCtx, in *rony.MessageEnvelope) {
-	if pm.store == nil {
-		return
-	}
-
-	pm.store.Step(in.Message)
 }

@@ -12,12 +12,6 @@ message GetPage {
     uint64 ReplicaSet = 2;
 }
 
-// StoreMessage
-// This is dummy message, we only use its constructor. The actual message is
-// raftpb.Message
-message StoreMessage {
-    bool Dummy = 1;
-}
 
 // TunnelMessage
 message TunnelMessage {

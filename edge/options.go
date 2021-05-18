@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/internal/gateway"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
-	"github.com/ronaksoft/rony/internal/store/replicateddb"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 )
 
@@ -100,19 +99,5 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
-	}
-}
-
-type ReplicatedStoreConfig = replicateddb.Config
-
-func WithReplicatedStore(config ReplicatedStoreConfig) Option {
-	return func(edge *Server) {
-		config.Cluster = edge.cluster
-		config.DirPath = edge.dataDir
-		store, err := replicateddb.New(config)
-		if err != nil {
-			panic(err)
-		}
-		edge.store = store
 	}
 }
