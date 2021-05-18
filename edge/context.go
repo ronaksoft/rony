@@ -339,7 +339,7 @@ func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.
 	defer rony.PoolMessageEnvelope.Put(req)
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
-	req.Fill(tools.RandomUint64(0), rony.C_GetNodes, &rony.GetNodes{})
+	req.Fill(tools.RandomUint64(0), rony.C_GetAllNodes, &rony.GetAllNodes{})
 	err := ctx.ExecuteRemote(replicaSet, req, res)
 	if err != nil {
 		return nil, err
