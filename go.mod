@@ -10,7 +10,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/getsentry/sentry-go v0.6.1
+	github.com/getsentry/sentry-go v0.10.0
 	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
 	github.com/gobuffalo/plush/v4 v4.1.4
@@ -39,7 +39,7 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/tools v0.0.0-20210105210202-9ed45478a130 // indirect
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
