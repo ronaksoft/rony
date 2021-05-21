@@ -3,6 +3,7 @@ package edgec
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
@@ -177,7 +178,7 @@ SendLoop:
 
 	// If we exceeds the maximum retry then we return
 	if retry--; retry < 0 {
-		err = rony.ErrRetriesExceeded(err)
+		err = errors.ErrRetriesExceeded(err)
 		return
 	}
 

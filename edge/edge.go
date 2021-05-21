@@ -192,7 +192,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 
 	ho, ok := edge.handlers[in.GetConstructor()]
 	if !ok {
-		requestCtx.PushError(rony.ErrCodeInvalid, rony.ErrItemHandler)
+		requestCtx.PushError(errors.ErrInvalidHandler)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 			zap.Any("Error", r),
 		)
 		log.Error("Panic Stack Trace", zap.ByteString("Stack", debug.Stack()))
-		ctx.PushError(rony.ErrCodeInternal, rony.ErrItemServer)
+		ctx.PushError(errors.ErrInternalServer)
 	}
 }
 
@@ -276,7 +276,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	}
 
 	if err := edge.execute(dispatchCtx); err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+		edge.onError(dispatchCtx, errors.ErrInternalServer)
 	} else {
 		edge.dispatcher.Done(dispatchCtx)
 	}
@@ -302,7 +302,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	)
 
 	if err := edge.execute(dispatchCtx); err != nil {
-		edge.onError(dispatchCtx, rony.ErrCodeInternal, rony.ErrItemServer)
+		edge.onError(dispatchCtx, errors.ErrInternalServer)
 	} else {
 		edge.onTunnelDone(dispatchCtx)
 	}
@@ -328,9 +328,9 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 	_ = ctx.Conn().SendBinary(ctx.streamID, *buf.Bytes())
 	pools.Buffer.Put(buf)
 }
-func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
+func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	envelope := rony.PoolMessageEnvelope.Get()
-	errors.ToMessage(envelope, ctx.req.GetRequestID(), code, item)
+	err.ToEnvelope(envelope)
 	switch ctx.kind {
 	case GatewayMessage:
 		edge.dispatcher.OnMessage(ctx, envelope)

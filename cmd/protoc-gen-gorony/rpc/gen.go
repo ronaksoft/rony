@@ -35,6 +35,7 @@ func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 func (g *Generator) Generate() {
 	if len(g.f.Services) > 0 {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/errors"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
 		if g.f.GoPackageName != "rony" {
@@ -97,7 +98,7 @@ func (g *Generator) genServer(s *protogen.Service) {
 
 		g.g.P("err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)")
 		g.g.P("if err != nil {")
-		g.g.P("ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)")
+		g.g.P("ctx.PushError(errors.ErrInvalidRequest)")
 		g.g.P("return")
 		g.g.P("}")
 		g.g.P()

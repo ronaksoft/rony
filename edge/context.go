@@ -309,8 +309,9 @@ func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, me
 	rony.PoolMessageEnvelope.Put(envelope)
 }
 
-func (ctx *RequestCtx) PushError(code, item string) {
-	ctx.PushCustomError(code, item, "")
+func (ctx *RequestCtx) PushError(err *rony.Error) {
+	ctx.PushMessage(rony.C_Error, err)
+	ctx.stop = true
 }
 
 func (ctx *RequestCtx) PushCustomError(code, item string, desc string) {

@@ -14,64 +14,64 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func New(code, item string) *rony.Error {
+func New(code Code, item string) *rony.Error {
 	return &rony.Error{
-		Code:        code,
+		Code:        string(code),
 		Items:       item,
 		Description: "",
 	}
 }
 
-func NewF(code, item string, format string, args ...interface{}) *rony.Error {
+func NewF(code Code, item string, format string, args ...interface{}) *rony.Error {
 	return &rony.Error{
-		Code:        code,
+		Code:        string(code),
 		Items:       item,
 		Description: fmt.Sprintf(format, args...),
 	}
 }
 
-func Message(reqID uint64, errCode, errItem string) *rony.MessageEnvelope {
+func Message(reqID uint64, errCode Code, errItem string) *rony.MessageEnvelope {
 	msg := &rony.MessageEnvelope{}
 	ToMessage(msg, reqID, errCode, errItem)
 	return msg
 }
 
-func ToMessage(out *rony.MessageEnvelope, reqID uint64, errCode, errItem string) {
+func ToMessage(out *rony.MessageEnvelope, reqID uint64, errCode Code, errItem string) {
 	errMessage := rony.PoolError.Get()
-	errMessage.Code = errCode
+	errMessage.Code = string(errCode)
 	errMessage.Items = errItem
 	out.Fill(reqID, rony.C_Error, errMessage)
 	rony.PoolError.Put(errMessage)
 }
 
 var (
-	ErrAccess           = genWithErrorAndItem(ErrCodeAccess)
-	ErrAlreadyExists    = genWithErrorAndItem(ErrCodeAlreadyExists)
-	ErrBusy             = genWithErrorAndItem(ErrCodeBusy)
-	ErrExpired          = genWithErrorAndItem(ErrCodeExpired)
-	ErrIncomplete       = genWithErrorAndItem(ErrCodeIncomplete)
-	ErrInternal         = genWithErrorAndItem(ErrCodeInternal)
-	ErrInvalid          = genWithErrorAndItem(ErrCodeInvalid)
-	ErrNotImplemented   = genWithErrorAndItem(ErrCodeNotImplemented)
-	ErrOutOfRange       = genWithErrorAndItem(ErrCodeOutOfRange)
-	ErrPartiallyApplied = genWithErrorAndItem(ErrCodePartiallyApplied)
-	ErrTimeout          = genWithErrorAndItem(ErrCodeTimeout)
-	ErrTooFew           = genWithErrorAndItem(ErrCodeTooFew)
-	ErrTooMany          = genWithErrorAndItem(ErrCodeTooMany)
-	ErrUnavailable      = genWithErrorAndItem(ErrCodeUnavailable)
+	ErrAccess           = genWithErrorAndItem(Access)
+	ErrAlreadyExists    = genWithErrorAndItem(AlreadyExists)
+	ErrBusy             = genWithErrorAndItem(Busy)
+	ErrExpired          = genWithErrorAndItem(Expired)
+	ErrIncomplete       = genWithErrorAndItem(Incomplete)
+	ErrInternal         = genWithErrorAndItem(Internal)
+	ErrInvalid          = genWithErrorAndItem(Invalid)
+	ErrNotImplemented   = genWithErrorAndItem(NotImplemented)
+	ErrOutOfRange       = genWithErrorAndItem(OutOfRange)
+	ErrPartiallyApplied = genWithErrorAndItem(PartiallyApplied)
+	ErrTimeout          = genWithErrorAndItem(Timeout)
+	ErrTooFew           = genWithErrorAndItem(TooFew)
+	ErrTooMany          = genWithErrorAndItem(TooMany)
+	ErrUnavailable      = genWithErrorAndItem(Unavailable)
 )
 
-func genWithErrorAndItem(code string) func(item string, err error) *rony.Error {
+func genWithErrorAndItem(code Code) func(item string, err error) *rony.Error {
 	return func(item string, err error) *rony.Error {
 		if err != nil {
 			return &rony.Error{
-				Code:        code,
+				Code:        string(code),
 				Items:       item,
 				Description: err.Error(),
 			}
 		} else {
 			return &rony.Error{
-				Code:        code,
+				Code:        string(code),
 				Items:       item,
 				Description: "",
 			}

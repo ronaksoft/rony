@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/store"
@@ -42,7 +43,7 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolEdges.Put(res)
 	err := req.Unmarshal(in.Message)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -74,7 +75,7 @@ func (pm *Builtin) GetAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolEdges.Put(res)
 	err := req.Unmarshal(in.Message)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -95,7 +96,7 @@ func (pm *Builtin) GetAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 
 func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if pm.cluster.ReplicaSet() != 1 {
-		ctx.PushError(rony.ErrCodeUnavailable, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrUnavailableRequest)
 		return
 	}
 
@@ -105,7 +106,7 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolPage.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -125,7 +126,7 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		return rony.SavePageWithTxn(txn, alloc, res)
 	})
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		ctx.PushError(errors.ErrInternal(err.Error(), err))
 		return
 	}
 	ctx.PushMessage(rony.C_Page, res)

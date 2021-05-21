@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -29,7 +29,7 @@ func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *s
 		return txn.Set(alloc, req.Value, req.Key)
 	})
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		ctx.PushError(errors.ErrInternal(err.Error(), nil))
 		return
 	}
 	res.OK = true
@@ -48,7 +48,7 @@ func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *s
 		return nil
 	})
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInternal, err.Error())
+		ctx.PushError(errors.ErrInternal(err.Error(), nil))
 		return
 	}
 	res.PushToContext(ctx)
@@ -75,7 +75,7 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest
 	case edge.GatewayMessage:
 		err := service.ExecuteRemoteSampleEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
-			ctx.PushError(rony.ErrCodeInternal, err.Error())
+			ctx.PushError(errors.ErrInternal(err.Error(), nil))
 			return
 		}
 	default:

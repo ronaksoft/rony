@@ -8,6 +8,7 @@ import (
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
+	errors "github.com/ronaksoft/rony/errors"
 	registry "github.com/ronaksoft/rony/registry"
 	cobra "github.com/spf13/cobra"
 	proto "google.golang.org/protobuf/proto"
@@ -431,7 +432,7 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	defer PoolEchoResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -448,7 +449,7 @@ func (sw *sampleWrapper) setWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	defer PoolSetResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -465,7 +466,7 @@ func (sw *sampleWrapper) getWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	defer PoolGetResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -482,7 +483,7 @@ func (sw *sampleWrapper) echoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	defer PoolEchoResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -499,7 +500,7 @@ func (sw *sampleWrapper) echoInternalWrapper(ctx *edge.RequestCtx, in *rony.Mess
 	defer PoolEchoResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 
@@ -516,7 +517,7 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	defer PoolEchoResponse.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
-		ctx.PushError(rony.ErrCodeInvalid, rony.ErrItemRequest)
+		ctx.PushError(errors.ErrInvalidRequest)
 		return
 	}
 

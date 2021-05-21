@@ -1,7 +1,7 @@
 package edge
 
 import (
-	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
 	"github.com/ronaksoft/rony/internal/gateway"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
@@ -50,7 +50,7 @@ type TcpGatewayConfig = tcpGateway.Config
 func WithTcpGateway(config TcpGatewayConfig) Option {
 	return func(edge *Server) {
 		if edge.gateway != nil {
-			panic(rony.ErrGatewayAlreadyInitialized)
+			panic(errors.ErrGatewayAlreadyInitialized)
 		}
 		if config.Protocol == gateway.Undefined {
 			config.Protocol = gateway.TCP
@@ -73,7 +73,7 @@ type DummyGatewayConfig = dummyGateway.Config
 func WithTestGateway(config DummyGatewayConfig) Option {
 	return func(edge *Server) {
 		if edge.gateway != nil {
-			panic(rony.ErrGatewayAlreadyInitialized)
+			panic(errors.ErrGatewayAlreadyInitialized)
 		}
 		gatewayDummy, err := dummyGateway.New(config)
 		if err != nil {

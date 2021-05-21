@@ -3,6 +3,7 @@ package edgec
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -299,7 +300,7 @@ Loop:
 			xx := &rony.Redirect{}
 			_ = xx.Unmarshal(x.GetMessage())
 			if retry--; retry < 0 {
-				return rony.ErrRetriesExceeded(fmt.Errorf("redirect"))
+				return errors.ErrRetriesExceeded(fmt.Errorf("redirect"))
 			}
 			rs = ws.redirect(xx)
 			wsc = ws.getConnByReplica(rs)

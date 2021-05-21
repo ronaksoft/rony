@@ -9,20 +9,22 @@ package errors
    Copyright Ronak Software Group 2020
 */
 
+type Code string
+
 // Error Codes
 const (
-	ErrCodeInternal         = "E00" // When Error is Unknown or it is internal and should not be exposed to the client
-	ErrCodeInvalid          = "E01"
-	ErrCodeUnavailable      = "E02"
-	ErrCodeTooMany          = "E03"
-	ErrCodeTooFew           = "E04"
-	ErrCodeIncomplete       = "E05"
-	ErrCodeTimeout          = "E06"
-	ErrCodeAccess           = "E07"
-	ErrCodeAlreadyExists    = "E08"
-	ErrCodeBusy             = "E09"
-	ErrCodeOutOfRange       = "E10"
-	ErrCodePartiallyApplied = "E11"
-	ErrCodeExpired          = "E12"
-	ErrCodeNotImplemented   = "E13"
+	Internal         Code = "E00" // When Error is Unknown or it is internal and should not be exposed to the client
+	Invalid          Code = "E01"
+	Unavailable      Code = "E02"
+	TooMany          Code = "E03"
+	TooFew           Code = "E04"
+	Incomplete       Code = "E05"
+	Timeout          Code = "E06"
+	Access           Code = "E07"
+	AlreadyExists    Code = "E08"
+	Busy             Code = "E09"
+	OutOfRange       Code = "E10"
+	PartiallyApplied Code = "E11"
+	Expired          Code = "E12"
+	NotImplemented   Code = "E13"
 )
