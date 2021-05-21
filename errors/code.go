@@ -1,12 +1,7 @@
-package rony
-
-import (
-	"errors"
-	"fmt"
-)
+package errors
 
 /*
-   Creation Time: 2019 - Nov - 16
+   Creation Time: 2021 - May - 21
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -31,22 +26,3 @@ const (
 	ErrCodeExpired          = "E12"
 	ErrCodeNotImplemented   = "E13"
 )
-
-// Error Items
-const (
-	ErrItemServer  = "SERVER"
-	ErrItemHandler = "HANDLER"
-	ErrItemRequest = "REQUEST"
-)
-
-// Errors
-var (
-	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
-	ErrRetriesExceeded           = wrapError("maximum retries exceeded")
-)
-
-func wrapError(txt string) func(err error) error {
-	return func(err error) error {
-		return fmt.Errorf("%s: %v", txt, err)
-	}
-}

@@ -390,6 +390,55 @@ func (x *GetAllNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+const C_HttpBody int64 = 3032622721
+
+type poolHttpBody struct {
+	pool sync.Pool
+}
+
+func (p *poolHttpBody) Get() *HttpBody {
+	x, ok := p.pool.Get().(*HttpBody)
+	if !ok {
+		x = &HttpBody{}
+	}
+	return x
+}
+
+func (p *poolHttpBody) Put(x *HttpBody) {
+	if x == nil {
+		return
+	}
+	x.ContentType = ""
+	for _, z := range x.Header {
+		PoolKeyValue.Put(z)
+	}
+	x.Header = x.Header[:0]
+	x.Body = x.Body[:0]
+	p.pool.Put(x)
+}
+
+var PoolHttpBody = poolHttpBody{}
+
+func (x *HttpBody) DeepCopy(z *HttpBody) {
+	z.ContentType = x.ContentType
+	for idx := range x.Header {
+		if x.Header[idx] != nil {
+			xx := PoolKeyValue.Get()
+			x.Header[idx].DeepCopy(xx)
+			z.Header = append(z.Header, xx)
+		}
+	}
+	z.Body = append(z.Body[:0], x.Body...)
+}
+
+func (x *HttpBody) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
+}
+
+func (x *HttpBody) Unmarshal(b []byte) error {
+	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
 func init() {
 	registry.RegisterConstructor(535232465, "MessageEnvelope")
 	registry.RegisterConstructor(4276272820, "KeyValue")
@@ -400,4 +449,5 @@ func init() {
 	registry.RegisterConstructor(2120950449, "Edges")
 	registry.RegisterConstructor(362407405, "GetNodes")
 	registry.RegisterConstructor(3267106379, "GetAllNodes")
+	registry.RegisterConstructor(3032622721, "HttpBody")
 }

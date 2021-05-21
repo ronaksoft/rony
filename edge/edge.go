@@ -3,6 +3,7 @@ package edge
 import (
 	"bufio"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
@@ -329,7 +330,7 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 }
 func (edge *Server) onError(ctx *DispatchCtx, code, item string) {
 	envelope := rony.PoolMessageEnvelope.Get()
-	rony.ErrorMessage(envelope, ctx.req.GetRequestID(), code, item)
+	errors.ToMessage(envelope, ctx.req.GetRequestID(), code, item)
 	switch ctx.kind {
 	case GatewayMessage:
 		edge.dispatcher.OnMessage(ctx, envelope)

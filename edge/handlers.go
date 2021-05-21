@@ -24,7 +24,7 @@ type HandlerOption struct {
 	tunnel       bool
 	gateway      bool
 
-	// internal user
+	// internal use
 	builtin bool
 }
 

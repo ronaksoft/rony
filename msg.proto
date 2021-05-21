@@ -71,4 +71,12 @@ message GetNodes {
 // GetNodes
 // @Function
 // @Return: Edges
-message GetAllNodes {}
+message GetAllNodes {
+}
+
+// HttpBody used by REST proxies to fill the output.
+message HttpBody {
+    string ContentType = 1;
+    repeated KeyValue Header = 2;
+    bytes Body = 3;
+}
