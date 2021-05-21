@@ -14,10 +14,10 @@ import (
 */
 
 var (
-	ErrInvalidRequest     = ErrInvalid("REQUEST", nil)
-	ErrInternalServer     = ErrInternal("SERVER", nil)
-	ErrInvalidHandler     = ErrInvalid("HANDLER", nil)
-	ErrUnavailableRequest = ErrUnavailable("REQUEST", nil)
+	ErrInvalidRequest     = GenInvalidErr("REQUEST", nil)
+	ErrInternalServer     = GenInternalErr("SERVER", nil)
+	ErrInvalidHandler     = GenInvalidErr("HANDLER", nil)
+	ErrUnavailableRequest = GenUnavailableErr("REQUEST", nil)
 
 	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
 	ErrRetriesExceeded           = Wrap("maximum retries exceeded")

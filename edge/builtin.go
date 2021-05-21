@@ -126,7 +126,7 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		return rony.SavePageWithTxn(txn, alloc, res)
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternal(err.Error(), err))
+		ctx.PushError(errors.GenInternalErr(err.Error(), err))
 		return
 	}
 	ctx.PushMessage(rony.C_Page, res)

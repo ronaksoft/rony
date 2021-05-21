@@ -29,7 +29,7 @@ func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *s
 		return txn.Set(alloc, req.Value, req.Key)
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternal(err.Error(), nil))
+		ctx.PushError(errors.GenInternalErr(err.Error(), nil))
 		return
 	}
 	res.OK = true
@@ -48,7 +48,7 @@ func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *s
 		return nil
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternal(err.Error(), nil))
+		ctx.PushError(errors.GenInternalErr(err.Error(), nil))
 		return
 	}
 	res.PushToContext(ctx)
@@ -75,7 +75,7 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest
 	case edge.GatewayMessage:
 		err := service.ExecuteRemoteSampleEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
-			ctx.PushError(errors.ErrInternal(err.Error(), nil))
+			ctx.PushError(errors.GenInternalErr(err.Error(), nil))
 			return
 		}
 	default:

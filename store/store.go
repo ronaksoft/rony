@@ -44,10 +44,9 @@ func Init(config Config) {
 	conflictRetry = config.ConflictRetries
 	conflictRetryInterval = config.ConflictMaxInterval
 	flusher = tools.NewFlusherPool(int32(config.BatchWorkers), int32(config.BatchSize), writeFlushFunc)
-	return
 }
 
-func writeFlushFunc(targetID string, entries []tools.FlushEntry) {
+func writeFlushFunc(_ string, entries []tools.FlushEntry) {
 	wb := db.NewWriteBatch()
 	for idx := range entries {
 		_ = wb.SetEntry(entries[idx].Value().(*Entry))
