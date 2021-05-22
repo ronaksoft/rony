@@ -2,6 +2,7 @@ package tools
 
 import (
 	"sync/atomic"
+	"time"
 )
 
 /*
@@ -60,6 +61,7 @@ type FlusherFunc func(targetID string, entries []FlushEntry)
 type FlusherPool struct {
 	maxWorkers  int32
 	batchSize   int32
+	minWaitTime time.Duration
 	flusherFunc FlusherFunc
 	poolMtx     SpinLock
 	pool        map[string]*flusher
@@ -68,9 +70,14 @@ type FlusherPool struct {
 // NewFlusherPool creates a pool of flusher funcs. By calling Enter or EnterAndWait you add
 // the item into the flusher which identified by 'targetID'.
 func NewFlusherPool(maxWorkers, batchSize int32, f FlusherFunc) *FlusherPool {
+	return NewFlusherPoolWithWaitTime(maxWorkers, batchSize, 0, f)
+}
+
+func NewFlusherPoolWithWaitTime(maxWorkers, batchSize int32, minWaitTime time.Duration, f FlusherFunc) *FlusherPool {
 	fp := &FlusherPool{
 		maxWorkers:  maxWorkers,
 		batchSize:   batchSize,
+		minWaitTime: minWaitTime,
 		flusherFunc: f,
 		pool:        make(map[string]*flusher, 16),
 	}
@@ -84,6 +91,7 @@ func (fp *FlusherPool) getFlusher(targetID string) *flusher {
 		f = &flusher{
 			readyWorkers: fp.maxWorkers,
 			batchSize:    fp.batchSize,
+			minWaitTime:  fp.minWaitTime,
 			flusherFunc:  fp.flusherFunc,
 			entryChan:    make(chan FlushEntry, fp.batchSize),
 			targetID:     targetID,
@@ -106,6 +114,7 @@ type flusher struct {
 	SpinLock
 	readyWorkers int32
 	batchSize    int32
+	minWaitTime  time.Duration
 	flusherFunc  FlusherFunc
 	entryChan    chan FlushEntry
 	targetID     string
@@ -145,10 +154,10 @@ type worker struct {
 
 func (w *worker) run() {
 	var (
-		el = make([]FlushEntry, 0, w.bs)
+		el        = make([]FlushEntry, 0, w.bs)
+		startTime = NanoTime()
 	)
 	for {
-		el = el[:0]
 		for {
 			select {
 			case e := <-w.f.entryChan:
@@ -161,6 +170,14 @@ func (w *worker) run() {
 			break
 		}
 
+		if w.f.minWaitTime > 0 {
+			delta := w.f.minWaitTime - time.Duration(NanoTime()-startTime)
+			if delta > 0 {
+				time.Sleep(delta)
+				continue
+			}
+
+		}
 		w.f.Lock()
 		if len(el) == 0 {
 			// clean up and shutdown the worker
@@ -173,6 +190,7 @@ func (w *worker) run() {
 		for idx := range el {
 			el[idx].done()
 		}
+		el = el[:0]
 	}
 
 }
