@@ -764,8 +764,10 @@ func (g *Generator) createModel(m *protogen.Message) {
 	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
 		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
 	}
-	if view := proto.GetExtension(opt, rony.E_RonyAggregateView).(string); view != "" {
-		aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+	if views := proto.GetExtension(opt, rony.E_RonyAggregateView).([]string); len(views) > 0 {
+		for _, view := range views {
+			aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+		}
 	}
 
 	// Parse the generated description

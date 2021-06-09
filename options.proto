@@ -50,7 +50,7 @@ extend google.protobuf.MessageOptions {
     //           follow the same order as table. for example the following is correct:
     //                  rony_aggregate_table = ((a, b), c)
     //                  rony_aggregate_view = ((c, a), d, b)
-    optional string rony_aggregate_view = 50015;
+    repeated string rony_aggregate_view = 50015;
 
 }
 
