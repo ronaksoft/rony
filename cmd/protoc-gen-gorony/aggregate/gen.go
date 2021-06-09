@@ -418,6 +418,8 @@ func (g *Generator) genIter(m *protogen.Message) {
 			g.g.P("case ", orderName, ":")
 			g.g.P("iterOpt.Prefix = alloc.Gen(", viewIterPrefix(g.m(m), idx), ")")
 		}
+		g.g.P("default:")
+		g.g.P("iterOpt.Prefix = alloc.Gen(", tableIterPrefix(g.m(m)), ")")
 		g.g.P("}")
 		g.g.P("}")
 	} else {
@@ -524,8 +526,9 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 
 func (g *Generator) genList(m *protogen.Message) {
 	mn := g.m(m).Name
+	orderType := fmt.Sprintf("%sOrder", g.m(m).Name)
 	g.g.P("func List", mn, "(")
-	g.g.P(g.m(m).FuncArgs("offset", g.m(m).Table), ", lo *store.ListOption, cond func(m *", mn, ") bool, ")
+	g.g.P(g.m(m).FuncArgs("offset", g.m(m).Table), ", lo *store.ListOption, cond func(m *", mn, ") bool, orderBy ...", orderType, ",")
 	g.g.P(") ([]*", mn, ", error) {")
 	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
@@ -533,7 +536,24 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
 	g.g.P("err := store.View(func(txn *store.LTxn) error {")
 	g.g.P("opt := store.DefaultIteratorOptions")
-	g.g.P("opt.Prefix = alloc.Gen('M', C_", mn, ",", g.m(m).Table.Checksum(), ")")
+	if len(g.m(m).Views) > 0 {
+		g.g.P("if len(orderBy) == 0 {")
+		g.g.P("opt.Prefix = alloc.Gen(", tableIterPrefix(g.m(m)), ")")
+		g.g.P("} else {")
+		g.g.P("switch orderBy[0] {")
+		for idx, view := range g.m(m).Views {
+			orderName := fmt.Sprintf("%sOrderBy%s", g.m(m).Name, strings.Join(view.PKs, ""))
+			g.g.P("case ", orderName, ":")
+			g.g.P("opt.Prefix = alloc.Gen(", viewIterPrefix(g.m(m), idx), ")")
+		}
+		g.g.P("default:")
+		g.g.P("opt.Prefix = alloc.Gen(", tableIterPrefix(g.m(m)), ")")
+		g.g.P("}")
+		g.g.P("}")
+	} else {
+		g.g.P("opt.Prefix = alloc.Gen(", tableIterPrefix(g.m(m)), ")")
+	}
+
 	g.g.P("opt.Reverse = lo.Backward()")
 	g.g.P("osk := alloc.Gen(", tablePrefix(g.m(m), "offset"), ")")
 	g.g.P("iter := txn.NewIterator(opt)")
