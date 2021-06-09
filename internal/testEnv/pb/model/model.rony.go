@@ -114,6 +114,10 @@ func init() {
 	registry.RegisterConstructor(3802219577, "Model2")
 }
 
+type Model1Order string
+
+const Model1OrderByEnum Model1Order = "Enum"
+
 func CreateModel1(m *Model1) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -314,7 +318,7 @@ func SaveModel1(m *Model1) error {
 	})
 }
 
-func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool) error {
+func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool, orderBy ...Model1Order) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -322,7 +326,14 @@ func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+	} else {
+		switch orderBy[0] {
+		case Model1OrderByEnum:
+			iterOpt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+		}
+	}
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
@@ -624,6 +635,10 @@ func ListModel1ByP2(
 	return res, err
 }
 
+type Model2Order string
+
+const Model2OrderByP1 Model2Order = "P1"
+
 func CreateModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -794,7 +809,7 @@ func SaveModel2(m *Model2) error {
 	})
 }
 
-func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool) error {
+func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool, orderBy ...Model2Order) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -802,7 +817,14 @@ func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+	} else {
+		switch orderBy[0] {
+		case Model2OrderByP1:
+			iterOpt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+		}
+	}
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {

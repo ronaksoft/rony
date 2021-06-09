@@ -59,11 +59,7 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P("}") // end of SaveWithTxn func
 	g.g.P()
 	g.g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
-	if g.f.GoPackageName != "rony" {
-		g.g.P("alloc := tools.NewAllocator()")
-	} else {
-		g.g.P("alloc := tools.NewAllocator()")
-	}
+	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P("return store.Update(func(txn *store.LTxn) error {")
 	g.g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
@@ -86,11 +82,7 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("}") // end of ReadWithTxn func
 	g.g.P()
 	g.g.P("func Read", m.Desc.Name(), "(m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
-	if g.f.GoPackageName != "rony" {
-		g.g.P("alloc := tools.NewAllocator()")
-	} else {
-		g.g.P("alloc := tools.NewAllocator()")
-	}
+	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("if m == nil {")

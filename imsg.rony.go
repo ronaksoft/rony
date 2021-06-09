@@ -196,6 +196,10 @@ func init() {
 	registry.RegisterConstructor(3023575326, "Page")
 }
 
+type PageOrder string
+
+const PageOrderByReplicaSet PageOrder = "ReplicaSet"
+
 func CreatePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -357,7 +361,7 @@ func SavePage(m *Page) error {
 	})
 }
 
-func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool) error {
+func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool, orderBy ...PageOrder) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -365,7 +369,14 @@ func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool) e
 
 	exitLoop := false
 	iterOpt := store.DefaultIteratorOptions
-	iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+	} else {
+		switch orderBy[0] {
+		case PageOrderByReplicaSet:
+			iterOpt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+		}
+	}
 	iter := txn.NewIterator(iterOpt)
 	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
 		_ = iter.Item().Value(func(val []byte) error {
