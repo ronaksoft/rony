@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/pools"
 )
 
 /*
@@ -15,14 +14,17 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type RequestHandler func(ctx *Context) error
+type ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
+
 type Factory struct {
-	onRequest  func(ctx *Context) error
-	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string)
+	onRequest  RequestHandler
+	onResponse ResponseHandler
 }
 
 func NewFactory(
-	onRequest func(ctx *Context) error,
-	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string),
+	onRequest RequestHandler,
+	onResponse ResponseHandler,
 ) *Factory {
 	return &Factory{
 		onRequest:  onRequest,
@@ -31,12 +33,8 @@ func NewFactory(
 }
 
 func (f *Factory) Get() gateway.ProxyHandle {
-	return &Handle{
-		onRequest:  f.onRequest,
-		onResponse: f.onResponse,
+	return &restHandler{
+		requestHandler:  f.onRequest,
+		responseHandler: f.onResponse,
 	}
-}
-
-func (f *Factory) Release(h gateway.ProxyHandle) {
-
 }

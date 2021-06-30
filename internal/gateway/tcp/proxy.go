@@ -4,7 +4,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/trie"
-	"github.com/ronaksoft/rony/pools"
 )
 
 /*
@@ -50,7 +49,7 @@ func (hp *HttpProxy) search(method, path string, conn *httpConn) gateway.ProxyFa
 
 type simpleProxyFactory struct {
 	onRequestFunc  func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte
-	onResponseFunc func(data []byte) (*pools.ByteBuffer, map[string]string)
+	onResponseFunc func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
 }
 
 func (s *simpleProxyFactory) Get() gateway.ProxyHandle {
@@ -67,20 +66,23 @@ func (s *simpleProxyFactory) Release(h gateway.ProxyHandle) {
 // simpleProxy
 type simpleProxy struct {
 	onRequestFunc  func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte
-	onResponseFunc func(data []byte) (*pools.ByteBuffer, map[string]string)
+	onResponseFunc func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
 }
+
+func (s *simpleProxy) Release() {}
 
 func (s *simpleProxy) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 	return s.onRequestFunc(conn, ctx)
 }
 
-func (s *simpleProxy) OnResponse(data []byte) (*pools.ByteBuffer, map[string]string) {
-	return s.onResponseFunc(data)
+func (s *simpleProxy) OnResponse(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
+	s.onResponseFunc(data, bodyWriter, hdrWriter)
+	return
 }
 
 func CreateHandle(
 	onRequest func(conn rony.Conn, reqCtx *gateway.RequestCtx) []byte,
-	onResponse func(data []byte) (*pools.ByteBuffer, map[string]string),
+	onResponse func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter),
 ) gateway.ProxyFactory {
 	return &simpleProxyFactory{
 		onRequestFunc:  onRequest,

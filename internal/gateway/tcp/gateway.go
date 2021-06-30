@@ -382,12 +382,13 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	releaseConnInfo(meta)
 
 	if g.httpProxy != nil {
-		if proxyFactory := g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn); proxyFactory == nil {
+		proxyFactory := g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
+		if proxyFactory == nil {
 			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
 		} else {
 			conn.proxy = proxyFactory.Get()
 			g.httpProxy.handle(conn, reqCtx)
-			proxyFactory.Release(conn.proxy)
+			conn.proxy.Release()
 		}
 	} else {
 		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)

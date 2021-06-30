@@ -3,7 +3,6 @@ package edge
 import (
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
-	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/tunnel"
 )
 
@@ -21,9 +20,6 @@ type (
 	GatewayProtocol = gateway.Protocol
 	Tunnel          = tunnel.Tunnel
 	Cluster         = cluster.Cluster
-	ProxyHandle     = gateway.ProxyHandle
-	HttpProxy       = tcpGateway.HttpProxy
-	HttpRequest     = gateway.RequestCtx
 )
 
 // Gateway Protocols

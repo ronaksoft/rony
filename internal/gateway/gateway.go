@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -61,10 +62,74 @@ type (
 
 type ProxyHandle interface {
 	OnRequest(conn rony.Conn, ctx *RequestCtx) []byte
-	OnResponse(data []byte) (*pools.ByteBuffer, map[string]string)
+	OnResponse(data []byte, bodyWriter BodyWriter, hdrWriter *HeaderWriter)
+	Release()
 }
 
 type ProxyFactory interface {
 	Get() ProxyHandle
-	Release(h ProxyHandle)
+}
+
+type BodyWriter interface {
+	Write(data []byte)
+	WriteProto(p proto.Message) error
+}
+
+type bodyWriter struct {
+	buf *pools.ByteBuffer
+}
+
+func NewBodyWriter() *bodyWriter {
+	bw := &bodyWriter{}
+	return bw
+}
+
+func (bw *bodyWriter) WriteProto(m proto.Message) error {
+	if bw.buf == nil {
+		bw.buf = pools.Buffer.FromProto(m)
+		return nil
+	}
+	b, err := proto.Marshal(m)
+	if err != nil {
+		return err
+	}
+	bw.buf.AppendFrom(b)
+	return nil
+}
+
+func (bw *bodyWriter) Write(data []byte) {
+	if bw.buf == nil {
+		bw.buf = pools.Buffer.FromBytes(data)
+		return
+	}
+	bw.buf.AppendFrom(data)
+}
+
+func (bw *bodyWriter) Bytes() *[]byte {
+	if bw.buf == nil {
+		return nil
+	}
+	return bw.buf.Bytes()
+}
+
+func (bw *bodyWriter) Release() {
+	if bw.buf == nil {
+		return
+	}
+	pools.Buffer.Put(bw.buf)
+}
+
+// HeaderWriter is the object responsible for writing response header.
+type HeaderWriter map[string]string
+
+func NewHeaderWriter() *HeaderWriter {
+	return &HeaderWriter{}
+}
+
+func (hw HeaderWriter) Set(key, value string) {
+	hw[key] = value
+}
+
+func (hw HeaderWriter) Release() {
+
 }

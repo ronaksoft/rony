@@ -16,21 +16,25 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Handle struct {
-	ctx        *Context
-	onRequest  func(ctx *Context) error
-	onResponse func(envelope *rony.MessageEnvelope) (*pools.ByteBuffer, map[string]string)
-	inputBuf   *pools.ByteBuffer
+type restHandler struct {
+	ctx             *Context
+	requestHandler  RequestHandler
+	responseHandler ResponseHandler
+	inputBuf        *pools.ByteBuffer
 }
 
-func (h *Handle) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
+func (h *restHandler) Release() {
+	// TODO:: implement it
+}
+
+func (h *restHandler) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 	h.ctx = &Context{
 		reqCtx: ctx,
 		conn:   conn,
 	}
 
 	h.ctx.me = rony.PoolMessageEnvelope.Get()
-	err := h.onRequest(h.ctx)
+	err := h.requestHandler(h.ctx)
 	if err != nil {
 		_ = conn.SendBinary(0, tools.StrToByte(err.Error()))
 		return nil
@@ -40,11 +44,11 @@ func (h *Handle) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 	return *h.inputBuf.Bytes()
 }
 
-func (h *Handle) OnResponse(data []byte) (*pools.ByteBuffer, map[string]string) {
+func (h *restHandler) OnResponse(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
 	me := rony.PoolMessageEnvelope.Get()
 	_ = me.Unmarshal(data)
-	out, m := h.onResponse(me)
+	h.responseHandler(me, bodyWriter, hdrWriter)
 	rony.PoolMessageEnvelope.Put(me)
 	pools.Buffer.Put(h.inputBuf)
-	return out, m
+	return
 }

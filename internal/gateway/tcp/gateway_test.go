@@ -50,10 +50,9 @@ func TestGateway(t *testing.T) {
 			func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
 				return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
 			},
-			func(data []byte) (*pools.ByteBuffer, map[string]string) {
-				buf := pools.Buffer.GetCap(len(data))
-				buf.AppendFrom(data)
-				return buf, nil
+			func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
+				bodyWriter.Write(data)
+				return
 			},
 		),
 	)
