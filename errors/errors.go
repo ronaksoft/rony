@@ -62,16 +62,17 @@ var (
 )
 
 func genWithErrorAndItem(code Code) func(item string, err error) *rony.Error {
+	codeString := string(code)
 	return func(item string, err error) *rony.Error {
 		if err != nil {
 			return &rony.Error{
-				Code:        string(code),
+				Code:        codeString,
 				Items:       item,
 				Description: err.Error(),
 			}
 		} else {
 			return &rony.Error{
-				Code:        string(code),
+				Code:        codeString,
 				Items:       item,
 				Description: "",
 			}

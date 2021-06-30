@@ -578,7 +578,7 @@ func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 
@@ -602,7 +602,7 @@ func ExecuteRemoteSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetReq
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 
@@ -626,7 +626,7 @@ func ExecuteRemoteSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetReq
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 
@@ -650,7 +650,7 @@ func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 
@@ -674,7 +674,7 @@ func ExecuteRemoteSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, re
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 
@@ -698,7 +698,7 @@ func ExecuteRemoteSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *
 		_ = x.Unmarshal(in.GetMessage())
 		return x
 	default:
-		return edge.ErrUnexpectedTunnelResponse
+		return errors.ErrUnexpectedTunnelResponse
 	}
 }
 

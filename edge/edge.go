@@ -343,7 +343,7 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 // StartCluster is non-blocking function which runs the gossip and raft if it is set
 func (edge *Server) StartCluster() (err error) {
 	if edge.cluster == nil {
-		return ErrClusterNotSet
+		return errors.ErrClusterNotSet
 	}
 
 	edge.cluster.Start()
@@ -359,7 +359,7 @@ func (edge *Server) StartCluster() (err error) {
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	if edge.gateway == nil {
-		return ErrGatewayNotSet
+		return errors.ErrGatewayNotSet
 	}
 	edge.gateway.Start()
 
@@ -379,7 +379,7 @@ func (edge *Server) StartGateway() error {
 // StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
 func (edge *Server) StartTunnel() error {
 	if edge.tunnel == nil {
-		return ErrTunnelNotSet
+		return errors.ErrTunnelNotSet
 	}
 	edge.tunnel.Start()
 
@@ -460,7 +460,7 @@ func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, repl
 	err := tools.Try(attempts, retryWait, func() error {
 		target := edge.getReplicaMember(replicaSet)
 		if target == nil {
-			return ErrMemberNotFound
+			return errors.ErrMemberNotFound
 		}
 
 		return edge.sendRemoteCommand(target, req, res)

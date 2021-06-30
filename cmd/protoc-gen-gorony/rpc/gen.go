@@ -235,7 +235,7 @@ func (g *Generator) genExecuteRemote(s *protogen.Service) {
 		g.g.P("_ = x.Unmarshal(in.GetMessage())")
 		g.g.P("return x")
 		g.g.P("default:")
-		g.g.P("return edge.ErrUnexpectedTunnelResponse")
+		g.g.P("return errors.ErrUnexpectedTunnelResponse")
 		g.g.P("}")
 		g.g.P("}")
 		g.g.P()

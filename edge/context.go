@@ -3,6 +3,7 @@ package edge
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/store"
@@ -357,7 +358,7 @@ func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.
 		_ = x.Unmarshal(res.GetMessage())
 		return nil, x
 	default:
-		return nil, ErrUnexpectedTunnelResponse
+		return nil, errors.ErrUnexpectedTunnelResponse
 	}
 }
 

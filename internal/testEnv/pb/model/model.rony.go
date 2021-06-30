@@ -332,6 +332,8 @@ func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool
 		switch orderBy[0] {
 		case Model1OrderByEnum:
 			iterOpt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
 		}
 	}
 	iter := txn.NewIterator(iterOpt)
@@ -356,7 +358,7 @@ func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool
 }
 
 func ListModel1(
-	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
+	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool, orderBy ...Model1Order,
 ) ([]*Model1, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -364,7 +366,16 @@ func ListModel1(
 	res := make([]*Model1, 0, lo.Limit())
 	err := store.View(func(txn *store.LTxn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+		if len(orderBy) == 0 {
+			opt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+		} else {
+			switch orderBy[0] {
+			case Model1OrderByEnum:
+				opt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+			default:
+				opt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+			}
+		}
 		opt.Reverse = lo.Backward()
 		osk := alloc.Gen('M', C_Model1, 4018441491, offsetID)
 		iter := txn.NewIterator(opt)
@@ -823,6 +834,8 @@ func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool
 		switch orderBy[0] {
 		case Model2OrderByP1:
 			iterOpt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
 		}
 	}
 	iter := txn.NewIterator(iterOpt)
@@ -847,7 +860,7 @@ func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool
 }
 
 func ListModel2(
-	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
+	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool, orderBy ...Model2Order,
 ) ([]*Model2, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -855,7 +868,16 @@ func ListModel2(
 	res := make([]*Model2, 0, lo.Limit())
 	err := store.View(func(txn *store.LTxn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		if len(orderBy) == 0 {
+			opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		} else {
+			switch orderBy[0] {
+			case Model2OrderByP1:
+				opt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+			default:
+				opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+			}
+		}
 		opt.Reverse = lo.Backward()
 		osk := alloc.Gen('M', C_Model2, 1609271041, offsetID, offsetShardKey)
 		iter := txn.NewIterator(opt)

@@ -375,6 +375,8 @@ func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool, o
 		switch orderBy[0] {
 		case PageOrderByReplicaSet:
 			iterOpt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
 		}
 	}
 	iter := txn.NewIterator(iterOpt)
@@ -399,7 +401,7 @@ func IterPages(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Page) bool, o
 }
 
 func ListPage(
-	offsetID uint32, lo *store.ListOption, cond func(m *Page) bool,
+	offsetID uint32, lo *store.ListOption, cond func(m *Page) bool, orderBy ...PageOrder,
 ) ([]*Page, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -407,7 +409,16 @@ func ListPage(
 	res := make([]*Page, 0, lo.Limit())
 	err := store.View(func(txn *store.LTxn) error {
 		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		if len(orderBy) == 0 {
+			opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		} else {
+			switch orderBy[0] {
+			case PageOrderByReplicaSet:
+				opt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+			default:
+				opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+			}
+		}
 		opt.Reverse = lo.Backward()
 		osk := alloc.Gen('M', C_Page, 299066170, offsetID)
 		iter := txn.NewIterator(opt)

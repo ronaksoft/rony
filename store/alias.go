@@ -28,6 +28,7 @@ type (
 	LTxn    = badger.Txn
 	Entry   = badger.Entry
 )
+
 type Txn interface {
 	Delete(alloc *tools.Allocator, keyParts ...interface{}) error
 	Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error
