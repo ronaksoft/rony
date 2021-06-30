@@ -25,8 +25,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/panjf2000/gnet v1.4.2
-	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.4.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4

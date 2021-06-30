@@ -1,7 +1,7 @@
 package errors
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 /*
@@ -21,11 +21,12 @@ var (
 )
 
 var (
-	ErrClusterNotSet             = errors.New("cluster is not set")
-	ErrGatewayNotSet             = errors.New("gateway is not set")
-	ErrTunnelNotSet              = errors.New("tunnel is not set")
-	ErrUnexpectedTunnelResponse  = errors.New("unexpected tunnel response")
-	ErrMemberNotFound            = errors.New("member not found")
-	ErrGatewayAlreadyInitialized = errors.New("gateway already initialized")
+	ErrClusterNotSet             = fmt.Errorf("cluster is not set")
+	ErrGatewayNotSet             = fmt.Errorf("gateway is not set")
+	ErrTunnelNotSet              = fmt.Errorf("tunnel is not set")
+	ErrUnexpectedTunnelResponse  = fmt.Errorf("unexpected tunnel response")
+	ErrMemberNotFound            = fmt.Errorf("member not found")
+	ErrGatewayAlreadyInitialized = fmt.Errorf("gateway already initialized")
+	ErrNoTunnelAddrs             = fmt.Errorf("tunnel address does not found")
 	ErrRetriesExceeded           = Wrap("maximum retries exceeded")
 )

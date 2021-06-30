@@ -2,8 +2,8 @@ package gossipCluster
 
 import (
 	"github.com/hashicorp/memberlist"
-	"github.com/pkg/errors"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"google.golang.org/protobuf/proto"
 	"net"
 )
@@ -62,7 +62,7 @@ func (m *Member) Merge(en *rony.EdgeNode) {
 
 func (m *Member) Dial() (net.Conn, error) {
 	if len(m.tunnelAddr) == 0 {
-		return nil, ErrNoTunnelAddrs
+		return nil, errors.ErrNoTunnelAddrs
 	}
 
 	idx := m.idx
@@ -103,6 +103,3 @@ func extractNode(n *memberlist.Node, en *rony.EdgeNode) error {
 	return proto.UnmarshalOptions{}.Unmarshal(n.Meta, en)
 }
 
-var (
-	ErrNoTunnelAddrs = errors.New("tunnel address does not found")
-)
