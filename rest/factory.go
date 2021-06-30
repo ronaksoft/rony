@@ -19,7 +19,7 @@ type (
 	GatewayHeaderWriter = gateway.HeaderWriter
 )
 
-type RequestHandler func(ctx *Context) error
+type RequestHandler func(ctx *Context, bodyWriter gateway.BodyWriter) error
 type ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter GatewayBodyWriter, hdrWriter *GatewayHeaderWriter)
 
 type Factory struct {

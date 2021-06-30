@@ -37,7 +37,7 @@ type (
 // ProxyHandle defines the interface for proxy handlers. This is used in 'rest' package to support
 // writing restfull wrappers for the RPC handlers.
 type ProxyHandle interface {
-	OnRequest(conn rony.Conn, ctx *RequestCtx) []byte
+	OnRequest(conn rony.Conn, ctx *RequestCtx, writer BodyWriter)
 	OnResponse(data []byte, bodyWriter BodyWriter, hdrWriter *HeaderWriter)
 	Release()
 }
@@ -111,5 +111,5 @@ func (hw HeaderWriter) Set(key, value string) {
 }
 
 func (hw HeaderWriter) Release() {
-
+	// TODO:: implement it
 }

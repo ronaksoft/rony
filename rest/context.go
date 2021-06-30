@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"google.golang.org/protobuf/proto"
 	"mime/multipart"
 )
 
@@ -19,19 +18,18 @@ import (
 type Context struct {
 	reqCtx *gateway.RequestCtx
 	conn   rony.Conn
-	me     *rony.MessageEnvelope
 }
 
 func (ctx *Context) MultiPart() (*multipart.Form, error) {
 	return ctx.reqCtx.MultipartForm()
 }
 
-func (ctx *Context) Fill(requestID uint64, constructor int64, p proto.Message, kvs ...*rony.KeyValue) {
-	ctx.me.Fill(requestID, constructor, p, kvs...)
-}
-
 func (ctx *Context) Set(key string, value interface{}) {
 	ctx.conn.Set(key, value)
+}
+
+func (ctx *Context) Get(key string) interface{} {
+	return ctx.conn.Get(key)
 }
 
 func (ctx *Context) GetInt64(key string, defaultValue int64) int64 {

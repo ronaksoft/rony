@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
-	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 )
 
@@ -20,28 +19,25 @@ type restHandler struct {
 	ctx             *Context
 	requestHandler  RequestHandler
 	responseHandler ResponseHandler
-	inputBuf        *pools.ByteBuffer
 }
 
 func (h *restHandler) Release() {
 	// TODO:: implement it
 }
 
-func (h *restHandler) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
+func (h *restHandler) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
 	h.ctx = &Context{
 		reqCtx: ctx,
 		conn:   conn,
 	}
 
-	h.ctx.me = rony.PoolMessageEnvelope.Get()
-	err := h.requestHandler(h.ctx)
+	err := h.requestHandler(h.ctx, writer)
 	if err != nil {
 		_ = conn.SendBinary(0, tools.StrToByte(err.Error()))
-		return nil
+		return
 	}
-	h.inputBuf = pools.Buffer.FromProto(h.ctx.me)
-	rony.PoolMessageEnvelope.Put(h.ctx.me)
-	return *h.inputBuf.Bytes()
+
+	return
 }
 
 func (h *restHandler) OnResponse(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
@@ -49,6 +45,5 @@ func (h *restHandler) OnResponse(data []byte, bodyWriter gateway.BodyWriter, hdr
 	_ = me.Unmarshal(data)
 	h.responseHandler(me, bodyWriter, hdrWriter)
 	rony.PoolMessageEnvelope.Put(me)
-	pools.Buffer.Put(h.inputBuf)
 	return
 }

@@ -102,4 +102,3 @@ func newMember(sm *memberlist.Node) (*Member, error) {
 func extractNode(n *memberlist.Node, en *rony.EdgeNode) error {
 	return proto.UnmarshalOptions{}.Unmarshal(n.Meta, en)
 }
-

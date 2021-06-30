@@ -47,8 +47,9 @@ func TestGateway(t *testing.T) {
 	}
 	gw.SetProxy(edge.MethodGet, "/x/:name",
 		tcpGateway.CreateHandle(
-			func(conn rony.Conn, ctx *gateway.RequestCtx) []byte {
-				return tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name")))
+			func(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
+				writer.Write(tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name"))))
+				return
 			},
 			func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
 				bodyWriter.Write(data)
