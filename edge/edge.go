@@ -104,10 +104,7 @@ func (edge *Server) SetGlobalPostHandlers(handlers ...Handler) {
 	edge.postHandlers = handlers
 }
 
-// SetHandler set the handlers for the constructor. 'leaderOnly' is applicable ONLY if the cluster is run
-// with Raft support. If cluster is a Raft enabled cluster, then by setting 'leaderOnly' to TRUE, requests sent
-// to a follower server will return redirect error to the client. For standalone servers 'leaderOnly' does not
-// affect.
+// SetHandler set the handlers for the constructor.
 func (edge *Server) SetHandler(ho *HandlerOption) {
 	for c := range ho.constructors {
 		edge.handlers[c] = ho
@@ -138,6 +135,7 @@ func (edge *Server) Cluster() cluster.Cluster {
 	return edge.cluster
 }
 
+// Store returns the store component of the Edge server.
 func (edge *Server) Store() store.Store {
 	return edge.store
 }
@@ -340,9 +338,12 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	rony.PoolMessageEnvelope.Put(envelope)
 }
 
-// StartCluster is non-blocking function which runs the gossip and raft if it is set
+// StartCluster is non-blocking function which runs the cluster component of the Edge server.
 func (edge *Server) StartCluster() (err error) {
 	if edge.cluster == nil {
+		log.Warn("Edge Server:: Cluster is NOT set",
+			zap.ByteString("ServerID", edge.serverID),
+		)
 		return errors.ErrClusterNotSet
 	}
 
@@ -359,6 +360,9 @@ func (edge *Server) StartCluster() (err error) {
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	if edge.gateway == nil {
+		log.Warn("Edge Server:: Gateway is NOT set",
+			zap.ByteString("ServerID", edge.serverID),
+		)
 		return errors.ErrGatewayNotSet
 	}
 	edge.gateway.Start()
@@ -379,6 +383,9 @@ func (edge *Server) StartGateway() error {
 // StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
 func (edge *Server) StartTunnel() error {
 	if edge.tunnel == nil {
+		log.Warn("Edge Server:: Tunnel is NOT set",
+			zap.ByteString("ServerID", edge.serverID),
+		)
 		return errors.ErrTunnelNotSet
 	}
 	edge.tunnel.Start()
@@ -397,11 +404,13 @@ func (edge *Server) StartTunnel() error {
 
 // Start is a helper function which tries to start all three parts of the edge server
 // This function does not return any error, if you need to make sure all the parts are started with
-// no error, then you must start each section separately.
+// no error, then you must start each section separately. i.e. use StartGateway, StartCluster and StartTunnel
+// functions.
 func (edge *Server) Start() {
 	_ = edge.StartCluster()
 	_ = edge.StartGateway()
 	_ = edge.StartTunnel()
+	return
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster
