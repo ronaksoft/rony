@@ -14,8 +14,13 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type (
+	GatewayBodyWriter   = gateway.BodyWriter
+	GatewayHeaderWriter = gateway.HeaderWriter
+)
+
 type RequestHandler func(ctx *Context) error
-type ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
+type ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter GatewayBodyWriter, hdrWriter *GatewayHeaderWriter)
 
 type Factory struct {
 	onRequest  RequestHandler
