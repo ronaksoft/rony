@@ -24,7 +24,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Config
 type Config struct {
 	ServerID      string
 	ListenAddress string

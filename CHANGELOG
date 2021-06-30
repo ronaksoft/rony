@@ -1,5 +1,9 @@
 ## [Untagged]
 
+## [0.8.5]
+### Improvement
+1. Http proxy and rest package refactored with new function signatures to be more intuitive.
+
 ## [0.6.11]
 ### Fixed
 1. Gateway memory leak

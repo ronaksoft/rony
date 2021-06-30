@@ -16,32 +16,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Protocol int32
-
-const (
-	Undefined Protocol = 0
-	Dummy     Protocol = 1 << iota
-	Http
-	Websocket
-	Quic
-	Grpc
-	TCP = Http | Websocket // Http & Websocket
-)
-
-var protocolNames = map[Protocol]string{
-	Undefined: "Undefined",
-	Dummy:     "Dummy",
-	Http:      "Http",
-	Websocket: "Websocket",
-	Quic:      "Quic",
-	Grpc:      "Grpc",
-	TCP:       "TCP",
-}
-
-func (p Protocol) String() string {
-	return protocolNames[p]
-}
-
 // Gateway defines the gateway interface where clients could connect
 // and communicate with the edge server
 type Gateway interface {
@@ -60,16 +34,22 @@ type (
 	CloseHandler   = func(c rony.Conn)
 )
 
+// ProxyHandle defines the interface for proxy handlers. This is used in 'rest' package to support
+// writing restfull wrappers for the RPC handlers.
 type ProxyHandle interface {
 	OnRequest(conn rony.Conn, ctx *RequestCtx) []byte
 	OnResponse(data []byte, bodyWriter BodyWriter, hdrWriter *HeaderWriter)
 	Release()
 }
 
+// ProxyFactory is the factory which generates ProxyHandle.
 type ProxyFactory interface {
 	Get() ProxyHandle
 }
 
+// BodyWriter is implemented by bodyWriter internally. This interface is used by the developer to write desired
+// output to the REST http response. WriteProto is a helper function for marshalling and then writing the proto message
+// to the body of http response.
 type BodyWriter interface {
 	Write(data []byte)
 	WriteProto(p proto.Message) error

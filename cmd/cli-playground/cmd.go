@@ -107,7 +107,6 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 			opts = append(opts,
 				edge.WithDataDir(fmt.Sprintf("./_hdd/%s", serverID)),
 				edge.WithGossipCluster(edge.GossipClusterConfig{
-					ServerID:   []byte(serverID),
 					Bootstrap:  bootstrap,
 					ReplicaSet: replicaSet,
 					GossipPort: port,

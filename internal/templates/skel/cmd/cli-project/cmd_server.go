@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
 	"os"
 	"runtime"
@@ -31,13 +30,11 @@ var ServerCmd = &cobra.Command{
 				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{
-				ServerID:   tools.StrToByte(config.GetString("server.id")),
 				Bootstrap:  config.GetBool("bootstrap"),
 				ReplicaSet: config.GetUint64("replica-set"),
 				GossipPort: config.GetInt("gossip.port"),
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{
-				ServerID:      config.GetString("server.id"),
 				ListenAddress: config.GetString("tunnel.listen"),
 				ExternalAddrs: config.GetStringSlice("tunnel.advertise.url"),
 			}),
