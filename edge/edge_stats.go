@@ -25,7 +25,7 @@ type Stats struct {
 }
 
 // Stats exports some internal metrics data packed in 'Stats' struct
-func (edge *Server) Stats() *Stats {
+func (edge *Server) Stats() Stats {
 	s := Stats{}
 
 	if edge.gateway != nil {
@@ -43,5 +43,5 @@ func (edge *Server) Stats() *Stats {
 		s.Members = len(edge.cluster.Members())
 	}
 
-	return &s
+	return s
 }
