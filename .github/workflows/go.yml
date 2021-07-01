@@ -21,11 +21,11 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Build
-      run: go build -v ./...
-
     - name: Download Vendor Packages
       run: go mod vendor
+
+    - name: Build
+      run: go build -v ./...
 
     - name: Test
       run: sh gotest.sh
