@@ -55,14 +55,14 @@ type simpleProxyFactory struct {
 	onResponseFunc func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
 }
 
-func (s *simpleProxyFactory) Get() gateway.ProxyHandle {
+func (s *simpleProxyFactory) Get() gateway.Proxy {
 	return &simpleProxy{
 		onRequestFunc:  s.onRequestFunc,
 		onResponseFunc: s.onResponseFunc,
 	}
 }
 
-func (s *simpleProxyFactory) Release(h gateway.ProxyHandle) {
+func (s *simpleProxyFactory) Release(h gateway.Proxy) {
 
 }
 

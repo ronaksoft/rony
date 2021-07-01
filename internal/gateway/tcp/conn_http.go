@@ -23,7 +23,7 @@ type httpConn struct {
 	clientType []byte
 	mtx        tools.SpinLock
 	kv         map[string]interface{}
-	proxy      gateway.ProxyHandle
+	proxy      gateway.Proxy
 }
 
 func (c *httpConn) Get(key string) interface{} {

@@ -558,13 +558,13 @@ func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64)
 	w.Register(e, handlerFunc)
 }
 
-func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -582,13 +582,13 @@ func ExecuteRemoteSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	}
 }
 
-func ExecuteRemoteSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleSet, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -606,13 +606,13 @@ func ExecuteRemoteSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetReq
 	}
 }
 
-func ExecuteRemoteSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleGet, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -630,13 +630,13 @@ func ExecuteRemoteSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetReq
 	}
 }
 
-func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -654,13 +654,13 @@ func ExecuteRemoteSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 	}
 }
 
-func ExecuteRemoteSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoInternal, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}
@@ -678,13 +678,13 @@ func ExecuteRemoteSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, re
 	}
 }
 
-func ExecuteRemoteSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(ctx.ReqID(), C_SampleEchoDelay, req, kvs...)
-	err := ctx.ExecuteRemote(replicaSet, out, in)
+	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
 	}

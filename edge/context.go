@@ -279,7 +279,7 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 	rony.PoolRedirect.Put(r)
 }
 
-func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64, wait time.Duration) {
+func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64) {
 	ctx.pushRedirect(rony.RedirectReason_ReplicaSetSession, replicaSet)
 }
 
@@ -328,12 +328,12 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 	return ctx.dispatchCtx.edge.cluster
 }
 
-func (ctx *RequestCtx) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryExecuteRemote(attempts, retryWait, replicaSet, req, res)
+func (ctx *RequestCtx) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryTunnelRequest(attempts, retryWait, replicaSet, req, res)
 }
 
-func (ctx *RequestCtx) ExecuteRemote(replicaSet uint64, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryExecuteRemote(1, 0, replicaSet, req, res)
+func (ctx *RequestCtx) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryTunnelRequest(1, 0, replicaSet, req, res)
 }
 
 func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.Edges, error) {
@@ -342,7 +342,7 @@ func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(tools.RandomUint64(0), rony.C_GetAllNodes, &rony.GetAllNodes{})
-	err := ctx.ExecuteRemote(replicaSet, req, res)
+	err := ctx.TunnelRequest(replicaSet, req, res)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +385,7 @@ func (ctx *RequestCtx) FindReplicaSet(pageID uint32) (uint64, error) {
 		getPage.PageID = pageID
 		getPage.ReplicaSet = ctx.Cluster().ReplicaSet()
 		req.Fill(uint64(tools.FastRand()<<31|tools.FastRand()), rony.C_GetPage, getPage)
-		err = ctx.ExecuteRemote(1, req, res)
+		err = ctx.TunnelRequest(1, req, res)
 		if err != nil {
 			return 0, err
 		}

@@ -460,11 +460,14 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	return edge.gateway.GetConn(connID)
 }
 
-// ExecuteRemote sends and receives a request through the Tunnel interface of the receiver Edge node.
-func (edge *Server) ExecuteRemote(replicaSet uint64, req, res *rony.MessageEnvelope) error {
-	return edge.TryExecuteRemote(1, 0, replicaSet, req, res)
+// TunnelRequest sends and receives a request through the Tunnel interface of the receiver Edge node.
+func (edge *Server) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return edge.TryTunnelRequest(1, 0, replicaSet, req, res)
 }
-func (edge *Server) TryExecuteRemote(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+func (edge *Server) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	if edge.tunnel == nil {
+		return errors.ErrTunnelNotSet
+	}
 	startTime := tools.CPUTicks()
 	err := tools.Try(attempts, retryWait, func() error {
 		target := edge.getReplicaMember(replicaSet)

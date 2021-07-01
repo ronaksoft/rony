@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"github.com/ronaksoft/rony"
+	"github.com/valyala/fasthttp"
 )
 
 /*
@@ -24,13 +25,9 @@ type Gateway interface {
 	Protocol() Protocol
 }
 
-type RequestCtx interface {
-
-}
-
 type (
+	RequestCtx     = fasthttp.RequestCtx
 	ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue)
 	MessageHandler = func(c rony.Conn, streamID int64, data []byte, bypass bool)
 	CloseHandler   = func(c rony.Conn)
 )
-

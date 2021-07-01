@@ -388,7 +388,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 		} else {
 			conn.proxy = proxyFactory.Get()
 			g.httpProxy.handle(conn, reqCtx)
-			conn.proxy.Release()
+			proxyFactory.Release(conn.proxy)
 		}
 	} else {
 		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)

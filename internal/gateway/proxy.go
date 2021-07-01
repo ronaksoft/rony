@@ -38,7 +38,6 @@ type BodyWriter interface {
 
 type bodyWriter struct {
 	buf *pools.ByteBuffer
-
 }
 
 func NewBodyWriter() *bodyWriter {

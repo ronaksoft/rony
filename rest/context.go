@@ -15,24 +15,24 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Context struct {
+type Request struct {
 	reqCtx *gateway.RequestCtx
 	conn   rony.Conn
 }
 
-func (ctx *Context) MultiPart() (*multipart.Form, error) {
+func (ctx *Request) MultiPart() (*multipart.Form, error) {
 	return ctx.reqCtx.MultipartForm()
 }
 
-func (ctx *Context) Set(key string, value interface{}) {
+func (ctx *Request) Set(key string, value interface{}) {
 	ctx.conn.Set(key, value)
 }
 
-func (ctx *Context) Get(key string) interface{} {
+func (ctx *Request) Get(key string) interface{} {
 	return ctx.conn.Get(key)
 }
 
-func (ctx *Context) GetInt64(key string, defaultValue int64) int64 {
+func (ctx *Request) GetInt64(key string, defaultValue int64) int64 {
 	v, ok := ctx.conn.Get(key).(int64)
 	if !ok {
 		return defaultValue
@@ -40,7 +40,7 @@ func (ctx *Context) GetInt64(key string, defaultValue int64) int64 {
 	return v
 }
 
-func (ctx *Context) GetString(key string, defaultValue string) string {
+func (ctx *Request) GetString(key string, defaultValue string) string {
 	v, ok := ctx.conn.Get(key).(string)
 	if !ok {
 		return defaultValue
@@ -48,7 +48,7 @@ func (ctx *Context) GetString(key string, defaultValue string) string {
 	return v
 }
 
-func (ctx *Context) GetInt32(key string, defaultValue int32) int32 {
+func (ctx *Request) GetInt32(key string, defaultValue int32) int32 {
 	v, ok := ctx.conn.Get(key).(int32)
 	if !ok {
 		return defaultValue

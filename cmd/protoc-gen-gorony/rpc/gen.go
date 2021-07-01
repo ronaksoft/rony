@@ -44,7 +44,7 @@ func (g *Generator) Generate() {
 
 		for _, s := range g.f.Services {
 			g.genServer(s)
-			g.genExecuteRemote(s)
+			g.genTunnelCommand(s)
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
@@ -208,20 +208,20 @@ func (g *Generator) genClient(s *protogen.Service) {
 		g.g.P()
 	}
 }
-func (g *Generator) genExecuteRemote(s *protogen.Service) {
+func (g *Generator) genTunnelCommand(s *protogen.Service) {
 	for _, m := range s.Methods {
 		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
 		inputName := z.Name(g.f, g.g, m.Desc.Input())
 		outputName := z.Name(g.f, g.g, m.Desc.Output())
 		outputC := z.Constructor(g.f, g.g, m.Desc.Output())
 
-		g.g.P("func ExecuteRemote", methodName, "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ", kvs ...*rony.KeyValue) error {")
+		g.g.P("func TunnelRequest", methodName, "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ", kvs ...*rony.KeyValue) error {")
 		g.g.P("out := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(out)")
 		g.g.P("in := rony.PoolMessageEnvelope.Get()")
 		g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
 		g.g.P("out.Fill(ctx.ReqID(), C_", methodName, ", req, kvs...)")
-		g.g.P("err := ctx.ExecuteRemote(replicaSet, out, in)")
+		g.g.P("err := ctx.TunnelRequest(replicaSet, out, in)")
 		g.g.P("if err != nil {")
 		g.g.P("return err")
 		g.g.P("}")

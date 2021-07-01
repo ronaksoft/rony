@@ -15,12 +15,11 @@ import (
 */
 
 type (
-	GatewayBodyWriter   = gateway.BodyWriter
-	GatewayHeaderWriter = gateway.HeaderWriter
+	BodyWriter      = gateway.BodyWriter
+	HeaderWriter    = gateway.HeaderWriter
+	RequestHandler  func(ctx *Request, bodyWriter gateway.BodyWriter) error
+	ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter BodyWriter, hdrWriter *HeaderWriter)
 )
-
-type RequestHandler func(ctx *Context, bodyWriter gateway.BodyWriter) error
-type ResponseHandler func(envelope *rony.MessageEnvelope, bodyWriter GatewayBodyWriter, hdrWriter *GatewayHeaderWriter)
 
 type Factory struct {
 	onRequest  RequestHandler
@@ -37,9 +36,13 @@ func NewFactory(
 	}
 }
 
-func (f *Factory) Get() gateway.ProxyHandle {
+func (f *Factory) Get() gateway.Proxy {
 	return &restHandler{
 		requestHandler:  f.onRequest,
 		responseHandler: f.onResponse,
 	}
+}
+
+func (f *Factory) Release(p gateway.Proxy) {
+	// TODO:: implement it
 }

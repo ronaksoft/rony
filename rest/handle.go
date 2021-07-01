@@ -16,7 +16,7 @@ import (
 */
 
 type restHandler struct {
-	ctx             *Context
+	ctx             *Request
 	requestHandler  RequestHandler
 	responseHandler ResponseHandler
 }
@@ -26,7 +26,7 @@ func (h *restHandler) Release() {
 }
 
 func (h *restHandler) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
-	h.ctx = &Context{
+	h.ctx = &Request{
 		reqCtx: ctx,
 		conn:   conn,
 	}
