@@ -126,7 +126,7 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte, bypass bool) {}
+	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {}
 	g.CloseHandler = func(c rony.Conn) {}
 	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
@@ -347,7 +347,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	// extract required information from the header of the RequestCtx
 	meta := acquireConnInfo(reqCtx)
 
-	// If this is a Http Upgrade then we handle websocket
+	// If this is a Http Upgrade then we Handle websocket
 	if meta.Upgrade() {
 		if !g.Support(gateway.Websocket) {
 			reqCtx.SetConnectionClose()
@@ -382,16 +382,16 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	releaseConnInfo(meta)
 
 	if g.httpProxy != nil {
-		proxyFactory := g.httpProxy.search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
+		proxyFactory := g.httpProxy.Search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
 		if proxyFactory == nil {
-			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
+			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 		} else {
 			conn.proxy = proxyFactory.Get()
-			g.httpProxy.handle(conn, reqCtx)
+			g.httpProxy.Handle(conn, reqCtx)
 			proxyFactory.Release(conn.proxy)
 		}
 	} else {
-		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody(), false)
+		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 	}
 
 	g.CloseHandler(conn)
@@ -447,7 +447,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 	}
 	atomic.AddUint64(&g.cntReads, 1)
 
-	// handle messages
+	// Handle messages
 	for idx := range ms {
 		switch ms[idx].OpCode {
 		case ws.OpPong:
@@ -460,7 +460,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.MessageHandler(wc, 0, ms[idx].Payload, false)
+				g.MessageHandler(wc, 0, ms[idx].Payload)
 				wg.Done()
 			})
 

@@ -2,8 +2,8 @@ package gossipCluster
 
 import (
 	"github.com/hashicorp/memberlist"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/msg"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"hash/crc64"
@@ -36,7 +36,7 @@ func (d *clusterDelegate) addMember(n *memberlist.Node) {
 }
 
 func (d *clusterDelegate) nodeData() []byte {
-	n := rony.EdgeNode{
+	n := msg.EdgeNode{
 		ServerID:    d.c.localServerID,
 		Hash:        crc64.Checksum(d.c.localServerID, crcTable),
 		ReplicaSet:  d.c.cfg.ReplicaSet,
@@ -64,8 +64,8 @@ func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 }
 
 func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
-	en := rony.PoolEdgeNode.Get()
-	defer rony.PoolEdgeNode.Put(en)
+	en := msg.PoolEdgeNode.Get()
+	defer msg.PoolEdgeNode.Put(en)
 	err := extractNode(n, en)
 	if err != nil {
 		log.Warn("Error On Cluster Node Update", zap.Error(err))

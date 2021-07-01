@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 	"github.com/ronaksoft/rony/pools"
@@ -36,7 +37,7 @@ func TestNewTunnel(t *testing.T) {
 			ExternalAddrs: []string{hostPort},
 		})
 		c.So(err, ShouldBeNil)
-		t.MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage) {
+		t.MessageHandler = func(conn rony.Conn, tm *msg.TunnelMessage) {
 			b, _ := tm.Marshal()
 			err := conn.SendBinary(0, b)
 			c.So(err, ShouldBeNil)
@@ -49,13 +50,13 @@ func TestNewTunnel(t *testing.T) {
 				conn, err := net.Dial("udp", hostPort)
 				c.So(err, ShouldBeNil)
 
-				req := &rony.TunnelMessage{
+				req := &msg.TunnelMessage{
 					SenderID:         []byte("SomeSender"),
 					SenderReplicaSet: tools.RandomUint64(1000),
 					Store:            nil,
 					Envelope:         nil,
 				}
-				res := &rony.TunnelMessage{}
+				res := &msg.TunnelMessage{}
 				out, _ := req.Marshal()
 				n, err := conn.Write(out)
 				c.So(err, ShouldBeNil)
@@ -82,13 +83,13 @@ func TestNewTunnel(t *testing.T) {
 					conn, err := net.Dial("udp", hostPort)
 					c.So(err, ShouldBeNil)
 
-					req := &rony.TunnelMessage{
+					req := &msg.TunnelMessage{
 						SenderID:         []byte("SomeSender"),
 						SenderReplicaSet: tools.RandomUint64(1000),
 						Store:            nil,
 						Envelope:         nil,
 					}
-					res := &rony.TunnelMessage{}
+					res := &msg.TunnelMessage{}
 					out, _ := req.Marshal()
 					n, err := conn.Write(out)
 					c.So(err, ShouldBeNil)
@@ -119,13 +120,13 @@ func TestNewTunnel(t *testing.T) {
 					c.So(err, ShouldBeNil)
 
 					for j := 0; j < 10; j++ {
-						req := &rony.TunnelMessage{
+						req := &msg.TunnelMessage{
 							SenderID:         []byte("SomeSender"),
 							SenderReplicaSet: tools.RandomUint64(1000),
 							Store:            nil,
 							Envelope:         nil,
 						}
-						res := &rony.TunnelMessage{}
+						res := &msg.TunnelMessage{}
 						out, _ := req.Marshal()
 						n, err := conn.Write(out)
 						c.So(err, ShouldBeNil)
@@ -161,7 +162,7 @@ func BenchmarkNew(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	tm := &rony.TunnelMessage{
+	tm := &msg.TunnelMessage{
 		SenderID:         []byte("Something"),
 		SenderReplicaSet: 123,
 		Store:            nil,
@@ -174,7 +175,7 @@ func BenchmarkNew(b *testing.B) {
 		},
 	}
 	tmb, _ := tm.Marshal()
-	t.MessageHandler = func(conn rony.Conn, tm *rony.TunnelMessage) {
+	t.MessageHandler = func(conn rony.Conn, tm *msg.TunnelMessage) {
 		err := conn.SendBinary(0, tmb)
 		if err != nil {
 			panic(err)

@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
@@ -100,10 +101,10 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		return
 	}
 
-	req := rony.PoolGetPage.Get()
-	defer rony.PoolGetPage.Put(req)
-	res := rony.PoolPage.Get()
-	defer rony.PoolPage.Put(res)
+	req := msg.PoolGetPage.Get()
+	defer msg.PoolGetPage.Put(req)
+	res := msg.PoolPage.Get()
+	defer msg.PoolPage.Put(res)
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
@@ -114,7 +115,7 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer alloc.ReleaseAll()
 
 	err = store.Update(func(txn *badger.Txn) (err error) {
-		_, err = rony.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
+		_, err = msg.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
 		if err == nil {
 			return
 		}
@@ -123,11 +124,11 @@ func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		}
 		res.ReplicaSet = req.GetReplicaSet()
 		res.ID = req.GetPageID()
-		return rony.SavePageWithTxn(txn, alloc, res)
+		return msg.SavePageWithTxn(txn, alloc, res)
 	})
 	if err != nil {
 		ctx.PushError(errors.GenInternalErr(err.Error(), err))
 		return
 	}
-	ctx.PushMessage(rony.C_Page, res)
+	ctx.PushMessage(msg.C_Page, res)
 }

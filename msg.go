@@ -15,8 +15,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=. --go_out=paths=source_relative:. imsg.proto msg.proto options.proto
-//go:generate protoc -I=. --gorony_out=paths=source_relative,option=no_edge_dep:. imsg.proto msg.proto
+//go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto options.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative,option=no_edge_dep:. msg.proto
 func init() {}
 
 /*
@@ -74,20 +74,6 @@ func (x *MessageContainer) Add(reqID uint64, constructor int64, p proto.Message,
 	me.Fill(reqID, constructor, p, kvs...)
 	x.Envelopes = append(x.Envelopes, me)
 	x.Length += 1
-}
-
-/*
-	Extra methods for TunnelMessage
-*/
-
-func (x *TunnelMessage) Fill(senderID []byte, senderReplicaSet uint64, e *MessageEnvelope, kvs ...*KeyValue) {
-	x.SenderID = append(x.SenderID[:0], senderID...)
-	x.SenderReplicaSet = senderReplicaSet
-	x.Store = append(x.Store[:0], kvs...)
-	if x.Envelope == nil {
-		x.Envelope = PoolMessageEnvelope.Get()
-	}
-	e.DeepCopy(x.Envelope)
 }
 
 /*

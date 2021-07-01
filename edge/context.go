@@ -144,6 +144,8 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 	}
 }
 
+// Kind identifies that this dispatch context is generated from Tunnel or Gateway. This helps
+// developer to apply different strategies based on the source of the incoming message
 func (ctx *DispatchCtx) Kind() MessageKind {
 	return ctx.kind
 }
@@ -328,15 +330,7 @@ func (ctx *RequestCtx) Cluster() cluster.Cluster {
 	return ctx.dispatchCtx.edge.cluster
 }
 
-func (ctx *RequestCtx) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryTunnelRequest(attempts, retryWait, replicaSet, req, res)
-}
-
-func (ctx *RequestCtx) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
-	return ctx.edge.TryTunnelRequest(1, 0, replicaSet, req, res)
-}
-
-func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.Edges, error) {
+func (ctx *RequestCtx) ClusterEdges(replicaSet uint64, edges *rony.Edges) (*rony.Edges, error) {
 	req := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(req)
 	res := rony.PoolMessageEnvelope.Get()
@@ -362,52 +356,16 @@ func (ctx *RequestCtx) ClusterView(replicaSet uint64, edges *rony.Edges) (*rony.
 	}
 }
 
-func (ctx *RequestCtx) Log() log.Logger {
-	return log.DefaultLogger
+func (ctx *RequestCtx) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryTunnelRequest(attempts, retryWait, replicaSet, req, res)
 }
 
-func (ctx *RequestCtx) FindReplicaSet(pageID uint32) (uint64, error) {
-	p := &rony.Page{}
-	_, err := rony.ReadPage(pageID, p)
-	if err == nil {
-		return p.GetReplicaSet(), nil
-	}
-	thisReplicaSet := ctx.Cluster().ReplicaSet()
-	p.ID = pageID
-	p.ReplicaSet = thisReplicaSet
-	if thisReplicaSet != 1 {
-		req := rony.PoolMessageEnvelope.Get()
-		defer rony.PoolMessageEnvelope.Put(req)
-		res := rony.PoolMessageEnvelope.Get()
-		defer rony.PoolMessageEnvelope.Put(res)
-		getPage := rony.PoolGetPage.Get()
-		defer rony.PoolGetPage.Put(getPage)
-		getPage.PageID = pageID
-		getPage.ReplicaSet = ctx.Cluster().ReplicaSet()
-		req.Fill(uint64(tools.FastRand()<<31|tools.FastRand()), rony.C_GetPage, getPage)
-		err = ctx.TunnelRequest(1, req, res)
-		if err != nil {
-			return 0, err
-		}
+func (ctx *RequestCtx) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
+	return ctx.edge.TryTunnelRequest(1, 0, replicaSet, req, res)
+}
 
-		switch res.GetConstructor() {
-		case rony.C_Page:
-			_ = p.Unmarshal(res.GetMessage())
-		case rony.C_Error:
-			x := &rony.Error{}
-			_ = x.Unmarshal(res.GetMessage())
-			return 0, x
-		default:
-			panic("BUG!! invalid response")
-		}
-
-	}
-
-	err = rony.SavePage(p)
-	if err != nil {
-		return 0, err
-	}
-	return p.ReplicaSet, nil
+func (ctx *RequestCtx) Log() log.Logger {
+	return log.DefaultLogger
 }
 
 func (ctx *RequestCtx) LocalReplicaSet() uint64 {

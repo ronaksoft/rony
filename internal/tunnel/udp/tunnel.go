@@ -3,9 +3,9 @@ package udpTunnel
 import (
 	"fmt"
 	"github.com/panjf2000/gnet"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
@@ -146,7 +146,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 		return nil, gnet.Shutdown
 	}
 
-	req := rony.PoolTunnelMessage.Get()
+	req := msg.PoolTunnelMessage.Get()
 	err := req.Unmarshal(frame)
 	if err != nil {
 		log.Warn("Error On Tunnel's data received", zap.Error(err))
@@ -157,7 +157,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	pools.Go(func() {
 		metrics.IncCounter(metrics.CntTunnelIncomingMessage)
 		t.MessageHandler(conn, req)
-		rony.PoolTunnelMessage.Put(req)
+		msg.PoolTunnelMessage.Put(req)
 	})
 
 	return

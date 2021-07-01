@@ -1,8 +1,8 @@
 syntax = "proto3";
-package rony;
+package msg;
 import "options.proto";
 import "msg.proto";
-option go_package = "github.com/ronaksoft/rony";
+option go_package = "github.com/ronaksoft/internal/msg";
 
 // GetPage
 // @Function
@@ -17,8 +17,8 @@ message GetPage {
 message TunnelMessage {
     bytes SenderID = 1;
     uint64 SenderReplicaSet = 2;
-    repeated KeyValue Store = 3;
-    MessageEnvelope Envelope = 4;
+    repeated rony.KeyValue Store = 3;
+    rony.MessageEnvelope Envelope = 4;
 }
 
 // EdgeNode

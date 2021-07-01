@@ -3,9 +3,9 @@ package gossipCluster
 import (
 	"fmt"
 	"github.com/hashicorp/memberlist"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"hash/crc64"
@@ -105,7 +105,7 @@ func (c *Cluster) addMember(m *Member) {
 	c.membersByReplica[m.replicaSet][m.serverID] = m
 }
 
-func (c *Cluster) removeMember(en *rony.EdgeNode) {
+func (c *Cluster) removeMember(en *msg.EdgeNode) {
 	serverID := tools.B2S(en.ServerID)
 	c.mtx.Lock()
 	defer c.mtx.Unlock()

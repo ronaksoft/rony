@@ -9,6 +9,7 @@ import (
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
@@ -79,7 +80,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	builtin := newBuiltin(edgeServer.GetServerID(), edgeServer.Gateway(), edgeServer.Cluster())
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetNodes).Append(builtin.GetNodes))
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetAllNodes).Append(builtin.GetAllNodes))
-	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetPage).Append(builtin.GetPage).setBuiltin())
+	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(msg.C_GetPage).Append(builtin.GetPage).setBuiltin())
 
 	return edgeServer
 }
@@ -252,24 +253,17 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 }
 
-func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte, byPassDispatcher bool) {
+func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
-
-	var (
-		err error
-	)
 
 	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
 	// byPassDispatcher argument
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
-	if byPassDispatcher {
-		err = dispatchCtx.UnmarshalEnvelope(data)
-	} else {
-		err = edge.dispatcher.Interceptor(dispatchCtx, data)
-	}
+	defer releaseDispatchCtx(dispatchCtx)
+
+	err := edge.dispatcher.Interceptor(dispatchCtx, data)
 	if err != nil {
-		releaseDispatchCtx(dispatchCtx)
 		return
 	}
 
@@ -278,9 +272,6 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	} else {
 		edge.dispatcher.Done(dispatchCtx)
 	}
-
-	// Release the dispatch context
-	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
 	edge.dispatcher.OnOpen(conn, kvs...)
@@ -288,7 +279,7 @@ func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
 func (edge *Server) onGatewayClose(conn rony.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
-func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
+func (edge *Server) onTunnelMessage(conn rony.Conn, tm *msg.TunnelMessage) {
 	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
 	// defer task.End()
 
@@ -309,8 +300,8 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *rony.TunnelMessage) {
 	releaseDispatchCtx(dispatchCtx)
 }
 func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
-	tm := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(tm)
+	tm := msg.PoolTunnelMessage.Get()
+	defer msg.PoolTunnelMessage.Put(tm)
 	switch ctx.BufferSize() {
 	case 0:
 		return
@@ -498,10 +489,10 @@ func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.Mess
 	}
 
 	// Get a rony.TunnelMessage from pool and put it back into the pool when we are done
-	tmOut := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(tmOut)
-	tmIn := rony.PoolTunnelMessage.Get()
-	defer rony.PoolTunnelMessage.Put(tmIn)
+	tmOut := msg.PoolTunnelMessage.Get()
+	defer msg.PoolTunnelMessage.Put(tmOut)
+	tmIn := msg.PoolTunnelMessage.Get()
+	defer msg.PoolTunnelMessage.Put(tmIn)
 	tmOut.Fill(edge.serverID, edge.cluster.ReplicaSet(), req)
 
 	// Marshal and send over the wire
