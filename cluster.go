@@ -1,5 +1,9 @@
 package rony
 
+import (
+	"net"
+)
+
 /*
    Creation Time: 2021 - Jul - 02
    Created by:  (ehsan)
@@ -8,3 +12,34 @@ package rony
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+type Cluster interface {
+	Start()
+	Shutdown()
+	Join(addr ...string) (int, error)
+	Members() []Member
+	MembersByReplicaSet(replicaSets ...uint64) []Member
+	MemberByID(string) Member
+	MemberByHash(uint64) Member
+	ReplicaSet() uint64
+	ServerID() []byte
+	TotalReplicas() int
+	Addr() string
+	SetGatewayAddrs(hostPorts []string) error
+	SetTunnelAddrs(hostPorts []string) error
+	Subscribe(d Delegate)
+}
+
+type Member interface {
+	Proto(info *Edge) *Edge
+	ServerID() string
+	ReplicaSet() uint64
+	GatewayAddr() []string
+	TunnelAddr() []string
+	Dial() (net.Conn, error)
+}
+
+type Delegate interface {
+	OnJoin(hash uint64)
+	OnLeave(hash uint64)
+}
