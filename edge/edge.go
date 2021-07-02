@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/cluster"
-	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -51,7 +50,7 @@ type Server struct {
 	cluster    cluster.Cluster
 	tunnel     tunnel.Tunnel
 	store      store.Store
-	gateway    gateway.Gateway
+	gateway    rony.Gateway
 	dispatcher Dispatcher
 }
 
@@ -122,7 +121,7 @@ func (edge *Server) GetHandler(constructor int64) *HandlerOption {
 func (edge *Server) SetRestWrapper(method string, path string, f *rest.Factory) {
 	switch gw := edge.gateway.(type) {
 	case *tcpGateway.Gateway:
-		if !gw.Support(gateway.Http) {
+		if !gw.Support(rony.Http) {
 			panic("tcp gateway does not support http protocol")
 		}
 		gw.SetProxy(method, path, f)
@@ -142,7 +141,7 @@ func (edge *Server) Store() store.Store {
 }
 
 // Gateway returns a reference to the underlying gateway of the Edge server
-func (edge *Server) Gateway() gateway.Gateway {
+func (edge *Server) Gateway() rony.Gateway {
 	return edge.gateway
 }
 

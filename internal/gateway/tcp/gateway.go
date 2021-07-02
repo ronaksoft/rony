@@ -40,7 +40,7 @@ type Config struct {
 	ListenAddress string
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
-	Protocol      gateway.Protocol
+	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
 }
 
@@ -54,7 +54,7 @@ type Gateway struct {
 	gateway.CloseHandler
 
 	// Internals
-	transportMode      gateway.Protocol
+	transportMode      rony.GatewayProtocol
 	listenOn           string
 	listener           *wrapListener
 	addrsMtx           sync.RWMutex
@@ -96,7 +96,7 @@ func New(config Config) (*Gateway, error) {
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
-		transportMode:      gateway.TCP,
+		transportMode:      rony.TCP,
 		extAddrs:           config.ExternalAddrs,
 		httpProxy:          &HttpProxy{},
 	}
@@ -109,12 +109,12 @@ func New(config Config) (*Gateway, error) {
 	if config.MaxIdleTime != 0 {
 		g.maxIdleTime = int64(config.MaxIdleTime)
 	}
-	if config.Protocol != gateway.Undefined {
+	if config.Protocol != rony.Undefined {
 		g.transportMode = config.Protocol
 	}
 
 	switch g.transportMode {
-	case gateway.Websocket, gateway.Http, gateway.TCP:
+	case rony.Websocket, rony.Http, rony.TCP:
 	default:
 		return nil, ErrUnsupportedProtocol
 	}
@@ -317,7 +317,7 @@ func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	return c
 }
 
-func (g *Gateway) Support(p gateway.Protocol) bool {
+func (g *Gateway) Support(p rony.GatewayProtocol) bool {
 	return g.transportMode&p == p
 }
 
@@ -328,7 +328,7 @@ func (g *Gateway) TotalConnections() int {
 	return n
 }
 
-func (g *Gateway) Protocol() gateway.Protocol {
+func (g *Gateway) Protocol() rony.GatewayProtocol {
 	return g.transportMode
 }
 
@@ -349,7 +349,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 
 	// If this is a Http Upgrade then we Handle websocket
 	if meta.Upgrade() {
-		if !g.Support(gateway.Websocket) {
+		if !g.Support(rony.Websocket) {
 			reqCtx.SetConnectionClose()
 			reqCtx.SetStatusCode(http.StatusNotAcceptable)
 			return
@@ -367,7 +367,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 
 	// This is going to be an HTTP request
 	reqCtx.SetConnectionClose()
-	if !g.Support(gateway.Http) {
+	if !g.Support(rony.Http) {
 		reqCtx.SetStatusCode(http.StatusNotAcceptable)
 		return
 	}

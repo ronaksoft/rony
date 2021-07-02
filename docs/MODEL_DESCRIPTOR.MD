@@ -8,3 +8,8 @@ in `options.proto` in the root of the project.
 > Possible Values for <model_name>: cql | local
 2. @tab ( \[ (<partition_key>, ...), \] <clustering_key>, ...)
 3. @view ( \[ (<partition_key>, ...), \] <clustering_key>, ...)
+
+
+
+### Commands
+`goda graph ./... | dot -Tsvg -o ./docs/dec_graph.svg`

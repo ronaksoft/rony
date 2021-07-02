@@ -1,5 +1,11 @@
 package rony
 
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/internal/metrics"
+)
+
 /*
    Creation Time: 2021 - Jan - 07
    Created by:  (ehsan)
@@ -19,4 +25,17 @@ type Conn interface {
 	Persistent() bool
 	Get(key string) interface{}
 	Set(key string, val interface{})
+}
+
+// SetLogLevel is used for debugging purpose
+// -1 : DEBUG
+// 0  : INFO
+// 1  : WARN
+// 2  : ERROR
+func SetLogLevel(l int) {
+	log.SetLevel(log.Level(l))
+}
+
+func RegisterPrometheus(registerer prometheus.Registerer) {
+	metrics.Register(registerer)
 }

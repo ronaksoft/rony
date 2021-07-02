@@ -14,17 +14,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// Gateway defines the gateway interface where clients could connect
-// and communicate with the edge server
-type Gateway interface {
-	Start()
-	Run()
-	Shutdown()
-	GetConn(connID uint64) rony.Conn
-	Addr() []string
-	Protocol() Protocol
-}
-
 type (
 	RequestCtx     = fasthttp.RequestCtx
 	ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue)

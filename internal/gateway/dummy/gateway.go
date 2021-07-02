@@ -101,6 +101,6 @@ func (g *Gateway) Addr() []string {
 	return []string{"TEST"}
 }
 
-func (g *Gateway) Protocol() gateway.Protocol {
-	return gateway.Dummy
+func (g *Gateway) Protocol() rony.GatewayProtocol {
+	return rony.Dummy
 }

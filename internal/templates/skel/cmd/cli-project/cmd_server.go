@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ var ServerCmd = &cobra.Command{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),
 				MaxIdleTime:   config.GetDuration("idle-time"),
-				Protocol:      edge.Http,
+				Protocol:      rony.Http,
 				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{

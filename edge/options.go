@@ -1,9 +1,9 @@
 package edge
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
-	"github.com/ronaksoft/rony/internal/gateway"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
@@ -60,7 +60,7 @@ type TcpGatewayConfig struct {
 	ListenAddress string
 	MaxBodySize   int
 	MaxIdleTime   time.Duration
-	Protocol      GatewayProtocol
+	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
 }
 
@@ -71,8 +71,8 @@ func WithTcpGateway(gatewayConfig TcpGatewayConfig) Option {
 		if edge.gateway != nil {
 			panic(errors.ErrGatewayAlreadyInitialized)
 		}
-		if gatewayConfig.Protocol == gateway.Undefined {
-			gatewayConfig.Protocol = gateway.TCP
+		if gatewayConfig.Protocol == rony.Undefined {
+			gatewayConfig.Protocol = rony.TCP
 		}
 		gatewayTcp, err := tcpGateway.New(tcpGateway.Config{
 			Concurrency:   gatewayConfig.Concurrency,

@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
-	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"
@@ -69,7 +68,7 @@ func InitEdgeServer(serverID string, listenPort int, concurrency int, opts ...ed
 			Concurrency:   concurrency,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
 			MaxIdleTime:   time.Second,
-			Protocol:      gateway.TCP,
+			Protocol:      rony.TCP,
 			ExternalAddrs: []string{fmt.Sprintf("127.0.0.1:%d", listenPort)},
 		}),
 	)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
@@ -45,7 +44,7 @@ func TestGateway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gw.SetProxy(edge.MethodGet, "/x/:name",
+	gw.SetProxy(rony.MethodGet, "/x/:name",
 		CreateHandle(
 			func(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
 				writer.Write(tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name"))))
@@ -197,7 +196,7 @@ func TestGateway(t *testing.T) {
 						res := fasthttp.AcquireResponse()
 						defer fasthttp.ReleaseResponse(res)
 						req.SetRequestURI(fmt.Sprintf("http://%s/x/%s", hostPort, x))
-						req.Header.SetMethod(edge.MethodGet)
+						req.Header.SetMethod(rony.MethodGet)
 						err := httpc.Do(req, res)
 						if err != nil {
 							c.Println(err)

@@ -20,6 +20,7 @@ require (
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/memberlist v0.2.4
 	github.com/jinzhu/inflection v1.0.0
+	github.com/loov/goda v0.4.2 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.54
