@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
-	"github.com/ronaksoft/rony/rest"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"os"
@@ -49,6 +47,7 @@ type Server struct {
 	store      rony.Store
 	gateway    rony.Gateway
 	dispatcher Dispatcher
+	restMux    *restMux
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -114,17 +113,14 @@ func (edge *Server) GetHandler(constructor int64) *HandlerOption {
 	return edge.handlers[constructor]
 }
 
-// SetRestWrapper set a REST wrapper to expose RPCs in REST (Representational State Transfer) format
-func (edge *Server) SetRestWrapper(method string, path string, f *rest.Factory) {
-	switch gw := edge.gateway.(type) {
-	case *tcpGateway.Gateway:
-		if !gw.Support(rony.Http) {
-			panic("tcp gateway does not support http protocol")
+// SetRestProxy set a REST wrapper to expose RPCs in REST (Representational State Transfer) format
+func (edge *Server) SetRestProxy(method string, path string, p RestProxy) {
+	if edge.restMux == nil {
+		edge.restMux = &restMux{
+			routes: map[string]*trie{},
 		}
-		gw.SetProxy(method, path, f)
-	default:
-		panic("only works on tcp gateway")
 	}
+	edge.restMux.Set(method, path, p)
 }
 
 // Cluster returns a reference to the underlying cluster of the Edge server
@@ -258,6 +254,17 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
 	// defer task.End()
 
+	// if it is REST API then we take a different approach.
+	if !conn.Persistent() && edge.restMux != nil {
+		if rc, ok := conn.(rony.RestConn); ok {
+			p := edge.restMux.Search(rc)
+			if p != nil {
+				edge.onGatewayRest(rc, p)
+				return
+			}
+		}
+	}
+
 	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
 	// byPassDispatcher argument
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
@@ -272,6 +279,26 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		edge.onError(dispatchCtx, errors.ErrInternalServer)
 	} else {
 		edge.dispatcher.Done(dispatchCtx)
+	}
+}
+func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
+	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
+	// byPassDispatcher argument
+	dispatchCtx := acquireDispatchCtx(edge, conn, 0, edge.serverID, GatewayMessage)
+	defer releaseDispatchCtx(dispatchCtx)
+
+	err := proxy.ClientMessage(conn, dispatchCtx)
+	if err != nil {
+		return
+	}
+
+	if err := edge.execute(dispatchCtx); err != nil {
+		edge.onError(dispatchCtx, errors.ErrInternalServer)
+	} else {
+		err = proxy.ServerMessage(conn, dispatchCtx)
+		if err != nil {
+			edge.onError(dispatchCtx, errors.New(errors.Internal, err.Error()))
+		}
 	}
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
@@ -315,7 +342,7 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 		panic("not implemented, handle multiple tunnel message")
 	}
 	buf := pools.Buffer.FromProto(tm)
-	_ = ctx.Conn().SendBinary(ctx.streamID, *buf.Bytes())
+	_ = ctx.Conn().WriteBinary(ctx.streamID, *buf.Bytes())
 	pools.Buffer.Put(buf)
 }
 func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {

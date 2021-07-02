@@ -41,7 +41,7 @@ type defaultDispatcher struct{}
 
 func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
 	buf := pools.Buffer.FromProto(envelope)
-	_ = ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
+	_ = ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 	pools.Buffer.Put(buf)
 }
 

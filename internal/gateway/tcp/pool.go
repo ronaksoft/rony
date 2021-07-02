@@ -3,8 +3,8 @@ package tcpGateway
 import (
 	"github.com/gobwas/ws"
 	"github.com/panjf2000/ants/v2"
-	"github.com/ronaksoft/rony/internal/gateway"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
+	"github.com/valyala/fasthttp"
 	"sync"
 )
 
@@ -21,7 +21,7 @@ var goPoolB, goPoolNB *ants.Pool
 
 var httpConnPool sync.Pool
 
-func acquireHttpConn(gw *Gateway, req *gateway.RequestCtx) *httpConn {
+func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 	c, ok := httpConnPool.Get().(*httpConn)
 	if !ok {
 		return &httpConn{
@@ -38,7 +38,6 @@ func acquireHttpConn(gw *Gateway, req *gateway.RequestCtx) *httpConn {
 func releaseHttpConn(c *httpConn) {
 	c.clientIP = c.clientIP[:0]
 	c.clientType = c.clientType[:0]
-	c.proxy = nil
 	for k := range c.kv {
 		delete(c.kv, k)
 	}

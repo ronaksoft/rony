@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/internal/gateway"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/testEnv"
@@ -44,23 +43,12 @@ func TestGateway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gw.SetProxy(rony.MethodGet, "/x/:name",
-		CreateHandle(
-			func(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
-				writer.Write(tools.S2B(fmt.Sprintf("Received Get with Param: %s", conn.Get("name"))))
-				return
-			},
-			func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
-				bodyWriter.Write(data)
-				return
-			},
-		),
-	)
+
 	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
 		if len(data) > 0 && data[0] == 'S' {
 			time.Sleep(time.Duration(len(data)) * time.Second)
 		}
-		err := c.SendBinary(streamID, data)
+		err := c.WriteBinary(streamID, data)
 		if err != nil {
 			fmt.Println("MessageHandler:", err.Error())
 		}
@@ -216,46 +204,3 @@ func TestGateway(t *testing.T) {
 	})
 }
 
-type simpleProxyFactory struct {
-	onRequestFunc  func(conn rony.Conn, reqCtx *gateway.RequestCtx, writer gateway.BodyWriter)
-	onResponseFunc func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
-}
-
-func (s *simpleProxyFactory) Get() gateway.Proxy {
-	return &simpleProxy{
-		onRequestFunc:  s.onRequestFunc,
-		onResponseFunc: s.onResponseFunc,
-	}
-}
-
-func (s *simpleProxyFactory) Release(h gateway.Proxy) {
-
-}
-
-// simpleProxy
-type simpleProxy struct {
-	onRequestFunc  func(conn rony.Conn, reqCtx *gateway.RequestCtx, writer gateway.BodyWriter)
-	onResponseFunc func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter)
-}
-
-func (s *simpleProxy) Release() {}
-
-func (s *simpleProxy) OnRequest(conn rony.Conn, ctx *gateway.RequestCtx, writer gateway.BodyWriter) {
-	s.onRequestFunc(conn, ctx, writer)
-	return
-}
-
-func (s *simpleProxy) OnResponse(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter) {
-	s.onResponseFunc(data, bodyWriter, hdrWriter)
-	return
-}
-
-func CreateHandle(
-	onRequest func(conn rony.Conn, reqCtx *gateway.RequestCtx, writer gateway.BodyWriter),
-	onResponse func(data []byte, bodyWriter gateway.BodyWriter, hdrWriter *gateway.HeaderWriter),
-) gateway.ProxyFactory {
-	return &simpleProxyFactory{
-		onRequestFunc:  onRequest,
-		onResponseFunc: onResponse,
-	}
-}

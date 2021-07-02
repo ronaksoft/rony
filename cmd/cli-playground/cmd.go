@@ -11,6 +11,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/proto"
 	"os"
 	"runtime/pprof"
 	"runtime/trace"
@@ -68,7 +69,7 @@ var DemoStartCmd = &cobra.Command{
 		}
 
 		a := 'A'
-		gossipPort := 700
+		gossipPort := 400
 		for i := 0; i < s; i++ {
 			replicaSet := uint64(i + 1)
 			for j := 0; j < n; j++ {
@@ -119,19 +120,43 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 		}
 
 		opts = append(opts, edge.WithDispatcher(&dispatcher{}))
-		Edges[serverID] = edge.NewServer(serverID, opts...)
-		service.RegisterSample(&SampleServer{es: Edges[serverID]}, Edges[serverID])
+		edgeServer := edge.NewServer(serverID, opts...)
+		service.RegisterSample(&SampleServer{es: edgeServer}, edgeServer)
 
-		Edges[serverID].Start()
+		edgeServer.SetRestProxy(
+			rony.MethodGet, "/echo/:value",
+			edge.NewRestProxy(
+				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+					req := &service.EchoRequest{
+						Int: tools.StrToInt64(conn.Get("value").(string)),
+					}
+					fmt.Println(conn.Path(), req.Int)
+					reqB, _ := proto.Marshal(req)
+					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, reqB, nil)
+					return nil
+				},
+				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+					for me := ctx.BufferPop(); me != nil; me = ctx.BufferPop() {
+						x := &service.EchoResponse{}
+						_ = x.Unmarshal(me.Message)
+						fmt.Println(x)
+						_ = conn.WriteBinary(ctx.StreamID(), tools.S2B(tools.Int64ToStr(x.Int)))
+					}
+					return nil
+				},
+			),
+		)
+		edgeServer.Start()
 		for _, e := range Edges {
 			if e.GetServerID() != serverID {
-				_, err := Edges[serverID].JoinCluster(e.Stats().Address)
+				_, err := edgeServer.JoinCluster(e.Stats().Address)
 				if err != nil {
 					cmd.Println("Error On Join", err)
 				}
 				break
 			}
 		}
+		Edges[serverID] = edgeServer
 	}
 }
 

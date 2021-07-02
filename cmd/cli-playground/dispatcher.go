@@ -22,9 +22,9 @@ func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvel
 	switch ctx.Kind() {
 	case edge.GatewayMessage, edge.TunnelMessage:
 		buf := pools.Buffer.FromProto(envelope)
-		err := ctx.Conn().SendBinary(ctx.StreamID(), *buf.Bytes())
+		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 		if err != nil {
-			fmt.Println("Error On SendBinary", err)
+			fmt.Println("Error On WriteBinary", err)
 		}
 		pools.Buffer.Put(buf)
 	}

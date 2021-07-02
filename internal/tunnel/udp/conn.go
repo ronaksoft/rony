@@ -43,7 +43,7 @@ func (u *udpConn) ClientIP() string {
 	return u.c.RemoteAddr().String()
 }
 
-func (u *udpConn) SendBinary(streamID int64, data []byte) error {
+func (u *udpConn) WriteBinary(streamID int64, data []byte) error {
 	if u == nil || u.c == nil {
 		return nil
 	}

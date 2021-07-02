@@ -288,23 +288,26 @@ func (ctx *RequestCtx) PushRedirectRequest(replicaSet uint64) {
 }
 
 func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
-	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
+	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto, false)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, kvs ...*rony.KeyValue) {
-	envelope := rony.PoolMessageEnvelope.Get()
-	envelope.Fill(requestID, constructor, message)
-	envelope.Header = append(envelope.Header[:0], kvs...)
+func (ctx *RequestCtx) PushRealtimeMessage(constructor int64, proto proto.Message) {
+	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto, true)
+}
 
-	switch ctx.dispatchCtx.kind {
+func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, realtime bool, kvs ...*rony.KeyValue) {
+	envelope := rony.PoolMessageEnvelope.Get()
+	envelope.Fill(requestID, constructor, message, kvs ...)
+
+	switch ctx.Kind() {
+	case TunnelMessage:
+		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	case GatewayMessage:
-		if ctx.Conn().Persistent() {
+		if realtime {
 			ctx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
 		} else {
 			ctx.dispatchCtx.BufferPush(envelope.Clone())
 		}
-	case TunnelMessage:
-		ctx.dispatchCtx.BufferPush(envelope.Clone())
 	}
 
 	rony.PoolMessageEnvelope.Put(envelope)

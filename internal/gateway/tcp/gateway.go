@@ -70,9 +70,6 @@ type Gateway struct {
 	cntReads           uint64
 	cntWrites          uint64
 
-	// Http Internals
-	httpProxy *HttpProxy
-
 	// Websocket Internals
 	upgradeHandler ws.Upgrader
 	connGC         *websocketConnGC
@@ -98,7 +95,6 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      rony.TCP,
 		extAddrs:           config.ExternalAddrs,
-		httpProxy:          &HttpProxy{},
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -238,9 +234,6 @@ func (g *Gateway) Start() {
 
 // Run is blocking and runs the server endless loop until a non-temporary error happens
 func (g *Gateway) Run() {
-	// set the proxy handler
-	g.httpProxy.handler = g.MessageHandler
-
 	// initialize the fasthttp server.
 	server := fasthttp.Server{
 		Name:               "Rony TCP-Gateway",
@@ -332,7 +325,7 @@ func (g *Gateway) Protocol() rony.GatewayProtocol {
 	return g.transportMode
 }
 
-func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
+func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	// TODO:: let developer choose
 	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
@@ -381,18 +374,7 @@ func (g *Gateway) requestHandler(reqCtx *gateway.RequestCtx) {
 	g.ConnectHandler(conn, meta.kvs...)
 	releaseConnInfo(meta)
 
-	if g.httpProxy != nil {
-		proxyFactory := g.httpProxy.Search(tools.B2S(reqCtx.Method()), tools.B2S(reqCtx.Request.URI().PathOriginal()), conn)
-		if proxyFactory == nil {
-			g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
-		} else {
-			conn.proxy = proxyFactory.Get()
-			g.httpProxy.Handle(conn, reqCtx)
-			proxyFactory.Release(conn.proxy)
-		}
-	} else {
-		g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
-	}
+	g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 
 	g.CloseHandler(conn)
 	releaseHttpConn(conn)
@@ -501,10 +483,4 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 		return wsConn
 	}
 	return nil
-}
-
-// SetProxy set http proxy handlers. This function MUST NOT used concurrent and MUST ONLY use it before
-// calling Start or Run.
-func (g *Gateway) SetProxy(method, path string, factory gateway.ProxyFactory) {
-	g.httpProxy.Set(method, path, factory)
 }

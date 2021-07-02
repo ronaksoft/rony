@@ -4,6 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"mime/multipart"
 )
 
 /*
@@ -19,12 +20,22 @@ import (
 type Conn interface {
 	ConnID() uint64
 	ClientIP() string
-	SendBinary(streamID int64, data []byte) error
+	WriteBinary(streamID int64, data []byte) error
 	// Persistent returns FALSE if this connection will be closed when edge.DispatchCtx has been done. i.e. HTTP connections
 	// It returns TRUE if this connection still alive when edge.DispatchCtx has been done. i.e. WebSocket connections
 	Persistent() bool
 	Get(key string) interface{}
 	Set(key string, val interface{})
+}
+
+// RestConn is same as Conn but it supports REST format apis.
+type RestConn interface {
+	Conn
+	WriteHeader(key, value string)
+	MultiPart() (*multipart.Form, error)
+	Method() string
+	Path() string
+	Body() []byte
 }
 
 // SetLogLevel is used for debugging purpose

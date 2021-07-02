@@ -39,7 +39,7 @@ func TestNewTunnel(t *testing.T) {
 		c.So(err, ShouldBeNil)
 		t.MessageHandler = func(conn rony.Conn, tm *msg.TunnelMessage) {
 			b, _ := tm.Marshal()
-			err := conn.SendBinary(0, b)
+			err := conn.WriteBinary(0, b)
 			c.So(err, ShouldBeNil)
 		}
 		t.Start()
@@ -176,7 +176,7 @@ func BenchmarkNew(b *testing.B) {
 	}
 	tmb, _ := tm.Marshal()
 	t.MessageHandler = func(conn rony.Conn, tm *msg.TunnelMessage) {
-		err := conn.SendBinary(0, tmb)
+		err := conn.WriteBinary(0, tmb)
 		if err != nil {
 			panic(err)
 		}

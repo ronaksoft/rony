@@ -2,10 +2,13 @@ package edge_test
 
 import (
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/registry"
+	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
+	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 )
@@ -45,7 +48,42 @@ func TestWithTestGateway(t *testing.T) {
 			Run(time.Second)
 		c.So(err, ShouldBeNil)
 	})
+}
 
+func TestRestProxy(t *testing.T) {
+	Convey("Eddge With RestProxy", t, func(c C) {
+		s := testEnv.InitTestServer("TestServer")
+		s.RealEdge().SetRestProxy(
+			rony.MethodGet, "/x/:value",
+			edge.NewRestProxy(
+				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+					req := &service.EchoRequest{
+						Int: tools.StrToInt64(conn.Get("value").(string)),
+					}
+					reqB, _ := proto.Marshal(req)
+					ctx.FillEnvelope(conn.ConnID(), service.C_EchoRequest, reqB, nil)
+					return nil
+				},
+				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+					for me := ctx.BufferPop(); me != nil; me = ctx.BufferPop() {
+						c.So(me.Constructor, ShouldEqual, service.C_EchoResponse)
+						x := &service.EchoResponse{}
+						err := x.Unmarshal(me.Message)
+						c.So(err, ShouldBeNil)
+						err = conn.WriteBinary(ctx.StreamID(), tools.S2B(tools.Int64ToStr(x.Int)))
+						c.So(err, ShouldBeNil)
+					}
+					return nil
+				},
+			),
+		)
+		service.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
+		s.Start()
+		defer s.Shutdown()
+
+
+
+	})
 }
 
 func TestConcurrent(t *testing.T) {

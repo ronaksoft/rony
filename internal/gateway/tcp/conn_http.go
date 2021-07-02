@@ -1,9 +1,10 @@
 package tcpGateway
 
 import (
-	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
+	"github.com/valyala/fasthttp"
+	"mime/multipart"
 )
 
 /*
@@ -18,12 +19,11 @@ import (
 // httpConn
 type httpConn struct {
 	gateway    *Gateway
-	ctx        *gateway.RequestCtx
+	ctx        *fasthttp.RequestCtx
 	clientIP   []byte
 	clientType []byte
 	mtx        tools.SpinLock
 	kv         map[string]interface{}
-	proxy      gateway.Proxy
 }
 
 func (c *httpConn) Get(key string) interface{} {
@@ -55,22 +55,30 @@ func (c *httpConn) SetClientType(ct []byte) {
 	c.clientType = append(c.clientType[:0], ct...)
 }
 
-func (c *httpConn) SendBinary(streamID int64, data []byte) (err error) {
-	if c.proxy != nil {
-		bodyWriter := gateway.NewBodyWriter()
-		hdrWriter := gateway.NewHeaderWriter()
-		c.proxy.OnResponse(data, bodyWriter, hdrWriter)
-		for k, v := range *hdrWriter {
-			c.ctx.Response.Header.Add(k, v)
-		}
-		_, err = c.ctx.Write(*bodyWriter.Bytes())
-		bodyWriter.Release()
-		hdrWriter.Release()
-	} else {
-		_, err = c.ctx.Write(data)
-	}
+func (c *httpConn) WriteBinary(streamID int64, data []byte) (err error) {
+	_, err = c.ctx.Write(data)
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)
 	return err
+}
+
+func (c *httpConn) WriteHeader(key, value string) {
+	c.ctx.Response.Header.Add(key, value)
+}
+
+func (c *httpConn) MultiPart() (*multipart.Form, error) {
+	return c.ctx.MultipartForm()
+}
+
+func (c *httpConn) Method() string {
+	return tools.B2S(c.ctx.Method())
+}
+
+func (c *httpConn) Path() string {
+	return tools.B2S(c.ctx.Request.URI().PathOriginal())
+}
+
+func (c *httpConn) Body() []byte {
+	return c.ctx.PostBody()
 }
 
 func (c *httpConn) Persistent() bool {

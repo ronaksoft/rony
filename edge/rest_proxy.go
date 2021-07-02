@@ -1,12 +1,14 @@
-package trie
+package edge
 
 import (
-	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/ronaksoft/rony"
+
+	"sort"
 	"strings"
 )
 
 /*
-   Creation Time: 2021 - Mar - 02
+   Creation Time: 2021 - Jul - 02
    Created by:  (ehsan)
    Maintainers:
       1.  Ehsan N. Moosa (E2)
@@ -14,54 +16,109 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type RestHandler func(conn rony.RestConn, ctx *DispatchCtx) error
+
+type RestProxy interface {
+	ClientMessage(conn rony.RestConn, ctx *DispatchCtx) error
+	ServerMessage(conn rony.RestConn, ctx *DispatchCtx) error
+}
+
+type restProxy struct {
+	cm RestHandler
+	sm RestHandler
+}
+
+func (r *restProxy) ClientMessage(conn rony.RestConn, ctx *DispatchCtx) error {
+	return r.cm(conn, ctx)
+}
+
+func (r *restProxy) ServerMessage(conn rony.RestConn, ctx *DispatchCtx) error {
+	return r.sm(conn, ctx)
+}
+
+func NewRestProxy(onClientMessage, onServerMessage RestHandler) *restProxy {
+	return &restProxy{
+		cm: onClientMessage,
+		sm: onServerMessage,
+	}
+}
+
+// restMux help to provide RESTFull wrappers around RPC handlers.
+type restMux struct {
+	routes map[string]*trie
+}
+
+func (hp *restMux) Set(method, path string, f RestProxy) {
+	if hp.routes == nil {
+		hp.routes = make(map[string]*trie)
+	}
+	if _, ok := hp.routes[method]; !ok {
+		hp.routes[method] = &trie{
+			root:            newTrieNode(),
+			hasRootWildcard: false,
+		}
+	}
+	hp.routes[method].Insert(path, WithTag(method), WithProxyFactory(f))
+}
+
+func (hp *restMux) Search(conn rony.RestConn) RestProxy {
+	r := hp.routes[conn.Method()]
+	if r == nil {
+		return nil
+	}
+	n := r.Search(conn.Path(), conn)
+	if n == nil {
+		return nil
+	}
+	return n.Proxy
+}
+
+//
+// func (hp *restMux) Handle(conn *httpConn, ctx *gateway.RequestCtx) {
+// 	bw := gateway.NewBodyWriter()
+// 	conn.proxy.ClientMessage(conn, ctx, bw)
+// 	hp.handler(conn, int64(ctx.ConnID()), *bw.Bytes())
+// 	bw.Release()
+// }
+//
+
 const (
 	// ParamStart is the character, as a string, which a path pattern starts to define its named parameter.
 	ParamStart = ":"
 	// WildcardParamStart is the character, as a string, which a path pattern starts to define its named parameter for wildcards.
 	// It allows everything else after that path prefix
-	// but the Trie checks for static paths and named parameters before that in order to support everything that other implementations do not,
+	// but the trie checks for static paths and named parameters before that in order to support everything that other implementations do not,
 	// and if nothing else found then it tries to find the closest wildcard path(super and unique).
 	WildcardParamStart = "*"
 )
 
-// Trie contains the main logic for adding and searching nodes for path segments.
+// trie contains the main logic for adding and searching nodes for path segments.
 // It supports wildcard and named path parameters.
-// Trie supports very coblex and useful path patterns for routes.
-// The Trie checks for static paths(path without : or *) and named parameters before that in order to support everything that other implementations do not,
+// trie supports very coblex and useful path patterns for routes.
+// The trie checks for static paths(path without : or *) and named parameters before that in order to support everything that other implementations do not,
 // and if nothing else found then it tries to find the closest wildcard path(super and unique).
-type Trie struct {
-	root *Node
+type trie struct {
+	root *trieNode
 
 	// if true then it will handle any path if not other parent wildcard exists,
-	// so even 404 (on http services) is up to it, see Trie#Insert.
+	// so even 404 (on http services) is up to it, see trie#Insert.
 	hasRootWildcard bool
 
 	hasRootSlash bool
 }
 
-// NewTrie returns a new, empty Trie.
-// It is only useful for end-developers that want to design their own mux/router based on my trie implementation.
-//
-// See `Trie`
-func NewTrie() *Trie {
-	return &Trie{
-		root:            NewNode(),
-		hasRootWildcard: false,
-	}
-}
-
-// InsertOption is just a function which accepts a pointer to a Node which can alt its `Handler`, `Tag` and `Data`  fields.
+// InsertOption is just a function which accepts a pointer to a trieNode which can alt its `Handler`, `Tag` and `Data`  fields.
 //
 // See `WithHandler`, `WithTag` and `WithData`.
-type InsertOption func(*Node)
+type InsertOption func(*trieNode)
 
 // WithProxyFactory sets the node's `Handler` field (useful for HTTP).
-func WithProxyFactory(proxy gateway.ProxyFactory) InsertOption {
+func WithProxyFactory(proxy RestProxy) InsertOption {
 	if proxy == nil {
 		panic("muxie/WithProxy: empty handler")
 	}
 
-	return func(n *Node) {
+	return func(n *trieNode) {
 		if n.Proxy == nil {
 			n.Proxy = proxy
 		}
@@ -70,23 +127,15 @@ func WithProxyFactory(proxy gateway.ProxyFactory) InsertOption {
 
 // WithTag sets the node's `Tag` field (may be useful for HTTP).
 func WithTag(tag string) InsertOption {
-	return func(n *Node) {
+	return func(n *trieNode) {
 		if n.Tag == "" {
 			n.Tag = tag
 		}
 	}
 }
 
-// WithData sets the node's optionally `Data` field.
-func WithData(data interface{}) InsertOption {
-	return func(n *Node) {
-		// data can be replaced.
-		n.Data = data
-	}
-}
-
 // Insert adds a node to the trie.
-func (t *Trie) Insert(pattern string, options ...InsertOption) {
+func (t *trie) Insert(pattern string, options ...InsertOption) {
 	if pattern == "" {
 		panic("muxie/trie#Insert: empty pattern")
 	}
@@ -127,7 +176,7 @@ func resolveStaticPart(key string) string {
 	return key[:i]
 }
 
-func (t *Trie) insert(key, tag string, optionalData interface{}, proxy gateway.ProxyFactory) *Node {
+func (t *trie) insert(key, tag string, optionalData interface{}, proxy RestProxy) *trieNode {
 	input := slowPathSplit(key)
 
 	n := t.root
@@ -160,7 +209,7 @@ func (t *Trie) insert(key, tag string, optionalData interface{}, proxy gateway.P
 		}
 
 		if !n.hasChild(s) {
-			child := NewNode()
+			child := newTrieNode()
 			n.addChild(s, child)
 		}
 
@@ -179,68 +228,13 @@ func (t *Trie) insert(key, tag string, optionalData interface{}, proxy gateway.P
 	return n
 }
 
-// SearchPrefix returns the last node which holds the key which starts with "prefix".
-func (t *Trie) SearchPrefix(prefix string) *Node {
-	input := slowPathSplit(prefix)
-	n := t.root
-
-	for i := 0; i < len(input); i++ {
-		s := input[i]
-		if child := n.getChild(s); child != nil {
-			n = child
-			continue
-		}
-
-		return nil
-	}
-
-	return n
-}
-
-// Parents returns the list of nodes that a node with "prefix" key belongs to.
-func (t *Trie) Parents(prefix string) (parents []*Node) {
-	n := t.SearchPrefix(prefix)
-	if n != nil {
-		// without this node.
-		n = n.Parent()
-		for {
-			if n == nil {
-				break
-			}
-
-			if n.IsEnd() {
-				parents = append(parents, n)
-			}
-
-			n = n.Parent()
-		}
-	}
-
-	return
-}
-
-// HasPrefix returns true if "prefix" is found inside the registered nodes.
-func (t *Trie) HasPrefix(prefix string) bool {
-	return t.SearchPrefix(prefix) != nil
-}
-
-// Autocomplete returns the keys that starts with "prefix",
-// this is useful for custom search-engines built on top of my trie implementation.
-func (t *Trie) Autocomplete(prefix string, sorter NodeKeysSorter) (list []string) {
-	n := t.SearchPrefix(prefix)
-	if n != nil {
-		list = n.Keys(sorter)
-	}
-	return
-}
-
 // ParamsSetter is the interface which should be implemented by the
 // params writer for `search` in order to store the found named path parameters, if any.
 type ParamsSetter interface {
 	Set(string, interface{})
 }
 
-// Search is the most important part of the Trie.
+// Search is the most important part of the trie.
 // It will try to find the responsible node for a specific query (or a request path for HTTP endpoints).
 //
 // Search supports searching for static paths(path without : or *) and paths that contain
@@ -251,7 +245,7 @@ type ParamsSetter interface {
 // 3. wildcards
 // 4. closest wildcard if not found, if any
 // 5. root wildcard
-func (t *Trie) Search(q string, params ParamsSetter) *Node {
+func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 	end := len(q)
 
 	if end == 0 || (end == 1 && q[0] == pathSepB) {
@@ -357,4 +351,116 @@ func (t *Trie) Search(q string, params ParamsSetter) *Node {
 	}
 
 	return n
+}
+
+// trieNode is the trie's node which path patterns with their data like an HTTP handler are saved to.
+// See `trie` too.
+type trieNode struct {
+	parent *trieNode
+
+	children               map[string]*trieNode
+	hasDynamicChild        bool // does one of the children contains a parameter or wildcard?
+	childNamedParameter    bool // is the child a named parameter (single segmnet)
+	childWildcardParameter bool // or it is a wildcard (can be more than one path segments) ?
+
+	paramKeys []string // the param keys without : or *.
+	end       bool     // it is a complete node, here we stop and we can say that the node is valid.
+	key       string   // if end == true then key is filled with the original value of the insertion's key.
+	// if key != "" && its parent has childWildcardParameter == true,
+	// we need it to track the static part for the closest-wildcard's parameter storage.
+	staticKey string
+
+	// insert main data relative to http and a tag for things like route names.
+	Proxy RestProxy
+	Tag   string
+
+	// other insert data.
+	Data interface{}
+}
+
+// newTrieNode returns a new, empty, trieNode.
+func newTrieNode() *trieNode {
+	n := new(trieNode)
+	return n
+}
+
+func (n *trieNode) addChild(s string, child *trieNode) {
+	if n.children == nil {
+		n.children = make(map[string]*trieNode)
+	}
+
+	if _, exists := n.children[s]; exists {
+		return
+	}
+
+	child.parent = n
+	n.children[s] = child
+}
+
+func (n *trieNode) getChild(s string) *trieNode {
+	if n.children == nil {
+		return nil
+	}
+
+	return n.children[s]
+}
+
+func (n *trieNode) hasChild(s string) bool {
+	return n.getChild(s) != nil
+}
+
+func (n *trieNode) findClosestParentWildcardNode() *trieNode {
+	n = n.parent
+	for n != nil {
+		if n.childWildcardParameter {
+			return n.getChild(WildcardParamStart)
+		}
+
+		n = n.parent
+	}
+
+	return nil
+}
+
+// keysSorter is the type definition for the sorting logic
+// that caller can pass on `GetKeys` and `Autocomplete`.
+type keysSorter = func(list []string) func(i, j int) bool
+
+// Keys returns this node's key (if it's a final path segment)
+// and its children's node's key. The "sorter" can be optionally used to sort the result.
+func (n *trieNode) Keys(sorter keysSorter) (list []string) {
+	if n == nil {
+		return
+	}
+
+	if n.end {
+		list = append(list, n.key)
+	}
+
+	if n.children != nil {
+		for _, child := range n.children {
+			list = append(list, child.Keys(sorter)...)
+		}
+	}
+
+	if sorter != nil {
+		sort.Slice(list, sorter(list))
+	}
+
+	return
+}
+
+// Parent returns the parent of that node, can return nil if this is the root node.
+func (n *trieNode) Parent() *trieNode {
+	return n.parent
+}
+
+// String returns the key, which is the path pattern for the HTTP Mux.
+func (n *trieNode) String() string {
+	return n.key
+}
+
+// IsEnd returns true if this trieNode is a final path, has a key.
+func (n *trieNode) IsEnd() bool {
+	return n.end
 }

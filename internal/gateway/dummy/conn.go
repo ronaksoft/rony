@@ -42,7 +42,7 @@ func (c *Conn) ClientIP() string {
 	return c.clientIP
 }
 
-func (c *Conn) SendBinary(streamID int64, data []byte) error {
+func (c *Conn) WriteBinary(streamID int64, data []byte) error {
 	c.onMessage(c.id, streamID, data)
 	return nil
 }
