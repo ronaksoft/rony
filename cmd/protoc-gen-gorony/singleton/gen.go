@@ -36,6 +36,7 @@ func (g *Generator) Generate() {
 		if singleton {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.genSave(m)
 			g.genRead(m)
 			continue
@@ -45,7 +46,7 @@ func (g *Generator) Generate() {
 
 func (g *Generator) genSave(m *protogen.Message) {
 	// SaveWithTxn func
-	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *store.LTxn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (err error) {")
+	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (err error) {")
 	g.g.P("if alloc == nil {")
 	g.g.P("alloc = tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
@@ -61,14 +62,14 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P("func Save", m.Desc.Name(), "(m *", m.Desc.Name(), ") (err error) {")
 	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P("return store.Update(func(txn *store.LTxn) error {")
+	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
 	g.g.P("return Save", m.Desc.Name(), "WithTxn(txn, alloc, m)")
 	g.g.P("})") // end of store.Update func
 	g.g.P("}")  // end of Save func
 	g.g.P()
 }
 func (g *Generator) genRead(m *protogen.Message) {
-	g.g.P("func Read", m.Desc.Name(), "WithTxn (txn *store.LTxn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
+	g.g.P("func Read", m.Desc.Name(), "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (*", m.Desc.Name(), ",error) {")
 	g.g.P("if alloc == nil {")
 	g.g.P("alloc = tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
@@ -89,7 +90,7 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("m = &", m.Desc.Name(), "{}")
 	g.g.P("}")
 	g.g.P()
-	g.g.P("err := store.View(func(txn *store.LTxn) (err error) {")
+	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
 	g.g.P("m, err = Read", m.Desc.Name(), "WithTxn(txn, alloc,  m)")
 	g.g.P("return")
 	g.g.P("})") // end of View func

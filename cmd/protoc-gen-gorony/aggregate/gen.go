@@ -45,6 +45,7 @@ func (g *Generator) Generate() {
 		g.createModel(m)
 		if g.m(m) != nil {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.genOrderByConstants(m)
 			g.genCreate(m)
@@ -68,14 +69,14 @@ func (g *Generator) genCreate(m *protogen.Message) {
 	g.g.P("func Create", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
 	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P("return store.Update(func(txn *store.LTxn) error {")
+	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
 	g.g.P("return Create", g.model(m).Name, "WithTxn (txn, alloc, m)")
 	g.g.P("})") // end of Update func
 	g.g.P("}")  // end of Save func
 	g.g.P()
 
 	// CreateWithTxn func
-	g.g.P("func Create", g.model(m).Name, "WithTxn (txn *store.LTxn, alloc *tools.Allocator, m*", g.model(m).Name, ") (err error) {")
+	g.g.P("func Create", g.model(m).Name, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m*", g.model(m).Name, ") (err error) {")
 	g.blockAlloc()
 	g.g.P("if store.Exists(txn, alloc, ", tableKey(g.m(m), "m."), ") {")
 	g.g.P("return store.ErrAlreadyExists")
@@ -150,7 +151,7 @@ func (g *Generator) createIndices(m *protogen.Message) {
 // genUpdate generates Update function
 func (g *Generator) genUpdate(m *protogen.Message) {
 	mn := g.m(m).Name
-	g.g.P("func Update", mn, "WithTxn (txn *store.LTxn, alloc *tools.Allocator, m *", mn, ") error {")
+	g.g.P("func Update", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *", mn, ") error {")
 	g.blockAlloc()
 	g.g.P("err := Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ")")
 	g.g.P("if err != nil {")
@@ -168,7 +169,7 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 	g.g.P("return store.ErrEmptyObject")
 	g.g.P("}")
 	g.g.P()
-	g.g.P("err := store.View(func(txn *store.LTxn) (err error) {")
+	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
 	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
 	g.g.P("})") // end of View func
 	g.g.P("return err")
@@ -180,7 +181,7 @@ func (g *Generator) genUpdate(m *protogen.Message) {
 func (g *Generator) genSave(m *protogen.Message) {
 	mn := g.m(m).Name
 	// SaveWithTxn func
-	g.g.P("func Save", mn, "WithTxn (txn *store.LTxn, alloc *tools.Allocator, m*", mn, ") (err error) {")
+	g.g.P("func Save", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m*", mn, ") (err error) {")
 	g.g.P("if store.Exists(txn, alloc, ", tableKey(g.m(m), "m."), ") {")
 	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
 	g.g.P("} else {")
@@ -193,7 +194,7 @@ func (g *Generator) genSave(m *protogen.Message) {
 	g.g.P("func Save", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
 	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P("return store.Update(func(txn *store.LTxn) error {")
+	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
 	g.g.P("return Save", g.model(m).Name, "WithTxn (txn, alloc, m)")
 	g.g.P("})") // end of Update func
 	g.g.P("}")  // end of Save func
@@ -205,7 +206,7 @@ func (g *Generator) genRead(m *protogen.Message) {
 	mn := g.m(m).Name
 
 	// ReadWithTxn Func
-	g.g.P("func Read", mn, "WithTxn (txn *store.LTxn, alloc *tools.Allocator,", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
+	g.g.P("func Read", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).FuncArgs("", g.m(m).Table), ", m *", mn, ") (*", mn, ",error) {")
 	g.blockAlloc()
 	g.g.P("err := store.Unmarshal(txn, alloc, m,", tableKey(g.m(m), ""), ")")
 	g.g.P("if err != nil {")
@@ -224,7 +225,7 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("m = &", mn, "{}")
 	g.g.P("}")
 	g.g.P()
-	g.g.P("err := store.View(func(txn *store.LTxn) (err error) {")
+	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
 	g.g.P("m, err = Read", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("", ",", true), ", m)")
 	g.g.P("return err")
 	g.g.P("})") // end of View func
@@ -239,7 +240,7 @@ func (g *Generator) readViews(m *protogen.Message) {
 	for idx, pk := range g.m(m).Views {
 		g.g.P(
 			"func Read", mn, "By", pk.String("", "And", false), "WithTxn",
-			"(txn *store.LTxn, alloc *tools.Allocator,", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
+			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).FuncArgs("", pk), ", m *", mn, ")",
 			"( *", mn, ", error) {")
 		g.blockAlloc()
 		g.g.P("err := store.Unmarshal(txn, alloc, m,", viewKey(g.m(m), "", idx), " )")
@@ -259,7 +260,7 @@ func (g *Generator) readViews(m *protogen.Message) {
 		g.g.P("if m == nil {")
 		g.g.P("m = &", mn, "{}")
 		g.g.P("}")
-		g.g.P("err := store.View(func(txn *store.LTxn) (err error) {")
+		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
 		g.g.P("m, err = Read", mn, "By", pk.String("", "And", false), "WithTxn (txn, alloc,", pk.String("", ",", true), ", m)")
 		g.g.P("return err")
 		g.g.P("})") // end of View func
@@ -272,7 +273,7 @@ func (g *Generator) readViews(m *protogen.Message) {
 // genDelete generates DELETE function
 func (g *Generator) genDelete(m *protogen.Message) {
 	mn := g.m(m).Name
-	g.g.P("func Delete", mn, "WithTxn(txn *store.LTxn, alloc *tools.Allocator, ", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
+	g.g.P("func Delete", mn, "WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, ", g.m(m).FuncArgs("", g.m(m).Table), ") error {")
 
 	if len(g.m(m).Views) > 0 || g.m(m).HasIndex {
 		g.g.P("m := &", mn, "{}")
@@ -334,7 +335,7 @@ func (g *Generator) genDelete(m *protogen.Message) {
 	g.g.P("alloc := tools.NewAllocator()")
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
-	g.g.P("return store.Update(func(txn *store.LTxn) error {")
+	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
 	g.g.P("return Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("", ",", true), ")")
 	g.g.P("})") // end of Update func
 	g.g.P("}")  // end of Delete func
@@ -402,7 +403,7 @@ func (g *Generator) genIter(m *protogen.Message) {
 	mn := g.m(m).Name
 	orderType := fmt.Sprintf("%sOrder", g.m(m).Name)
 
-	g.g.P("func Iter", inflection.Plural(mn), "(txn *store.LTxn, alloc *tools.Allocator, cb func(m *", mn, ") bool, orderBy ...", orderType, ")  error {")
+	g.g.P("func Iter", inflection.Plural(mn), "(txn *rony.StoreLocalTxn, alloc *tools.Allocator, cb func(m *", mn, ") bool, orderBy ...", orderType, ")  error {")
 	g.blockAlloc()
 
 	g.g.P("exitLoop := false")
@@ -454,7 +455,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Table.StringPKs("", "And", false),
-			"(txn *store.LTxn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Table), ", cb func(m *", mn, ") bool) error {",
+			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Table), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.blockAlloc()
 		g.g.P("exitLoop := false")
@@ -489,7 +490,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Views[idx].StringPKs("", "And", false),
-			"(txn *store.LTxn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ", cb func(m *", mn, ") bool) error {",
+			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).FuncArgsPKs("", g.m(m).Views[idx]), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.g.P("if alloc == nil {")
 
@@ -534,7 +535,7 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-	g.g.P("err := store.View(func(txn *store.LTxn) error {")
+	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
 	g.g.P("opt := store.DefaultIteratorOptions")
 	if len(g.m(m).Views) > 0 {
 		g.g.P("if len(orderBy) == 0 {")
@@ -604,7 +605,7 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-		g.g.P("err := store.View(func(txn *store.LTxn) error {")
+		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
 		g.g.P("opt.Prefix = alloc.Gen(", tablePrefix(g.m(m), ""), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
@@ -658,7 +659,7 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-		g.g.P("err := store.View(func(txn *store.LTxn) error {")
+		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
 		g.g.P("opt.Prefix = alloc.Gen(", viewPrefix(g.m(m), "", idx), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
@@ -716,7 +717,7 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 				g.g.P("defer alloc.ReleaseAll()")
 				g.g.P()
 				g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-				g.g.P("err := store.View(func(txn *store.LTxn) error {")
+				g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
 				g.g.P("opt := store.DefaultIteratorOptions")
 				g.g.P("opt.Prefix = alloc.Gen(", indexPrefix(g.m(m), ftName, tools.ToLowerCamel(ftNameS)), ")")
 				g.g.P("opt.Reverse = lo.Backward()")

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"time"
 )
@@ -23,7 +23,7 @@ type SampleServer struct {
 }
 
 func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *service.SetResponse) {
-	err := ctx.Store().Update(func(txn store.Txn) error {
+	err := ctx.Store().Update(func(txn rony.StoreTxn) error {
 		alloc := tools.NewAllocator()
 		defer alloc.ReleaseAll()
 		return txn.Set(alloc, req.Value, req.Key)
@@ -37,7 +37,7 @@ func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *s
 }
 
 func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *service.GetResponse) {
-	err := ctx.Store().View(func(txn store.Txn) error {
+	err := ctx.Store().View(func(txn rony.StoreTxn) error {
 		alloc := tools.NewAllocator()
 		defer alloc.ReleaseAll()
 		v, err := txn.Get(alloc, req.Key)

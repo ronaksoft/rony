@@ -2,7 +2,6 @@ package store
 
 import (
 	"github.com/dgraph-io/badger/v3"
-	"github.com/ronaksoft/rony/tools"
 )
 
 /*
@@ -19,28 +18,11 @@ var (
 	DefaultIteratorOptions = badger.DefaultIteratorOptions
 )
 
-func NewEntry(key, value []byte) *Entry {
-	return badger.NewEntry(key, value)
-}
-
 type (
-	LocalDB = badger.DB
-	LTxn    = badger.Txn
 	Entry   = badger.Entry
+	LocalDB = badger.DB
 )
 
-type Txn interface {
-	Delete(alloc *tools.Allocator, keyParts ...interface{}) error
-	Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error
-	Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error)
-	Exists(alloc *tools.Allocator, keyParts ...interface{}) bool
-}
-
-type Store interface {
-	View(fn func(Txn) error) error
-	Update(fn func(Txn) error) error
-	ViewLocal(fn func(txn *LTxn) error) error
-	UpdateLocal(fn func(txn *LTxn) error) error
-	DB() *LocalDB
-	Shutdown()
+func NewEntry(key, value []byte) *Entry {
+	return badger.NewEntry(key, value)
 }

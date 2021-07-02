@@ -3,6 +3,7 @@
 package singleton
 
 import (
+	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -114,7 +115,7 @@ func init() {
 	registry.RegisterConstructor(2982774902, "Single2")
 }
 
-func SaveSingle1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single1) (err error) {
+func SaveSingle1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Single1) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -130,12 +131,12 @@ func SaveSingle1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single1) (er
 func SaveSingle1(m *Single1) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return SaveSingle1WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
+func ReadSingle1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -156,14 +157,14 @@ func ReadSingle1(m *Single1) (*Single1, error) {
 		m = &Single1{}
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadSingle1WithTxn(txn, alloc, m)
 		return
 	})
 	return m, err
 }
 
-func SaveSingle2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single2) (err error) {
+func SaveSingle2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Single2) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -179,12 +180,12 @@ func SaveSingle2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single2) (er
 func SaveSingle2(m *Single2) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return SaveSingle2WithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
+func ReadSingle2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -205,7 +206,7 @@ func ReadSingle2(m *Single2) (*Single2, error) {
 		m = &Single2{}
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadSingle2WithTxn(txn, alloc, m)
 		return
 	})

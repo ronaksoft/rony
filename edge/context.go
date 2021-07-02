@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/log"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 	"reflect"
@@ -236,7 +235,7 @@ func (ctx *RequestCtx) Stopped() bool {
 	return ctx.stop
 }
 
-func (ctx *RequestCtx) Store() store.Store {
+func (ctx *RequestCtx) Store() rony.Store {
 	return ctx.edge.store
 }
 

@@ -12,7 +12,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/rest"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"os"
@@ -47,7 +46,7 @@ type Server struct {
 	// Edge components
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
-	store      store.Store
+	store      rony.Store
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 }
@@ -134,13 +133,18 @@ func (edge *Server) Cluster() rony.Cluster {
 }
 
 // Store returns the store component of the Edge server.
-func (edge *Server) Store() store.Store {
+func (edge *Server) Store() rony.Store {
 	return edge.store
 }
 
 // Gateway returns a reference to the underlying gateway of the Edge server
 func (edge *Server) Gateway() rony.Gateway {
 	return edge.gateway
+}
+
+// Tunnel returns a reference to the underlying tunnel of the Edge server
+func (edge *Server) Tunnel() rony.Tunnel {
+	return edge.tunnel
 }
 
 func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {

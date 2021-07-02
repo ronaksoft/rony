@@ -3,6 +3,7 @@
 package model
 
 import (
+	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -121,12 +122,12 @@ const Model1OrderByEnum Model1Order = "Enum"
 func CreateModel1(m *Model1) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return CreateModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func CreateModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model1) (err error) {
+func CreateModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model1) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -169,7 +170,7 @@ func CreateModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model1) (er
 
 }
 
-func ReadModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
+func ReadModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -190,14 +191,14 @@ func ReadModel1(id int32, shardKey int32, m *Model1) (*Model1, error) {
 		m = &Model1{}
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadModel1WithTxn(txn, alloc, id, shardKey, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *store.LTxn, alloc *tools.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+func ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -216,14 +217,14 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	if m == nil {
 		m = &Model1{}
 	}
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadModel1ByEnumAndShardKeyAndIDWithTxn(txn, alloc, enum, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func UpdateModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model1) error {
+func UpdateModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model1) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -245,13 +246,13 @@ func UpdateModel1(id int32, shardKey int32, m *Model1) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		return UpdateModel1WithTxn(txn, alloc, m)
 	})
 	return err
 }
 
-func DeleteModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, id int32, shardKey int32) error {
+func DeleteModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
 	if err != nil {
@@ -288,7 +289,7 @@ func DeleteModel1(id int32, shardKey int32) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return DeleteModel1WithTxn(txn, alloc, id, shardKey)
 	})
 }
@@ -302,7 +303,7 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
-func SaveModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model1) (err error) {
+func SaveModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model1) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey) {
 		return UpdateModel1WithTxn(txn, alloc, m)
 	} else {
@@ -313,12 +314,12 @@ func SaveModel1WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model1) (err 
 func SaveModel1(m *Model1) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return SaveModel1WithTxn(txn, alloc, m)
 	})
 }
 
-func IterModel1(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model1) bool, orderBy ...Model1Order) error {
+func IterModel1(txn *rony.StoreLocalTxn, alloc *tools.Allocator, cb func(m *Model1) bool, orderBy ...Model1Order) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -364,7 +365,7 @@ func ListModel1(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		if len(orderBy) == 0 {
 			opt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
@@ -408,7 +409,7 @@ func ListModel1(
 	return res, err
 }
 
-func IterModel1ByID(txn *store.LTxn, alloc *tools.Allocator, id int32, cb func(m *Model1) bool) error {
+func IterModel1ByID(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int32, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -438,7 +439,7 @@ func IterModel1ByID(txn *store.LTxn, alloc *tools.Allocator, id int32, cb func(m
 	return nil
 }
 
-func IterModel1ByEnum(txn *store.LTxn, alloc *tools.Allocator, enum Enum, cb func(m *Model1) bool) error {
+func IterModel1ByEnum(txn *rony.StoreLocalTxn, alloc *tools.Allocator, enum Enum, cb func(m *Model1) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -475,7 +476,7 @@ func ListModel1ByID(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Model1, 4018441491, id)
 		opt.Reverse = lo.Backward()
@@ -517,7 +518,7 @@ func ListModel1ByEnum(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, enum)
 		opt.Reverse = lo.Backward()
@@ -559,7 +560,7 @@ func ListModel1ByP1(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('I', C_Model1, uint64(4843779728911368192), p1)
 		opt.Reverse = lo.Backward()
@@ -606,7 +607,7 @@ func ListModel1ByP2(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model1, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('I', C_Model1, uint64(4749204136736587776), p2)
 		opt.Reverse = lo.Backward()
@@ -653,12 +654,12 @@ const Model2OrderByP1 Model2Order = "P1"
 func CreateModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return CreateModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func CreateModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model2) (err error) {
+func CreateModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model2) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -685,7 +686,7 @@ func CreateModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model2) (er
 
 }
 
-func ReadModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
+func ReadModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -706,14 +707,14 @@ func ReadModel2(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error)
 		m = &Model2{}
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadModel2WithTxn(txn, alloc, id, shardKey, p1, m)
 		return err
 	})
 	return m, err
 }
 
-func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *store.LTxn, alloc *tools.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+func ReadModel2ByP1AndShardKeyAndIDWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -732,14 +733,14 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	if m == nil {
 		m = &Model2{}
 	}
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		m, err = ReadModel2ByP1AndShardKeyAndIDWithTxn(txn, alloc, p1, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func UpdateModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model2) error {
+func UpdateModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model2) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -761,13 +762,13 @@ func UpdateModel2(id int64, shardKey int32, p1 string, m *Model2) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *store.LTxn) (err error) {
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
 		return UpdateModel2WithTxn(txn, alloc, m)
 	})
 	return err
 }
 
-func DeleteModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string) error {
+func DeleteModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
 	if err != nil {
@@ -790,7 +791,7 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return DeleteModel2WithTxn(txn, alloc, id, shardKey, p1)
 	})
 }
@@ -804,7 +805,7 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
-func SaveModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model2) (err error) {
+func SaveModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Model2) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1) {
 		return UpdateModel2WithTxn(txn, alloc, m)
 	} else {
@@ -815,12 +816,12 @@ func SaveModel2WithTxn(txn *store.LTxn, alloc *tools.Allocator, m *Model2) (err 
 func SaveModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *store.LTxn) error {
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
 		return SaveModel2WithTxn(txn, alloc, m)
 	})
 }
 
-func IterModel2(txn *store.LTxn, alloc *tools.Allocator, cb func(m *Model2) bool, orderBy ...Model2Order) error {
+func IterModel2(txn *rony.StoreLocalTxn, alloc *tools.Allocator, cb func(m *Model2) bool, orderBy ...Model2Order) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -866,7 +867,7 @@ func ListModel2(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		if len(orderBy) == 0 {
 			opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
@@ -910,7 +911,7 @@ func ListModel2(
 	return res, err
 }
 
-func IterModel2ByIDAndShardKey(txn *store.LTxn, alloc *tools.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
+func IterModel2ByIDAndShardKey(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int64, shardKey int32, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -940,7 +941,7 @@ func IterModel2ByIDAndShardKey(txn *store.LTxn, alloc *tools.Allocator, id int64
 	return nil
 }
 
-func IterModel2ByP1(txn *store.LTxn, alloc *tools.Allocator, p1 string, cb func(m *Model2) bool) error {
+func IterModel2ByP1(txn *rony.StoreLocalTxn, alloc *tools.Allocator, p1 string, cb func(m *Model2) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -977,7 +978,7 @@ func ListModel2ByIDAndShardKey(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, id, shardKey)
 		opt.Reverse = lo.Backward()
@@ -1019,7 +1020,7 @@ func ListModel2ByP1(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Model2, 0, lo.Limit())
-	err := store.View(func(txn *store.LTxn) error {
+	err := store.View(func(txn *rony.StoreLocalTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, p1)
 		opt.Reverse = lo.Backward()

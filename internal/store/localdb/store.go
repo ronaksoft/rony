@@ -2,6 +2,7 @@ package localdb
 
 import (
 	"github.com/dgraph-io/badger/v3"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -83,7 +84,7 @@ func runVlogGC(db *badger.DB, threshold int64) {
 	}
 }
 
-func (s *Store) ViewLocal(fn func(txn *store.LTxn) error) error {
+func (s *Store) ViewLocal(fn func(txn *rony.StoreLocalTxn) error) error {
 	retry := defaultConflictRetries
 Retry:
 	err := s.db.View(fn)
@@ -97,7 +98,7 @@ Retry:
 	return err
 }
 
-func (s *Store) UpdateLocal(fn func(txn *store.LTxn) error) error {
+func (s *Store) UpdateLocal(fn func(txn *rony.StoreLocalTxn) error) error {
 	retry := defaultConflictRetries
 Retry:
 	err := s.db.Update(fn)
@@ -111,11 +112,11 @@ Retry:
 	return err
 }
 
-func (s *Store) View(fn func(store.Txn) error) error {
+func (s *Store) View(fn func(rony.StoreTxn) error) error {
 	panic("BUG! not supported")
 }
 
-func (s *Store) Update(fn func(store.Txn) error) error {
+func (s *Store) Update(fn func(txn rony.StoreTxn) error) error {
 	panic("BUG! not supported")
 }
 
