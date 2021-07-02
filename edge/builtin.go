@@ -4,7 +4,6 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -22,12 +21,12 @@ import (
 
 // Builtin keep track of pages distribution over Edge servers.
 type Builtin struct {
-	cluster  cluster.Cluster
+	cluster  rony.Cluster
 	gateway  rony.Gateway
 	serverID string
 }
 
-func newBuiltin(serverID string, gw rony.Gateway, c cluster.Cluster) *Builtin {
+func newBuiltin(serverID string, gw rony.Gateway, c rony.Cluster) *Builtin {
 	b := &Builtin{
 		cluster:  c,
 		gateway:  gw,

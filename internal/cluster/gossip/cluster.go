@@ -3,7 +3,7 @@ package gossipCluster
 import (
 	"fmt"
 	"github.com/hashicorp/memberlist"
-	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/tools"
@@ -45,7 +45,7 @@ type Cluster struct {
 	membersByHash    map[uint64]*Member
 	gossip           *memberlist.Memberlist
 	rateLimitChan    chan struct{}
-	subscriber       cluster.Delegate
+	subscriber       rony.ClusterDelegate
 }
 
 func New(dataPath string, cfg Config) *Cluster {
@@ -145,8 +145,8 @@ func (c *Cluster) ServerID() []byte {
 	return c.localServerID
 }
 
-func (c *Cluster) Members() []cluster.Member {
-	members := make([]cluster.Member, 0, 16)
+func (c *Cluster) Members() []rony.ClusterMember {
+	members := make([]rony.ClusterMember, 0, 16)
 	c.mtx.RLock()
 	for _, cm := range c.membersByID {
 		members = append(members, cm)
@@ -155,8 +155,8 @@ func (c *Cluster) Members() []cluster.Member {
 	return members
 }
 
-func (c *Cluster) MembersByReplicaSet(replicaSets ...uint64) []cluster.Member {
-	members := make([]cluster.Member, 0, 16)
+func (c *Cluster) MembersByReplicaSet(replicaSets ...uint64) []rony.ClusterMember {
+	members := make([]rony.ClusterMember, 0, 16)
 	c.mtx.RLock()
 	for _, rs := range replicaSets {
 		for _, cm := range c.membersByReplica[rs] {
@@ -167,7 +167,7 @@ func (c *Cluster) MembersByReplicaSet(replicaSets ...uint64) []cluster.Member {
 	return members
 }
 
-func (c *Cluster) MemberByHash(h uint64) cluster.Member {
+func (c *Cluster) MemberByHash(h uint64) rony.ClusterMember {
 	c.mtx.RLock()
 	m := c.membersByHash[h]
 	c.mtx.RUnlock()
@@ -177,7 +177,7 @@ func (c *Cluster) MemberByHash(h uint64) cluster.Member {
 	return m
 }
 
-func (c *Cluster) MemberByID(serverID string) cluster.Member {
+func (c *Cluster) MemberByID(serverID string) rony.ClusterMember {
 	c.mtx.RLock()
 	m := c.membersByID[serverID]
 	c.mtx.RUnlock()
@@ -209,6 +209,6 @@ func (c *Cluster) ReplicaSet() uint64 {
 	return c.cfg.ReplicaSet
 }
 
-func (c *Cluster) Subscribe(d cluster.Delegate) {
+func (c *Cluster) Subscribe(d rony.ClusterDelegate) {
 	c.subscriber = d
 }

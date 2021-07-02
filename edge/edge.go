@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/internal/cluster"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -47,7 +46,7 @@ type Server struct {
 	postHandlers []Handler
 
 	// Edge components
-	cluster    cluster.Cluster
+	cluster    rony.Cluster
 	tunnel     tunnel.Tunnel
 	store      store.Store
 	gateway    rony.Gateway
@@ -131,7 +130,7 @@ func (edge *Server) SetRestWrapper(method string, path string, f *rest.Factory) 
 }
 
 // Cluster returns a reference to the underlying cluster of the Edge server
-func (edge *Server) Cluster() cluster.Cluster {
+func (edge *Server) Cluster() rony.Cluster {
 	return edge.cluster
 }
 
@@ -470,7 +469,7 @@ func (edge *Server) TryTunnelRequest(attempts int, retryWait time.Duration, repl
 	metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
 	return err
 }
-func (edge *Server) getReplicaMember(replicaSet uint64) (target cluster.Member) {
+func (edge *Server) getReplicaMember(replicaSet uint64) (target rony.ClusterMember) {
 	members := edge.cluster.MembersByReplicaSet(replicaSet)
 	if len(members) == 0 {
 		return nil
@@ -481,7 +480,7 @@ func (edge *Server) getReplicaMember(replicaSet uint64) (target cluster.Member) 
 	}
 	return
 }
-func (edge *Server) sendRemoteCommand(target cluster.Member, req, res *rony.MessageEnvelope) error {
+func (edge *Server) sendRemoteCommand(target rony.ClusterMember, req, res *rony.MessageEnvelope) error {
 	conn, err := target.Dial()
 	if err != nil {
 		return err

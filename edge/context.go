@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/internal/cluster"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -326,7 +325,7 @@ func (ctx *RequestCtx) PushCustomError(code, item string, desc string) {
 	ctx.stop = true
 }
 
-func (ctx *RequestCtx) Cluster() cluster.Cluster {
+func (ctx *RequestCtx) Cluster() rony.Cluster {
 	return ctx.dispatchCtx.edge.cluster
 }
 

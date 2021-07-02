@@ -17,20 +17,20 @@ type Cluster interface {
 	Start()
 	Shutdown()
 	Join(addr ...string) (int, error)
-	Members() []Member
-	MembersByReplicaSet(replicaSets ...uint64) []Member
-	MemberByID(string) Member
-	MemberByHash(uint64) Member
+	Members() []ClusterMember
+	MembersByReplicaSet(replicaSets ...uint64) []ClusterMember
+	MemberByID(string) ClusterMember
+	MemberByHash(uint64) ClusterMember
 	ReplicaSet() uint64
 	ServerID() []byte
 	TotalReplicas() int
 	Addr() string
 	SetGatewayAddrs(hostPorts []string) error
 	SetTunnelAddrs(hostPorts []string) error
-	Subscribe(d Delegate)
+	Subscribe(d ClusterDelegate)
 }
 
-type Member interface {
+type ClusterMember interface {
 	Proto(info *Edge) *Edge
 	ServerID() string
 	ReplicaSet() uint64
@@ -39,7 +39,7 @@ type Member interface {
 	Dial() (net.Conn, error)
 }
 
-type Delegate interface {
+type ClusterDelegate interface {
 	OnJoin(hash uint64)
 	OnLeave(hash uint64)
 }

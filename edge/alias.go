@@ -1,7 +1,7 @@
 package edge
 
 import (
-	"github.com/ronaksoft/rony/internal/cluster"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/tunnel"
 )
 
@@ -16,5 +16,5 @@ import (
 
 type (
 	Tunnel  = tunnel.Tunnel
-	Cluster = cluster.Cluster
+	Cluster = rony.Cluster
 )
