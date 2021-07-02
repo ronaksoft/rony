@@ -9,7 +9,6 @@ import (
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/store/localdb"
-	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/rest"
@@ -47,7 +46,7 @@ type Server struct {
 
 	// Edge components
 	cluster    rony.Cluster
-	tunnel     tunnel.Tunnel
+	tunnel     rony.Tunnel
 	store      store.Store
 	gateway    rony.Gateway
 	dispatcher Dispatcher
