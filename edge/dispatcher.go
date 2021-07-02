@@ -50,7 +50,11 @@ func (s *defaultDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err erro
 }
 
 func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
-	// Do nothing
+	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
+		buf := pools.Buffer.FromProto(envelope)
+		_ = ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
+		pools.Buffer.Put(buf)
+	})
 }
 
 func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {

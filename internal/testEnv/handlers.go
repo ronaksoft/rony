@@ -51,4 +51,5 @@ func (h *Handlers) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest, re
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+
 }

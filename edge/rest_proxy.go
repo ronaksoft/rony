@@ -73,15 +73,6 @@ func (hp *restMux) Search(conn rony.RestConn) RestProxy {
 	return n.Proxy
 }
 
-//
-// func (hp *restMux) Handle(conn *httpConn, ctx *gateway.RequestCtx) {
-// 	bw := gateway.NewBodyWriter()
-// 	conn.proxy.ClientMessage(conn, ctx, bw)
-// 	hp.handler(conn, int64(ctx.ConnID()), *bw.Bytes())
-// 	bw.Release()
-// }
-//
-
 const (
 	// ParamStart is the character, as a string, which a path pattern starts to define its named parameter.
 	ParamStart = ":"

@@ -81,8 +81,6 @@ func TestRestProxy(t *testing.T) {
 		s.Start()
 		defer s.Shutdown()
 
-
-
 	})
 }
 

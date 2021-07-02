@@ -177,6 +177,16 @@ func (ctx *DispatchCtx) BufferPop() *rony.MessageEnvelope {
 	return v
 }
 
+func (ctx *DispatchCtx) BufferPopAll(f func(envelope *rony.MessageEnvelope)) {
+	for {
+		me := ctx.BufferPop()
+		if me == nil {
+			break
+		}
+		f(me)
+	}
+}
+
 func (ctx *DispatchCtx) BufferSize() int32 {
 	return ctx.buf.Size()
 }
@@ -297,7 +307,7 @@ func (ctx *RequestCtx) PushRealtimeMessage(constructor int64, proto proto.Messag
 
 func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, realtime bool, kvs ...*rony.KeyValue) {
 	envelope := rony.PoolMessageEnvelope.Get()
-	envelope.Fill(requestID, constructor, message, kvs ...)
+	envelope.Fill(requestID, constructor, message, kvs...)
 
 	switch ctx.Kind() {
 	case TunnelMessage:
@@ -369,7 +379,7 @@ func (ctx *RequestCtx) Log() log.Logger {
 	return log.DefaultLogger
 }
 
-func (ctx *RequestCtx) LocalReplicaSet() uint64 {
+func (ctx *RequestCtx) ReplicaSet() uint64 {
 	if ctx.edge.cluster == nil {
 		return 0
 	}

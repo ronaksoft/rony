@@ -39,19 +39,18 @@ func (t testDispatcher) OnClose(conn rony.Conn) {
 }
 
 func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
-	if ctx.Conn() != nil {
-		mo := proto.MarshalOptions{
-			UseCachedSize: true,
-		}
-
-		buf := pools.Buffer.GetCap(mo.Size(envelope))
-		b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-		err := ctx.Conn().WriteBinary(ctx.StreamID(), b)
-		if err != nil {
-			log.Warn("Error On WriteBinary", zap.Error(err))
-		}
-		pools.Buffer.Put(buf)
+	mo := proto.MarshalOptions{
+		UseCachedSize: true,
 	}
+
+	buf := pools.Buffer.GetCap(mo.Size(envelope))
+	b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
+	err := ctx.Conn().WriteBinary(ctx.StreamID(), b)
+	if err != nil {
+		log.Warn("Error On WriteBinary", zap.Error(err))
+	}
+	pools.Buffer.Put(buf)
+
 	atomic.AddInt32(&receivedMessages, 1)
 }
 
@@ -59,7 +58,9 @@ func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err err
 	return ctx.UnmarshalEnvelope(data)
 }
 
-func (t testDispatcher) Done(ctx *edge.DispatchCtx) {}
+func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
+
+}
 
 func InitEdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
