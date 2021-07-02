@@ -36,7 +36,9 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	// Call the exposer make caller have access to this gateway object
-	config.Exposer(g)
+	if config.Exposer != nil {
+		config.Exposer(g)
+	}
 	return g, nil
 }
 
@@ -72,7 +74,7 @@ func (g *Gateway) SendToConn(connID uint64, streamID int64, data []byte) {
 		return
 	}
 
-	g.MessageHandler(conn, streamID, data)
+	go g.MessageHandler(conn, streamID, data)
 }
 
 func (g *Gateway) Start() {

@@ -26,17 +26,18 @@ var (
 )
 
 type context struct {
-	mtx    sync.Mutex
-	id     uint64
-	reqC   int64
-	reqID  uint64
-	req    []byte
-	expect map[int64]CheckFunc
-	gw     *dummyGateway.Gateway
-	err    error
-	errH   func(constructor int64, e *rony.Error)
-	doneCh chan struct{}
-	kvs    []*rony.KeyValue
+	mtx        sync.Mutex
+	id         uint64
+	reqC       int64
+	reqID      uint64
+	req        []byte
+	expect     map[int64]CheckFunc
+	gw         *dummyGateway.Gateway
+	err        error
+	errH       func(constructor int64, e *rony.Error)
+	doneCh     chan struct{}
+	kvs        []*rony.KeyValue
+	persistent bool
 }
 
 func newContext(gw *dummyGateway.Gateway) *context {
@@ -46,6 +47,12 @@ func newContext(gw *dummyGateway.Gateway) *context {
 		gw:     gw,
 		doneCh: make(chan struct{}, 1),
 	}
+	return c
+}
+
+// Persistent makes the context simulate persistent connection e.g. websocket
+func (c *context) Persistent() *context {
+	c.persistent = true
 	return c
 }
 
@@ -114,40 +121,17 @@ func (c *context) SetRunParameters(kvs ...*rony.KeyValue) *context {
 }
 
 func (c *context) RunShort(kvs ...*rony.KeyValue) error {
-	c.SetRunParameters(kvs...)
-	return c.Run(time.Second * 10)
+	return c.Run(time.Second*10, kvs...)
 }
 
 func (c *context) RunLong(kvs ...*rony.KeyValue) error {
-	c.SetRunParameters(kvs...)
-	return c.Run(time.Minute)
+	return c.Run(time.Minute, kvs...)
 }
 
-func (c *context) Run(timeout time.Duration) error {
+func (c *context) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
+	c.SetRunParameters(kvs...)
 	// Open Connection
-	c.gw.OpenConn(c.id, func(connID uint64, streamID int64, data []byte) {
-		defer func() {
-			c.doneCh <- struct{}{}
-		}()
-		e := &rony.MessageEnvelope{}
-		c.err = e.Unmarshal(data)
-		if c.err != nil {
-			return
-		}
-		switch e.Constructor {
-		case rony.C_MessageContainer:
-			mc := &rony.MessageContainer{}
-			c.err = mc.Unmarshal(e.Message)
-			if c.err != nil {
-				return
-			}
-			for _, e := range mc.Envelopes {
-				c.check(e)
-			}
-		default:
-			c.check(e)
-		}
-	}, c.kvs...)
+	c.gw.OpenConn(c.id, c.receiver, c.kvs...)
 
 	// Send the Request
 	c.gw.SendToConn(c.id, 0, c.req)
@@ -171,4 +155,28 @@ Loop:
 	}
 
 	return c.err
+}
+
+func (c *context) receiver(connID uint64, streamID int64, data []byte) {
+	defer func() {
+		c.doneCh <- struct{}{}
+	}()
+	e := &rony.MessageEnvelope{}
+	c.err = e.Unmarshal(data)
+	if c.err != nil {
+		return
+	}
+	switch e.Constructor {
+	case rony.C_MessageContainer:
+		mc := &rony.MessageContainer{}
+		c.err = mc.Unmarshal(e.Message)
+		if c.err != nil {
+			return
+		}
+		for _, e := range mc.Envelopes {
+			c.check(e)
+		}
+	default:
+		c.check(e)
+	}
 }
