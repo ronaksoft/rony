@@ -13,13 +13,13 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type scenario []*context
+type scenario []context
 
 func newScenario() *scenario {
 	return &scenario{}
 }
 
-func (s *scenario) Append(c *context) {
+func (s *scenario) Append(c context) {
 	*s = append(*s, c)
 }
 

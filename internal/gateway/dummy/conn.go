@@ -1,6 +1,8 @@
 package dummyGateway
 
 import (
+	"github.com/ronaksoft/rony/errors"
+	"mime/multipart"
 	"sync"
 )
 
@@ -19,7 +21,35 @@ type Conn struct {
 	persistent bool
 	mtx        sync.Mutex
 	kv         map[string]interface{}
-	onMessage  func(connID uint64, streamID int64, data []byte)
+	onMessage  func(connID uint64, streamID int64, data []byte, hdr map[string]string)
+
+	// extra data for REST
+	httpHdr map[string]string
+	method  string
+	path    string
+	body    []byte
+}
+
+func (c *Conn) WriteHeader(key, value string) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.httpHdr[key] = value
+}
+
+func (c *Conn) MultiPart() (*multipart.Form, error) {
+	return nil, errors.New(errors.NotImplemented, "Multipart")
+}
+
+func (c *Conn) Method() string {
+	return c.method
+}
+
+func (c *Conn) Path() string {
+	return c.path
+}
+
+func (c *Conn) Body() []byte {
+	return c.body
 }
 
 func (c *Conn) Get(key string) interface{} {
@@ -43,7 +73,7 @@ func (c *Conn) ClientIP() string {
 }
 
 func (c *Conn) WriteBinary(streamID int64, data []byte) error {
-	c.onMessage(c.id, streamID, data)
+	c.onMessage(c.id, streamID, data, c.httpHdr)
 	return nil
 }
 

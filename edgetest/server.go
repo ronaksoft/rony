@@ -1,6 +1,7 @@
 package edgetest
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 )
@@ -13,6 +14,12 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+type CheckFunc func(b []byte, kv ...*rony.KeyValue) error
+
+var (
+	connID uint64 = 1
+)
 
 type Server struct {
 	edge *edge.Server
@@ -56,8 +63,12 @@ func (s *Server) SetGlobalPostHandlers(h ...edge.Handler) {
 	s.edge.SetGlobalPostHandlers(h...)
 }
 
-func (s *Server) Context() *context {
-	return newContext(s.gw)
+func (s *Server) RPC() *rpcCtx {
+	return newRPCContext(s.gw)
+}
+
+func (s *Server) REST() *restCtx {
+	return newRESTContext(s.gw)
 }
 
 func (s *Server) Scenario() *scenario {

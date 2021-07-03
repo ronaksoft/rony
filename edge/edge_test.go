@@ -29,7 +29,7 @@ func TestWithTestGateway(t *testing.T) {
 		s.Start()
 		defer s.Shutdown()
 
-		err := s.Context().
+		err := s.RPC().
 			Request(service.C_SampleEcho, &service.EchoRequest{
 				Int:       100,
 				Timestamp: 123,
@@ -37,7 +37,7 @@ func TestWithTestGateway(t *testing.T) {
 			ErrorHandler(func(constructor int64, e *rony.Error) {
 				c.Println(registry.ConstructorName(constructor), "-->", e.Code, e.Items, e.Description)
 			}).
-			Expect(service.C_EchoResponse, func(b []byte, auth []byte, kv ...*rony.KeyValue) error {
+			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
 				x := &service.EchoResponse{}
 				err := x.Unmarshal(b)
 				c.So(err, ShouldBeNil)

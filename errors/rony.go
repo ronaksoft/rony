@@ -29,4 +29,5 @@ var (
 	ErrGatewayAlreadyInitialized = fmt.Errorf("gateway already initialized")
 	ErrNoTunnelAddrs             = fmt.Errorf("tunnel address does not found")
 	ErrRetriesExceeded           = Wrap("maximum retries exceeded")
+	ErrConnectionNotExists       = fmt.Errorf("connection does not exists")
 )

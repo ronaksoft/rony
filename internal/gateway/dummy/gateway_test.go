@@ -58,8 +58,9 @@ func nonPersistentSingle(gw *dummyGateway.Gateway, testConnID uint64) func(c C) 
 		}
 
 		wg.Add(1)
-		gw.OpenConn(testConnID, receiver)
-		gw.SendToConn(testConnID, 0, inputData)
+		gw.OpenConn(testConnID, false, receiver)
+		err := gw.RPC(testConnID, 0, inputData)
+		c.So(err, ShouldBeNil)
 		gw.CloseConn(testConnID)
 		wg.Wait()
 	}
@@ -86,10 +87,11 @@ func nonPersistentConcurrent(gw *dummyGateway.Gateway, testConnID uint64) func(c
 			wg.Done()
 		}
 
-		gw.OpenConn(testConnID, receiver)
+		gw.OpenConn(testConnID, false, receiver)
 		for i := 0; i < 50; i++ {
 			wg.Add(1)
-			gw.SendToConn(testConnID, 0, inputData)
+			err := gw.RPC(testConnID, 0, inputData)
+			c.So(err, ShouldBeNil)
 		}
 		gw.CloseConn(testConnID)
 		wg.Wait()
