@@ -66,6 +66,7 @@ func newDispatchCtx(edge *Server) *DispatchCtx {
 }
 
 func (ctx *DispatchCtx) reset() {
+	ctx.reqFilled = false
 	for k := range ctx.kv {
 		delete(ctx.kv, k)
 	}
