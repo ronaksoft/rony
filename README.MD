@@ -3,6 +3,7 @@
 ![](https://img.shields.io/github/stars/ronaksoft/rony?color=808080)
 ![](https://img.shields.io/github/license/ronaksoft/rony?color=808080)
 
+![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/ronaksoft/rony?include_prereleases&logoColor=808080)
 ![](https://github.com/ronaksoft/rony/actions/workflows/go.yml/badge.svg?color=379c9c&style=flat-square)
 ![](https://github.com/ronaksoft/rony/actions/workflows/devskim-analysis.yml/badge.svg?color=379c9c&style=flat-square)
 ![](https://github.com/ronaksoft/rony/actions/workflows/codacy-analysis.yml/badge.svg?color=379c9c&style=flat-square)
