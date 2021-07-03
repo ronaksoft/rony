@@ -1,4 +1,8 @@
 ## [Untagged]
+## [0.10.1]
+### Refactor
+1. REST proxy refactored
+2. Code structure refactored to decrease cyclic import chance in future updates
 
 ## [0.8.5]
 ### Improvement

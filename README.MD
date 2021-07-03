@@ -3,16 +3,12 @@
 **Rony** lets you create a clustered aware service easily. Basically when your write a service with
 **Rony** framework, you develop two interfaces one is for the client side which clients of your service connect and communicate. We call it 'Gateway'. The other interface
 communicates with other instances in the cluster which we call it 'Tunnel'.
-
 Basically when you are building your service with **Rony** you spin up an 'Edge' server. Each edge server has three components which you can enable them if you need to. '
 Gateway', 'Tunnel' and 'Cluster'. You cannot enable 'Tunnel' without enabling 'Cluster'.
-
-Each **Edge** server could be member of a replica set, if cluster is enabled. Edge servers which are in same replica set then they are replicated of each other. This replication is
-done by `Raft`
-protocol. Hence, only one of the edge servers in a replica set is the leader, and the rest are followers.
-
+Each **Edge** server could be member of a replica set if cluster enabled. 
 Each **Edge** server could have its 'Tunnel' component enabled. This is how the edge servers could communicate with each other. For example, imagine you have a request from a
-client connecting to an edge with replica set to '1' but to return the response we need to execute a command on a edge in replica set '2'. This could be easily done by using the '
+client connecting to an edge with replica set to '1' but to return the response we need to execute a command on replica set '2'. This could be easily done by using 
+the '
 Tunnel' features in **Rony**.
 
 When we want to write a service to support sharding and replication, developers need to write a lot of code to manage their communication and how to write the code to handle these
@@ -52,13 +48,6 @@ rony gen-proto
 ```
 
 The above command generates the boiler plate codes for our service.
-
-### Features
-
-1. Gossip Protocol
-2. Raft
-3. ProtocolBuffer friendly rpc
-4. Multiple gateways: Websocket, Http, Quic
 
 ---
 
@@ -167,7 +156,6 @@ customized code.
 Rony is made of big and popular packages. Without these great libraries building Rony was not possible.
 
 * [Hashicorp MemberList](https://github.com/hashicorp/memberlist)
-* [Hashicorp Raft](https://github.com/hashicorp/raft)
 * [SPF13 Cobra](https://github.com/spf13/cobra)
 * [SPF13 Viper](https://github.com/spf13/viper)
 * [Valyala FastHttp](https://github.com/valyala/fasthttp)
@@ -184,14 +172,8 @@ scenarios and will be cited.
 
 ### TODOs
 
-- [ ] Model Descriptor implementation for:
-    1. Scylla
-    2. MongoDB
-    3. Redis
-    4. Aerospike
-- [x] Middleware support for server side rpc handlers
-- [ ] Update documentation
-- [ ] Improve test coverage
-- [ ] Support Actor model for communication between nodes
-- [ ] CLI client generator, make testing server scenarios handy
+- [ ] Auto-generate REST handlers
+- [ ] Auto-generate test units
+- [ ] Distributed store
+- [ ] Implement scenario tests using `edgetest` framework
 

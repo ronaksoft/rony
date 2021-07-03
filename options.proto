@@ -2,6 +2,16 @@ syntax = "proto2";
 import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
+message RestOpt {
+    required string method = 1;
+    required string path = 2;
+    // bind_variables is a comma separated pair of bindings. For example if we have a path '/part1/:var1/:var2'
+    // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
+    // `fieldVar1=var1,fieldVar2=var2`
+    optional string bind_variables = 3;
+}
+
+
 extend google.protobuf.ServiceOptions {
     // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
     optional bool rony_cobra_cmd = 50001;
@@ -17,6 +27,7 @@ extend google.protobuf.MethodOptions {
     // rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
     // this command is not exposed to external clients connected through th gateway.
     optional bool rony_internal = 50002;
+    optional RestOpt rony_rest = 50003;
 }
 
 extend google.protobuf.MessageOptions {

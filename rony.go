@@ -38,13 +38,12 @@ type RestConn interface {
 	Body() []byte
 }
 
+
+type LogLevel = log.Level
+
 // SetLogLevel is used for debugging purpose
-// -1 : DEBUG
-// 0  : INFO
-// 1  : WARN
-// 2  : ERROR
-func SetLogLevel(l int) {
-	log.SetLevel(log.Level(l))
+func SetLogLevel(l LogLevel) {
+	log.SetLevel(l)
 }
 
 func RegisterPrometheus(registerer prometheus.Registerer) {
