@@ -74,13 +74,13 @@ func (hp *restMux) Search(conn rony.RestConn) RestProxy {
 }
 
 const (
-	// ParamStart is the character, as a string, which a path pattern starts to define its named parameter.
-	ParamStart = ":"
-	// WildcardParamStart is the character, as a string, which a path pattern starts to define its named parameter for wildcards.
+	// paramStart is the character, as a string, which a path pattern starts to define its named parameter.
+	paramStart = ":"
+	// wildcardParamStart is the character, as a string, which a path pattern starts to define its named parameter for wildcards.
 	// It allows everything else after that path prefix
 	// but the trie checks for static paths and named parameters before that in order to support everything that other implementations do not,
 	// and if nothing else found then it tries to find the closest wildcard path(super and unique).
-	WildcardParamStart = "*"
+	wildcardParamStart = "*"
 )
 
 // trie contains the main logic for adding and searching nodes for path segments.
@@ -156,9 +156,9 @@ func slowPathSplit(path string) []string {
 }
 
 func resolveStaticPart(key string) string {
-	i := strings.Index(key, ParamStart)
+	i := strings.Index(key, paramStart)
 	if i == -1 {
-		i = strings.Index(key, WildcardParamStart)
+		i = strings.Index(key, wildcardParamStart)
 	}
 	if i == -1 {
 		i = len(key)
@@ -180,19 +180,19 @@ func (t *trie) insert(key, tag string, optionalData interface{}, proxy RestProxy
 	for _, s := range input {
 		c := s[0]
 
-		if isParam, isWildcard := c == ParamStart[0], c == WildcardParamStart[0]; isParam || isWildcard {
+		if isParam, isWildcard := c == paramStart[0], c == wildcardParamStart[0]; isParam || isWildcard {
 			n.hasDynamicChild = true
 			paramKeys = append(paramKeys, s[1:]) // without : or *.
 
 			// if node has already a wildcard, don't force a value, check for true only.
 			if isParam {
 				n.childNamedParameter = true
-				s = ParamStart
+				s = paramStart
 			}
 
 			if isWildcard {
 				n.childWildcardParameter = true
-				s = WildcardParamStart
+				s = wildcardParamStart
 				if t.root == n {
 					t.hasRootWildcard = true
 				}
@@ -245,7 +245,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 			return t.root.getChild(pathSep)
 		} else if t.hasRootWildcard {
 			// no need to going through setting parameters, this one has not but it is wildcard.
-			return t.root.getChild(WildcardParamStart)
+			return t.root.getChild(wildcardParamStart)
 		}
 
 		return nil
@@ -261,7 +261,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 			if child := n.getChild(q[start:i]); child != nil {
 				n = child
 			} else if n.childNamedParameter { // && n.childWildcardParameter == false {
-				n = n.getChild(ParamStart)
+				n = n.getChild(paramStart)
 				if ln := len(paramValues); cap(paramValues) > ln {
 					paramValues = paramValues[:ln+1]
 					paramValues[ln] = q[start:i]
@@ -269,7 +269,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 					paramValues = append(paramValues, q[start:i])
 				}
 			} else if n.childWildcardParameter {
-				n = n.getChild(WildcardParamStart)
+				n = n.getChild(wildcardParamStart)
 				if ln := len(paramValues); cap(paramValues) > ln {
 					paramValues = paramValues[:ln+1]
 					paramValues[ln] = q[start:]
@@ -327,7 +327,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 			// Routes: /other2/*myparam and /other2/static
 			// Reqs: /other2/staticed will be handled
 			// by the /other2/*myparam and not the root wildcard (see above), which is what we want.
-			n = t.root.getChild(WildcardParamStart)
+			n = t.root.getChild(wildcardParamStart)
 			params.Set(n.paramKeys[0], q[1:])
 			return n
 		}
@@ -404,7 +404,7 @@ func (n *trieNode) findClosestParentWildcardNode() *trieNode {
 	n = n.parent
 	for n != nil {
 		if n.childWildcardParameter {
-			return n.getChild(WildcardParamStart)
+			return n.getChild(wildcardParamStart)
 		}
 
 		n = n.parent

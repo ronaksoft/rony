@@ -147,7 +147,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 		edgeServer.Start()
 		for _, e := range Edges {
 			if e.GetServerID() != serverID {
-				_, err := edgeServer.JoinCluster(e.Stats().Address)
+				_, err := edgeServer.Cluster().Join(e.Stats().Address)
 				if err != nil {
 					cmd.Println("Error On Join", err)
 				}

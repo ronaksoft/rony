@@ -275,30 +275,34 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		return
 	}
 
-	if err := edge.execute(dispatchCtx); err != nil {
+	err = edge.execute(dispatchCtx)
+	if err != nil {
 		edge.onError(dispatchCtx, errors.ErrInternalServer)
 	} else {
 		edge.dispatcher.Done(dispatchCtx)
 	}
 }
 func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
-	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
-	// byPassDispatcher argument
 	dispatchCtx := acquireDispatchCtx(edge, conn, 0, edge.serverID, GatewayMessage)
 	defer releaseDispatchCtx(dispatchCtx)
 
+	// apply the transformation on the client message before execute it
 	err := proxy.ClientMessage(conn, dispatchCtx)
 	if err != nil {
 		return
 	}
 
-	if err := edge.execute(dispatchCtx); err != nil {
+
+	err = edge.execute(dispatchCtx)
+	if err != nil {
 		edge.onError(dispatchCtx, errors.ErrInternalServer)
-	} else {
-		err = proxy.ServerMessage(conn, dispatchCtx)
-		if err != nil {
-			edge.onError(dispatchCtx, errors.New(errors.Internal, err.Error()))
-		}
+		return
+	}
+
+	// apply the transformation on the server message before sending it to the client
+	err = proxy.ServerMessage(conn, dispatchCtx)
+	if err != nil {
+		edge.onError(dispatchCtx, errors.New(errors.Internal, err.Error()))
 	}
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
@@ -426,15 +430,6 @@ func (edge *Server) Start() {
 	_ = edge.StartCluster()
 	_ = edge.StartGateway()
 	_ = edge.StartTunnel()
-}
-
-// JoinCluster is used to take an existing Cluster and attempt to join a cluster
-// by contacting all the given hosts and performing a state sync.
-// This returns the number of hosts successfully contacted and an error if
-// none could be reached. If an error is returned, the node did not successfully
-// join the cluster.
-func (edge *Server) JoinCluster(addr ...string) (int, error) {
-	return edge.cluster.Join(addr...)
 }
 
 // Shutdown gracefully shutdown the services

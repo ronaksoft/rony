@@ -1,4 +1,11 @@
-# RONY  **(Fast and Scalable RPC Framework)**
+# Rony (Fast and Scalable RPC Framework)
+
+![](https://img.shields.io/github/stars/ronaksoft/rony?color=808080)
+![](https://img.shields.io/github/license/ronaksoft/rony?color=808080)
+![.github/workflows/go.yml](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?color=379c9c&style=flat-square)
+![.github/workflows/dekskim-analysis.yml](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?color=379c9c&style=flat-square)
+
+## About
 **Rony** lets you create a clustered aware service easily. Basically when your write a service with
 **Rony** framework, you develop two interfaces one is for the client side which clients of your service connect and communicate. We call it 'Gateway'. The other interface
 communicates with other instances in the cluster which we call it 'Tunnel'.
