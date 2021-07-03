@@ -2,8 +2,10 @@
 
 ![](https://img.shields.io/github/stars/ronaksoft/rony?color=808080)
 ![](https://img.shields.io/github/license/ronaksoft/rony?color=808080)
-![.github/workflows/go.yml](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?color=379c9c&style=flat-square)
-![.github/workflows/dekskim-analysis.yml](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?color=379c9c&style=flat-square)
+
+![](https://github.com/ronaksoft/rony/actions/workflows/go.yml/badge.svg?color=379c9c&style=flat-square)
+![](https://github.com/ronaksoft/rony/actions/workflows/devskim-analysis.yml/badge.svg?color=379c9c&style=flat-square)
+![](https://github.com/ronaksoft/rony/actions/workflows/codacy-analysis.yml/badge.svg?color=379c9c&style=flat-square)
 
 ## About
 **Rony** lets you create a clustered aware service easily. Basically when your write a service with

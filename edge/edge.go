@@ -292,7 +292,6 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 		return
 	}
 
-
 	err = edge.execute(dispatchCtx)
 	if err != nil {
 		edge.onError(dispatchCtx, errors.ErrInternalServer)
