@@ -426,7 +426,6 @@ func (edge *Server) Start() {
 	_ = edge.StartCluster()
 	_ = edge.StartGateway()
 	_ = edge.StartTunnel()
-	return
 }
 
 // JoinCluster is used to take an existing Cluster and attempt to join a cluster

@@ -1,5 +1,4 @@
 # RONY  **(Fast and Scalable RPC Framework)**
----
 **Rony** lets you create a clustered aware service easily. Basically when your write a service with
 **Rony** framework, you develop two interfaces one is for the client side which clients of your service connect and communicate. We call it 'Gateway'. The other interface
 communicates with other instances in the cluster which we call it 'Tunnel'.
@@ -34,9 +33,9 @@ You will also need:
 After we have installed two executable files `protoc-gen-rony` and `rony` you are ready to create your project.
 
 ```shell script
-mkdir sample-project
-cd ./sample-project
-rony create-project --project.name github.com/ronaksoft/sample --project.name sample-project
+1. mkdir sample-project
+2. cd ./sample-project
+3. rony create-project --project.name github.com/ronaksoft/sample --project.name sample-project
 ```
 
 After running the 'create-project' command, you should go to the `service` directory and open `service.proto`

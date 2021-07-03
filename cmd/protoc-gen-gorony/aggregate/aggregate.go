@@ -69,7 +69,6 @@ func (m *Aggregate) FuncArgsCKs(keyPrefix string, key Key) string {
 
 type Key struct {
 	aggregate string
-	keyType   string
 	PKs       []string
 	CKs       []string
 	Orders    []string

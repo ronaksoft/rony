@@ -633,7 +633,7 @@ var LogLevel = &cobra.Command{
 	Use: "log-level",
 	Run: func(cmd *cobra.Command, args []string) {
 		level, _ := cmd.Flags().GetInt(FlagLogLevel)
-		rony.SetLogLevel(level)
+		rony.SetLogLevel(rony.LogLevel(level))
 	},
 }
 

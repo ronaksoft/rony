@@ -38,7 +38,6 @@ type RestConn interface {
 	Body() []byte
 }
 
-
 type LogLevel = log.Level
 
 // SetLogLevel is used for debugging purpose

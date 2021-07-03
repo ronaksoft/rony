@@ -64,21 +64,6 @@ func (t *Tree) backup() {
 	t.peekCount++
 }
 
-// backup2 backs the input stream up two tokens.
-// The zeroth token is already there.
-func (t *Tree) backup2(t1 tokenItem) {
-	t.token[1] = t1
-	t.peekCount = 2
-}
-
-// backup3 backs the input stream up three tokens
-// The zeroth token is already there.
-func (t *Tree) backup3(t2, t1 tokenItem) { // Reverse order: we're pushing back.
-	t.token[1] = t1
-	t.token[2] = t2
-	t.peekCount = 3
-}
-
 // peek returns but does not consume the next token.
 func (t *Tree) peek() tokenItem {
 	if t.peekCount > 0 {
@@ -100,13 +85,6 @@ func (t *Tree) nextNonSpace() (token tokenItem) {
 	return token
 }
 
-// peekNonSpace returns but does not consume the next non-space token.
-func (t *Tree) peekNonSpace() tokenItem {
-	token := t.nextNonSpace()
-	t.backup()
-	return token
-}
-
 // New allocates a new parse tree with the given name.
 func New(name string) *Tree {
 	return &Tree{
@@ -119,29 +97,6 @@ func (t *Tree) errorf(format string, args ...interface{}) {
 	t.Root = nil
 	format = fmt.Sprintf("template: %s:%d: %s", t.ParseName, t.token[0].line, format)
 	panic(fmt.Errorf(format, args...))
-}
-
-// error terminates processing.
-func (t *Tree) error(err error) {
-	t.errorf("%s", err)
-}
-
-// expect consumes the next token and guarantees it has the required type.
-func (t *Tree) expect(expected token, context string) tokenItem {
-	token := t.nextNonSpace()
-	if token.tok != expected {
-		t.unexpected(token, context)
-	}
-	return token
-}
-
-// expectOneOf consumes the next token and guarantees it has one of the required types.
-func (t *Tree) expectOneOf(expected1, expected2 token, context string) tokenItem {
-	token := t.nextNonSpace()
-	if token.tok != expected1 && token.tok != expected2 {
-		t.unexpected(token, context)
-	}
-	return token
 }
 
 // unexpected complains about the token and terminates processing.

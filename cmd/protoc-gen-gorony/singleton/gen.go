@@ -98,7 +98,6 @@ func (g *Generator) genRead(m *protogen.Message) {
 	g.g.P("}") // end of Read func
 	g.g.P()
 }
-func (g *Generator) genDelete(m *protogen.Message) {}
 
 func genDbKey(m *protogen.Message) string {
 	return fmt.Sprintf("'S', C_%s",

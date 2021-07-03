@@ -3,7 +3,6 @@ package edgetest
 import (
 	"github.com/ronaksoft/rony"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -18,12 +17,10 @@ import (
 */
 
 type restCtx struct {
-	mtx    sync.Mutex
 	id     uint64
 	gw     *dummyGateway.Gateway
 	err    error
 	expect CheckFunc
-	errH   func(constructor int64, e *rony.Error)
 	doneCh chan struct{}
 	kvs    []*rony.KeyValue
 	method string
