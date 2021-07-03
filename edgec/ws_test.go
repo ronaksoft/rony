@@ -29,7 +29,7 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	edgeServer := testEnv.InitEdgeServer("Adam", 8081, 100000)
+	edgeServer := testEnv.EdgeServer("Adam", 8081, 100000)
 	rony.SetLogLevel(0)
 	service.RegisterSample(
 		&testEnv.Handlers{

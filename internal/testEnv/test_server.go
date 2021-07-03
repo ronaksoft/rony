@@ -8,7 +8,6 @@ import (
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/pools"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 	"sync/atomic"
 	"time"
 )
@@ -39,13 +38,8 @@ func (t testDispatcher) OnClose(conn rony.Conn) {
 }
 
 func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
-	mo := proto.MarshalOptions{
-		UseCachedSize: true,
-	}
-
-	buf := pools.Buffer.GetCap(mo.Size(envelope))
-	b, _ := mo.MarshalAppend(*buf.Bytes(), envelope)
-	err := ctx.Conn().WriteBinary(ctx.StreamID(), b)
+	buf := pools.Buffer.FromProto(envelope)
+	err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 	if err != nil {
 		log.Warn("Error On WriteBinary", zap.Error(err))
 	}
@@ -59,10 +53,20 @@ func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err err
 }
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
+	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
 
+		buf := pools.Buffer.FromProto(envelope)
+		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
+		if err != nil {
+			log.Warn("Error On WriteBinary", zap.Error(err))
+		}
+		pools.Buffer.Put(buf)
+
+		atomic.AddInt32(&receivedMessages, 1)
+	})
 }
 
-func InitEdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
+func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
 		edge.WithDispatcher(&testDispatcher{}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
@@ -78,7 +82,7 @@ func InitEdgeServer(serverID string, listenPort int, concurrency int, opts ...ed
 	return edgeServer
 }
 
-func InitTestServer(serverID string) *edgetest.Server {
+func TestServer(serverID string) *edgetest.Server {
 	return edgetest.NewServer(serverID, &testDispatcher{})
 }
 

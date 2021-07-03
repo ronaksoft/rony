@@ -24,7 +24,7 @@ import (
 
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
-		s := testEnv.InitTestServer("TestServer")
+		s := testEnv.TestServer("TestServer")
 		service.RegisterSample(&testEnv.Handlers{ServerID: "TestServer"}, s.RealEdge())
 		s.Start()
 		defer s.Shutdown()
@@ -52,7 +52,7 @@ func TestWithTestGateway(t *testing.T) {
 
 func TestRestProxy(t *testing.T) {
 	Convey("Eddge With RestProxy", t, func(c C) {
-		s := testEnv.InitTestServer("TestServer")
+		s := testEnv.TestServer("TestServer")
 		s.RealEdge().SetRestProxy(
 			rony.MethodGet, "/x/:value",
 			edge.NewRestProxy(
@@ -61,18 +61,19 @@ func TestRestProxy(t *testing.T) {
 						Int: tools.StrToInt64(conn.Get("value").(string)),
 					}
 					reqB, _ := proto.Marshal(req)
-					ctx.FillEnvelope(conn.ConnID(), service.C_EchoRequest, reqB, nil)
+					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, reqB, nil)
 					return nil
 				},
 				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-					for me := ctx.BufferPop(); me != nil; me = ctx.BufferPop() {
-						c.So(me.Constructor, ShouldEqual, service.C_EchoResponse)
+					ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
+						c.So(envelope.Constructor, ShouldEqual, service.C_EchoResponse)
 						x := &service.EchoResponse{}
-						err := x.Unmarshal(me.Message)
+						err := x.Unmarshal(envelope.Message)
 						c.So(err, ShouldBeNil)
 						err = conn.WriteBinary(ctx.StreamID(), tools.S2B(tools.Int64ToStr(x.Int)))
 						c.So(err, ShouldBeNil)
-					}
+					})
+
 					return nil
 				},
 			),
@@ -81,6 +82,14 @@ func TestRestProxy(t *testing.T) {
 		s.Start()
 		defer s.Shutdown()
 
+		err := s.REST().
+			Request(rony.MethodGet, "/x/123", nil).
+			Expect(func(b []byte, kv ...*rony.KeyValue) error {
+				c.So(string(b), ShouldResemble, "123")
+				return nil
+			}).
+			RunShort()
+		c.So(err, ShouldBeNil)
 	})
 }
 
