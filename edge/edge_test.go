@@ -8,7 +8,6 @@ import (
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
-	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 )
@@ -60,8 +59,7 @@ func TestRestProxy(t *testing.T) {
 					req := &service.EchoRequest{
 						Int: tools.StrToInt64(conn.Get("value").(string)),
 					}
-					reqB, _ := proto.Marshal(req)
-					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, reqB, nil)
+					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, req, nil)
 					return nil
 				},
 				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {

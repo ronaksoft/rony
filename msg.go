@@ -46,8 +46,21 @@ func (x *MessageEnvelope) Clone() *MessageEnvelope {
 func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
 	x.RequestID = reqID
 	x.Constructor = constructor
-	x.Header = append(x.Header[:0], kvs...)
 
+	// Fill Header
+	if cap(x.Header) >= len(kvs) {
+		x.Header = x.Header[:len(kvs)]
+	} else {
+		x.Header = make([]*KeyValue, len(kvs))
+	}
+	for idx, kv := range kvs {
+		if x.Header[idx] == nil {
+			x.Header[idx] = &KeyValue{}
+		}
+		kv.DeepCopy(x.Header[idx])
+	}
+
+	// Fill Message
 	buf := pools.Buffer.FromProto(p)
 	x.Message = append(x.Message[:0], *buf.Bytes()...)
 	pools.Buffer.Put(buf)

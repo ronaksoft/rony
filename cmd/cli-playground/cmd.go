@@ -11,7 +11,6 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
 	"os"
 	"runtime/pprof"
 	"runtime/trace"
@@ -131,8 +130,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 						Int: tools.StrToInt64(conn.Get("value").(string)),
 					}
 					fmt.Println(conn.Path(), req.Int)
-					reqB, _ := proto.Marshal(req)
-					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, reqB, nil)
+					ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, req, nil)
 					return nil
 				},
 				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {

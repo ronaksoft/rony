@@ -313,10 +313,7 @@ func (edge *Server) onTunnelMessage(conn rony.Conn, tm *msg.TunnelMessage) {
 
 	// Fill the dispatch context envelope from the received tunnel message
 	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage)
-	dispatchCtx.FillEnvelope(
-		tm.Envelope.GetRequestID(), tm.Envelope.GetConstructor(), tm.Envelope.Message,
-		tm.Envelope.Auth, tm.Envelope.Header...,
-	)
+	tm.Envelope.DeepCopy(dispatchCtx.req)
 
 	if err := edge.execute(dispatchCtx); err != nil {
 		edge.onError(dispatchCtx, errors.ErrInternalServer)
