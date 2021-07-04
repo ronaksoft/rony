@@ -25,7 +25,7 @@ var ServerCmd = &cobra.Command{
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				ListenAddress: config.GetString("gateway.listen"),
 				MaxIdleTime:   config.GetDuration("idle-time"),
-				Protocol:      rony.Http,
+				Protocol:      rony.TCP,
 				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{

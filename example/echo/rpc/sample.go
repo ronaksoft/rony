@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
@@ -31,5 +32,14 @@ func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 type SampleCli struct{}
 
 func (s *SampleCli) Echo(cli *SampleClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &EchoRequest{
+		ID:            config.GetInt64("id"),
+	}
+	res, err := cli.Echo(req)
+	if err != nil {
+		cmd.Println("Receiver Error:", err.Error())
+		return err
+	}
+	cmd.Println("EchoResponse:", res.ReqID, res.RandomText)
+	return nil
 }
