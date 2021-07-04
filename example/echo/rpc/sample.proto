@@ -1,0 +1,22 @@
+syntax = "proto3";
+package service ;
+import "options.proto";
+option go_package = "github.com/ronaksoft/rony/example/echo/rpc/service";
+
+
+// Sample
+service Sample {
+    option (rony_cobra_cmd) = true;
+    rpc Echo(EchoRequest) returns (EchoResponse);
+}
+
+// EchoRequest
+message EchoRequest {
+    int64 ID = 1;
+}
+
+// Response1
+message EchoResponse {
+    int64 ReqID = 1;
+    string RandomText = 2;
+}
