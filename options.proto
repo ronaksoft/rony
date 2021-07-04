@@ -2,14 +2,19 @@ syntax = "proto2";
 import "google/protobuf/descriptor.proto";
 option go_package = "github.com/ronaksoft/rony";
 
-//message RestOpt {
-//    required string method = 1;
-//    required string path = 2;
-//    // bind_variables is a comma separated pair of bindings. For example if we have a path '/part1/:var1/:var2'
-//    // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
-//    // `fieldVar1=var1,fieldVar2=var2`
-//    optional string bind_variables = 3;
-//}
+// RestOpt is the container message for all the required and optional parameters for REST setup.
+// By adding 'rony_rest' option to the method definition a REST wrapper will be generated for that
+// method and that RPC handler will become accessible using REST endpoint.
+message RestOpt {
+    // method identifies the HTTP command: i.e. 'get', 'post', 'put', ...
+    required string method = 1;
+    // path identifies the path that this RPC method will be available as REST endpoint.
+    required string path = 2;
+    // bind_variables is a comma separated pair of bindings. For example if we have a path '/part1/:var1/:var2'
+    // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
+    // `fieldVar1=var1,fieldVar2=var2`
+    optional string bind_variables = 3;
+}
 
 
 extend google.protobuf.ServiceOptions {
@@ -27,7 +32,7 @@ extend google.protobuf.MethodOptions {
     // rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
     // this command is not exposed to external clients connected through th gateway.
     optional bool rony_internal = 50002;
-//    optional RestOpt rony_rest = 50003;
+    optional RestOpt rony_rest = 50003;
 }
 
 extend google.protobuf.MessageOptions {

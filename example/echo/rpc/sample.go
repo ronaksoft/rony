@@ -33,7 +33,7 @@ type SampleCli struct{}
 
 func (s *SampleCli) Echo(cli *SampleClient, cmd *cobra.Command, args []string) error {
 	req := &EchoRequest{
-		ID:            config.GetInt64("id"),
+		ID: config.GetInt64("id"),
 	}
 	res, err := cli.Echo(req)
 	if err != nil {
