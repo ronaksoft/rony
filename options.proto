@@ -14,6 +14,8 @@ message RestOpt {
     // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
     // `fieldVar1=var1,fieldVar2=var2`
     optional string bind_variables = 3;
+    // json_encode if is set then input and output data are json encoded version of the proto messages
+    optional bool json_encode = 4;
 }
 
 

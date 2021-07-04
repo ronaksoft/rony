@@ -26,7 +26,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-// helper function to create a cert template with a serial number and other required fields
+// CertTemplate is a helper function to create a cert template with a serial number and other required fields
 func CertTemplate() (*x509.Certificate, error) {
 	// generate a random serial number (a real cert authority would have some logic behind this)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)

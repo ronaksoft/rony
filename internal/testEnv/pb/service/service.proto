@@ -5,7 +5,13 @@ import "options.proto";
 
 service Sample {
     option (rony_cobra_cmd) = true;
-    rpc Echo (EchoRequest) returns (EchoResponse);
+    rpc Echo (EchoRequest) returns (EchoResponse) {
+        option (rony_rest) = {
+            method: "get"
+            path: "echo"
+            json_encode: true
+        };
+    }
     rpc Set (SetRequest) returns (SetResponse);
     rpc Get (GetRequest) returns (GetResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);

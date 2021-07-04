@@ -24,6 +24,7 @@ var (
 	ErrClusterNotSet             = fmt.Errorf("cluster is not set")
 	ErrGatewayNotSet             = fmt.Errorf("gateway is not set")
 	ErrTunnelNotSet              = fmt.Errorf("tunnel is not set")
+	ErrUnexpectedResponse        = fmt.Errorf("unexpected response")
 	ErrUnexpectedTunnelResponse  = fmt.Errorf("unexpected tunnel response")
 	ErrMemberNotFound            = fmt.Errorf("member not found")
 	ErrGatewayAlreadyInitialized = fmt.Errorf("gateway already initialized")

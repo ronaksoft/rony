@@ -133,7 +133,7 @@ func SliceUintDiff(a, b []uint, cb func(uint)) {
 	}
 }
 
-// SliceInt64Diff returns a - b and cb will be called on each found difference.
+// SliceStringDiff returns a - b and cb will be called on each found difference.
 func SliceStringDiff(a, b []string, cb func(string)) {
 	for i := 0; i < len(a); i++ {
 		found := false
