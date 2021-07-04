@@ -11,6 +11,7 @@ import (
 	errors "github.com/ronaksoft/rony/errors"
 	registry "github.com/ronaksoft/rony/registry"
 	cobra "github.com/spf13/cobra"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -101,6 +102,22 @@ type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 }
 
+func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e, func(c int64) []edge.Handler {
+		return preHandlers
+	})
+}
+
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e, handlerFunc)
+}
+
 type sampleWrapper struct {
 	h ISample
 }
@@ -132,20 +149,16 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
 }
 
-func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
-	w := sampleWrapper{
-		h: h,
+// <nil>
+func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	err := protojson.Unmarshal(conn.Body(), req)
+	if err != nil {
+		return err
 	}
-	w.Register(e, func(c int64) []edge.Handler {
-		return preHandlers
-	})
-}
-
-func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
-	w := sampleWrapper{
-		h: h,
-	}
-	w.Register(e, handlerFunc)
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+	return nil
 }
 
 func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

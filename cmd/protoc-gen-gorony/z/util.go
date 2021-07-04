@@ -17,7 +17,7 @@ import (
 */
 
 func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := DescName(file, g, desc)
+	p, t := DescParts(file, g, desc)
 	if p == "" {
 		return fmt.Sprintf("C_%s", t)
 	} else {
@@ -26,7 +26,7 @@ func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protorefle
 }
 
 func Name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := DescName(file, g, desc)
+	p, t := DescParts(file, g, desc)
 	if p == "" {
 		return t
 	} else {
@@ -35,12 +35,12 @@ func Name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.Mess
 }
 
 func PackageName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	pkg, _ := DescName(file, g, desc)
+	pkg, _ := DescParts(file, g, desc)
 	return pkg
 }
 
-// descName returns the package and ident name
-func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
+// DescParts returns the package and identifier name
+func DescParts(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
 	if desc == nil {
 		return "", ""
 	}
@@ -55,7 +55,16 @@ func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.
 	}
 }
 
-// zeroValue returns the equal zero value based on the input type
+// DescName return the fullname of the descriptor. i.e. package.identifier
+func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
+	pkg, name := DescParts(file, g, desc)
+	if pkg == "" {
+		return name
+	}
+	return fmt.Sprintf("%s.%s", pkg, name)
+}
+
+// ZeroValue returns the equal zero value based on the input type
 func ZeroValue(f protoreflect.FieldDescriptor) string {
 	switch f.Kind() {
 	case protoreflect.BoolKind:

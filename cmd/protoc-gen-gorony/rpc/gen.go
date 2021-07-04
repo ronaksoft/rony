@@ -38,12 +38,12 @@ func (g *Generator) Generate() {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/errors"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
-		if g.f.GoPackageName != "rony" {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-		}
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 
 		for _, s := range g.f.Services {
 			g.genServer(s)
+			g.genServerWrapper(s)
+			g.genServerRestProxy(s)
 			g.genTunnelCommand(s)
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
@@ -62,6 +62,7 @@ func (g *Generator) Generate() {
 
 func (g *Generator) genServer(s *protogen.Service) {
 	serviceName := string(s.Desc.Name())
+	// Define the service interface
 	g.g.P("type I", s.Desc.Name(), " interface {")
 	for _, m := range s.Methods {
 		inputName := z.Name(g.f, g.g, m.Desc.Input())
@@ -71,14 +72,36 @@ func (g *Generator) genServer(s *protogen.Service) {
 	g.g.P("}")
 	g.g.P()
 	g.g.P()
+	// - end of service interface definition
+
+	g.g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server, preHandlers ...edge.Handler) {")
+	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
+	g.g.P("h: h,")
+	g.g.P("}")
+	g.g.P("w.Register(e, func(c int64) []edge.Handler {")
+	g.g.P("return preHandlers")
+	g.g.P("})")
+	g.g.P("}")
+	g.g.P()
+	g.g.P("func Register", s.Desc.Name(), "WithFunc(h I", s.Desc.Name(), ", e *edge.Server, handlerFunc func(c int64) []edge.Handler) {")
+	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
+	g.g.P("h: h,")
+	g.g.P("}")
+	g.g.P("w.Register(e, handlerFunc)")
+	g.g.P("}")
+	g.g.P()
+
+}
+func (g *Generator) genServerWrapper(s *protogen.Service) {
+	serviceName := string(s.Desc.Name())
 	g.g.P("type ", tools.ToLowerCamel(serviceName), "Wrapper struct {")
 	g.g.P("h I", s.Desc.Name())
 	g.g.P("}")
 	g.g.P()
 	for _, m := range s.Methods {
 		methodName := string(m.Desc.Name())
-		inputPkg, inputType := z.DescName(g.f, g.g, m.Desc.Input())
-		outputPkg, outputType := z.DescName(g.f, g.g, m.Desc.Output())
+		inputPkg, inputType := z.DescParts(g.f, g.g, m.Desc.Input())
+		outputPkg, outputType := z.DescParts(g.f, g.g, m.Desc.Output())
 
 		g.g.P("func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ", tools.ToLowerCamel(methodName), "Wrapper (ctx *edge.RequestCtx, in *rony.MessageEnvelope) {")
 		if inputPkg == "" {
@@ -127,32 +150,114 @@ func (g *Generator) genServer(s *protogen.Service) {
 		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
 			sb.WriteString(".TunnelOnly()")
 		}
-		constructorName := fmt.Sprintf("C_%s%s", serviceName, methodName)
+		methodConstructor := fmt.Sprintf("C_%s%s", serviceName, methodName)
 		g.g.P(
 			"e.SetHandler(",
-			"edge.NewHandlerOptions().SetConstructor(", constructorName, ").",
-			"SetHandler(handlerFunc(", constructorName, ")...).Append(sw.", tools.ToLowerCamel(methodName), "Wrapper)",
-			sb.String(), ")")
+			"edge.NewHandlerOptions().SetConstructor(", methodConstructor, ").",
+			"SetHandler(handlerFunc(", methodConstructor, ")...).Append(sw.", tools.ToLowerCamel(methodName), "Wrapper)",
+			sb.String(), ")",
+		)
+		if restOpt := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt); restOpt != nil {
+			// TODO:: sanitize input: check method is valid, path is valid , ...
+			g.g.P(
+				"e.SetRestProxy(\"", restOpt.GetMethod(), "\",\"", restOpt.GetPath(), "\"",
+				",edge.NewRestProxy(sw.", tools.ToLowerCamel(methodName), "RestClient, sw.", tools.ToLowerCamel(methodName), "RestServer))",
+			)
+		}
 	}
 	g.g.P("}")
 	g.g.P()
-	g.g.P("func Register", s.Desc.Name(), "(h I", s.Desc.Name(), ", e *edge.Server, preHandlers ...edge.Handler) {")
-	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
-	g.g.P("h: h,")
-	g.g.P("}")
-	g.g.P("w.Register(e, func(c int64) []edge.Handler {")
-	g.g.P("return preHandlers")
-	g.g.P("})")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("func Register", s.Desc.Name(), "WithFunc(h I", s.Desc.Name(), ", e *edge.Server, handlerFunc func(c int64) []edge.Handler) {")
-	g.g.P("w := ", tools.ToLowerCamel(serviceName), "Wrapper{")
-	g.g.P("h: h,")
-	g.g.P("}")
-	g.g.P("w.Register(e, handlerFunc)")
-	g.g.P("}")
+}
+func (g *Generator) genServerRestProxy(s *protogen.Service) {
+	for _, m := range s.Methods {
+		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
+		restOpt, _ := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt)
+		if restOpt == nil {
+			continue
+		}
+		g.g.P("// ", restOpt.String())
+		if restOpt.GetBindVariables() == "" {
+			g.simpleRestProxy(s, m, restOpt)
+			// handle simple proxy
+		} else {
+			// handle binding proxy
+		}
+	}
+}
+func (g *Generator) simpleRestProxy(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
+	serviceName := string(s.Desc.Name())
+	methodName := string(m.Desc.Name())
+	methodConstructor := fmt.Sprintf("C_%s%s", serviceName, methodName)
+	inputPkg, inputType := z.DescParts(g.f, g.g, m.Desc.Input())
+	outputName := z.DescName(g.f, g.g, m.Desc.Output())
+	outputConstructor := fmt.Sprintf("C_%s", outputName)
+
+	// client side func
+	g.g.P(
+		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
+		tools.ToLowerCamel(methodName), "RestClient (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
+	)
+	if inputPkg == "" {
+		g.g.P("req := Pool", inputType, ".Get()")
+		g.g.P("defer Pool", inputType, ".Put(req)")
+	} else {
+		g.g.P("req := ", inputPkg, ".Pool", inputType, ".Get()")
+		g.g.P("defer ", inputPkg, ".Pool", inputType, ".Put(req)")
+	}
+	if len(m.Input.Fields) > 0 {
+		if opt.GetJsonEncode() {
+			g.g.P("err := req.UnmarshalJSON(conn.Body())")
+			g.g.P("if err != nil {")
+			g.g.P("return err")
+			g.g.P("}")
+		} else {
+			g.g.P("err := req.Unmarshal(conn.Body())")
+			g.g.P("if err != nil {")
+			g.g.P("return err")
+			g.g.P("}")
+		}
+	}
+	g.g.P("ctx.FillEnvelope(conn.ConnID(), ", methodConstructor, ", req)")
+	g.g.P("return nil")
+	g.g.P("}") // end of client side func block
 	g.g.P()
 
+	// server side func
+	g.g.P(
+		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
+		tools.ToLowerCamel(methodName), "RestServer (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
+	)
+
+	g.g.P("envelope := ctx.BufferPop()")
+	g.g.P("if envelope == nil {")
+	g.g.P("return errors.ErrInternalServer")
+	g.g.P("}")
+
+	g.g.P("switch envelope.Constructor {")
+	g.g.P("case ", outputConstructor, ":")
+	g.g.P("x := &", outputName, "{}")
+	g.g.P("_ = x.Unmarshal(envelope.Message)")
+	if opt.GetJsonEncode() {
+		g.g.P("b, err := x.MarshalJSON()")
+	} else {
+		g.g.P("b, err := x.Marshal()")
+	}
+	g.g.P("if err != nil {")
+	g.g.P("return err")
+	g.g.P("}")
+	g.g.P("return conn.WriteBinary(ctx.StreamID(), b)")
+	g.g.P()
+	g.g.P("case rony.C_Error:")
+	g.g.P("x := &rony.Error{}")
+	g.g.P("_ = x.Unmarshal(envelope.Message)")
+	g.g.P()
+	g.g.P("default:")
+	g.g.P("return errors.ErrUnexpectedResponse")
+	g.g.P("}")
+	g.g.P()
+	g.g.P("return errors.ErrInternalServer")
+	g.g.P("}") // end of server side func block
+	g.g.P()
 }
 func (g *Generator) genClient(s *protogen.Service) {
 	g.g.P("type ", s.Desc.Name(), "Client struct {")
@@ -174,7 +279,7 @@ func (g *Generator) genClient(s *protogen.Service) {
 		}
 		inputName := z.Name(g.f, g.g, m.Desc.Input())
 		outputName := z.Name(g.f, g.g, m.Desc.Output())
-		outputPkg, outputType := z.DescName(g.f, g.g, m.Desc.Output())
+		outputPkg, outputType := z.DescParts(g.f, g.g, m.Desc.Output())
 
 		g.g.P("func (c *", s.Desc.Name(), "Client) ", methodLocalName, "(req *", inputName, ", kvs ...*rony.KeyValue) (*", outputName, ", error) {")
 		g.g.P("out := rony.PoolMessageEnvelope.Get()")

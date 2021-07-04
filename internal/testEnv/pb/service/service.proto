@@ -12,7 +12,12 @@ service Sample {
             json_encode: true
         };
     }
-    rpc Set (SetRequest) returns (SetResponse);
+    rpc Set (SetRequest) returns (SetResponse){
+        option (rony_rest) = {
+            method: "post"
+            path: "set"
+        };
+    }
     rpc Get (GetRequest) returns (GetResponse);
     rpc EchoTunnel (EchoRequest) returns (EchoResponse);
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {

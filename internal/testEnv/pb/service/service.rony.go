@@ -11,6 +11,7 @@ import (
 	errors "github.com/ronaksoft/rony/errors"
 	registry "github.com/ronaksoft/rony/registry"
 	cobra "github.com/spf13/cobra"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -49,6 +50,14 @@ func (x *GetRequest) Marshal() ([]byte, error) {
 
 func (x *GetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *GetRequest) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
@@ -93,6 +102,14 @@ func (x *GetResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *GetResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *GetResponse) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 func (x *GetResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_GetResponse, x)
 }
@@ -135,6 +152,14 @@ func (x *SetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *SetRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *SetRequest) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 func (x *SetRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_SetRequest, x)
 }
@@ -173,6 +198,14 @@ func (x *SetResponse) Marshal() ([]byte, error) {
 
 func (x *SetResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *SetResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *SetResponse) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func (x *SetResponse) PushToContext(ctx *edge.RequestCtx) {
@@ -217,6 +250,14 @@ func (x *EchoRequest) Marshal() ([]byte, error) {
 
 func (x *EchoRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *EchoRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *EchoRequest) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
@@ -265,6 +306,14 @@ func (x *EchoResponse) Marshal() ([]byte, error) {
 
 func (x *EchoResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *EchoResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *EchoResponse) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
@@ -330,6 +379,14 @@ func (x *Message1) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *Message1) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Message1) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Message1, x)
 }
@@ -384,6 +441,14 @@ func (x *Message2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *Message2) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Message2) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Message2, x)
 }
@@ -419,6 +484,22 @@ type ISample interface {
 	EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoInternal(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
+}
+
+func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e, func(c int64) []edge.Handler {
+		return preHandlers
+	})
+}
+
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	w := sampleWrapper{
+		h: h,
+	}
+	w.Register(e, handlerFunc)
 }
 
 type sampleWrapper struct {
@@ -535,27 +616,89 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	}
 
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
+	e.SetRestProxy("get", "echo", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleSet).SetHandler(handlerFunc(C_SampleSet)...).Append(sw.setWrapper))
+	e.SetRestProxy("post", "set", edge.NewRestProxy(sw.setRestClient, sw.setRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleGet).SetHandler(handlerFunc(C_SampleGet)...).Append(sw.getWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(handlerFunc(C_SampleEchoTunnel)...).Append(sw.echoTunnelWrapper))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(handlerFunc(C_SampleEchoInternal)...).Append(sw.echoInternalWrapper).TunnelOnly())
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
 }
 
-func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
-	w := sampleWrapper{
-		h: h,
+// method:"get" path:"echo" json_encode:true
+func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	err := req.UnmarshalJSON(conn.Body())
+	if err != nil {
+		return err
 	}
-	w.Register(e, func(c int64) []edge.Handler {
-		return preHandlers
-	})
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+	return nil
 }
 
-func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
-	w := sampleWrapper{
-		h: h,
+func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
 	}
-	w.Register(e, handlerFunc)
+	switch envelope.Constructor {
+	case C_EchoResponse:
+		x := &EchoResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+
+	default:
+		return errors.ErrUnexpectedResponse
+	}
+
+	return errors.ErrInternalServer
+}
+
+// method:"post" path:"set"
+func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolSetRequest.Get()
+	defer PoolSetRequest.Put(req)
+	err := req.Unmarshal(conn.Body())
+	if err != nil {
+		return err
+	}
+	ctx.FillEnvelope(conn.ConnID(), C_SampleSet, req)
+	return nil
+}
+
+func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
+	}
+	switch envelope.Constructor {
+	case C_SetResponse:
+		x := &SetResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.Marshal()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+
+	default:
+		return errors.ErrUnexpectedResponse
+	}
+
+	return errors.ErrInternalServer
 }
 
 func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

@@ -37,6 +37,7 @@ func (g *Generator) Generate() {
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "sync"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/registry"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/encoding/protojson"})
 	if _, ok := g.plugins["no_edge_dep"]; !ok {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 	}
@@ -48,6 +49,8 @@ func (g *Generator) Generate() {
 		g.genDeepCopy(m)
 		g.genMarshal(m)
 		g.genUnmarshal(m)
+		g.genMarshalJson(m)
+		g.genUnmarshalJson(m)
 
 		if _, ok := g.plugins["no_edge_dep"]; !ok {
 			g.genPushToContext(m)
@@ -145,7 +148,7 @@ func (g *Generator) genDeepCopy(m *protogen.Message) {
 	g.g.P("func (x *", mtName, ") DeepCopy(z *", mtName, ") {")
 	for _, ft := range m.Fields {
 		ftName := ft.Desc.Name()
-		ftPkg, ftType := z.DescName(g.f, g.g, ft.Desc.Message())
+		ftPkg, ftType := z.DescParts(g.f, g.g, ft.Desc.Message())
 		switch ft.Desc.Cardinality() {
 		case protoreflect.Repeated:
 			switch ft.Desc.Kind() {
@@ -210,6 +213,20 @@ func (g *Generator) genMarshal(m *protogen.Message) {
 	mtName := m.Desc.Name()
 	g.g.P("func (x *", mtName, ") Marshal() ([]byte, error) {")
 	g.g.P("return proto.Marshal(x)")
+	g.g.P("}")
+	g.g.P()
+}
+func (g *Generator) genUnmarshalJson(m *protogen.Message) {
+	mtName := m.Desc.Name()
+	g.g.P("func (x *", mtName, ") UnmarshalJSON(b []byte) error {")
+	g.g.P("return protojson.Unmarshal(b, x)")
+	g.g.P("}")
+	g.g.P()
+}
+func (g *Generator) genMarshalJson(m *protogen.Message) {
+	mtName := m.Desc.Name()
+	g.g.P("func (x *", mtName, ") MarshalJSON() ([]byte, error) {")
+	g.g.P("return protojson.Marshal(x)")
 	g.g.P("}")
 	g.g.P()
 }
