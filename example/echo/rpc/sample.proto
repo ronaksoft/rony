@@ -9,8 +9,9 @@ service Sample {
     rpc Echo (EchoRequest) returns (EchoResponse) {
         option (rony_rest) = {
             method: "get"
-            path: "/echo/:ID"
+            path: "/echo/:ID/:Random"
             json_encode: true
+            bind_variables: "Random=RandomText"
         };
     }
 }
@@ -18,6 +19,7 @@ service Sample {
 // EchoRequest
 message EchoRequest {
     int64 ID = 1;
+    string RandomText = 2;
 }
 
 // Response1

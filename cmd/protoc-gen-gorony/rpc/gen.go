@@ -202,7 +202,25 @@ func (g *Generator) createRestClient(s *protogen.Service, m *protogen.Method, op
 		g.g.P("req := ", inputPkg, ".Pool", inputType, ".Get()")
 		g.g.P("defer ", inputPkg, ".Pool", inputType, ".Put(req)")
 	}
-	if len(m.Input.Fields) > 0 {
+
+	var pathVars []string
+	path := fmt.Sprintf("/%s", strings.Trim(opt.GetPath(), "/"))
+	for _, pv := range strings.Split(path, "/") {
+		if !strings.HasPrefix(pv, ":") {
+			continue
+		}
+		pathVars = append(pathVars, strings.TrimLeft(pv, ":"))
+	}
+
+	bindVars := map[string]string{}
+	for _, bv := range strings.Split(opt.GetBindVariables(), ",") {
+		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
+		if len(parts) == 2 {
+			bindVars[parts[0]] = parts[1]
+		}
+	}
+
+	if len(m.Input.Fields) > len(pathVars) {
 		if opt.GetJsonEncode() {
 			g.g.P("err := req.UnmarshalJSON(conn.Body())")
 			g.g.P("if err != nil {")
@@ -216,21 +234,8 @@ func (g *Generator) createRestClient(s *protogen.Service, m *protogen.Method, op
 		}
 	}
 
-	bindVars := map[string]string{}
-	for _, bv := range strings.Split(opt.GetBindVariables(), ",") {
-		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
-		if len(parts) == 2 {
-			bindVars[parts[0]] = parts[1]
-		}
-	}
-
 	// Try to bind path variables to the input message
-	path := fmt.Sprintf("/%s", strings.Trim(opt.GetPath(), "/"))
-	for _, v := range strings.Split(path, "/") {
-		if !strings.HasPrefix(v, ":") {
-			continue
-		}
-		pathVar := strings.TrimLeft(v, ":")
+	for _, pathVar := range pathVars {
 		varName := pathVar
 		if bindVars[pathVar] != "" {
 			varName = bindVars[pathVar]

@@ -49,6 +49,7 @@ type restMux struct {
 }
 
 func (hp *restMux) Set(method, path string, f RestProxy) {
+	method = strings.ToUpper(method)
 	if hp.routes == nil {
 		hp.routes = make(map[string]*trie)
 	}
@@ -62,7 +63,7 @@ func (hp *restMux) Set(method, path string, f RestProxy) {
 }
 
 func (hp *restMux) Search(conn rony.RestConn) RestProxy {
-	r := hp.routes[conn.Method()]
+	r := hp.routes[strings.ToUpper(conn.Method())]
 	if r == nil {
 		return nil
 	}

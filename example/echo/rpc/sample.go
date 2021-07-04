@@ -3,8 +3,8 @@ package service
 import (
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 /*
@@ -24,8 +24,9 @@ func init() {}
 type Sample struct{}
 
 func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+	ctx.Log().Warn("Received", zap.Int64("ID", req.ID))
 	res.ReqID = req.ID
-	res.RandomText = tools.RandomID(32)
+	res.RandomText = req.RandomText
 }
 
 // SampleCli implements service.ISampleCli auto-generated interface

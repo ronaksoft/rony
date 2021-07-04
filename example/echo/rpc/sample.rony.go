@@ -36,6 +36,7 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 		return
 	}
 	x.ID = 0
+	x.RandomText = ""
 	p.pool.Put(x)
 }
 
@@ -43,6 +44,7 @@ var PoolEchoRequest = poolEchoRequest{}
 
 func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.ID = x.ID
+	z.RandomText = x.RandomText
 }
 
 func (x *EchoRequest) Marshal() ([]byte, error) {
@@ -166,6 +168,43 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	}
 
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
+	e.SetRestProxy("get", "/echo/:ID/:Random", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
+}
+
+// method:"get" path:"/echo/:ID/:Random" bind_variables:"Random=RandomText" json_encode:true
+func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	req.ID = tools.StrToInt64(tools.GetString(conn.Get("ID"), "0"))
+	req.RandomText = tools.GetString(conn.Get("Random"), "")
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+	return nil
+}
+
+func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
+	}
+	switch envelope.Constructor {
+	case C_EchoResponse:
+		x := &EchoResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+
+	default:
+		return errors.ErrUnexpectedResponse
+	}
+
+	return errors.ErrInternalServer
 }
 
 func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
@@ -249,6 +288,7 @@ var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	}
 	config.SetFlags(cmd,
 		config.Int64Flag("id", 0, ""),
+		config.StringFlag("randomText", "", ""),
 	)
 	return cmd
 }
