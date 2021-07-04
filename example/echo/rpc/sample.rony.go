@@ -10,6 +10,7 @@ import (
 	edgec "github.com/ronaksoft/rony/edgec"
 	errors "github.com/ronaksoft/rony/errors"
 	registry "github.com/ronaksoft/rony/registry"
+	tools "github.com/ronaksoft/rony/tools"
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
@@ -52,6 +53,14 @@ func (x *EchoRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *EchoRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *EchoRequest) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_EchoResponse int64 = 4192619139
 
 type poolEchoResponse struct {
@@ -90,6 +99,14 @@ func (x *EchoResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *EchoResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *EchoResponse) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_SampleEcho int64 = 3852587671
 
 func init() {
@@ -97,6 +114,8 @@ func init() {
 	registry.RegisterConstructor(4192619139, "EchoResponse")
 	registry.RegisterConstructor(3852587671, "SampleEcho")
 }
+
+var _ = tools.TimeUnix()
 
 type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
@@ -147,18 +166,6 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	}
 
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
-}
-
-// <nil>
-func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-	req := PoolEchoRequest.Get()
-	defer PoolEchoRequest.Put(req)
-	err := protojson.Unmarshal(conn.Body(), req)
-	if err != nil {
-		return err
-	}
-	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
-	return nil
 }
 
 func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {

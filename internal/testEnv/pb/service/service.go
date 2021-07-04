@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/tools"
-	"google.golang.org/protobuf/encoding/protojson"
 	"time"
 )
 
@@ -67,7 +66,7 @@ func (h *Sample) EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoRes
 var EchoRest = edge.NewRestProxy(
 	func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 		req := &EchoRequest{}
-		err := protojson.Unmarshal(conn.Body(), req)
+		err := req.UnmarshalJSON(conn.Body())
 		if err != nil {
 			return err
 		}
@@ -83,7 +82,7 @@ var EchoRest = edge.NewRestProxy(
 		case C_EchoResponse:
 			x := &EchoResponse{}
 			_ = x.Unmarshal(envelope.Message)
-			b, err := protojson.Marshal(x)
+			b, err := x.MarshalJSON()
 			if err != nil {
 				return err
 			}
@@ -117,7 +116,7 @@ var EchoRestBinding = edge.NewRestProxy(
 		case C_EchoResponse:
 			x := &EchoResponse{}
 			_ = x.Unmarshal(envelope.Message)
-			b, err := protojson.Marshal(x)
+			b, err := x.MarshalJSON()
 			if err != nil {
 				return err
 			}

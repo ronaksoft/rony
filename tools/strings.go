@@ -68,6 +68,16 @@ func AppendStrUInt32(sb *strings.Builder, x uint32) {
 	String Conversion helper functions
 */
 
+func StrToFloat64(s string) float64 {
+	v, _ := strconv.ParseFloat(s, 64)
+	return v
+}
+
+func StrToFloat32(s string) float32 {
+	v, _ := strconv.ParseFloat(s, 32)
+	return float32(v)
+}
+
 func StrToInt64(s string) int64 {
 	v, _ := strconv.ParseInt(s, 10, 64)
 	return v

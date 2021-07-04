@@ -10,6 +10,7 @@ import (
 	edgec "github.com/ronaksoft/rony/edgec"
 	errors "github.com/ronaksoft/rony/errors"
 	registry "github.com/ronaksoft/rony/registry"
+	tools "github.com/ronaksoft/rony/tools"
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
@@ -477,6 +478,8 @@ func init() {
 	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
 }
 
+var _ = tools.TimeUnix()
+
 type ISample interface {
 	Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	Set(ctx *edge.RequestCtx, req *SetRequest, res *SetResponse)
@@ -616,16 +619,18 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	}
 
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
-	e.SetRestProxy("get", "echo", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
+	e.SetRestProxy("get", "/echo", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleSet).SetHandler(handlerFunc(C_SampleSet)...).Append(sw.setWrapper))
-	e.SetRestProxy("post", "set", edge.NewRestProxy(sw.setRestClient, sw.setRestServer))
+	e.SetRestProxy("post", "/set", edge.NewRestProxy(sw.setRestClient, sw.setRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleGet).SetHandler(handlerFunc(C_SampleGet)...).Append(sw.getWrapper))
+	e.SetRestProxy("get", "/req/:Key/something", edge.NewRestProxy(sw.getRestClient, sw.getRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).SetHandler(handlerFunc(C_SampleEchoTunnel)...).Append(sw.echoTunnelWrapper))
+	e.SetRestProxy("get", "/echo_tunnel/:X/:YY", edge.NewRestProxy(sw.echoTunnelRestClient, sw.echoTunnelRestServer))
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).SetHandler(handlerFunc(C_SampleEchoInternal)...).Append(sw.echoInternalWrapper).TunnelOnly())
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
 }
 
-// method:"get" path:"echo" json_encode:true
+// method:"get"  path:"/echo"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -663,7 +668,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	return errors.ErrInternalServer
 }
 
-// method:"post" path:"set"
+// method:"post"  path:"/set"
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
@@ -683,6 +688,85 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	switch envelope.Constructor {
 	case C_SetResponse:
 		x := &SetResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.Marshal()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+
+	default:
+		return errors.ErrUnexpectedResponse
+	}
+
+	return errors.ErrInternalServer
+}
+
+// method:"get"  path:"/req/:Key/something"
+func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolGetRequest.Get()
+	defer PoolGetRequest.Put(req)
+	err := req.Unmarshal(conn.Body())
+	if err != nil {
+		return err
+	}
+	req.Key = tools.S2B(tools.GetString(conn.Get("Key"), ""))
+	ctx.FillEnvelope(conn.ConnID(), C_SampleGet, req)
+	return nil
+}
+
+func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
+	}
+	switch envelope.Constructor {
+	case C_GetResponse:
+		x := &GetResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.Marshal()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+
+	default:
+		return errors.ErrUnexpectedResponse
+	}
+
+	return errors.ErrInternalServer
+}
+
+// method:"get"  path:"/echo_tunnel/:X/:YY"  bind_variables:"X=Int,YY=Timestamp"
+func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+	err := req.Unmarshal(conn.Body())
+	if err != nil {
+		return err
+	}
+	req.Int = tools.StrToInt64(tools.GetString(conn.Get("X"), "0"))
+	req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("YY"), "0"))
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoTunnel, req)
+	return nil
+}
+
+func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
+	}
+	switch envelope.Constructor {
+	case C_EchoResponse:
+		x := &EchoResponse{}
 		_ = x.Unmarshal(envelope.Message)
 		b, err := x.Marshal()
 		if err != nil {

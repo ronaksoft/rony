@@ -8,18 +8,29 @@ service Sample {
     rpc Echo (EchoRequest) returns (EchoResponse) {
         option (rony_rest) = {
             method: "get"
-            path: "echo"
+            path: "/echo"
             json_encode: true
         };
     }
     rpc Set (SetRequest) returns (SetResponse){
         option (rony_rest) = {
             method: "post"
-            path: "set"
+            path: "/set"
         };
     }
-    rpc Get (GetRequest) returns (GetResponse);
-    rpc EchoTunnel (EchoRequest) returns (EchoResponse);
+    rpc Get (GetRequest) returns (GetResponse){
+        option (rony_rest) = {
+            method: "get"
+            path: "/req/:Key/something"
+        };
+    }
+    rpc EchoTunnel (EchoRequest) returns (EchoResponse){
+        option (rony_rest) = {
+            method: "get"
+            path: "/echo_tunnel/:X/:YY"
+            bind_variables: "X=Int,YY=Timestamp"
+        };
+    }
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {
         option (rony_internal) = true;
     }

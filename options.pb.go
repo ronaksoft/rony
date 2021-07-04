@@ -35,7 +35,7 @@ type RestOpt struct {
 	Path *string `protobuf:"bytes,2,req,name=path" json:"path,omitempty"`
 	// bind_variables is a comma separated pair of bindings. For example if we have a path '/part1/:var1/:var2'
 	// and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
-	// `fieldVar1=var1,fieldVar2=var2`
+	// `var1=fieldVar1,var2=fieldVar2`
 	BindVariables *string `protobuf:"bytes,3,opt,name=bind_variables,json=bindVariables" json:"bind_variables,omitempty"`
 	// json_encode if is set then input and output data are json encoded version of the proto messages
 	JsonEncode *bool `protobuf:"varint,4,opt,name=json_encode,json=jsonEncode" json:"json_encode,omitempty"`

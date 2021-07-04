@@ -4,6 +4,7 @@ package rony
 
 import (
 	registry "github.com/ronaksoft/rony/registry"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -61,6 +62,14 @@ func (x *MessageEnvelope) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_KeyValue int64 = 4276272820
 
 type poolKeyValue struct {
@@ -97,6 +106,14 @@ func (x *KeyValue) Marshal() ([]byte, error) {
 
 func (x *KeyValue) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *KeyValue) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *KeyValue) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 const C_MessageContainer int64 = 1972016308
@@ -146,6 +163,14 @@ func (x *MessageContainer) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *MessageContainer) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *MessageContainer) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_Error int64 = 2619118453
 
 type poolError struct {
@@ -184,6 +209,14 @@ func (x *Error) Marshal() ([]byte, error) {
 
 func (x *Error) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Error) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Error) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 const C_Redirect int64 = 981138557
@@ -235,6 +268,14 @@ func (x *Redirect) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *Redirect) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Redirect) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_Edge int64 = 3576986712
 
 type poolEdge struct {
@@ -273,6 +314,14 @@ func (x *Edge) Marshal() ([]byte, error) {
 
 func (x *Edge) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Edge) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Edge) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 const C_Edges int64 = 2120950449
@@ -320,6 +369,14 @@ func (x *Edges) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *Edges) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Edges) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_GetNodes int64 = 362407405
 
 type poolGetNodes struct {
@@ -356,6 +413,14 @@ func (x *GetNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *GetNodes) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *GetNodes) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_GetAllNodes int64 = 3267106379
 
 type poolGetAllNodes struct {
@@ -388,6 +453,14 @@ func (x *GetAllNodes) Marshal() ([]byte, error) {
 
 func (x *GetAllNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetAllNodes) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *GetAllNodes) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 const C_HttpBody int64 = 3032622721
@@ -437,6 +510,14 @@ func (x *HttpBody) Marshal() ([]byte, error) {
 
 func (x *HttpBody) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *HttpBody) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *HttpBody) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func init() {

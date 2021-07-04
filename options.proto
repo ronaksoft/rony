@@ -12,7 +12,7 @@ message RestOpt {
     required string path = 2;
     // bind_variables is a comma separated pair of bindings. For example if we have a path '/part1/:var1/:var2'
     // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
-    // `fieldVar1=var1,fieldVar2=var2`
+    // `var1=fieldVar1,var2=fieldVar2`
     optional string bind_variables = 3;
     // json_encode if is set then input and output data are json encoded version of the proto messages
     optional bool json_encode = 4;

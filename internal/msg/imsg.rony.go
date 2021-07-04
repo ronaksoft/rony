@@ -7,6 +7,7 @@ import (
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
 	tools "github.com/ronaksoft/rony/tools"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
@@ -47,6 +48,14 @@ func (x *GetPage) Marshal() ([]byte, error) {
 
 func (x *GetPage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *GetPage) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *GetPage) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 const C_TunnelMessage int64 = 3271476222
@@ -108,6 +117,14 @@ func (x *TunnelMessage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *TunnelMessage) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *TunnelMessage) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_EdgeNode int64 = 999040174
 
 type poolEdgeNode struct {
@@ -152,6 +169,14 @@ func (x *EdgeNode) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
+func (x *EdgeNode) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *EdgeNode) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
+}
+
 const C_Page int64 = 3023575326
 
 type poolPage struct {
@@ -188,6 +213,14 @@ func (x *Page) Marshal() ([]byte, error) {
 
 func (x *Page) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
+}
+
+func (x *Page) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
+func (x *Page) UnmarshalJSON(b []byte) error {
+	return protojson.Unmarshal(b, x)
 }
 
 func init() {

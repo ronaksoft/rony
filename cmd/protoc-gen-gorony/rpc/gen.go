@@ -7,6 +7,7 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 )
@@ -39,7 +40,9 @@ func (g *Generator) Generate() {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 
+		g.g.P("var _ = tools.TimeUnix()")
 		for _, s := range g.f.Services {
 			g.genServer(s)
 			g.genServerWrapper(s)
@@ -159,8 +162,9 @@ func (g *Generator) genServerWrapper(s *protogen.Service) {
 		)
 		if restOpt := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt); restOpt != nil {
 			// TODO:: sanitize input: check method is valid, path is valid , ...
+			path := fmt.Sprintf("/%s", strings.Trim(restOpt.GetPath(), "/"))
 			g.g.P(
-				"e.SetRestProxy(\"", restOpt.GetMethod(), "\",\"", restOpt.GetPath(), "\"",
+				"e.SetRestProxy(\"", restOpt.GetMethod(), "\",\"", path, "\"",
 				",edge.NewRestProxy(sw.", tools.ToLowerCamel(methodName), "RestClient, sw.", tools.ToLowerCamel(methodName), "RestServer))",
 			)
 		}
@@ -176,23 +180,17 @@ func (g *Generator) genServerRestProxy(s *protogen.Service) {
 			continue
 		}
 		g.g.P("// ", restOpt.String())
-		if restOpt.GetBindVariables() == "" {
-			g.simpleRestProxy(s, m, restOpt)
-			// handle simple proxy
-		} else {
-			// handle binding proxy
-		}
+
+		g.createRestClient(s, m, restOpt)
+		g.createRestServer(s, m, restOpt)
 	}
 }
-func (g *Generator) simpleRestProxy(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
+func (g *Generator) createRestClient(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
 	serviceName := string(s.Desc.Name())
 	methodName := string(m.Desc.Name())
 	methodConstructor := fmt.Sprintf("C_%s%s", serviceName, methodName)
 	inputPkg, inputType := z.DescParts(g.f, g.g, m.Desc.Input())
-	outputName := z.DescName(g.f, g.g, m.Desc.Output())
-	outputConstructor := fmt.Sprintf("C_%s", outputName)
 
-	// client side func
 	g.g.P(
 		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
 		tools.ToLowerCamel(methodName), "RestClient (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
@@ -217,12 +215,59 @@ func (g *Generator) simpleRestProxy(s *protogen.Service, m *protogen.Method, opt
 			g.g.P("}")
 		}
 	}
+
+	bindVars := map[string]string{}
+	for _, bv := range strings.Split(opt.GetBindVariables(), ",") {
+		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
+		if len(parts) == 2 {
+			bindVars[parts[0]] = parts[1]
+		}
+	}
+
+	// Try to bind path variables to the input message
+	path := fmt.Sprintf("/%s", strings.Trim(opt.GetPath(), "/"))
+	for _, v := range strings.Split(path, "/") {
+		if !strings.HasPrefix(v, ":") {
+			continue
+		}
+		pathVar := strings.TrimLeft(v, ":")
+		varName := pathVar
+		if bindVars[pathVar] != "" {
+			varName = bindVars[pathVar]
+		}
+		for _, f := range m.Input.Fields {
+			if f.Desc.JSONName() == varName {
+				switch f.Desc.Kind() {
+				case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
+					g.g.P("req.", f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+				case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+					g.g.P("req.", f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+				case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
+					g.g.P("req.", f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+				case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+					g.g.P("req.", f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+				case protoreflect.StringKind:
+					g.g.P("req.", f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")")
+				case protoreflect.BytesKind:
+					g.g.P("req.", f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))")
+				case protoreflect.DoubleKind:
+					g.g.P("req.", f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+				}
+			}
+		}
+	}
+
 	g.g.P("ctx.FillEnvelope(conn.ConnID(), ", methodConstructor, ", req)")
 	g.g.P("return nil")
 	g.g.P("}") // end of client side func block
 	g.g.P()
 
-	// server side func
+}
+func (g *Generator) createRestServer(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
+	serviceName := string(s.Desc.Name())
+	methodName := string(m.Desc.Name())
+	outputName := z.DescName(g.f, g.g, m.Desc.Output())
+	outputConstructor := fmt.Sprintf("C_%s", outputName)
 	g.g.P(
 		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
 		tools.ToLowerCamel(methodName), "RestServer (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
