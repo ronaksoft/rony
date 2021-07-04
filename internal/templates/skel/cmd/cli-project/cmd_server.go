@@ -6,7 +6,6 @@ import (
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
 	"os"
-	"runtime"
 )
 
 var edgeServer *edge.Server
@@ -24,7 +23,6 @@ var ServerCmd = &cobra.Command{
 			config.GetString("server.id"),
 			edge.WithDataDir(config.GetString("data.path")),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
-				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),
 				MaxIdleTime:   config.GetDuration("idle-time"),
 				Protocol:      rony.Http,

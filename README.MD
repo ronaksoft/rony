@@ -95,50 +95,30 @@ import (
 )
 
 func main() {
-	server := edge.NewServer(serverID,
-		edge.WithDispatcher(&dispatcher{}),
+	serverID := "UniqueServerID"
+	edgeServer := edge.NewServer(serverID,
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   1000,
 			MaxIdleTime:   0,
 			ListenAddress: "0.0.0.0:80",
-			ExternalAddr:  []string{"127.0.0.1:80"}, // ExternalAddr could be used when the server is behind proxy or nats
+			ExternalAddrs: []string{"127.0.0.1:80"}, // ExternalAddr could be used when the server is behind proxy or nats
 		}),
 		edge.WithUdpTunnel(edge.UdpTunnelConfig{
-			ServerID:      serverID,
-			Concurrency:   1000,
 			ListenAddress: "0.0.0.0:8080",
 			MaxBodySize:   0,
 			ExternalAddrs: nil,
 		}),
 		edge.WithGossipCluster(edge.GossipClusterConfig{
-			ServerID:   serverID,
 			Bootstrap:  true,
-			RaftPort:   7090,
 			ReplicaSet: 1,
-			Mode:       cluster.MultiReplica,
 			GossipPort: 7091,
-			DataPath:   "./data",
 		}),
 	)
 
-	server.AddHandler(msg.C_EchoRequest, EchoHandler)
+	service.RegisterSampleService(&service.SampleService{}, edgeServer)
+	edgeServer.Start()
 
-	server.Start()
-	
-	server.ShutdownWithSignal(os.Kill)
-}
-
-func EchoHandler(ctx *context.Context, in *msg.MessageEnvelope) {
-	req := msg.EchoRequest{}
-	res := msg.EchoResponse{}
-	_ = req.Unmarshal(in.Message)
-
-	res.Bool = req.Bool
-	res.Int = req.Int
-	res.Timestamp = time.Now().UnixNano()
-	res.Delay = res.Timestamp - req.Timestamp
-
-	ctx.PushMessage(ctx.AuthID, in.RequestID, msg.C_EchoResponse, res)
+	edgeServer.ShutdownWithSignal(os.Kill)
 }
 ```
 

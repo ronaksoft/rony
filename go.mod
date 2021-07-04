@@ -20,7 +20,6 @@ require (
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/memberlist v0.2.4
 	github.com/jinzhu/inflection v1.0.0
-	github.com/loov/goda v0.4.2 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.54
@@ -38,6 +37,7 @@ require (
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.0 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
