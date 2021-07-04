@@ -25,6 +25,8 @@ interactions between services and clients. **Rony** makes it easy. Rony internal
 However, to develop your service using **Rony** framework, there are more works to initialize your code comparing to other RESTful frameworks. To help you setup the skeleton even
 faster there is an executable to makes the life easier for you.
 
+### Overview Diagram
+![](docs/rony_overview.png?raw=true)
 ### Installation
 
 Use go get to install the Go client-and-server generator:
