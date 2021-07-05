@@ -634,7 +634,6 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
-	// 3  0[]
 	err := req.UnmarshalJSON(conn.Body())
 	if err != nil {
 		return err
@@ -673,7 +672,6 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
-	// 2  0[]
 	err := req.Unmarshal(conn.Body())
 	if err != nil {
 		return err
@@ -712,7 +710,6 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolGetRequest.Get()
 	defer PoolGetRequest.Put(req)
-	// 1  1[Key]
 	req.Key = tools.S2B(tools.GetString(conn.Get("Key"), ""))
 	ctx.FillEnvelope(conn.ConnID(), C_SampleGet, req)
 	return nil
@@ -748,7 +745,6 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
-	// 3  2[X YY]
 	err := req.Unmarshal(conn.Body())
 	if err != nil {
 		return err
