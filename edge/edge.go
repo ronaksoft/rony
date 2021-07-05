@@ -12,6 +12,7 @@ import (
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -289,19 +290,26 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 	// apply the transformation on the client message before execute it
 	err := proxy.ClientMessage(conn, dispatchCtx)
 	if err != nil {
+		conn.WriteStatus(http.StatusInternalServerError)
+		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+		_ = conn.WriteBinary(0, b)
 		return
 	}
 
 	err = edge.execute(dispatchCtx)
 	if err != nil {
-		edge.onError(dispatchCtx, errors.ErrInternalServer)
+		conn.WriteStatus(http.StatusInternalServerError)
+		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+		_ = conn.WriteBinary(0, b)
 		return
 	}
 
 	// apply the transformation on the server message before sending it to the client
 	err = proxy.ServerMessage(conn, dispatchCtx)
 	if err != nil {
-		edge.onError(dispatchCtx, errors.New(errors.Internal, err.Error()))
+		conn.WriteStatus(http.StatusInternalServerError)
+		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+		_ = conn.WriteBinary(0, b)
 	}
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {

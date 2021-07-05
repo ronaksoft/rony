@@ -24,10 +24,15 @@ type Conn struct {
 	onMessage  func(connID uint64, streamID int64, data []byte, hdr map[string]string)
 
 	// extra data for REST
+	status  int
 	httpHdr map[string]string
 	method  string
 	path    string
 	body    []byte
+}
+
+func (c *Conn) WriteStatus(status int) {
+	c.status = status
 }
 
 func (c *Conn) WriteHeader(key, value string) {

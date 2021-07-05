@@ -55,6 +55,10 @@ func (c *httpConn) SetClientType(ct []byte) {
 	c.clientType = append(c.clientType[:0], ct...)
 }
 
+func (c *httpConn) WriteStatus(status int) {
+	c.ctx.SetStatusCode(status)
+}
+
 func (c *httpConn) WriteBinary(streamID int64, data []byte) (err error) {
 	_, err = c.ctx.Write(data)
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)

@@ -31,6 +31,7 @@ type Conn interface {
 // RestConn is same as Conn but it supports REST format apis.
 type RestConn interface {
 	Conn
+	WriteStatus(status int)
 	WriteHeader(key, value string)
 	MultiPart() (*multipart.Form, error)
 	Method() string
@@ -43,6 +44,7 @@ type LogLevel = log.Level
 // SetLogLevel is used for debugging purpose
 func SetLogLevel(l LogLevel) {
 	log.SetLevel(l)
+
 }
 
 func RegisterPrometheus(registerer prometheus.Registerer) {
