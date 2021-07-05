@@ -28,3 +28,24 @@ const (
 	Expired          Code = "E12"
 	NotImplemented   Code = "E13"
 )
+
+func (c Code) Name() string {
+	return _codeName[c]
+}
+
+var _codeName = map[Code]string{
+	Internal:         "Internal",
+	Invalid:          "Invalid",
+	Unavailable:      "Unavailable",
+	TooMany:          "TooMany",
+	TooFew:           "TooFew",
+	Incomplete:       "Incomplete",
+	Timeout:          "Timeout",
+	Access:           "Access",
+	AlreadyExists:    "AlreadyExists",
+	Busy:             "Busy",
+	OutOfRange:       "OutOfRange",
+	PartiallyApplied: "PartiallyApplied",
+	Expired:          "Expired",
+	NotImplemented:   "NotImplemented",
+}
