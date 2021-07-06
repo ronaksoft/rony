@@ -47,14 +47,14 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 
-			g.g.P(g.Exec(template.Must(template.New("genCreate").Parse(genCreate)), GetArg(g, m, g.m(m), "m.")))
-
+			arg := GetArg(g, m, g.m(m))
+			g.g.P(g.Exec(template.Must(template.New("genCreate").Parse(genCreate)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genUpdate").Parse(genUpdate)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genSave").Parse(genSave)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genRead").Parse(genRead)), arg))
 			g.genOrderByConstants(m)
-			g.genRead(m)
-			g.genUpdate(m)
 			g.genDelete(m)
 			g.genHasField(m)
-			g.genSave(m)
 			g.genIter(m)
 			g.genList(m)
 			g.genIterByPK(m)
@@ -140,8 +140,7 @@ func (g *Generator) createModel(m *protogen.Message) {
 				fields[kWithoutSign] = struct{}{}
 				pk.Orders = append(pk.Orders, k)
 				pk.CKs = append(pk.CKs, kWithoutSign)
-				pk.CKGoTypes = append(pk.CKs, agg.FieldsGo[kWithoutSign])
-
+				pk.CKGoTypes = append(pk.CKGoTypes, agg.FieldsGo[kWithoutSign])
 			}
 			agg.Table = pk
 		case parse.NodeView:
@@ -160,7 +159,7 @@ func (g *Generator) createModel(m *protogen.Message) {
 				fields[kWithoutSign] = struct{}{}
 				pk.Orders = append(pk.Orders, k)
 				pk.CKs = append(pk.CKs, kWithoutSign)
-				pk.CKGoTypes = append(pk.CKs, agg.FieldsGo[kWithoutSign])
+				pk.CKGoTypes = append(pk.CKGoTypes, agg.FieldsGo[kWithoutSign])
 			}
 			agg.Views = append(agg.Views, pk)
 		}
@@ -194,13 +193,13 @@ func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m 
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	if store.Exists(txn, alloc, {{.DBKey}}) {
+	if store.Exists(txn, alloc, {{(call .DBKey "m.")}}) {
 		return store.ErrAlreadyExists
 	}
 	
 	// save entry
 	val := alloc.Marshal(m)
-	err = store.Set(txn, alloc, val, {{.DBKey}})
+	err = store.Set(txn, alloc, val, {{(call .DBKey "m.")}})
 	if err != nil {
 		return
 	}
@@ -208,7 +207,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m 
 	{{- range .Views }}
 
 	// save view {{.Keys}}
-	err = store.Set(txn, alloc, val, {{.DBKey}})
+	err = store.Set(txn, alloc, val, {{(call .DBKey "m.")}})
 	if err != nil {
 		return err 
 	}
@@ -216,19 +215,19 @@ func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m 
 	
 	{{- if .HasIndex }}
 
-		key := alloc.Gen({{.DBKey}})
+		key := alloc.Gen({{(call .DBKey "m.")}})
 		{{- range .Fields }}
 			{{- if .HasIndex }}
 				// update field index by saving new value: {{.Name}}
 				{{- if eq .Kind "repeated" }}
 					for idx := range m.{{.Name}} {
-						err = store.Set(txn, alloc, key, {{.DBKeyWithPostfix}})
+						err = store.Set(txn, alloc, key, {{(call .DBKey "m." "[idx]")}})
 						if err != nil {
 							return
 						}
 					}
 				{{- else }}
-					err = store.Set(txn, alloc, key, {{.DBKey}})
+					err = store.Set(txn, alloc, key, {{(call .DBKey "m." "")}})
 					if err != nil {
 						return
 					}
@@ -241,140 +240,126 @@ func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m 
 }
 
 `
+
 const genUpdate = `
-func Update{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocation, m *{{.Name}}) error {
+func Update{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *{{.Name}}) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 	
-	err := Delete{{.Name}}WithTxn(txn, alloc, 
+	err := Delete{{.Name}}WithTxn(txn, alloc, {{call .String "m." "," false}})
+	if err != nil {
+		return err
+	}
+	
+	return Create{{.Name}}WithTxn(txn, alloc, m)
+}
+
+func Update{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		return store.ErrEmptyObject
+	}
+	
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+		return Update{{.Name}}WithTxn(txn, alloc, m)
+	})
+	return err 
 }
 `
-const genDelete = ``
-const genRead = ``
 
-// genUpdate generates Update function
-func (g *Generator) genUpdate(m *protogen.Message) {
-	mn := g.m(m).Name
-	g.g.P("func Update", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *", mn, ") error {")
-	g.blockAlloc()
-	g.g.P("err := Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("m.", ",", false), ")")
-	g.g.P("if err != nil {")
-	g.g.P("return err")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("return Create", mn, "WithTxn(txn, alloc, m)")
-	g.g.P("}") // end of UpdateWithTxn func
-	g.g.P()
-	g.g.P("func Update", mn, "(", g.m(m).Table.FuncArgs(""), ", m *", mn, ") error {")
-	g.g.P("alloc := tools.NewAllocator()")
-	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P()
-	g.g.P("if m == nil {")
-	g.g.P("return store.ErrEmptyObject")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
-	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
-	g.g.P("})") // end of View func
-	g.g.P("return err")
-	g.g.P("}") // end of Read func
-	g.g.P()
-}
-
-// genSave generates Save function, which will CREATE or UPDATE the aggregate
-func (g *Generator) genSave(m *protogen.Message) {
-	mn := g.m(m).Name
-	// SaveWithTxn func
-	g.g.P("func Save", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m*", mn, ") (err error) {")
-	g.g.P("if store.Exists(txn, alloc, ", g.m(m).Table.DBKey("m."), ") {")
-	g.g.P("return Update", mn, "WithTxn(txn, alloc, m)")
-	g.g.P("} else {")
-	g.g.P("return Create", mn, "WithTxn(txn, alloc, m)")
-	g.g.P("}")
-	g.g.P("}")
-	g.g.P()
-
-	// Save func
-	g.g.P("func Save", g.model(m).Name, "(m *", g.model(m).Name, ") error {")
-	g.g.P("alloc := tools.NewAllocator()")
-	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
-	g.g.P("return Save", g.model(m).Name, "WithTxn (txn, alloc, m)")
-	g.g.P("})") // end of Update func
-	g.g.P("}")  // end of Save func
-	g.g.P()
-}
-
-// genRead generates one READ and for the number of defined VIEWS, READ_BY functions
-func (g *Generator) genRead(m *protogen.Message) {
-	mn := g.m(m).Name
-
-	// ReadWithTxn Func
-	g.g.P("func Read", mn, "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).Table.FuncArgs(""), ", m *", mn, ") (*", mn, ",error) {")
-	g.blockAlloc()
-	g.g.P("err := store.Unmarshal(txn, alloc, m,", g.m(m).Table.DBKey(""), ")")
-	g.g.P("if err != nil {")
-	g.g.P("return nil, err")
-	g.g.P("}")
-	g.g.P("return m, err")
-	g.g.P("}") // end of Read func
-	g.g.P()
-
-	// Read Func
-	g.g.P("func Read", mn, "(", g.m(m).Table.FuncArgs(""), ", m *", mn, ") (*", mn, ",error) {")
-	g.g.P("alloc := tools.NewAllocator()")
-	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P()
-	g.g.P("if m == nil {")
-	g.g.P("m = &", mn, "{}")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
-	g.g.P("m, err = Read", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("", ",", true), ", m)")
-	g.g.P("return err")
-	g.g.P("})") // end of View func
-	g.g.P("return m, err")
-	g.g.P("}") // end of Read func
-	g.g.P()
-
-	g.readViews(m)
-}
-func (g *Generator) readViews(m *protogen.Message) {
-	mn := g.m(m).Name
-	for idx, pk := range g.m(m).Views {
-		g.g.P(
-			"func Read", mn, "By", pk.String("", "And", false), "WithTxn",
-			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", pk.FuncArgs(""), ", m *", mn, ")",
-			"( *", mn, ", error) {")
-		g.blockAlloc()
-		g.g.P("err := store.Unmarshal(txn, alloc, m,", g.m(m).Views[idx].DBKey(""), " )")
-		g.g.P("if err != nil {")
-		g.g.P("return nil, err")
-		g.g.P("}")
-		g.g.P("return m, err")
-		g.g.P("}") // end of Read func
-		g.g.P()
-		g.g.P(
-			"func Read", mn, "By", pk.String("", "And", false),
-			"(", pk.FuncArgs(""), ", m *", mn, ")",
-			"( *", mn, ", error) {",
-		)
-		g.g.P("alloc := tools.NewAllocator()")
-		g.g.P("defer alloc.ReleaseAll()")
-		g.g.P("if m == nil {")
-		g.g.P("m = &", mn, "{}")
-		g.g.P("}")
-		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) (err error) {")
-		g.g.P("m, err = Read", mn, "By", pk.String("", "And", false), "WithTxn (txn, alloc,", pk.String("", ",", true), ", m)")
-		g.g.P("return err")
-		g.g.P("})") // end of View func
-		g.g.P("return m, err")
-		g.g.P("}") // end of Read func
-		g.g.P()
+const genSave = `
+func Save{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+	if store.Exists(txn, alloc, {{(call .DBKey "m.")}}) {
+		return Update{{.Name}}WithTxn(txn, alloc, m)
+	} else {
+		return Create{{.Name}}WithTxn(txn, alloc, m)
 	}
 }
+
+func Save{{.Name}} (m *{{.Name}}) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
+		return Save{{.Name}}WithTxn(txn, alloc, m)
+	})
+}
+
+`
+
+const genRead = `
+func Read{{.Name}}WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+	if err != nil {
+		return nil, err 
+	}
+	return m, nil
+}
+
+func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		m = &{{.Name}}{}
+	}
+
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+		m, err = Read{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}}, m)
+		return err 
+	})
+	return m, err
+}
+
+{{- range .Views }}
+
+func Read{{.Name}}By{{call .String "" "And" false}}WithTxn (
+	txn *rony.StoreLocalTxn, alloc *tools.Allocator,
+	{{call .FuncArgs ""}}, m *{{.Name}},
+) (*{{.Name}}, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+	if err != nil {
+		return nil, err
+	}
+	return m, err
+}
+
+func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	if m == nil {
+		m = &{{.Name}}{}
+	}
+
+	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+		m, err = Read{{.Name}}By{{call .String "" "And" false}}WithTxn (txn, alloc, {{call .String "" "," true}}, m)
+		return err 
+	})
+	return m, err
+}
+
+{{- end }}
+`
+
+const genDelete = `
+
+`
+
 
 // genDelete generates DELETE function
 func (g *Generator) genDelete(m *protogen.Message) {

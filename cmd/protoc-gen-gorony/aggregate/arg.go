@@ -22,40 +22,69 @@ import (
 */
 
 type Arg struct {
-	Prefix   string
-	Postfix  string
-	Name     string
-	Pkg      string
-	Type     string
-	C        uint32
-	DBKey    string
-	HasIndex bool
-	Fields   []struct {
-		Kind             string
-		Pkg              string
-		Type             string
-		Name             string
-		ZeroValue        string
-		DBKey            string
-		DBKeyWithPostfix string
-		DBPrefix         string
-		HasIndex         bool
+	Name        string
+	Pkg         string
+	Type        string
+	C           uint32
+	HasIndex    bool
+	DBKey       func(prefix string) string
+	FuncArgs    func(prefix string) string
+	FuncArgsPKs func(prefix string) string
+	FuncArgsCKs func(prefix string) string
+	String      func(prefix string, sep string, lowerCamel bool) string
+	StringPKs   func(prefix string, sep string, lowerCamel bool) string
+	StringCKs   func(prefix string, sep string, lowerCamel bool) string
+	Views       []struct {
+		Name        string
+		Keys        []string
+		DBKey       func(prefix string) string
+		FuncArgs    func(prefix string) string
+		FuncArgsPKs func(prefix string) string
+		FuncArgsCKs func(prefix string) string
+		String      func(prefix string, sep string, lowerCamel bool) string
+		StringPKs   func(prefix string, sep string, lowerCamel bool) string
+		StringCKs   func(prefix string, sep string, lowerCamel bool) string
 	}
-	Views []struct {
-		Keys  []string
-		DBKey string
+	Fields []struct {
+		Kind      string
+		Pkg       string
+		Type      string
+		Name      string
+		ZeroValue string
+		DBKey     func(pre, post string) string
+		DBPrefix  func(pre, post string) string
+		HasIndex  bool
 	}
 }
 
-func GetArg(g *Generator, m *protogen.Message, agg *Aggregate, prefix string) Arg {
+func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) Arg {
 	arg := Arg{
 		Name:     string(m.Desc.Name()),
 		C:        crc32.ChecksumIEEE([]byte(m.Desc.Name())),
 		HasIndex: agg.HasIndex,
-		Prefix:   prefix,
-		Postfix:  "[idx]",
+		DBKey: func(prefix string) string {
+			return agg.Table.DBKey(prefix)
+		},
+		FuncArgs: func(prefix string) string {
+			return agg.Table.FuncArgs(prefix)
+		},
+		FuncArgsPKs: func(prefix string) string {
+			return agg.Table.FuncArgsPKs(prefix)
+		},
+		FuncArgsCKs: func(prefix string) string {
+			return agg.Table.FuncArgsCKs(prefix)
+		},
+		String: func(prefix, sep string, lowerCamel bool) string {
+			return agg.Table.String(prefix, sep, lowerCamel)
+		},
+		StringPKs: func(prefix, sep string, lowerCamel bool) string {
+			return agg.Table.StringPKs(prefix, sep, lowerCamel)
+		},
+		StringCKs: func(prefix, sep string, lowerCamel bool) string {
+			return agg.Table.StringCKs(prefix, sep, lowerCamel)
+		},
 	}
-	arg.DBKey = agg.Table.DBKey(arg.Prefix)
+
 	arg.Pkg, arg.Type = z.DescParts(g.f, g.g, m.Desc)
 	for _, ft := range m.Fields {
 		name := string(ft.Desc.Name())
@@ -64,35 +93,65 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate, prefix string) Ar
 		arg.Fields = append(
 			arg.Fields,
 			struct {
-				Kind             string
-				Pkg              string
-				Type             string
-				Name             string
-				ZeroValue        string
-				DBKey            string
-				DBKeyWithPostfix string
-				DBPrefix         string
-				HasIndex         bool
+				Kind      string
+				Pkg       string
+				Type      string
+				Name      string
+				ZeroValue string
+				DBKey     func(pre, post string) string
+				DBPrefix  func(pre, post string) string
+				HasIndex  bool
 			}{
 				Kind: arg.kind(ft.Desc),
 				Pkg:  pkg, Type: typ,
-				Name:             name,
-				ZeroValue:        z.ZeroValue(ft.Desc),
-				DBKey:            indexKey(agg, name, arg.Prefix, ""),
-				DBKeyWithPostfix: indexKey(agg, name, arg.Prefix, arg.Postfix),
-				DBPrefix:         indexPrefix(agg, name, tools.ToLowerCamel(inflection.Singular(name))),
-				HasIndex:         proto.GetExtension(opt, rony.E_RonyIndex).(bool),
+				Name:      name,
+				ZeroValue: z.ZeroValue(ft.Desc),
+				HasIndex:  proto.GetExtension(opt, rony.E_RonyIndex).(bool),
+				DBKey: func(pre, post string) string {
+					return indexKey(agg, name, pre, post)
+				},
+				DBPrefix: func(pre, post string) string {
+					return indexPrefix(agg, name, tools.ToLowerCamel(inflection.Singular(name)))
+				},
 			},
 		)
 	}
 	for idx, v := range agg.Views {
 		arg.Views = append(arg.Views,
 			struct {
-				Keys  []string
-				DBKey string
+				Name        string
+				Keys        []string
+				DBKey       func(prefix string) string
+				FuncArgs    func(prefix string) string
+				FuncArgsPKs func(prefix string) string
+				FuncArgsCKs func(prefix string) string
+				String      func(prefix, sep string, lowerCamel bool) string
+				StringPKs   func(prefix, sep string, lowerCamel bool) string
+				StringCKs   func(prefix, sep string, lowerCamel bool) string
 			}{
-				Keys:  v.Keys(),
-				DBKey: agg.Views[idx].DBKey(arg.Prefix),
+				Name: agg.Name,
+				Keys: v.Keys(),
+				DBKey: func(prefix string) string {
+					return agg.Views[idx].DBKey(prefix)
+				},
+				FuncArgs: func(prefix string) string {
+					return agg.Views[idx].FuncArgs(prefix)
+				},
+				FuncArgsPKs: func(prefix string) string {
+					return agg.Views[idx].FuncArgsPKs(prefix)
+				},
+				FuncArgsCKs: func(prefix string) string {
+					return agg.Views[idx].FuncArgsCKs(prefix)
+				},
+				String: func(prefix, sep string, lowerCamel bool) string {
+					return agg.Views[idx].String(prefix, sep, lowerCamel)
+				},
+				StringPKs: func(prefix, sep string, lowerCamel bool) string {
+					return agg.Views[idx].StringPKs(prefix, sep, lowerCamel)
+				},
+				StringCKs: func(prefix, sep string, lowerCamel bool) string {
+					return agg.Views[idx].StringCKs(prefix, sep, lowerCamel)
+				},
 			},
 		)
 	}
@@ -106,10 +165,4 @@ func (arg *Arg) kind(f protoreflect.FieldDescriptor) string {
 	default:
 		return ""
 	}
-}
-
-func (arg *Arg) With(prefix, postfix string) *Arg {
-	arg.Prefix = prefix
-	arg.Postfix = postfix
-	return arg
 }

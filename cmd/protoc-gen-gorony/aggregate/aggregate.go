@@ -69,13 +69,13 @@ func (k *Key) FuncArgs(prefix string) string {
 func (k *Key) FuncArgsPKs(prefix string) string {
 	sb := strings.Builder{}
 	cnt := 0
-	for idx, kk := range k.CKs {
+	for idx, kk := range k.PKs {
 		if cnt != 0 {
 			sb.WriteRune(',')
 		}
 		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, kk)))
 		sb.WriteRune(' ')
-		sb.WriteString(k.CKGoTypes[idx])
+		sb.WriteString(k.PKGoTypes[idx])
 		cnt++
 	}
 	return sb.String()
@@ -151,10 +151,6 @@ func (k *Key) StringCKs(prefix string, sep string, lowerCamel bool) string {
 
 	}
 	return sb.String()
-}
-
-func (k *Key) ChecksumPKs(keyPrefix string, sep string, lowerCamel bool) uint32 {
-	return crc32.ChecksumIEEE(tools.StrToByte(k.StringPKs(keyPrefix, sep, lowerCamel)))
 }
 
 func (k *Key) String(prefix string, sep string, lowerCamel bool) string {
