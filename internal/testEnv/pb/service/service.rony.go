@@ -650,7 +650,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
 }
 
-// method:"get"  path:"/echo"  json_encode:true
+// method:"get" path:"/echo" json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -688,7 +688,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	return errors.ErrInternalServer
 }
 
-// method:"post"  path:"/set"
+// method:"post" path:"/set"
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
@@ -726,7 +726,7 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	return errors.ErrInternalServer
 }
 
-// method:"get"  path:"/req/:Key/something"
+// method:"get" path:"/req/:Key/something"
 func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolGetRequest.Get()
 	defer PoolGetRequest.Put(req)
@@ -761,7 +761,7 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	return errors.ErrInternalServer
 }
 
-// method:"get"  path:"/echo_tunnel/:X/:YY"  bind_variables:"X=Int,YY=Timestamp"
+// method:"get" path:"/echo_tunnel/:X/:YY" bind_variables:"X=Int,YY=Timestamp"
 func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)

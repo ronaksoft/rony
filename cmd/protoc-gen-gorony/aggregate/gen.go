@@ -52,8 +52,9 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genUpdate").Parse(genUpdate)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genSave").Parse(genSave)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genRead").Parse(genRead)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genDelete").Parse(genDelete)), arg))
+
 			g.genOrderByConstants(m)
-			g.genDelete(m)
 			g.genHasField(m)
 			g.genIter(m)
 			g.genList(m)
@@ -357,81 +358,60 @@ func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{
 `
 
 const genDelete = `
+func Delete{{.Name}}WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}) error {
+	{{- if or (gt (len .Views) 0) (.HasIndex) }}
+		m := &{{.Name}}{}
+		err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+		if err != nil {
+			return err 
+		}
+		err = store.Delete(txn, alloc, {{call .DBKey "m."}})
+	{{- else }}
+		err := store.Delete(txn, alloc, {{call .DBKey ""}})
+	{{- end }}
+	if err != nil {
+		return err 
+	}
+	{{- range .Fields }}
+		
+		{{ if .HasIndex }}
+			// delete field index
+			{{- if eq .Kind "repeated" }}
+				for idx := range m.{{.Name}} {
+					err = store.Delete(txn, alloc, {{call .DBKey "m." "[idx]"}})
+					if err != nil {
+						return err 
+					}
+				}
+			{{- else }}
+				err = store.Delete(txn, alloc, {{call .DBKey "m." ""}})
+				if err != nil {
+					return err
+				}
+			{{- end }}
+		{{- end }}
+	{{- end }}
+	{{- range .Views }}
+		err = store.Delete(txn, alloc, {{call .DBKey "m."}})
+		if err != nil {
+			return err 
+		}
+
+	{{- end }}
+	
+	return nil
+}
+
+func Delete{{.Name}}({{call .FuncArgs ""}}) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return store.Update(func(txn *rony.StoreLocalTxn) error {
+		return Delete{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}})
+	})
+}
 
 `
-
-
-// genDelete generates DELETE function
-func (g *Generator) genDelete(m *protogen.Message) {
-	mn := g.m(m).Name
-	g.g.P("func Delete", mn, "WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, ", g.m(m).Table.FuncArgs(""), ") error {")
-
-	if len(g.m(m).Views) > 0 || g.m(m).HasIndex {
-		g.g.P("m := &", mn, "{}")
-		g.g.P("err := store.Unmarshal(txn, alloc, m, ", g.m(m).Table.DBKey(""), ")")
-		g.g.P("if err != nil {")
-		g.g.P("return err")
-		g.g.P("}")
-		g.g.P("err = store.Delete(txn, alloc,", g.m(m).Table.DBKey("m."), ")")
-	} else {
-		g.g.P("err := store.Delete(txn, alloc,", g.m(m).Table.DBKey(""), ")")
-	}
-	g.g.P("if err != nil {")
-	g.g.P("return err")
-	g.g.P("}")
-	g.g.P()
-
-	for _, f := range m.Fields {
-		ftName := string(f.Desc.Name())
-		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
-		index := proto.GetExtension(opt, rony.E_RonyIndex).(bool)
-		if index {
-			g.g.P("// delete field index ")
-			switch f.Desc.Kind() {
-			case protoreflect.MessageKind:
-				panicF("does not support index in Message: %s", m.Desc.Name())
-			default:
-				switch f.Desc.Cardinality() {
-				case protoreflect.Repeated:
-					g.g.P("for idx := range m.", ftName, "{")
-					g.g.P("err = store.Delete(txn, alloc, ", indexKey(g.m(m), ftName, "m.", "[idx]"), " )")
-					g.g.P("if err != nil {")
-					g.g.P("return err")
-					g.g.P("}")
-					g.g.P("}") // end of for
-				default:
-					g.g.P("err = store.Delete(txn, alloc, ", indexKey(g.m(m), ftName, "m.", ""), " )")
-					g.g.P("if err != nil {")
-					g.g.P("return err")
-					g.g.P("}")
-				}
-			}
-			g.g.P()
-		}
-	}
-
-	for idx := range g.m(m).Views {
-		g.g.P("err = store.Delete(txn, alloc,", g.m(m).Views[idx].DBKey("m."), ")")
-		g.g.P("if err != nil {")
-		g.g.P("return err")
-		g.g.P("}")
-		g.g.P()
-	}
-
-	g.g.P("return nil")
-	g.g.P("}") // end of DeleteWithTxn
-	g.g.P()
-
-	g.g.P("func Delete", mn, "(", g.m(m).Table.FuncArgs(""), ") error {")
-	g.g.P("alloc := tools.NewAllocator()")
-	g.g.P("defer alloc.ReleaseAll()")
-	g.g.P()
-	g.g.P("return store.Update(func(txn *rony.StoreLocalTxn) error {")
-	g.g.P("return Delete", mn, "WithTxn(txn, alloc, ", g.m(m).Table.String("", ",", true), ")")
-	g.g.P("})") // end of Update func
-	g.g.P("}")  // end of Delete func
-	g.g.P()
-}
 
 // genHasField generate helper function for repeated fields of the aggregate.
 func (g *Generator) genHasField(m *protogen.Message) {

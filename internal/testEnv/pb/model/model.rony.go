@@ -290,10 +290,6 @@ func ReadModel1ByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Mo
 	return m, err
 }
 
-type Model1Order string
-
-const Model1OrderByEnum Model1Order = "Enum"
-
 func DeleteModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int32, shardKey int32) error {
 	m := &Model1{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 4018441491, id, shardKey)
@@ -335,6 +331,10 @@ func DeleteModel1(id int32, shardKey int32) error {
 		return DeleteModel1WithTxn(txn, alloc, id, shardKey)
 	})
 }
+
+type Model1Order string
+
+const Model1OrderByEnum Model1Order = "Enum"
 
 func (x *Model1) HasP2(xx string) bool {
 	for idx := range x.P2 {
@@ -810,10 +810,6 @@ func ReadModel2ByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Mode
 	return m, err
 }
 
-type Model2Order string
-
-const Model2OrderByP1 Model2Order = "P1"
-
 func DeleteModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string) error {
 	m := &Model2{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
@@ -841,6 +837,10 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 		return DeleteModel2WithTxn(txn, alloc, id, shardKey, p1)
 	})
 }
+
+type Model2Order string
+
+const Model2OrderByP1 Model2Order = "P1"
 
 func (x *Model2) HasP2(xx string) bool {
 	for idx := range x.P2 {
