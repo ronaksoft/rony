@@ -52,20 +52,20 @@ func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.RandomText = x.RandomText
 }
 
-func (x *EchoRequest) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EchoRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *EchoRequest) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *EchoRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *EchoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *EchoRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_EchoResponse int64 = 4192619139
@@ -100,20 +100,20 @@ func (x *EchoResponse) DeepCopy(z *EchoResponse) {
 	z.RandomText = x.RandomText
 }
 
-func (x *EchoResponse) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EchoResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *EchoResponse) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *EchoResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *EchoResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_SampleEcho int64 = 3852587671

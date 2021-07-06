@@ -47,20 +47,20 @@ func (x *GetPage) DeepCopy(z *GetPage) {
 	z.ReplicaSet = x.ReplicaSet
 }
 
-func (x *GetPage) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *GetPage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *GetPage) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *GetPage) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *GetPage) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *GetPage) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_TunnelMessage int64 = 3271476222
@@ -117,20 +117,20 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 	}
 }
 
-func (x *TunnelMessage) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *TunnelMessage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *TunnelMessage) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *TunnelMessage) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *TunnelMessage) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *TunnelMessage) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_EdgeNode int64 = 999040174
@@ -171,20 +171,20 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.TunnelAddr = append(z.TunnelAddr[:0], x.TunnelAddr...)
 }
 
-func (x *EdgeNode) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EdgeNode) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *EdgeNode) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *EdgeNode) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *EdgeNode) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *EdgeNode) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_Page int64 = 3023575326
@@ -219,20 +219,20 @@ func (x *Page) DeepCopy(z *Page) {
 	z.ReplicaSet = x.ReplicaSet
 }
 
-func (x *Page) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Page) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Page) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Page) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Page) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *Page) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 func init() {

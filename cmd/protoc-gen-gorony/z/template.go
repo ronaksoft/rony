@@ -3,6 +3,7 @@ package z
 import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"hash/crc32"
 )
 
 /*
@@ -28,6 +29,16 @@ type TemplateArg struct {
 	}
 }
 
+func GetTemplateArg(f *protogen.File, gf *protogen.GeneratedFile, m *protogen.Message) TemplateArg {
+	arg := TemplateArg{
+		Name: string(m.Desc.Name()),
+		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
+	}
+	for _, ft := range m.Fields {
+		arg.AddField(f, gf, ft.Desc)
+	}
+	return arg
+}
 func (arg *TemplateArg) kind(f protoreflect.FieldDescriptor) string {
 	switch f.Cardinality() {
 	case protoreflect.Repeated:
@@ -50,6 +61,7 @@ func (arg *TemplateArg) kind(f protoreflect.FieldDescriptor) string {
 		}
 	}
 }
+
 func (arg *TemplateArg) AddField(f *protogen.File, gf *protogen.GeneratedFile, fd protoreflect.FieldDescriptor) {
 	name := string(fd.Name())
 	pkg, typ := DescParts(f, gf, fd.Message())

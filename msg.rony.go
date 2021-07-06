@@ -60,20 +60,20 @@ func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	}
 }
 
-func (x *MessageEnvelope) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *MessageEnvelope) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *MessageEnvelope) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_KeyValue int64 = 4276272820
@@ -108,20 +108,20 @@ func (x *KeyValue) DeepCopy(z *KeyValue) {
 	z.Value = x.Value
 }
 
-func (x *KeyValue) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *KeyValue) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *KeyValue) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *KeyValue) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *KeyValue) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *KeyValue) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_MessageContainer int64 = 1972016308
@@ -166,20 +166,20 @@ func (x *MessageContainer) DeepCopy(z *MessageContainer) {
 	}
 }
 
-func (x *MessageContainer) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *MessageContainer) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *MessageContainer) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *MessageContainer) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *MessageContainer) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *MessageContainer) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_Error int64 = 2619118453
@@ -216,20 +216,20 @@ func (x *Error) DeepCopy(z *Error) {
 	z.Description = x.Description
 }
 
-func (x *Error) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Error) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Error) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Error) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Error) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *Error) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_Redirect int64 = 981138557
@@ -276,20 +276,20 @@ func (x *Redirect) DeepCopy(z *Redirect) {
 	z.WaitInSec = x.WaitInSec
 }
 
-func (x *Redirect) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Redirect) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Redirect) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Redirect) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Redirect) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *Redirect) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_Edge int64 = 3576986712
@@ -326,20 +326,20 @@ func (x *Edge) DeepCopy(z *Edge) {
 	z.HostPorts = append(z.HostPorts[:0], x.HostPorts...)
 }
 
-func (x *Edge) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Edge) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Edge) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Edge) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Edge) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *Edge) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_Edges int64 = 2120950449
@@ -382,20 +382,20 @@ func (x *Edges) DeepCopy(z *Edges) {
 	}
 }
 
-func (x *Edges) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Edges) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Edges) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Edges) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Edges) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *Edges) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_GetNodes int64 = 362407405
@@ -428,20 +428,20 @@ func (x *GetNodes) DeepCopy(z *GetNodes) {
 	z.ReplicaSet = append(z.ReplicaSet[:0], x.ReplicaSet...)
 }
 
-func (x *GetNodes) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *GetNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *GetNodes) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *GetNodes) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *GetNodes) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *GetNodes) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_GetAllNodes int64 = 3267106379
@@ -471,20 +471,20 @@ var PoolGetAllNodes = poolGetAllNodes{}
 func (x *GetAllNodes) DeepCopy(z *GetAllNodes) {
 }
 
-func (x *GetAllNodes) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *GetAllNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *GetAllNodes) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *GetAllNodes) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *GetAllNodes) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *GetAllNodes) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 const C_HttpBody int64 = 3032622721
@@ -531,20 +531,20 @@ func (x *HttpBody) DeepCopy(z *HttpBody) {
 	z.Body = append(z.Body[:0], x.Body...)
 }
 
-func (x *HttpBody) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *HttpBody) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *HttpBody) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *HttpBody) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *HttpBody) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
+}
+
+func (x *HttpBody) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
 }
 
 func init() {

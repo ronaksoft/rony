@@ -56,24 +56,24 @@ func (x *Single1) DeepCopy(z *Single1) {
 	z.Enum = x.Enum
 }
 
-func (x *Single1) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Single1) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Single1) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Single1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Single1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *Single1) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *Single1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Single1, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_Single2 int64 = 2982774902
@@ -114,24 +114,24 @@ func (x *Single2) DeepCopy(z *Single2) {
 	z.P5 = x.P5
 }
 
-func (x *Single2) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Single2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Single2) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Single2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Single2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *Single2) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *Single2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Single2, x)
+	ctx.PushMessage(C_, x)
 }
 
 func init() {

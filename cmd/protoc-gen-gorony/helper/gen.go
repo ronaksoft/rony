@@ -47,15 +47,14 @@ func (g *Generator) Generate() {
 	initFunc := &strings.Builder{}
 	initFunc.WriteString("func init() {\n")
 	for _, m := range g.f.Messages {
-		g.genPool(m, initFunc)
-		g.genDeepCopy(m)
-		g.genMarshal(m)
-		g.genUnmarshal(m)
-		g.genMarshalJson(m)
-		g.genUnmarshalJson(m)
+		arg := z.GetTemplateArg(g.f, g.g, m)
+		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
+		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
 
 		if _, ok := g.plugins["no_edge_dep"]; !ok {
-			g.genPushToContext(m)
+			g.g.P(g.Exec(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 		}
 	}
 	for _, st := range g.f.Services {
@@ -136,18 +135,6 @@ func (p *pool{{.Name}}) Put(x *{{.Name}}) {
 var Pool{{.Name}} = pool{{.Name}}{}
 `
 
-func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
-	arg := z.TemplateArg{
-		Name: string(m.Desc.Name()),
-		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
-	}
-	initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
-	for _, ft := range m.Fields {
-		arg.AddField(g.f, g.g, ft.Desc)
-	}
-	g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
-}
-
 const genDeepCopy = `
 func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 	{{- range .Fields -}}
@@ -204,49 +191,29 @@ func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 
 `
 
-func (g *Generator) genDeepCopy(m *protogen.Message) {
-	arg := z.TemplateArg{
-		Name: string(m.Desc.Name()),
-		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
+const genPushToContext = `
+	func (x *{{.Name}}) PushToContext(ctx *edge.RequestCtx) {
+		ctx.PushMessage(C_{{.Type}}, x)
 	}
-	for _, ft := range m.Fields {
-		arg.AddField(g.f, g.g, ft.Desc)
-	}
-	g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
-}
+`
 
-func (g *Generator) genPushToContext(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") PushToContext(ctx *edge.RequestCtx) {")
-	g.g.P("ctx.PushMessage(C_", mtName, ", x)")
-	g.g.P("}")
-	g.g.P()
-}
-func (g *Generator) genUnmarshal(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") Unmarshal(b []byte) error {")
-	g.g.P("return proto.UnmarshalOptions{}.Unmarshal(b, x)")
-	g.g.P("}")
-	g.g.P()
-}
-func (g *Generator) genMarshal(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") Marshal() ([]byte, error) {")
-	g.g.P("return proto.Marshal(x)")
-	g.g.P("}")
-	g.g.P()
-}
-func (g *Generator) genUnmarshalJson(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") UnmarshalJSON(b []byte) error {")
-	g.g.P("return protojson.Unmarshal(b, x)")
-	g.g.P("}")
-	g.g.P()
-}
-func (g *Generator) genMarshalJson(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") MarshalJSON() ([]byte, error) {")
-	g.g.P("return protojson.Marshal(x)")
-	g.g.P("}")
-	g.g.P()
-}
+const genSerializers = `
+	func (x *{{.Name}}) Unmarshal(b []byte) error {
+		return proto.UnmarshalOptions{}.Unmarshal(b, x)
+	}
+
+	func (x *{{.Name}}) Marshal() ([]byte, error)  {
+		return proto.Marshal(x)
+	}
+	
+	func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
+		return protojson.Unmarshal(b, x)
+	}
+
+	func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
+		return protojson.Marshal(x)
+	}
+	
+`
+
+

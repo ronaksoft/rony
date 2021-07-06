@@ -50,24 +50,24 @@ func (x *GetRequest) DeepCopy(z *GetRequest) {
 	z.Key = append(z.Key[:0], x.Key...)
 }
 
-func (x *GetRequest) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *GetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *GetRequest) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *GetRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *GetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *GetRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_GetRequest, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_GetResponse int64 = 2891601577
@@ -102,24 +102,24 @@ func (x *GetResponse) DeepCopy(z *GetResponse) {
 	z.Value = append(z.Value[:0], x.Value...)
 }
 
-func (x *GetResponse) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *GetResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *GetResponse) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *GetResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *GetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *GetResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *GetResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_GetResponse, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_SetRequest int64 = 3858851777
@@ -154,24 +154,24 @@ func (x *SetRequest) DeepCopy(z *SetRequest) {
 	z.Value = append(z.Value[:0], x.Value...)
 }
 
-func (x *SetRequest) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *SetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *SetRequest) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *SetRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *SetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *SetRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *SetRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_SetRequest, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_SetResponse int64 = 2994069984
@@ -204,24 +204,24 @@ func (x *SetResponse) DeepCopy(z *SetResponse) {
 	z.OK = x.OK
 }
 
-func (x *SetResponse) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *SetResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *SetResponse) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *SetResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *SetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *SetResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *SetResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_SetResponse, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_EchoRequest int64 = 1904100324
@@ -258,24 +258,24 @@ func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.ReplicaSet = x.ReplicaSet
 }
 
-func (x *EchoRequest) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EchoRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *EchoRequest) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *EchoRequest) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *EchoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *EchoRequest) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_EchoRequest, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_EchoResponse int64 = 4192619139
@@ -316,24 +316,24 @@ func (x *EchoResponse) DeepCopy(z *EchoResponse) {
 	z.ServerID = x.ServerID
 }
 
-func (x *EchoResponse) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *EchoResponse) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *EchoResponse) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *EchoResponse) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *EchoResponse) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_EchoResponse, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_Message1 int64 = 3131464828
@@ -390,24 +390,24 @@ func (x *Message1) DeepCopy(z *Message1) {
 	}
 }
 
-func (x *Message1) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Message1) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Message1) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Message1) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Message1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *Message1) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Message1, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_Message2 int64 = 598674886
@@ -454,24 +454,24 @@ func (x *Message2) DeepCopy(z *Message2) {
 	}
 }
 
-func (x *Message2) Marshal() ([]byte, error) {
-	return proto.Marshal(x)
-}
-
 func (x *Message2) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
 
-func (x *Message2) MarshalJSON() ([]byte, error) {
-	return protojson.Marshal(x)
+func (x *Message2) Marshal() ([]byte, error) {
+	return proto.Marshal(x)
 }
 
 func (x *Message2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
+func (x *Message2) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(x)
+}
+
 func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_Message2, x)
+	ctx.PushMessage(C_, x)
 }
 
 const C_SampleEcho int64 = 3852587671
