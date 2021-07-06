@@ -670,6 +670,145 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	)
 }
 
+func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleSet, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_SetResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleGet, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_GetResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEchoInternal, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEchoDelay, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+
 // method:"get"  path:"/echo"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
@@ -819,150 +958,6 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 	}
 
 	return errors.ErrInternalServer
-}
-
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
-func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleSet, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_SetResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
-func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleGet, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_GetResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
-func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEchoTunnel, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
-func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEchoInternal, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
-func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEchoDelay, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
 }
 
 type SampleClient struct {

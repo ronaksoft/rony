@@ -48,9 +48,10 @@ func (g *Generator) Generate() {
 			arg := GetArg(g, s)
 			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
 
 			g.genServerRestProxy(s)
-			g.genTunnelCommand(s)
+
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
@@ -74,141 +75,6 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	}
 	return sb.String()
 }
-
-const genServer = `
-type I{{.Name}} interface {
-{{- range .Methods }}
-	{{.Name}} (ctx *edge.RequestCtx, req *{{.InputName}}, res *{{.OutputName}})
-{{- end }}
-}
-
-func Register{{.Name}} (h I{{.Name}}, e *edge.Server, preHandlers ...edge.Handler) {
-	w := {{.NameCC}}Wrapper {
-		h: h,
-	}
-	w.Register(e, func(c int64) []edge.Handler {
-		return preHandlers
-	})
-}
-
-func Register{{.Name}}WithFunc(h I{{.Name}}, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
-	w := {{.NameCC}}Wrapper {
-		h: h,
-	}
-	w.Register(e, handlerFunc)
-}
-`
-
-const genServerWrapper = `
-type {{.NameCC}}Wrapper struct {
-	h I{{.Name}}
-}
-
-{{- $serviceNameCC := .NameCC -}}
-{{- $serviceName := .Name -}}
-{{- range .Methods }}
-func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-	{{- if eq .InputPkg "" }}
-		req := Pool{{.InputType}}.Get()
-		defer Pool{{.InputType}}.Put(req)
-	{{- else }}
-		req := {{.InputPkg}}Pool{{.InputType}}.Get()
-		defer {{.InputPkg}}Pool{{.InputType}}.Put(req)
-	{{- end }}
-	{{- if eq .OutputPkg "" }}
-		res := Pool{{.OutputType}}.Get()
-		defer Pool{{.OutputType}}.Put(res)
-	{{- else }}
-		res := {{.OutputPkg}}Pool{{.OutputType}}.Get()
-		defer {{.OutputPkg}}Pool{{.OutputType}}.Put(res)
-	{{- end }}
-
-	err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)
-	if err != nil {
-		ctx.PushError(errors.ErrInvalidRequest)
-		return
-	}
-
-	sw.h.{{.Name}} (ctx, req, res)
-	if !ctx.Stopped() {
-	{{- if eq .OutputPkg "" }}
-		ctx.PushMessage(C_{{.OutputType}}, res)
-	{{- else }}
-		ctx.PushMessage({{.OutputPkg}}.C_{{.OutputType}}, res)
-	{{- end }}
-	}
-}
-{{- end }}
-
-func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
-	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
-			return nil
-		}
-	}
-	
-	
-	{{- range .Methods }}
-	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_{{$serviceName}}{{.Name}}).
-		SetHandler(handlerFunc(C_{{$serviceName}}{{.Name}})...).
-        Append(sw.{{.NameCC}}Wrapper)
-		{{- if .TunnelOnly }}.TunnelOnly(){{- end }},
-	)
-	{{- if .RestEnabled }}
-	e.SetRestProxy(
-		"{{.Rest.Method}}", "{{.Rest.Path}}",
-		edge.NewRestProxy(sw.{{.NameCC}}RestClient, sw.{{.NameCC}}RestServer),
-	)
-	{{- end }}
-	{{- end }}
-}
-`
-
-const genClient = `
-type {{.Name}}Client struct {
-	c edgec.Client
-}
-
-func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
-	return &{{.Name}}Client{
-		c: ec,
-	}
-}
-
-{{- $serviceName := .Name -}}
-{{- range .Methods }}
-{{- if not .TunnelOnly }}
-func (c *{{$serviceName}}Client) {{.Name}} (req *{{.InputName}}, kvs ...*rony.KeyValue) (*{{.OutputName}}, error) {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_{{$serviceName}}{{.Name}}, req, kvs ...)
-	err := c.c.Send(out, in)
-	if err != nil {
-		return nil, err
-	}
-	switch in.GetConstructor() {
-	{{- if eq .OutputPkg "" }}
-	case C_{{.OutputType}}:
-	{{- else }}
-	case {{.OutputPkg}}.C_{{.OutputType}}:
-	{{- end }}
-		x := &{{.OutputName}}{}
-		_ = proto.Unmarshal(in.Message, x)
-		return x, nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.Message)
-		return nil, x
-	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
-	}
-}
-{{- end }}
-{{- end }}
-`
 
 func (g *Generator) genServerRestProxy(s *protogen.Service) {
 	for _, m := range s.Methods {
@@ -348,39 +214,171 @@ func (g *Generator) createRestServer(s *protogen.Service, m *protogen.Method, op
 	g.g.P()
 }
 
-func (g *Generator) genTunnelCommand(s *protogen.Service) {
-	for _, m := range s.Methods {
-		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
-		inputName := z.Name(g.f, g.g, m.Desc.Input())
-		outputName := z.Name(g.f, g.g, m.Desc.Output())
-		outputC := z.Constructor(g.f, g.g, m.Desc.Output())
+const genServer = `
+type I{{.Name}} interface {
+{{- range .Methods }}
+	{{.Name}} (ctx *edge.RequestCtx, req *{{.InputName}}, res *{{.OutputName}})
+{{- end }}
+}
 
-		g.g.P("func TunnelRequest", methodName, "(ctx *edge.RequestCtx, replicaSet uint64, req *", inputName, ", res *", outputName, ", kvs ...*rony.KeyValue) error {")
-		g.g.P("out := rony.PoolMessageEnvelope.Get()")
-		g.g.P("defer rony.PoolMessageEnvelope.Put(out)")
-		g.g.P("in := rony.PoolMessageEnvelope.Get()")
-		g.g.P("defer rony.PoolMessageEnvelope.Put(in)")
-		g.g.P("out.Fill(ctx.ReqID(), C_", methodName, ", req, kvs...)")
-		g.g.P("err := ctx.TunnelRequest(replicaSet, out, in)")
-		g.g.P("if err != nil {")
-		g.g.P("return err")
-		g.g.P("}")
-		g.g.P("")
-		g.g.P("switch in.GetConstructor() {")
-		g.g.P("case ", outputC, ":")
-		g.g.P("_ = res.Unmarshal(in.GetMessage())")
-		g.g.P("return nil")
-		g.g.P("case rony.C_Error:")
-		g.g.P("x := &rony.Error{}")
-		g.g.P("_ = x.Unmarshal(in.GetMessage())")
-		g.g.P("return x")
-		g.g.P("default:")
-		g.g.P("return errors.ErrUnexpectedTunnelResponse")
-		g.g.P("}")
-		g.g.P("}")
-		g.g.P()
+func Register{{.Name}} (h I{{.Name}}, e *edge.Server, preHandlers ...edge.Handler) {
+	w := {{.NameCC}}Wrapper {
+		h: h,
+	}
+	w.Register(e, func(c int64) []edge.Handler {
+		return preHandlers
+	})
+}
+
+func Register{{.Name}}WithFunc(h I{{.Name}}, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	w := {{.NameCC}}Wrapper {
+		h: h,
+	}
+	w.Register(e, handlerFunc)
+}
+`
+
+const genServerWrapper = `
+type {{.NameCC}}Wrapper struct {
+	h I{{.Name}}
+}
+
+{{- $serviceNameCC := .NameCC -}}
+{{- $serviceName := .Name -}}
+{{- range .Methods }}
+func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
+	{{- if eq .InputPkg "" }}
+		req := Pool{{.InputType}}.Get()
+		defer Pool{{.InputType}}.Put(req)
+	{{- else }}
+		req := {{.InputPkg}}Pool{{.InputType}}.Get()
+		defer {{.InputPkg}}Pool{{.InputType}}.Put(req)
+	{{- end }}
+	{{- if eq .OutputPkg "" }}
+		res := Pool{{.OutputType}}.Get()
+		defer Pool{{.OutputType}}.Put(res)
+	{{- else }}
+		res := {{.OutputPkg}}Pool{{.OutputType}}.Get()
+		defer {{.OutputPkg}}Pool{{.OutputType}}.Put(res)
+	{{- end }}
+
+	err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(errors.ErrInvalidRequest)
+		return
+	}
+
+	sw.h.{{.Name}} (ctx, req, res)
+	if !ctx.Stopped() {
+	{{- if eq .OutputPkg "" }}
+		ctx.PushMessage(C_{{.OutputType}}, res)
+	{{- else }}
+		ctx.PushMessage({{.OutputPkg}}.C_{{.OutputType}}, res)
+	{{- end }}
 	}
 }
+{{- end }}
+
+func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+	if handlerFunc == nil {
+		handlerFunc = func(c int64) []edge.Handler {
+			return nil
+		}
+	}
+	
+	
+	{{- range .Methods }}
+	e.SetHandler(
+		edge.NewHandlerOptions().SetConstructor(C_{{$serviceName}}{{.Name}}).
+		SetHandler(handlerFunc(C_{{$serviceName}}{{.Name}})...).
+        Append(sw.{{.NameCC}}Wrapper)
+		{{- if .TunnelOnly }}.TunnelOnly(){{- end }},
+	)
+	{{- if .RestEnabled }}
+	e.SetRestProxy(
+		"{{.Rest.Method}}", "{{.Rest.Path}}",
+		edge.NewRestProxy(sw.{{.NameCC}}RestClient, sw.{{.NameCC}}RestServer),
+	)
+	{{- end }}
+	{{- end }}
+}
+`
+
+const genClient = `
+type {{.Name}}Client struct {
+	c edgec.Client
+}
+
+func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
+	return &{{.Name}}Client{
+		c: ec,
+	}
+}
+
+{{- $serviceName := .Name -}}
+{{- range .Methods }}
+{{- if not .TunnelOnly }}
+func (c *{{$serviceName}}Client) {{.Name}} (req *{{.InputName}}, kvs ...*rony.KeyValue) (*{{.OutputName}}, error) {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(c.c.GetRequestID(), C_{{$serviceName}}{{.Name}}, req, kvs ...)
+	err := c.c.Send(out, in)
+	if err != nil {
+		return nil, err
+	}
+	switch in.GetConstructor() {
+	{{- if eq .OutputPkg "" }}
+	case C_{{.OutputType}}:
+	{{- else }}
+	case {{.OutputPkg}}.C_{{.OutputType}}:
+	{{- end }}
+		x := &{{.OutputName}}{}
+		_ = proto.Unmarshal(in.Message, x)
+		return x, nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.Message)
+		return nil, x
+	default:
+		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+	}
+}
+{{- end }}
+{{- end }}
+`
+
+const genTunnelCommand = `
+{{- $serviceName := .Name -}}
+{{- range .Methods }}
+func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.InputName}}, res *{{.OutputName}}, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_{{$serviceName}}{{.Name}}, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_{{.OutputType}}:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil 
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
+}
+{{- end }}
+`
+
+
 func (g *Generator) genCobraCmd(s *protogen.Service) {
 	g.createPrepareFunc(s)
 	g.createMethodGenerator(s)
