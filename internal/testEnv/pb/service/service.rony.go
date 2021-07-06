@@ -9,6 +9,7 @@ import (
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
 	errors "github.com/ronaksoft/rony/errors"
+	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	tools "github.com/ronaksoft/rony/tools"
 	cobra "github.com/spf13/cobra"
@@ -16,6 +17,8 @@ import (
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
+
+var _ = pools.Imported
 
 const C_GetRequest int64 = 3359917651
 
@@ -35,7 +38,9 @@ func (p *poolGetRequest) Put(x *GetRequest) {
 	if x == nil {
 		return
 	}
+
 	x.Key = x.Key[:0]
+
 	p.pool.Put(x)
 }
 
@@ -83,8 +88,10 @@ func (p *poolGetResponse) Put(x *GetResponse) {
 	if x == nil {
 		return
 	}
+
 	x.Key = x.Key[:0]
 	x.Value = x.Value[:0]
+
 	p.pool.Put(x)
 }
 
@@ -133,8 +140,10 @@ func (p *poolSetRequest) Put(x *SetRequest) {
 	if x == nil {
 		return
 	}
+
 	x.Key = x.Key[:0]
 	x.Value = x.Value[:0]
+
 	p.pool.Put(x)
 }
 
@@ -183,7 +192,9 @@ func (p *poolSetResponse) Put(x *SetResponse) {
 	if x == nil {
 		return
 	}
+
 	x.OK = false
+
 	p.pool.Put(x)
 }
 
@@ -231,9 +242,11 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 	if x == nil {
 		return
 	}
+
 	x.Int = 0
 	x.Timestamp = 0
 	x.ReplicaSet = 0
+
 	p.pool.Put(x)
 }
 
@@ -283,11 +296,13 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 	if x == nil {
 		return
 	}
+
 	x.Int = 0
 	x.Responder = ""
 	x.Timestamp = 0
 	x.Delay = 0
 	x.ServerID = ""
+
 	p.pool.Put(x)
 }
 
@@ -339,14 +354,15 @@ func (p *poolMessage1) Put(x *Message1) {
 	if x == nil {
 		return
 	}
+
 	x.Param1 = 0
 	x.Param2 = ""
 	PoolMessage2.Put(x.M2)
-	x.M2 = nil
 	for _, z := range x.M2S {
 		PoolMessage2.Put(z)
 	}
 	x.M2S = x.M2S[:0]
+
 	p.pool.Put(x)
 }
 
@@ -361,14 +377,16 @@ func (x *Message1) DeepCopy(z *Message1) {
 		}
 		x.M2.DeepCopy(z.M2)
 	} else {
+		// TODO:: release to pool
 		z.M2 = nil
 	}
 	for idx := range x.M2S {
-		if x.M2S[idx] != nil {
-			xx := PoolMessage2.Get()
-			x.M2S[idx].DeepCopy(xx)
-			z.M2S = append(z.M2S, xx)
+		if x.M2S[idx] == nil {
+			continue
 		}
+		xx := PoolMessage2.Get()
+		x.M2S[idx].DeepCopy(xx)
+		z.M2S = append(z.M2S, xx)
 	}
 }
 
@@ -410,11 +428,12 @@ func (p *poolMessage2) Put(x *Message2) {
 	if x == nil {
 		return
 	}
+
 	x.Param1 = 0
 	x.P2 = x.P2[:0]
 	x.P3 = x.P3[:0]
 	PoolMessage1.Put(x.M1)
-	x.M1 = nil
+
 	p.pool.Put(x)
 }
 
@@ -430,6 +449,7 @@ func (x *Message2) DeepCopy(z *Message2) {
 		}
 		x.M1.DeepCopy(z.M1)
 	} else {
+		// TODO:: release to pool
 		z.M1 = nil
 	}
 }
@@ -630,7 +650,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).SetHandler(handlerFunc(C_SampleEchoDelay)...).Append(sw.echoDelayWrapper))
 }
 
-// method:"get" path:"/echo" json_encode:true
+// method:"get"  path:"/echo"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -668,7 +688,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	return errors.ErrInternalServer
 }
 
-// method:"post" path:"/set"
+// method:"post"  path:"/set"
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
@@ -706,7 +726,7 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	return errors.ErrInternalServer
 }
 
-// method:"get" path:"/req/:Key/something"
+// method:"get"  path:"/req/:Key/something"
 func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolGetRequest.Get()
 	defer PoolGetRequest.Put(req)
@@ -741,7 +761,7 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	return errors.ErrInternalServer
 }
 
-// method:"get" path:"/echo_tunnel/:X/:YY" bind_variables:"X=Int,YY=Timestamp"
+// method:"get"  path:"/echo_tunnel/:X/:YY"  bind_variables:"X=Int,YY=Timestamp"
 func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
 	"strings"
+	"text/template"
 )
 
 /*
@@ -38,10 +38,12 @@ func (g *Generator) Generate() {
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/registry"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/encoding/protojson"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 	if _, ok := g.plugins["no_edge_dep"]; !ok {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 	}
 
+	g.g.P("var _ = pools.Imported")
 	initFunc := &strings.Builder{}
 	initFunc.WriteString("func init() {\n")
 	for _, m := range g.f.Messages {
@@ -64,137 +66,151 @@ func (g *Generator) Generate() {
 			g.g.P("const C_", methodName, " int64 = ", fmt.Sprintf("%d", constructor))
 		}
 	}
-
 	initFunc.WriteString("}")
 	g.g.P("")
 	g.g.P(initFunc.String())
 	g.g.P()
 }
 
+func (g *Generator) Exec(t *template.Template, v interface{}) string {
+	sb := &strings.Builder{}
+	err := t.Execute(sb, v)
+	if err != nil {
+		panic(err)
+	}
+	return sb.String()
+}
+
+const genPool = `
+const C_{{.Name}} int64 = {{.C}}
+type pool{{.Name}} struct {
+	pool sync.Pool
+}
+
+func (p *pool{{.Name}}) Get() *{{.Name}} {
+	x, ok := p.pool.Get().(*{{.Name}})
+	if !ok {
+		x = &{{.Name}}{}
+	}
+	return x
+}
+
+func (p *pool{{.Name}}) Put(x *{{.Name}}) {
+	if x == nil {
+		return
+	}
+	
+	{{ range .Fields}}
+	{{- if eq .Kind "repeated"}}
+		x.{{- .Name}} = x.{{.Name}}[:0]
+	{{- else if eq .Kind "repeated/bytes"}}
+		for _, z := range x.{{.Name}} {
+			pools.Bytes.Put(z)
+		}
+		x.{{- .Name}} = x.{{.Name}}[:0]
+	{{- else if eq .Kind "repeated/msg"}}
+		for _, z := range x.{{.Name}} {
+			{{- if ne .Pkg ""}}
+				{{.Pkg}}.Pool{{.Type}}.Put(z)
+			{{- else}}
+				Pool{{.Type}}.Put(z)
+			{{- end}}
+		}
+		x.{{.Name}} = x.{{.Name}}[:0]
+	{{- else if eq .Kind "bytes"}}
+		x.{{.Name}} = x.{{.Name}}[:0]
+	{{- else if eq .Kind "msg"}}
+		{{- if ne .Pkg ""}}
+			{{.Pkg}}.Pool{{.Type}}.Put(x.{{.Name}})
+		{{- else}}
+			Pool{{.Type}}.Put(x.{{.Name}})
+		{{- end}}
+	{{- else}}
+		x.{{.Name}} = {{.ZeroValue}}
+	{{- end}}
+	{{- end}}
+
+	p.pool.Put(x)
+}
+
+var Pool{{.Name}} = pool{{.Name}}{}
+`
+
 func (g *Generator) genPool(m *protogen.Message, initFunc *strings.Builder) {
-	messageName := m.Desc.Name()
-	constructor := crc32.ChecksumIEEE([]byte(messageName))
-	g.g.P(fmt.Sprintf("const C_%s int64 = %d", messageName, constructor))
-	initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, messageName))
-	g.g.P(fmt.Sprintf("type pool%s struct{", messageName))
-	g.g.P("pool sync.Pool")
-	g.g.P("}") // end of pool struct
-	g.g.P(fmt.Sprintf("func (p *pool%s) Get() *%s {", messageName, messageName))
-	g.g.P(fmt.Sprintf("x, ok := p.pool.Get().(*%s)", messageName))
-	g.g.P("if !ok {")
-	g.g.P(fmt.Sprintf("x = &%s{}", messageName))
-	g.g.P("}") // end of if clause
-	g.g.P("return x")
-	g.g.P("}") // end of func Get()
-	g.g.P()
-	g.g.P(fmt.Sprintf("func (p *pool%s) Put(x *%s) {", messageName, messageName))
-	g.g.P("if x == nil {")
-	g.g.P("return")
-	g.g.P("}")
+	arg := z.TemplateArg{
+		Name: string(m.Desc.Name()),
+		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
+	}
+	initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
 	for _, ft := range m.Fields {
-		ftName := ft.Desc.Name()
-		switch ft.Desc.Cardinality() {
-		case protoreflect.Repeated:
-			switch ft.Desc.Kind() {
-			case protoreflect.BytesKind:
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-				g.g.P("for _, z := range x.", ftName, "{")
-				g.g.P("pools.Bytes.Put(z)")
-				g.g.P("}") // end of for/range
-				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
-			case protoreflect.MessageKind:
-				// If it is message we check if is nil then we leave it
-				// If it is from same package use Pool
-				g.g.P("for _, z := range x.", ftName, "{")
-				ftPkg := string(ft.Desc.Message().FullName().Parent())
-				if ftPkg != string(g.f.GoPackageName) {
-					g.g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(z)")
-				} else {
-					g.g.P("Pool", ft.Desc.Message().Name(), ".Put(z)")
-				}
-				g.g.P("}") // end of for/range
-				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
+		arg.AddField(g.f, g.g, ft.Desc)
+	}
+	g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
+}
 
-			default:
-				g.g.P("x.", ftName, " = x.", ftName, "[:0]")
+const genDeepCopy = `
+func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
+	{{- range .Fields -}}
+	{{- if eq .Kind "repeated" }}
+		z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...) 
+	{{- else if eq .Kind "repeated/msg" }}
+		for idx := range x.{{.Name}} {
+			if x.{{.Name}}[idx] == nil {
+				continue
 			}
-		default:
-			switch ft.Desc.Kind() {
-			case protoreflect.BytesKind:
-				g.g.P(fmt.Sprintf("x.%s = x.%s[:0]", ftName, ftName))
-			case protoreflect.MessageKind:
-				// If it is message we check if is nil then we leave it
-				// If it is from same package use Pool
-				ftPkg := string(ft.Desc.Message().FullName().Parent())
-				if ftPkg != string(g.f.GoPackageName) {
-					g.g.P(ftPkg, ".Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
-				} else {
-					g.g.P("Pool", ft.Desc.Message().Name(), ".Put(x.", ftName, ")")
-				}
-				g.g.P("x.", ftName, " = nil")
-			default:
-				g.g.P(fmt.Sprintf("x.%s = %s", ftName, z.ZeroValue(ft.Desc)))
+			{{- if eq .Pkg "" }}
+				xx := Pool{{.Type}}.Get()
+			{{- else }}
+				xx := {{.Pkg}}.Pool{{.Type}}.Get()
+			{{- end }}
+			x.{{.Name}}[idx].DeepCopy(xx)
+			z.{{.Name}} = append(z.{{.Name}}, xx)
+		}
+	{{- else if eq .Kind "repeated/bytes" }}
+		z.{{.Name}} = z.{{.Name}}[:0]
+		zl := len(z.{{.Name}})
+		for idx := range x.{{.Name}} {
+			if idx <  zl {
+				z.{{.Name}} = append(z.{{.Name}}, append(z.{{.Name}}[idx][:0], x.{{.Name}}[idx]...))
+			} else {
+				z.{{.Name}} = append(z.{{.Name}}, append(nil, x.{{.Name}}[idx]...))
 			}
 		}
-	}
-	g.g.P("p.pool.Put(x)")
-	g.g.P("}") // end of func Put()
-	g.g.P()
-	g.g.P(fmt.Sprintf("var Pool%s = pool%s{}", messageName, messageName))
-	g.g.P()
+	{{- else if eq .Kind "msg" }}
+		if x.{{.Name}} != nil {
+			if z.{{.Name}} == nil {
+				{{- if eq .Pkg "" }}
+					z.{{.Name}} = Pool{{.Type}}.Get()
+				{{- else }}
+					z.{{.Name}} = {{.Pkg}}.Pool{{.Type}}.Get()
+				{{- end }}
+			}
+			x.{{.Name}}.DeepCopy(z.{{.Name}})
+		} else {
+			// TODO:: release to pool
+			z.{{.Name}} = nil 
+		}
+	{{- else if eq .Kind "bytes" }}
+		z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...)
+	{{- else }}
+		z.{{.Name}} = x.{{.Name}}
+	{{- end }}
+	{{- end }}
 }
+
+`
+
 func (g *Generator) genDeepCopy(m *protogen.Message) {
-	mtName := m.Desc.Name()
-	g.g.P("func (x *", mtName, ") DeepCopy(z *", mtName, ") {")
-	for _, ft := range m.Fields {
-		ftName := ft.Desc.Name()
-		ftPkg, ftType := z.DescParts(g.f, g.g, ft.Desc.Message())
-		switch ft.Desc.Cardinality() {
-		case protoreflect.Repeated:
-			switch ft.Desc.Kind() {
-			case protoreflect.MessageKind:
-				g.g.P("for idx := range x.", ftName, "{")
-				g.g.P(fmt.Sprintf("if x.%s[idx] != nil {", ftName))
-				if ftPkg == "" {
-					g.g.P("xx := Pool", ftType, ".Get()")
-				} else {
-					g.g.P("xx := ", ftPkg, ".Pool", ftType, ".Get()")
-				}
-				g.g.P("x.", ftName, "[idx].DeepCopy(xx)")
-				g.g.P("z.", ftName, " = append(z.", ftName, ", xx)")
-				g.g.P("}")
-				g.g.P("}")
-			default:
-				g.g.P("z.", ftName, " = append(z.", ftName, "[:0], x.", ftName, "...)")
-			}
-		default:
-			switch ft.Desc.Kind() {
-			case protoreflect.BytesKind:
-				g.g.P("z.", ftName, " = append(z.", ftName, "[:0], x.", ftName, "...)")
-			case protoreflect.MessageKind:
-				// If it is message we check if is nil then we leave it
-				// If it is from same package use Pool
-				g.g.P("if x.", ftName, " != nil {")
-				g.g.P("if z.", ftName, " == nil {")
-				if ftPkg == "" {
-					g.g.P("z.", ftName, " = Pool", ftType, ".Get()")
-				} else {
-					g.g.P("z.", ftName, " = ", ftPkg, ".Pool", ftType, ".Get()")
-				}
-				g.g.P("}")
-				g.g.P("x.", ftName, ".DeepCopy(z.", ftName, ")")
-				g.g.P("} else {")
-				g.g.P("z.", ftName, "= nil")
-				g.g.P("}")
-			default:
-				g.g.P(fmt.Sprintf("z.%s = x.%s", ftName, ftName))
-
-			}
-		}
+	arg := z.TemplateArg{
+		Name: string(m.Desc.Name()),
+		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
 	}
-	g.g.P("}")
-	g.g.P()
+	for _, ft := range m.Fields {
+		arg.AddField(g.f, g.g, ft.Desc)
+	}
+	g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
 }
+
 func (g *Generator) genPushToContext(m *protogen.Message) {
 	mtName := m.Desc.Name()
 	g.g.P("func (x *", mtName, ") PushToContext(ctx *edge.RequestCtx) {")

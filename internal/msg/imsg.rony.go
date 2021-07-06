@@ -4,6 +4,7 @@ package msg
 
 import (
 	rony "github.com/ronaksoft/rony"
+	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
 	tools "github.com/ronaksoft/rony/tools"
@@ -11,6 +12,8 @@ import (
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
+
+var _ = pools.Imported
 
 const C_GetPage int64 = 3721890413
 
@@ -30,8 +33,10 @@ func (p *poolGetPage) Put(x *GetPage) {
 	if x == nil {
 		return
 	}
+
 	x.PageID = 0
 	x.ReplicaSet = 0
+
 	p.pool.Put(x)
 }
 
@@ -76,6 +81,7 @@ func (p *poolTunnelMessage) Put(x *TunnelMessage) {
 	if x == nil {
 		return
 	}
+
 	x.SenderID = x.SenderID[:0]
 	x.SenderReplicaSet = 0
 	for _, z := range x.Store {
@@ -83,7 +89,7 @@ func (p *poolTunnelMessage) Put(x *TunnelMessage) {
 	}
 	x.Store = x.Store[:0]
 	rony.PoolMessageEnvelope.Put(x.Envelope)
-	x.Envelope = nil
+
 	p.pool.Put(x)
 }
 
@@ -93,11 +99,12 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 	z.SenderID = append(z.SenderID[:0], x.SenderID...)
 	z.SenderReplicaSet = x.SenderReplicaSet
 	for idx := range x.Store {
-		if x.Store[idx] != nil {
-			xx := rony.PoolKeyValue.Get()
-			x.Store[idx].DeepCopy(xx)
-			z.Store = append(z.Store, xx)
+		if x.Store[idx] == nil {
+			continue
 		}
+		xx := rony.PoolKeyValue.Get()
+		x.Store[idx].DeepCopy(xx)
+		z.Store = append(z.Store, xx)
 	}
 	if x.Envelope != nil {
 		if z.Envelope == nil {
@@ -105,6 +112,7 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 		}
 		x.Envelope.DeepCopy(z.Envelope)
 	} else {
+		// TODO:: release to pool
 		z.Envelope = nil
 	}
 }
@@ -143,11 +151,13 @@ func (p *poolEdgeNode) Put(x *EdgeNode) {
 	if x == nil {
 		return
 	}
+
 	x.ServerID = x.ServerID[:0]
 	x.ReplicaSet = 0
 	x.Hash = 0
 	x.GatewayAddr = x.GatewayAddr[:0]
 	x.TunnelAddr = x.TunnelAddr[:0]
+
 	p.pool.Put(x)
 }
 
@@ -195,8 +205,10 @@ func (p *poolPage) Put(x *Page) {
 	if x == nil {
 		return
 	}
+
 	x.ID = 0
 	x.ReplicaSet = 0
+
 	p.pool.Put(x)
 }
 

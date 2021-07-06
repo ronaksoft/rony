@@ -5,6 +5,7 @@ package model
 import (
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
+	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
 	tools "github.com/ronaksoft/rony/tools"
@@ -12,6 +13,8 @@ import (
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
+
+var _ = pools.Imported
 
 const C_Model1 int64 = 2074613123
 
@@ -31,12 +34,14 @@ func (p *poolModel1) Put(x *Model1) {
 	if x == nil {
 		return
 	}
+
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""
 	x.P2 = x.P2[:0]
 	x.P5 = 0
 	x.Enum = 0
+
 	p.pool.Put(x)
 }
 
@@ -89,11 +94,13 @@ func (p *poolModel2) Put(x *Model2) {
 	if x == nil {
 		return
 	}
+
 	x.ID = 0
 	x.ShardKey = 0
 	x.P1 = ""
 	x.P2 = x.P2[:0]
 	x.P5 = 0
+
 	p.pool.Put(x)
 }
 

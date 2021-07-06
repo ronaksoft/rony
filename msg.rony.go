@@ -3,11 +3,14 @@
 package rony
 
 import (
+	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
+
+var _ = pools.Imported
 
 const C_MessageEnvelope int64 = 535232465
 
@@ -27,6 +30,7 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 	if x == nil {
 		return
 	}
+
 	x.Constructor = 0
 	x.RequestID = 0
 	x.Message = x.Message[:0]
@@ -35,6 +39,7 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 		PoolKeyValue.Put(z)
 	}
 	x.Header = x.Header[:0]
+
 	p.pool.Put(x)
 }
 
@@ -46,11 +51,12 @@ func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	z.Message = append(z.Message[:0], x.Message...)
 	z.Auth = append(z.Auth[:0], x.Auth...)
 	for idx := range x.Header {
-		if x.Header[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.Header[idx].DeepCopy(xx)
-			z.Header = append(z.Header, xx)
+		if x.Header[idx] == nil {
+			continue
 		}
+		xx := PoolKeyValue.Get()
+		x.Header[idx].DeepCopy(xx)
+		z.Header = append(z.Header, xx)
 	}
 }
 
@@ -88,8 +94,10 @@ func (p *poolKeyValue) Put(x *KeyValue) {
 	if x == nil {
 		return
 	}
+
 	x.Key = ""
 	x.Value = ""
+
 	p.pool.Put(x)
 }
 
@@ -134,11 +142,13 @@ func (p *poolMessageContainer) Put(x *MessageContainer) {
 	if x == nil {
 		return
 	}
+
 	x.Length = 0
 	for _, z := range x.Envelopes {
 		PoolMessageEnvelope.Put(z)
 	}
 	x.Envelopes = x.Envelopes[:0]
+
 	p.pool.Put(x)
 }
 
@@ -147,11 +157,12 @@ var PoolMessageContainer = poolMessageContainer{}
 func (x *MessageContainer) DeepCopy(z *MessageContainer) {
 	z.Length = x.Length
 	for idx := range x.Envelopes {
-		if x.Envelopes[idx] != nil {
-			xx := PoolMessageEnvelope.Get()
-			x.Envelopes[idx].DeepCopy(xx)
-			z.Envelopes = append(z.Envelopes, xx)
+		if x.Envelopes[idx] == nil {
+			continue
 		}
+		xx := PoolMessageEnvelope.Get()
+		x.Envelopes[idx].DeepCopy(xx)
+		z.Envelopes = append(z.Envelopes, xx)
 	}
 }
 
@@ -189,9 +200,11 @@ func (p *poolError) Put(x *Error) {
 	if x == nil {
 		return
 	}
+
 	x.Code = ""
 	x.Items = ""
 	x.Description = ""
+
 	p.pool.Put(x)
 }
 
@@ -237,12 +250,14 @@ func (p *poolRedirect) Put(x *Redirect) {
 	if x == nil {
 		return
 	}
+
 	x.Reason = 0
 	for _, z := range x.Edges {
 		PoolEdge.Put(z)
 	}
 	x.Edges = x.Edges[:0]
 	x.WaitInSec = 0
+
 	p.pool.Put(x)
 }
 
@@ -251,11 +266,12 @@ var PoolRedirect = poolRedirect{}
 func (x *Redirect) DeepCopy(z *Redirect) {
 	z.Reason = x.Reason
 	for idx := range x.Edges {
-		if x.Edges[idx] != nil {
-			xx := PoolEdge.Get()
-			x.Edges[idx].DeepCopy(xx)
-			z.Edges = append(z.Edges, xx)
+		if x.Edges[idx] == nil {
+			continue
 		}
+		xx := PoolEdge.Get()
+		x.Edges[idx].DeepCopy(xx)
+		z.Edges = append(z.Edges, xx)
 	}
 	z.WaitInSec = x.WaitInSec
 }
@@ -294,9 +310,11 @@ func (p *poolEdge) Put(x *Edge) {
 	if x == nil {
 		return
 	}
+
 	x.ReplicaSet = 0
 	x.ServerID = ""
 	x.HostPorts = x.HostPorts[:0]
+
 	p.pool.Put(x)
 }
 
@@ -342,10 +360,12 @@ func (p *poolEdges) Put(x *Edges) {
 	if x == nil {
 		return
 	}
+
 	for _, z := range x.Nodes {
 		PoolEdge.Put(z)
 	}
 	x.Nodes = x.Nodes[:0]
+
 	p.pool.Put(x)
 }
 
@@ -353,11 +373,12 @@ var PoolEdges = poolEdges{}
 
 func (x *Edges) DeepCopy(z *Edges) {
 	for idx := range x.Nodes {
-		if x.Nodes[idx] != nil {
-			xx := PoolEdge.Get()
-			x.Nodes[idx].DeepCopy(xx)
-			z.Nodes = append(z.Nodes, xx)
+		if x.Nodes[idx] == nil {
+			continue
 		}
+		xx := PoolEdge.Get()
+		x.Nodes[idx].DeepCopy(xx)
+		z.Nodes = append(z.Nodes, xx)
 	}
 }
 
@@ -395,7 +416,9 @@ func (p *poolGetNodes) Put(x *GetNodes) {
 	if x == nil {
 		return
 	}
+
 	x.ReplicaSet = x.ReplicaSet[:0]
+
 	p.pool.Put(x)
 }
 
@@ -439,6 +462,7 @@ func (p *poolGetAllNodes) Put(x *GetAllNodes) {
 	if x == nil {
 		return
 	}
+
 	p.pool.Put(x)
 }
 
@@ -481,12 +505,14 @@ func (p *poolHttpBody) Put(x *HttpBody) {
 	if x == nil {
 		return
 	}
+
 	x.ContentType = ""
 	for _, z := range x.Header {
 		PoolKeyValue.Put(z)
 	}
 	x.Header = x.Header[:0]
 	x.Body = x.Body[:0]
+
 	p.pool.Put(x)
 }
 
@@ -495,11 +521,12 @@ var PoolHttpBody = poolHttpBody{}
 func (x *HttpBody) DeepCopy(z *HttpBody) {
 	z.ContentType = x.ContentType
 	for idx := range x.Header {
-		if x.Header[idx] != nil {
-			xx := PoolKeyValue.Get()
-			x.Header[idx].DeepCopy(xx)
-			z.Header = append(z.Header, xx)
+		if x.Header[idx] == nil {
+			continue
 		}
+		xx := PoolKeyValue.Get()
+		x.Header[idx].DeepCopy(xx)
+		z.Header = append(z.Header, xx)
 	}
 	z.Body = append(z.Body[:0], x.Body...)
 }

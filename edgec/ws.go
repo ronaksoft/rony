@@ -394,11 +394,11 @@ type wsRouter struct {
 	c *Websocket
 }
 
-func (d *wsRouter) UpdateRoute(req *rony.MessageEnvelope, replicaSet uint64) {
+func (d *wsRouter) UpdateRoute(_ *rony.MessageEnvelope, replicaSet uint64) {
 	// TODO:: implement cache maybe
 }
 
-func (d *wsRouter) GetRoute(req *rony.MessageEnvelope) (replicaSet uint64) {
+func (d *wsRouter) GetRoute(_ *rony.MessageEnvelope) (replicaSet uint64) {
 	return d.c.sessionReplica
 }
 

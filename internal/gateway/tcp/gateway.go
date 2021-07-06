@@ -262,9 +262,6 @@ func (g *Gateway) Shutdown() {
 	g.waitGroupAcceptors.Wait()
 	log.Info("Connection Acceptors all closed")
 
-	// TODO:: why wait ?!
-	time.Sleep(time.Second * 3)
-
 	// 2. Close all readPumps
 	log.Info("Read Pumpers are closing")
 	g.waitGroupReaders.Wait()
@@ -327,7 +324,6 @@ func (g *Gateway) Protocol() rony.GatewayProtocol {
 
 func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	// ByPass CORS (Cross Origin Resource Sharing) check
-	// TODO:: let developer choose
 	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	reqCtx.Response.Header.Set("Access-Control-Request-Method", "*")
 	reqCtx.Response.Header.Set("Access-Control-Allow-Headers", "*")

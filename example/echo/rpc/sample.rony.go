@@ -9,6 +9,7 @@ import (
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
 	errors "github.com/ronaksoft/rony/errors"
+	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	tools "github.com/ronaksoft/rony/tools"
 	cobra "github.com/spf13/cobra"
@@ -16,6 +17,8 @@ import (
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
 )
+
+var _ = pools.Imported
 
 const C_EchoRequest int64 = 1904100324
 
@@ -35,8 +38,10 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 	if x == nil {
 		return
 	}
+
 	x.ID = 0
 	x.RandomText = ""
+
 	p.pool.Put(x)
 }
 
@@ -81,8 +86,10 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 	if x == nil {
 		return
 	}
+
 	x.ReqID = 0
 	x.RandomText = ""
+
 	p.pool.Put(x)
 }
 
@@ -171,7 +178,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	e.SetRestProxy("get", "/echo/:ID/:Random", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
 }
 
-// method:"get" path:"/echo/:ID/:Random" bind_variables:"Random=RandomText" json_encode:true
+// method:"get"  path:"/echo/:ID/:Random"  bind_variables:"Random=RandomText"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)

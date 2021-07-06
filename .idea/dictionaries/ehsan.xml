@@ -2,6 +2,7 @@
   <dictionary name="ehsan">
     <words>
       <w>aerospike</w>
+      <w>cors</w>
       <w>ehsan</w>
       <w>fasthttp</w>
       <w>grpc</w>
