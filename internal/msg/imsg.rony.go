@@ -112,7 +112,7 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 		}
 		x.Envelope.DeepCopy(z.Envelope)
 	} else {
-		// TODO:: release to pool
+		rony.PoolMessageEnvelope.Put(z.Envelope)
 		z.Envelope = nil
 	}
 }

@@ -377,7 +377,7 @@ func (x *Message1) DeepCopy(z *Message1) {
 		}
 		x.M2.DeepCopy(z.M2)
 	} else {
-		// TODO:: release to pool
+		PoolMessage2.Put(z.M2)
 		z.M2 = nil
 	}
 	for idx := range x.M2S {
@@ -449,7 +449,7 @@ func (x *Message2) DeepCopy(z *Message2) {
 		}
 		x.M1.DeepCopy(z.M1)
 	} else {
-		// TODO:: release to pool
+		PoolMessage1.Put(z.M1)
 		z.M1 = nil
 	}
 }

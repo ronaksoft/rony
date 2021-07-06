@@ -187,7 +187,11 @@ func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 			}
 			x.{{.Name}}.DeepCopy(z.{{.Name}})
 		} else {
-			// TODO:: release to pool
+			{{- if eq .Pkg "" }}
+				Pool{{.Type}}.Put(z.{{.Name}})
+			{{- else }}
+				{{.Pkg}}.Pool{{.Type}}.Put(z.{{.Name}})
+			{{- end }}
 			z.{{.Name}} = nil 
 		}
 	{{- else if eq .Kind "bytes" }}
