@@ -40,7 +40,7 @@ var ServerCmd = &cobra.Command{
 		)
 
 		// Register the implemented service into the edge server
-		// service.RegisterSampleService(&service.SampleService{}, edgeServer)
+		// rpc.RegisterSampleService(&rpc.SampleService{}, edgeServer)
 
 		// Start the edge server components
 		edgeServer.Start()

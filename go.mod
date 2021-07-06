@@ -34,7 +34,6 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/valyala/fasthttp v1.24.0
-	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.0 // indirect
