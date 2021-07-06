@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	"google.golang.org/protobuf/compiler/protogen"
 	"hash/crc32"
 	"strings"
@@ -47,7 +46,7 @@ func (g *Generator) Generate() {
 	initFunc := &strings.Builder{}
 	initFunc.WriteString("func init() {\n")
 	for _, m := range g.f.Messages {
-		arg := z.GetTemplateArg(g.f, g.g, m)
+		arg := GetArg(g, m)
 		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
@@ -215,5 +214,3 @@ const genSerializers = `
 	}
 	
 `
-
-

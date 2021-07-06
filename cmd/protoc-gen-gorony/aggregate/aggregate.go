@@ -17,60 +17,21 @@ import (
 */
 
 type Aggregate struct {
-	Type       string
-	Name       string
-	Table      Key
-	Views      []Key
-	ViewParams []string
-	FieldNames []string
-	FieldsCql  map[string]string
-	FieldsGo   map[string]string
-	HasIndex   bool
-}
-
-func (m *Aggregate) FuncArgs(keyPrefix string, key Key) string {
-	sb := strings.Builder{}
-	for idx, k := range key.Keys() {
-		if idx != 0 {
-			sb.WriteRune(',')
-		}
-		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
-		sb.WriteRune(' ')
-		sb.WriteString(m.FieldsGo[k])
-	}
-	return sb.String()
-}
-
-func (m *Aggregate) FuncArgsPKs(keyPrefix string, key Key) string {
-	sb := strings.Builder{}
-	for idx, k := range key.PKs {
-		if idx != 0 {
-			sb.WriteRune(',')
-		}
-		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
-		sb.WriteRune(' ')
-		sb.WriteString(m.FieldsGo[k])
-	}
-	return sb.String()
-}
-
-func (m *Aggregate) FuncArgsCKs(keyPrefix string, key Key) string {
-	sb := strings.Builder{}
-	for idx, k := range key.CKs {
-		if idx != 0 {
-			sb.WriteRune(',')
-		}
-		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", keyPrefix, k)))
-		sb.WriteRune(' ')
-		sb.WriteString(m.FieldsGo[k])
-	}
-	return sb.String()
+	Type      string
+	Name      string
+	Table     Key
+	Views     []Key
+	FieldsCql map[string]string
+	FieldsGo  map[string]string
+	HasIndex  bool
 }
 
 type Key struct {
 	aggregate string
 	PKs       []string
+	PKGoTypes []string
 	CKs       []string
+	CKGoTypes []string
 	Orders    []string
 }
 
@@ -79,6 +40,83 @@ func (k *Key) Keys() []string {
 	keys = append(keys, k.PKs...)
 	keys = append(keys, k.CKs...)
 	return keys
+}
+
+func (k *Key) FuncArgs(prefix string) string {
+	sb := strings.Builder{}
+	cnt := 0
+	for idx, kk := range k.PKs {
+		if cnt != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, kk)))
+		sb.WriteRune(' ')
+		sb.WriteString(k.PKGoTypes[idx])
+		cnt++
+	}
+	for idx, kk := range k.CKs {
+		if cnt != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, kk)))
+		sb.WriteRune(' ')
+		sb.WriteString(k.CKGoTypes[idx])
+		cnt++
+	}
+	return sb.String()
+}
+
+func (k *Key) FuncArgsPKs(prefix string) string {
+	sb := strings.Builder{}
+	cnt := 0
+	for idx, kk := range k.CKs {
+		if cnt != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, kk)))
+		sb.WriteRune(' ')
+		sb.WriteString(k.CKGoTypes[idx])
+		cnt++
+	}
+	return sb.String()
+}
+
+func (k *Key) FuncArgsCKs(prefix string) string {
+	sb := strings.Builder{}
+	cnt := 0
+	for idx, kk := range k.CKs {
+		if cnt != 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(tools.ToLowerCamel(fmt.Sprintf("%s%s", prefix, kk)))
+		sb.WriteRune(' ')
+		sb.WriteString(k.CKGoTypes[idx])
+		cnt++
+	}
+	return sb.String()
+}
+
+func (k *Key) DBKey(prefix string) string {
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		k.aggregate,
+		k.Checksum(),
+		k.String(prefix, ",", prefix == ""),
+	)
+}
+
+func (k *Key) DBKeyPrefix(prefix string) string {
+	return fmt.Sprintf("'M', C_%s, %d, %s",
+		k.aggregate,
+		k.Checksum(),
+		k.StringPKs(prefix, ",", prefix == ""),
+	)
+}
+
+func (k *Key) DBIterPrefix() string {
+	return fmt.Sprintf("'M', C_%s, %d",
+		k.aggregate,
+		k.Checksum(),
+	)
 }
 
 func (k *Key) StringPKs(prefix string, sep string, lowerCamel bool) string {

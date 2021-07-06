@@ -67,7 +67,7 @@ func (x *GetRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_GetRequest, x)
 }
 
 const C_GetResponse int64 = 2891601577
@@ -119,7 +119,7 @@ func (x *GetResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (x *GetResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_GetResponse, x)
 }
 
 const C_SetRequest int64 = 3858851777
@@ -171,7 +171,7 @@ func (x *SetRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (x *SetRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_SetRequest, x)
 }
 
 const C_SetResponse int64 = 2994069984
@@ -221,7 +221,7 @@ func (x *SetResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (x *SetResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_SetResponse, x)
 }
 
 const C_EchoRequest int64 = 1904100324
@@ -275,7 +275,7 @@ func (x *EchoRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_EchoRequest, x)
 }
 
 const C_EchoResponse int64 = 4192619139
@@ -333,7 +333,7 @@ func (x *EchoResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_EchoResponse, x)
 }
 
 const C_Message1 int64 = 3131464828
@@ -407,7 +407,7 @@ func (x *Message1) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Message1, x)
 }
 
 const C_Message2 int64 = 598674886
@@ -471,7 +471,7 @@ func (x *Message2) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Message2, x)
 }
 
 const C_SampleEcho int64 = 3852587671

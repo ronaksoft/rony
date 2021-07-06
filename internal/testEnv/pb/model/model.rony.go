@@ -73,7 +73,7 @@ func (x *Model1) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Model1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Model1, x)
 }
 
 const C_Model2 int64 = 3802219577
@@ -131,17 +131,13 @@ func (x *Model2) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Model2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Model2, x)
 }
 
 func init() {
 	registry.RegisterConstructor(2074613123, "Model1")
 	registry.RegisterConstructor(3802219577, "Model2")
 }
-
-type Model1Order string
-
-const Model1OrderByEnum Model1Order = "Enum"
 
 func CreateModel1(m *Model1) error {
 	alloc := tools.NewAllocator()
@@ -156,33 +152,29 @@ func CreateModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Mod
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-
 	if store.Exists(txn, alloc, 'M', C_Model1, 4018441491, m.ID, m.ShardKey) {
 		return store.ErrAlreadyExists
 	}
+
 	// save entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	if err != nil {
 		return
 	}
-
-	// save views
-	// save entry for view: [Enum ShardKey ID]
+	// save view [Enum ShardKey ID]
 	err = store.Set(txn, alloc, val, 'M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID)
 	if err != nil {
-		return
+		return err
 	}
 
-	// save indices
 	key := alloc.Gen('M', C_Model1, 4018441491, m.ID, m.ShardKey)
-	// update field index by saving new values
+	// update field index by saving new value: P1
 	err = store.Set(txn, alloc, key, 'I', C_Model1, uint64(4843779728911368192), m.P1, m.ID, m.ShardKey)
 	if err != nil {
 		return
 	}
-
-	// update field index by saving new values
+	// update field index by saving new value: P2
 	for idx := range m.P2 {
 		err = store.Set(txn, alloc, key, 'I', C_Model1, uint64(4749204136736587776), m.P2[idx], m.ID, m.ShardKey)
 		if err != nil {
@@ -191,8 +183,11 @@ func CreateModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Mod
 	}
 
 	return
-
 }
+
+type Model1Order string
+
+const Model1OrderByEnum Model1Order = "Enum"
 
 func ReadModel1WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int32, shardKey int32, m *Model1) (*Model1, error) {
 	if alloc == nil {
@@ -671,10 +666,6 @@ func ListModel1ByP2(
 	return res, err
 }
 
-type Model2Order string
-
-const Model2OrderByP1 Model2Order = "P1"
-
 func CreateModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -688,27 +679,28 @@ func CreateModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Mod
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-
 	if store.Exists(txn, alloc, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1) {
 		return store.ErrAlreadyExists
 	}
+
 	// save entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return
 	}
-
-	// save views
-	// save entry for view: [P1 ShardKey ID]
+	// save view [P1 ShardKey ID]
 	err = store.Set(txn, alloc, val, 'M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID)
 	if err != nil {
-		return
+		return err
 	}
 
 	return
-
 }
+
+type Model2Order string
+
+const Model2OrderByP1 Model2Order = "P1"
 
 func ReadModel2WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
 	if alloc == nil {

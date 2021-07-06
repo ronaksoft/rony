@@ -1,6 +1,7 @@
-package z
+package helper
 
 import (
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
@@ -15,7 +16,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type TemplateArg struct {
+type Arg struct {
 	Name   string
 	Pkg    string
 	Type   string
@@ -29,17 +30,27 @@ type TemplateArg struct {
 	}
 }
 
-func GetTemplateArg(f *protogen.File, gf *protogen.GeneratedFile, m *protogen.Message) TemplateArg {
-	arg := TemplateArg{
+func GetArg(g *Generator, m *protogen.Message) Arg {
+	arg := Arg{
 		Name: string(m.Desc.Name()),
 		C:    crc32.ChecksumIEEE([]byte(m.Desc.Name())),
 	}
+	arg.Pkg, arg.Type = z.DescParts(g.f, g.g, m.Desc)
 	for _, ft := range m.Fields {
-		arg.AddField(f, gf, ft.Desc)
+		name := string(ft.Desc.Name())
+		pkg, typ := z.DescParts(g.f, g.g, ft.Desc.Message())
+		arg.Fields = append(arg.Fields, struct {
+			Kind      string
+			Pkg       string
+			Type      string
+			Name      string
+			ZeroValue string
+		}{Kind: arg.kind(ft.Desc), Pkg: pkg, Type: typ, Name: name, ZeroValue: z.ZeroValue(ft.Desc)})
 	}
 	return arg
 }
-func (arg *TemplateArg) kind(f protoreflect.FieldDescriptor) string {
+
+func (arg *Arg) kind(f protoreflect.FieldDescriptor) string {
 	switch f.Cardinality() {
 	case protoreflect.Repeated:
 		switch f.Kind() {
@@ -60,16 +71,4 @@ func (arg *TemplateArg) kind(f protoreflect.FieldDescriptor) string {
 			return ""
 		}
 	}
-}
-
-func (arg *TemplateArg) AddField(f *protogen.File, gf *protogen.GeneratedFile, fd protoreflect.FieldDescriptor) {
-	name := string(fd.Name())
-	pkg, typ := DescParts(f, gf, fd.Message())
-	arg.Fields = append(arg.Fields, struct {
-		Kind      string
-		Pkg       string
-		Type      string
-		Name      string
-		ZeroValue string
-	}{Kind: arg.kind(fd), Pkg: pkg, Type: typ, Name: name, ZeroValue: ZeroValue(fd)})
 }

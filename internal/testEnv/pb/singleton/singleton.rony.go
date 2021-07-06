@@ -73,7 +73,7 @@ func (x *Single1) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Single1) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Single1, x)
 }
 
 const C_Single2 int64 = 2982774902
@@ -131,7 +131,7 @@ func (x *Single2) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Single2) PushToContext(ctx *edge.RequestCtx) {
-	ctx.PushMessage(C_, x)
+	ctx.PushMessage(C_Single2, x)
 }
 
 func init() {

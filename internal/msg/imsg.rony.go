@@ -242,10 +242,6 @@ func init() {
 	registry.RegisterConstructor(3023575326, "Page")
 }
 
-type PageOrder string
-
-const PageOrderByReplicaSet PageOrder = "ReplicaSet"
-
 func CreatePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -259,27 +255,28 @@ func CreatePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Page)
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-
 	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
 		return store.ErrAlreadyExists
 	}
+
 	// save entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Page, 299066170, m.ID)
 	if err != nil {
 		return
 	}
-
-	// save views
-	// save entry for view: [ReplicaSet ID]
+	// save view [ReplicaSet ID]
 	err = store.Set(txn, alloc, val, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
 	if err != nil {
-		return
+		return err
 	}
 
 	return
-
 }
+
+type PageOrder string
+
+const PageOrderByReplicaSet PageOrder = "ReplicaSet"
 
 func ReadPageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
 	if alloc == nil {
