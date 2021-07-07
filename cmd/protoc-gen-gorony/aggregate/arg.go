@@ -22,41 +22,82 @@ import (
 */
 
 type ModelArg struct {
-	Name        string
-	Pkg         string
-	Type        string
-	C           uint32
-	HasIndex    bool
-	DBKey       func(prefix string) string
-	FuncArgs    func(prefix string) string
-	FuncArgsPKs func(prefix string) string
-	FuncArgsCKs func(prefix string) string
-	String      func(prefix string, sep string, lowerCamel bool) string
-	StringPKs   func(prefix string, sep string, lowerCamel bool) string
-	StringCKs   func(prefix string, sep string, lowerCamel bool) string
-	Views       []ViewArg
-	Fields      []FieldArg
+	keys     Key
+	Name     string
+	Pkg      string
+	Type     string
+	C        uint32
+	HasIndex bool
+	Views    []ViewArg
+	Fields   []FieldArg
 }
+
+func (ma ModelArg) DBKey(prefix string) string {
+	return ma.keys.DBKey(prefix)
+}
+func (ma ModelArg) FuncArgs(prefix string) string {
+	return ma.keys.FuncArgs(prefix)
+}
+func (ma ModelArg) FuncArgsPKs(prefix string) string {
+	return ma.keys.FuncArgsPKs(prefix)
+}
+func (ma ModelArg) FuncArgsCKs(prefix string) string {
+	return ma.keys.FuncArgsCKs(prefix)
+}
+func (ma ModelArg) String(prefix string, sep string, lowerCamel bool) string {
+	return ma.keys.String(prefix, sep, lowerCamel)
+}
+func (ma ModelArg) StringPKs(prefix string, sep string, lowerCamel bool) string {
+	return ma.keys.StringPKs(prefix, sep, lowerCamel)
+}
+func (ma ModelArg) StringCKs(prefix string, sep string, lowerCamel bool) string {
+	return ma.keys.StringCKs(prefix, sep, lowerCamel)
+}
+
 type ViewArg struct {
-	Name        string
-	Keys        []string
-	DBKey       func(prefix string) string
-	FuncArgs    func(prefix string) string
-	FuncArgsPKs func(prefix string) string
-	FuncArgsCKs func(prefix string) string
-	String      func(prefix string, sep string, lowerCamel bool) string
-	StringPKs   func(prefix string, sep string, lowerCamel bool) string
-	StringCKs   func(prefix string, sep string, lowerCamel bool) string
+	keys Key
+	Name string
+	Keys []string
 }
+
+func (va ViewArg) DBKey(prefix string) string {
+	return va.keys.DBKey(prefix)
+}
+func (va ViewArg) FuncArgs(prefix string) string {
+	return va.keys.FuncArgs(prefix)
+}
+func (va ViewArg) FuncArgsPKs(prefix string) string {
+	return va.keys.FuncArgsPKs(prefix)
+}
+func (va ViewArg) FuncArgsCKs(prefix string) string {
+	return va.keys.FuncArgsCKs(prefix)
+}
+func (va ViewArg) String(prefix string, sep string, lowerCamel bool) string {
+	return va.keys.String(prefix, sep, lowerCamel)
+}
+func (va ViewArg) StringPKs(prefix string, sep string, lowerCamel bool) string {
+	return va.keys.StringPKs(prefix, sep, lowerCamel)
+}
+func (va ViewArg) StringCKs(prefix string, sep string, lowerCamel bool) string {
+	return va.keys.StringCKs(prefix, sep, lowerCamel)
+}
+
 type FieldArg struct {
+	agg       *Aggregate
 	Kind      string
 	Pkg       string
 	Type      string
 	Name      string
 	ZeroValue string
-	DBKey     func(pre, post string) string
-	DBPrefix  func(pre, post string) string
 	HasIndex  bool
+}
+
+func (fa FieldArg) DBKey(prefix, postfix string) string {
+	return indexKey(fa.agg, fa.Name, prefix, postfix)
+}
+
+func (fa FieldArg) DBPrefixKey(prefix, postfix string) string {
+	return indexPrefix(fa.agg, fa.Name, tools.ToLowerCamel(inflection.Singular(fa.Name)))
 }
 
 func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
@@ -64,27 +105,7 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
 		Name:     string(m.Desc.Name()),
 		C:        crc32.ChecksumIEEE([]byte(m.Desc.Name())),
 		HasIndex: agg.HasIndex,
-		DBKey: func(prefix string) string {
-			return agg.Table.DBKey(prefix)
-		},
-		FuncArgs: func(prefix string) string {
-			return agg.Table.FuncArgs(prefix)
-		},
-		FuncArgsPKs: func(prefix string) string {
-			return agg.Table.FuncArgsPKs(prefix)
-		},
-		FuncArgsCKs: func(prefix string) string {
-			return agg.Table.FuncArgsCKs(prefix)
-		},
-		String: func(prefix, sep string, lowerCamel bool) string {
-			return agg.Table.String(prefix, sep, lowerCamel)
-		},
-		StringPKs: func(prefix, sep string, lowerCamel bool) string {
-			return agg.Table.StringPKs(prefix, sep, lowerCamel)
-		},
-		StringCKs: func(prefix, sep string, lowerCamel bool) string {
-			return agg.Table.StringCKs(prefix, sep, lowerCamel)
-		},
+		keys:     agg.Table,
 	}
 
 	arg.Pkg, arg.Type = z.DescParts(g.f, g.g, m.Desc)
@@ -95,53 +116,28 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
 		arg.Fields = append(
 			arg.Fields,
 			FieldArg{
+				agg:  agg,
 				Kind: arg.kind(ft.Desc),
 				Pkg:  pkg, Type: typ,
 				Name:      name,
 				ZeroValue: z.ZeroValue(ft.Desc),
 				HasIndex:  proto.GetExtension(opt, rony.E_RonyIndex).(bool),
-				DBKey: func(pre, post string) string {
-					return indexKey(agg, name, pre, post)
-				},
-				DBPrefix: func(pre, post string) string {
-					return indexPrefix(agg, name, tools.ToLowerCamel(inflection.Singular(name)))
-				},
 			},
 		)
 	}
 	for idx, v := range agg.Views {
 		arg.Views = append(arg.Views,
 			ViewArg{
+				keys: agg.Views[idx],
 				Name: agg.Name,
 				Keys: v.Keys(),
-				DBKey: func(prefix string) string {
-					return agg.Views[idx].DBKey(prefix)
-				},
-				FuncArgs: func(prefix string) string {
-					return agg.Views[idx].FuncArgs(prefix)
-				},
-				FuncArgsPKs: func(prefix string) string {
-					return agg.Views[idx].FuncArgsPKs(prefix)
-				},
-				FuncArgsCKs: func(prefix string) string {
-					return agg.Views[idx].FuncArgsCKs(prefix)
-				},
-				String: func(prefix, sep string, lowerCamel bool) string {
-					return agg.Views[idx].String(prefix, sep, lowerCamel)
-				},
-				StringPKs: func(prefix, sep string, lowerCamel bool) string {
-					return agg.Views[idx].StringPKs(prefix, sep, lowerCamel)
-				},
-				StringCKs: func(prefix, sep string, lowerCamel bool) string {
-					return agg.Views[idx].StringCKs(prefix, sep, lowerCamel)
-				},
 			},
 		)
 	}
 	return arg
 }
 
-func (arg *ModelArg) kind(f protoreflect.FieldDescriptor) string {
+func (ma *ModelArg) kind(f protoreflect.FieldDescriptor) string {
 	switch f.Cardinality() {
 	case protoreflect.Repeated:
 		return "repeated"

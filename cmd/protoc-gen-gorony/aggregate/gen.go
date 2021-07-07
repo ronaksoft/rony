@@ -194,13 +194,13 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	if store.Exists(txn, alloc, {{(call .DBKey "m.")}}) {
+	if store.Exists(txn, alloc, {{.DBKey "m."}}) {
 		return store.ErrAlreadyExists
 	}
 	
 	// save entry
 	val := alloc.Marshal(m)
-	err = store.Set(txn, alloc, val, {{(call .DBKey "m.")}})
+	err = store.Set(txn, alloc, val, {{(.DBKey "m.")}})
 	if err != nil {
 		return
 	}
@@ -208,7 +208,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 	{{- range .Views }}
 
 	// save view {{.Keys}}
-	err = store.Set(txn, alloc, val, {{(call .DBKey "m.")}})
+	err = store.Set(txn, alloc, val, {{(.DBKey "m.")}})
 	if err != nil {
 		return err 
 	}
@@ -216,19 +216,19 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 	
 	{{- if .HasIndex }}
 
-		key := alloc.Gen({{(call .DBKey "m.")}})
+		key := alloc.Gen({{(.DBKey "m.")}})
 		{{- range .Fields }}
 			{{- if .HasIndex }}
 				// update field index by saving new value: {{.Name}}
 				{{- if eq .Kind "repeated" }}
 					for idx := range m.{{.Name}} {
-						err = store.Set(txn, alloc, key, {{(call .DBKey "m." "[idx]")}})
+						err = store.Set(txn, alloc, key, {{.DBKey "m." "[idx]"}})
 						if err != nil {
 							return
 						}
 					}
 				{{- else }}
-					err = store.Set(txn, alloc, key, {{(call .DBKey "m." "")}})
+					err = store.Set(txn, alloc, key, {{.DBKey "m." ""}})
 					if err != nil {
 						return
 					}
@@ -249,7 +249,7 @@ func Update{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 		defer alloc.ReleaseAll()
 	}
 	
-	err := Delete{{.Name}}WithTxn(txn, alloc, {{call .String "m." "," false}})
+	err := Delete{{.Name}}WithTxn(txn, alloc, {{.String "m." "," false}})
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func Update{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 	return Create{{.Name}}WithTxn(txn, alloc, m)
 }
 
-func Update{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) error {
+func Update{{.Name}} ({{.FuncArgs ""}}, m *{{.Name}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -274,7 +274,7 @@ func Update{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) error {
 
 const genSave = `
 func Save{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
-	if store.Exists(txn, alloc, {{(call .DBKey "m.")}}) {
+	if store.Exists(txn, alloc, {{.DBKey "m."}}) {
 		return Update{{.Name}}WithTxn(txn, alloc, m)
 	} else {
 		return Create{{.Name}}WithTxn(txn, alloc, m)
@@ -293,20 +293,20 @@ func Save{{.Name}} (m *{{.Name}}) error {
 `
 
 const genRead = `
-func Read{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func Read{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{.FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+	err := store.Unmarshal(txn, alloc, m, {{.DBKey ""}})
 	if err != nil {
 		return nil, err 
 	}
 	return m, nil
 }
 
-func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func Read{{.Name}} ({{.FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -315,7 +315,7 @@ func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 	}
 
 	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = Read{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}}, m)
+		m, err = Read{{.Name}}WithTxn(txn, alloc, {{.String "" "," true}}, m)
 		return err 
 	})
 	return m, err
@@ -323,23 +323,23 @@ func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 
 {{- range .Views }}
 
-func Read{{.Name}}By{{call .String "" "And" false}}WithTxn (
+func Read{{.Name}}By{{.String "" "And" false}}WithTxn (
 	txn *rony.StoreTxn, alloc *tools.Allocator,
-	{{call .FuncArgs ""}}, m *{{.Name}},
+	{{.FuncArgs ""}}, m *{{.Name}},
 ) (*{{.Name}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+	err := store.Unmarshal(txn, alloc, m, {{.DBKey ""}})
 	if err != nil {
 		return nil, err
 	}
 	return m, err
 }
 
-func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func Read{{.Name}}By{{.String "" "And" false}}({{.FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -348,7 +348,7 @@ func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{
 	}
 
 	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = Read{{.Name}}By{{call .String "" "And" false}}WithTxn (txn, alloc, {{call .String "" "," true}}, m)
+		m, err = Read{{.Name}}By{{.String "" "And" false}}WithTxn (txn, alloc, {{.String "" "," true}}, m)
 		return err 
 	})
 	return m, err
@@ -358,16 +358,16 @@ func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{
 `
 
 const genDelete = `
-func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}) error {
+func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{.FuncArgs ""}}) error {
 	{{- if or (gt (len .Views) 0) (.HasIndex) }}
 		m := &{{.Name}}{}
-		err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
+		err := store.Unmarshal(txn, alloc, m, {{.DBKey ""}})
 		if err != nil {
 			return err 
 		}
-		err = store.Delete(txn, alloc, {{call .DBKey "m."}})
+		err = store.Delete(txn, alloc, {{.DBKey "m."}})
 	{{- else }}
-		err := store.Delete(txn, alloc, {{call .DBKey ""}})
+		err := store.Delete(txn, alloc, {{.DBKey ""}})
 	{{- end }}
 	if err != nil {
 		return err 
@@ -378,13 +378,13 @@ func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .
 			// delete field index
 			{{- if eq .Kind "repeated" }}
 				for idx := range m.{{.Name}} {
-					err = store.Delete(txn, alloc, {{call .DBKey "m." "[idx]"}})
+					err = store.Delete(txn, alloc, {{.DBKey "m." "[idx]"}})
 					if err != nil {
 						return err 
 					}
 				}
 			{{- else }}
-				err = store.Delete(txn, alloc, {{call .DBKey "m." ""}})
+				err = store.Delete(txn, alloc, {{.DBKey "m." ""}})
 				if err != nil {
 					return err
 				}
@@ -392,7 +392,7 @@ func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .
 		{{- end }}
 	{{- end }}
 	{{- range .Views }}
-		err = store.Delete(txn, alloc, {{call .DBKey "m."}})
+		err = store.Delete(txn, alloc, {{.DBKey "m."}})
 		if err != nil {
 			return err 
 		}
@@ -402,12 +402,12 @@ func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .
 	return nil
 }
 
-func Delete{{.Name}}({{call .FuncArgs ""}}) error {
+func Delete{{.Name}}({{.FuncArgs ""}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	return store.Update(func(txn *rony.StoreTxn) error {
-		return Delete{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}})
+		return Delete{{.Name}}WithTxn(txn, alloc, {{.String "" "," true}})
 	})
 }
 
