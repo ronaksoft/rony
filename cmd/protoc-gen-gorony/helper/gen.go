@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
 	"google.golang.org/protobuf/compiler/protogen"
 	"hash/crc32"
 	"strings"
@@ -46,7 +47,7 @@ func (g *Generator) Generate() {
 	initFunc := &strings.Builder{}
 	initFunc.WriteString("func init() {\n")
 	for _, m := range g.f.Messages {
-		arg := GetArg(g, m)
+		arg := z.GetMessageArg(g.f, g.g, m)
 		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
@@ -99,35 +100,39 @@ func (p *pool{{.Name}}) Put(x *{{.Name}}) {
 	}
 	
 	{{ range .Fields}}
-	{{- if eq .Kind "repeated"}}
-		x.{{- .Name}} = x.{{.Name}}[:0]
-	{{- else if eq .Kind "repeated/bytes"}}
-		for _, z := range x.{{.Name}} {
-			pools.Bytes.Put(z)
-		}
-		x.{{- .Name}} = x.{{.Name}}[:0]
-	{{- else if eq .Kind "repeated/msg"}}
-		for _, z := range x.{{.Name}} {
-			{{- if ne .Pkg ""}}
-				{{.Pkg}}.Pool{{.Type}}.Put(z)
-			{{- else}}
-				Pool{{.Type}}.Put(z)
-			{{- end}}
-		}
-		x.{{.Name}} = x.{{.Name}}[:0]
-	{{- else if eq .Kind "bytes"}}
-		x.{{.Name}} = x.{{.Name}}[:0]
-	{{- else if eq .Kind "msg"}}
-		{{- if ne .Pkg ""}}
-			{{.Pkg}}.Pool{{.Type}}.Put(x.{{.Name}})
-		{{- else}}
-			Pool{{.Type}}.Put(x.{{.Name}})
-		{{- end}}
-	{{- else}}
-		x.{{.Name}} = {{.ZeroValue}}
-	{{- end}}
-	{{- end}}
-
+		{{- if eq .Cardinality "repeated" }}
+			{{- if eq .Kind "message" }}
+				for _, z := range x.{{.Name}} {
+					{{- if ne .Pkg ""}}
+						{{.Pkg}}.Pool{{.Type}}.Put(z)
+					{{- else}}
+						Pool{{.Type}}.Put(z)
+					{{- end}}
+				}
+				x.{{.Name}} = x.{{.Name}}[:0]
+			{{- else if eq .Kind "bytes" }}
+				for _, z := range x.{{.Name}} {
+					pools.Bytes.Put(z)
+				}
+				x.{{.Name}} = x.{{.Name}}[:0]
+			{{- else }}
+				x.{{- .Name}} = x.{{.Name}}[:0]
+			{{- end }}
+		{{- else }}
+			{{- if eq .Kind "bytes" }}
+				x.{{.Name}} = x.{{.Name}}[:0]
+			{{- else if eq .Kind "message" }}
+				{{- if ne .Pkg ""}}
+					{{.Pkg}}.Pool{{.Type}}.Put(x.{{.Name}})
+				{{- else}}
+					Pool{{.Type}}.Put(x.{{.Name}})
+				{{- end}}
+			{{- else }}
+				x.{{.Name}} = {{.ZeroValue}}
+			{{- end }}
+		{{- end }}
+	{{- end }}
+	
 	p.pool.Put(x)
 }
 
@@ -137,54 +142,58 @@ var Pool{{.Name}} = pool{{.Name}}{}
 const genDeepCopy = `
 func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 	{{- range .Fields -}}
-	{{- if eq .Kind "repeated" }}
-		z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...) 
-	{{- else if eq .Kind "repeated/msg" }}
-		for idx := range x.{{.Name}} {
-			if x.{{.Name}}[idx] == nil {
-				continue
-			}
-			{{- if eq .Pkg "" }}
-				xx := Pool{{.Type}}.Get()
+		{{- if eq .Cardinality "repeated" }}
+			{{- if eq .Kind "message" }}
+				for idx := range x.{{.Name}} {
+					if x.{{.Name}}[idx] == nil {
+						continue
+					}
+					{{- if eq .Pkg "" }}
+						xx := Pool{{.Type}}.Get()
+					{{- else }}
+						xx := {{.Pkg}}.Pool{{.Type}}.Get()
+					{{- end }}
+					x.{{.Name}}[idx].DeepCopy(xx)
+					z.{{.Name}} = append(z.{{.Name}}, xx)
+				}
+			{{- else if eq .Kind "bytes" }}
+				z.{{.Name}} = z.{{.Name}}[:0]
+				zl := len(z.{{.Name}})
+				for idx := range x.{{.Name}} {
+					if idx <  zl {
+						z.{{.Name}} = append(z.{{.Name}}, append(z.{{.Name}}[idx][:0], x.{{.Name}}[idx]...))
+					} else {
+						z.{{.Name}} = append(z.{{.Name}}, append(nil, x.{{.Name}}[idx]...))
+					}
+				}
 			{{- else }}
-				xx := {{.Pkg}}.Pool{{.Type}}.Get()
+				z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...)
 			{{- end }}
-			x.{{.Name}}[idx].DeepCopy(xx)
-			z.{{.Name}} = append(z.{{.Name}}, xx)
-		}
-	{{- else if eq .Kind "repeated/bytes" }}
-		z.{{.Name}} = z.{{.Name}}[:0]
-		zl := len(z.{{.Name}})
-		for idx := range x.{{.Name}} {
-			if idx <  zl {
-				z.{{.Name}} = append(z.{{.Name}}, append(z.{{.Name}}[idx][:0], x.{{.Name}}[idx]...))
-			} else {
-				z.{{.Name}} = append(z.{{.Name}}, append(nil, x.{{.Name}}[idx]...))
-			}
-		}
-	{{- else if eq .Kind "msg" }}
-		if x.{{.Name}} != nil {
-			if z.{{.Name}} == nil {
-				{{- if eq .Pkg "" }}
-					z.{{.Name}} = Pool{{.Type}}.Get()
-				{{- else }}
-					z.{{.Name}} = {{.Pkg}}.Pool{{.Type}}.Get()
-				{{- end }}
-			}
-			x.{{.Name}}.DeepCopy(z.{{.Name}})
-		} else {
-			{{- if eq .Pkg "" }}
-				Pool{{.Type}}.Put(z.{{.Name}})
+		{{- else }}
+			{{- if eq .Kind "message" }}
+				if x.{{.Name}} != nil {
+					if z.{{.Name}} == nil {
+						{{- if eq .Pkg "" }}
+							z.{{.Name}} = Pool{{.Type}}.Get()
+						{{- else }}
+							z.{{.Name}} = {{.Pkg}}.Pool{{.Type}}.Get()
+						{{- end }}
+					}
+					x.{{.Name}}.DeepCopy(z.{{.Name}})
+				} else {
+					{{- if eq .Pkg "" }}
+						Pool{{.Type}}.Put(z.{{.Name}})
+					{{- else }}
+						{{.Pkg}}.Pool{{.Type}}.Put(z.{{.Name}})
+					{{- end }}
+					z.{{.Name}} = nil 
+				}
+			{{- else if eq .Kind "bytes" }}
+				z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...)
 			{{- else }}
-				{{.Pkg}}.Pool{{.Type}}.Put(z.{{.Name}})
+				z.{{.Name}} = x.{{.Name}}
 			{{- end }}
-			z.{{.Name}} = nil 
-		}
-	{{- else if eq .Kind "bytes" }}
-		z.{{.Name}} = append(z.{{.Name}}[:0], x.{{.Name}}...)
-	{{- else }}
-		z.{{.Name}} = x.{{.Name}}
-	{{- end }}
+		{{- end }}
 	{{- end }}
 }
 
@@ -192,7 +201,7 @@ func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 
 const genPushToContext = `
 	func (x *{{.Name}}) PushToContext(ctx *edge.RequestCtx) {
-		ctx.PushMessage(C_{{.Type}}, x)
+		ctx.PushMessage({{.CName}}, x)
 	}
 `
 

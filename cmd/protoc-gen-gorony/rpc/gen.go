@@ -45,13 +45,12 @@ func (g *Generator) Generate() {
 
 		g.g.P("var _ = tools.TimeUnix()")
 		for _, s := range g.f.Services {
-			arg := GetArg(g, s)
+			arg := z.GetServiceArg(g.f, g.g, s)
 			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
 
 			g.genServerRestProxy(s)
-
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
@@ -61,7 +60,7 @@ func (g *Generator) Generate() {
 			if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
-				g.genCobraCmd(s)
+				g.g.P(g.Exec(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))
 			}
 		}
 	}
@@ -217,7 +216,7 @@ func (g *Generator) createRestServer(s *protogen.Service, m *protogen.Method, op
 const genServer = `
 type I{{.Name}} interface {
 {{- range .Methods }}
-	{{.Name}} (ctx *edge.RequestCtx, req *{{.InputName}}, res *{{.OutputName}})
+	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Name}}, res *{{.Output.Name}})
 {{- end }}
 }
 
@@ -247,19 +246,19 @@ type {{.NameCC}}Wrapper struct {
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
-	{{- if eq .InputPkg "" }}
-		req := Pool{{.InputType}}.Get()
-		defer Pool{{.InputType}}.Put(req)
+	{{- if eq .Input.Pkg "" }}
+		req := Pool{{.Input.Name}}.Get()
+		defer Pool{{.Input.Name}}.Put(req)
 	{{- else }}
-		req := {{.InputPkg}}Pool{{.InputType}}.Get()
-		defer {{.InputPkg}}Pool{{.InputType}}.Put(req)
+		req := {{.Input.Pkg}}Pool{{.Input.Name}}.Get()
+		defer {{.Input.Pkg}}Pool{{.Input.Name}}.Put(req)
 	{{- end }}
-	{{- if eq .OutputPkg "" }}
-		res := Pool{{.OutputType}}.Get()
-		defer Pool{{.OutputType}}.Put(res)
+	{{- if eq .Output.Pkg "" }}
+		res := Pool{{.Output.Name}}.Get()
+		defer Pool{{.Output.Name}}.Put(res)
 	{{- else }}
-		res := {{.OutputPkg}}Pool{{.OutputType}}.Get()
-		defer {{.OutputPkg}}Pool{{.OutputType}}.Put(res)
+		res := {{.Output.Pkg}}Pool{{.Output.Name}}.Get()
+		defer {{.Output.Pkg}}Pool{{.Output.Name}}.Put(res)
 	{{- end }}
 
 	err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)
@@ -270,10 +269,10 @@ func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in
 
 	sw.h.{{.Name}} (ctx, req, res)
 	if !ctx.Stopped() {
-	{{- if eq .OutputPkg "" }}
-		ctx.PushMessage(C_{{.OutputType}}, res)
+	{{- if eq .Output.Pkg "" }}
+		ctx.PushMessage(C_{{.Output.Name}}, res)
 	{{- else }}
-		ctx.PushMessage({{.OutputPkg}}.C_{{.OutputType}}, res)
+		ctx.PushMessage({{.Output.Pkg}}.C_{{.Output.Name}}, res)
 	{{- end }}
 	}
 }
@@ -318,7 +317,7 @@ func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 {{- if not .TunnelOnly }}
-func (c *{{$serviceName}}Client) {{.Name}} (req *{{.InputName}}, kvs ...*rony.KeyValue) (*{{.OutputName}}, error) {
+func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Name}}, kvs ...*rony.KeyValue) (*{{.Output.Name}}, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -329,12 +328,12 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.InputName}}, kvs ...*rony.Ke
 		return nil, err
 	}
 	switch in.GetConstructor() {
-	{{- if eq .OutputPkg "" }}
-	case C_{{.OutputType}}:
+	{{- if eq .Output.Pkg "" }}
+	case C_{{.Output.Name}}:
 	{{- else }}
-	case {{.OutputPkg}}.C_{{.OutputType}}:
+	case {{.Output.Pkg}}.C_{{.Output.Name}}:
 	{{- end }}
-		x := &{{.OutputName}}{}
+		x := &{{.Output.Name}}{}
 		_ = proto.Unmarshal(in.Message, x)
 		return x, nil
 	case rony.C_Error:
@@ -352,7 +351,7 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.InputName}}, kvs ...*rony.Ke
 const genTunnelCommand = `
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
-func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.InputName}}, res *{{.OutputName}}, kvs ...*rony.KeyValue) error {
+func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Name}}, res *{{.Output.Name}}, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -364,7 +363,7 @@ func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet ui
 	}
 
 	switch in.GetConstructor() {
-	case C_{{.OutputType}}:
+	case {{.Output.CName}}:
 		_ = res.Unmarshal(in.GetMessage())
 		return nil 
 	case rony.C_Error:
@@ -378,108 +377,68 @@ func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet ui
 {{- end }}
 `
 
+const genCobraCmd = `
+func prepare{{.Name}}Command(cmd *cobra.Command, c edgec.Client) (*{{.Name}}Client, error) {
+	// Bind current flags to the registered flags in config package
+	err := config.BindCmdFlags(cmd)
+	if err != nil {
+		return nil, err
+	}
+	
+	return New{{.Name}}Client(c), nil
+}
 
-func (g *Generator) genCobraCmd(s *protogen.Service) {
-	g.createPrepareFunc(s)
-	g.createMethodGenerator(s)
-	g.createClientCli(s)
-}
-func (g *Generator) createPrepareFunc(s *protogen.Service) {
-	serviceName := string(s.Desc.Name())
-	g.g.P("func prepare", serviceName, "Command(cmd *cobra.Command, c edgec.Client) (*", serviceName, "Client, error) {")
-	g.g.P("// Bind the current flags to registered flags in config package")
-	g.g.P("err := config.BindCmdFlags(cmd)")
-	g.g.P("if err != nil {")
-	g.g.P("return nil, err")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("return New", serviceName, "Client(c), nil")
-	g.g.P("}")
-}
-func (g *Generator) createMethodGenerator(s *protogen.Service) {
-	serviceName := string(s.Desc.Name())
-	for _, m := range s.Methods {
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
-			continue
-		}
-		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
-		methodLocalName := string(m.Desc.Name())
-		g.g.P("var gen", methodName, "Cmd = func(h I", serviceName, "Cli, c edgec.Client) *cobra.Command {")
-		g.g.P("cmd := &cobra.Command {")
-		g.g.P("Use: \"", tools.ToKebab(methodLocalName), "\",")
-		g.g.P("RunE: func(cmd *cobra.Command, args []string) error {")
-		g.g.P("cli, err := prepare", serviceName, "Command(cmd, c)")
-		g.g.P("if err != nil {")
-		g.g.P("return err")
-		g.g.P("}") // end if if clause
-		g.g.P("return h.", methodLocalName, "(cli, cmd, args)")
-		g.g.P("},") // end of RunE func block
-		g.g.P("}")  // end of cobra.Command
-		g.g.P("config.SetFlags(cmd,")
-		for _, f := range m.Input.Fields {
-			fieldName := string(f.Desc.Name())
-			switch z.GoKind(g.f, g.g, f.Desc) {
-			case "string", "[]byte":
-				g.g.P("config.StringFlag(\"", tools.ToLowerCamel(fieldName), "\",\"\", \"\"),")
-			case "int64":
-				g.g.P("config.Int64Flag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
-			case "uint64":
-				g.g.P("config.Uint64Flag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
-			case "int32":
-				g.g.P("config.Int32Flag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
-			case "uint32":
-				g.g.P("config.Uint32Flag(\"", tools.ToLowerCamel(fieldName), "\",0, \"\"),")
-			case "bool":
-				g.g.P("config.BoolFlag(\"", tools.ToLowerCamel(fieldName), "\",false, \"\"),")
-			default:
+{{- $serviceName := .Name -}}
+{{- range .Methods }}
+	{{- if not .TunnelOnly }}
+		var gen{{$serviceName}}{{.Name}}Cmd = func(h I{{$serviceName}}Cli, c edgec.Client) *cobra.Command {
+			cmd := &cobra.Command {
+				Use: "{{.NameKC}}",
+				RunE: func(cmd *cobra.Command, args []string) error {
+					cli, err := prepare{{$serviceName}}Command(cmd, c)
+					if err != nil {
+						return err 
+					}
+					return h.{{.Name}}(cli, cmd, args)
+				},
 			}
+			config.SetFlags(cmd,
+			{{- range .Input.Fields }}
+				{{- if or (eq .GoKind "string") (eq .GoKind "[]byte") }}
+					config.StringFlag("{{.NameCC}}", "", ""),
+				{{- else if eq .GoKind "int64" }}
+					config.Int64Flag("{{.NameCC}}", 0, ""),
+				{{- else if eq .GoKind "uint64" }}
+					config.Uint64Flag("{{.NameCC}}", 0, ""),
+				{{- else if eq .GoKind "int32" }}
+					config.Int32Flag("{{.NameCC}}", 0, ""),
+				{{- else if eq .GoKind "uint32" }}
+					config.Uint32Flag("{{.NameCC}}", 0, ""),
+				{{- else if eq .GoKind "bool" }}
+					config.BoolFlag("{{.NameCC}}", false, ""),
+				{{- end }}
+			{{- end }}
+			)
+			return cmd
 		}
-		g.g.P(")") // end of SetFlags
-		g.g.P("return cmd")
-		g.g.P("}") // end of function
-		g.g.P()
-	}
+	{{- end }}
+{{- end }}
+
+type I{{.Name}}Cli interface {
+{{- range .Methods }}
+	{{- if not .TunnelOnly }}
+		{{.Name}} (cli *{{$serviceName}}Client, cmd *cobra.Command, args []string) error
+	{{- end }}
+{{- end }}
 }
-func (g *Generator) createClientCli(s *protogen.Service) {
-	g.g.P("type I", s.Desc.Name(), "Cli interface {")
-	for _, m := range s.Methods {
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
-			continue
-		}
-		g.g.P(m.Desc.Name(), "(cli *", s.Desc.Name(), "Client, cmd *cobra.Command, args []string) error")
-	}
-	g.g.P("}")
-	g.g.P()
-	g.g.P("func Register", s.Desc.Name(), "Cli (h I", s.Desc.Name(), "Cli, c edgec.Client, rootCmd *cobra.Command) {")
-	g.g.P("rootCmd.AddCommand(")
-	var names []string
-	for _, m := range s.Methods {
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		if proto.GetExtension(opt, rony.E_RonyInternal).(bool) {
-			continue
-		}
-		methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
-		names = append(names, fmt.Sprintf("gen%sCmd(h, c)", methodName))
-		if len(names) == 3 {
-			sb := strings.Builder{}
-			for _, name := range names {
-				sb.WriteString(name)
-				sb.WriteRune(',')
-			}
-			g.g.P(sb.String())
-			names = names[:0]
-		}
-	}
-	if len(names) > 0 {
-		sb := strings.Builder{}
-		for _, name := range names {
-			sb.WriteString(name)
-			sb.WriteRune(',')
-		}
-		g.g.P(sb.String())
-	}
-	g.g.P(")") // end of rootCmd.AddCommand
-	g.g.P("}") // end of Register func block
+
+func Register{{$serviceName}}Cli (h I{{$serviceName}}Cli, c edgec.Client, rootCmd *cobra.Command) {
+	rootCmd.AddCommand(
+	{{- range .Methods }}
+	{{- if not .TunnelOnly }}
+		gen{{$serviceName}}{{.Name}}Cmd(h ,c),
+	{{- end }}
+	{{- end }}
+	)
 }
+`

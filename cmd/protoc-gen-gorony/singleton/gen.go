@@ -44,6 +44,8 @@ func (g *Generator) Generate() {
 	}
 }
 
+
+
 func (g *Generator) genSave(m *protogen.Message) {
 	// SaveWithTxn func
 	g.g.P("func Save", m.Desc.Name(), "WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *", m.Desc.Name(), ") (err error) {")

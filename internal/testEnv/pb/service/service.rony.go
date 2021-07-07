@@ -643,25 +643,41 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 			SetHandler(handlerFunc(C_SampleEcho)...).
 			Append(sw.echoWrapper),
 	)
+	e.SetRestProxy(
+		"get", "/echo",
+		edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer),
+	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleSet).
 			SetHandler(handlerFunc(C_SampleSet)...).
 			Append(sw.setWrapper),
+	)
+	e.SetRestProxy(
+		"post", "/set",
+		edge.NewRestProxy(sw.setRestClient, sw.setRestServer),
 	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleGet).
 			SetHandler(handlerFunc(C_SampleGet)...).
 			Append(sw.getWrapper),
 	)
+	e.SetRestProxy(
+		"get", "/req/:Key/something",
+		edge.NewRestProxy(sw.getRestClient, sw.getRestServer),
+	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).
 			SetHandler(handlerFunc(C_SampleEchoTunnel)...).
 			Append(sw.echoTunnelWrapper),
 	)
+	e.SetRestProxy(
+		"get", "/echo_tunnel/:X/:YY",
+		edge.NewRestProxy(sw.echoTunnelRestClient, sw.echoTunnelRestServer),
+	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).
 			SetHandler(handlerFunc(C_SampleEchoInternal)...).
-			Append(sw.echoInternalWrapper),
+			Append(sw.echoInternalWrapper).TunnelOnly(),
 	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).
@@ -1061,29 +1077,6 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
 	}
 }
-func (c *SampleClient) EchoInternal(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_SampleEchoInternal, req, kvs...)
-	err := c.c.Send(out, in)
-	if err != nil {
-		return nil, err
-	}
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		x := &EchoResponse{}
-		_ = proto.Unmarshal(in.Message, x)
-		return x, nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.Message)
-		return nil, x
-	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
-	}
-}
 func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
@@ -1109,7 +1102,7 @@ func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*Echo
 }
 
 func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, error) {
-	// Bind the current flags to registered flags in config package
+	// Bind current flags to the registered flags in config package
 	err := config.BindCmdFlags(cmd)
 	if err != nil {
 		return nil, err
@@ -1136,7 +1129,6 @@ var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-
 var genSampleSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "set",
@@ -1154,7 +1146,6 @@ var genSampleSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-
 var genSampleGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "get",
@@ -1171,7 +1162,6 @@ var genSampleGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-
 var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-tunnel",
@@ -1190,7 +1180,6 @@ var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-
 var genSampleEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-delay",
@@ -1220,7 +1209,10 @@ type ISampleCli interface {
 
 func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 	rootCmd.AddCommand(
-		genSampleEchoCmd(h, c), genSampleSetCmd(h, c), genSampleGetCmd(h, c),
-		genSampleEchoTunnelCmd(h, c), genSampleEchoDelayCmd(h, c),
+		genSampleEchoCmd(h, c),
+		genSampleSetCmd(h, c),
+		genSampleGetCmd(h, c),
+		genSampleEchoTunnelCmd(h, c),
+		genSampleEchoDelayCmd(h, c),
 	)
 }

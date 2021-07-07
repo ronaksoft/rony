@@ -21,7 +21,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Arg struct {
+type ModelArg struct {
 	Name        string
 	Pkg         string
 	Type        string
@@ -34,31 +34,33 @@ type Arg struct {
 	String      func(prefix string, sep string, lowerCamel bool) string
 	StringPKs   func(prefix string, sep string, lowerCamel bool) string
 	StringCKs   func(prefix string, sep string, lowerCamel bool) string
-	Views       []struct {
-		Name        string
-		Keys        []string
-		DBKey       func(prefix string) string
-		FuncArgs    func(prefix string) string
-		FuncArgsPKs func(prefix string) string
-		FuncArgsCKs func(prefix string) string
-		String      func(prefix string, sep string, lowerCamel bool) string
-		StringPKs   func(prefix string, sep string, lowerCamel bool) string
-		StringCKs   func(prefix string, sep string, lowerCamel bool) string
-	}
-	Fields []struct {
-		Kind      string
-		Pkg       string
-		Type      string
-		Name      string
-		ZeroValue string
-		DBKey     func(pre, post string) string
-		DBPrefix  func(pre, post string) string
-		HasIndex  bool
-	}
+	Views       []ViewArg
+	Fields      []FieldArg
+}
+type ViewArg struct {
+	Name        string
+	Keys        []string
+	DBKey       func(prefix string) string
+	FuncArgs    func(prefix string) string
+	FuncArgsPKs func(prefix string) string
+	FuncArgsCKs func(prefix string) string
+	String      func(prefix string, sep string, lowerCamel bool) string
+	StringPKs   func(prefix string, sep string, lowerCamel bool) string
+	StringCKs   func(prefix string, sep string, lowerCamel bool) string
+}
+type FieldArg struct {
+	Kind      string
+	Pkg       string
+	Type      string
+	Name      string
+	ZeroValue string
+	DBKey     func(pre, post string) string
+	DBPrefix  func(pre, post string) string
+	HasIndex  bool
 }
 
-func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) Arg {
-	arg := Arg{
+func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
+	arg := ModelArg{
 		Name:     string(m.Desc.Name()),
 		C:        crc32.ChecksumIEEE([]byte(m.Desc.Name())),
 		HasIndex: agg.HasIndex,
@@ -92,16 +94,7 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) Arg {
 		opt, _ := ft.Desc.Options().(*descriptorpb.FieldOptions)
 		arg.Fields = append(
 			arg.Fields,
-			struct {
-				Kind      string
-				Pkg       string
-				Type      string
-				Name      string
-				ZeroValue string
-				DBKey     func(pre, post string) string
-				DBPrefix  func(pre, post string) string
-				HasIndex  bool
-			}{
+			FieldArg{
 				Kind: arg.kind(ft.Desc),
 				Pkg:  pkg, Type: typ,
 				Name:      name,
@@ -118,17 +111,7 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) Arg {
 	}
 	for idx, v := range agg.Views {
 		arg.Views = append(arg.Views,
-			struct {
-				Name        string
-				Keys        []string
-				DBKey       func(prefix string) string
-				FuncArgs    func(prefix string) string
-				FuncArgsPKs func(prefix string) string
-				FuncArgsCKs func(prefix string) string
-				String      func(prefix, sep string, lowerCamel bool) string
-				StringPKs   func(prefix, sep string, lowerCamel bool) string
-				StringCKs   func(prefix, sep string, lowerCamel bool) string
-			}{
+			ViewArg{
 				Name: agg.Name,
 				Keys: v.Keys(),
 				DBKey: func(prefix string) string {
@@ -158,7 +141,7 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) Arg {
 	return arg
 }
 
-func (arg *Arg) kind(f protoreflect.FieldDescriptor) string {
+func (arg *ModelArg) kind(f protoreflect.FieldDescriptor) string {
 	switch f.Cardinality() {
 	case protoreflect.Repeated:
 		return "repeated"
