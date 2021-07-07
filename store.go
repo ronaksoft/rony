@@ -2,7 +2,6 @@ package rony
 
 import (
 	"github.com/dgraph-io/badger/v3"
-	"github.com/ronaksoft/rony/tools"
 )
 
 /*
@@ -15,20 +14,11 @@ import (
 */
 
 type (
-	StoreLocalTxn = badger.Txn
+	StoreTxn = badger.Txn
 )
 
-type StoreTxn interface {
-	Delete(alloc *tools.Allocator, keyParts ...interface{}) error
-	Set(alloc *tools.Allocator, val []byte, keyParts ...interface{}) error
-	Get(alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error)
-	Exists(alloc *tools.Allocator, keyParts ...interface{}) bool
-}
-
 type Store interface {
-	View(fn func(StoreTxn) error) error
-	Update(fn func(StoreTxn) error) error
-	ViewLocal(fn func(txn *StoreLocalTxn) error) error
-	UpdateLocal(fn func(txn *StoreLocalTxn) error) error
+	View(fn func(*StoreTxn) error) error
+	Update(fn func(*StoreTxn) error) error
 	Shutdown()
 }

@@ -209,12 +209,12 @@ func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 	}
 }
 
-// method:"get"  path:"/echo/:ID/:Random"  bind_variables:"Random=RandomText"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
 	req.ID = tools.StrToInt64(tools.GetString(conn.Get("ID"), "0"))
 	req.RandomText = tools.GetString(conn.Get("Random"), "")
+
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 	return nil
 }
@@ -224,6 +224,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	if envelope == nil {
 		return errors.ErrInternalServer
 	}
+
 	switch envelope.Constructor {
 	case C_EchoResponse:
 		x := &EchoResponse{}
@@ -233,16 +234,12 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 			return err
 		}
 		return conn.WriteBinary(ctx.StreamID(), b)
-
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
-
-	default:
-		return errors.ErrUnexpectedResponse
+		return errors.ErrInternalServer
 	}
-
-	return errors.ErrInternalServer
+	return errors.ErrUnexpectedResponse
 }
 
 type SampleClient struct {

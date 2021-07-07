@@ -23,10 +23,8 @@ type SampleServer struct {
 }
 
 func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *service.SetResponse) {
-	err := ctx.Store().Update(func(txn rony.StoreTxn) error {
-		alloc := tools.NewAllocator()
-		defer alloc.ReleaseAll()
-		return txn.Set(alloc, req.Value, req.Key)
+	err := ctx.Store().Update(func(txn *rony.StoreTxn) error {
+		return txn.Set(req.Value, req.Key)
 	})
 	if err != nil {
 		ctx.PushError(errors.GenInternalErr(err.Error(), nil))
@@ -37,14 +35,16 @@ func (h *SampleServer) Set(ctx *edge.RequestCtx, req *service.SetRequest, res *s
 }
 
 func (h *SampleServer) Get(ctx *edge.RequestCtx, req *service.GetRequest, res *service.GetResponse) {
-	err := ctx.Store().View(func(txn rony.StoreTxn) error {
-		alloc := tools.NewAllocator()
-		defer alloc.ReleaseAll()
-		v, err := txn.Get(alloc, req.Key)
+	err := ctx.Store().View(func(txn *rony.StoreTxn) error {
+		v, err := txn.Get(req.Key)
 		if err != nil {
 			return err
 		}
-		res.Value = append(res.Value, v...)
+		_ = v.Value(func(val []byte) error {
+			res.Value = append(res.Value, val...)
+			return nil
+		})
+
 		return nil
 	})
 	if err != nil {

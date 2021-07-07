@@ -245,12 +245,12 @@ func init() {
 func CreatePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return CreatePageWithTxn(txn, alloc, m)
 	})
 }
 
-func CreatePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Page) (err error) {
+func CreatePageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -275,7 +275,7 @@ func CreatePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Page)
 	return
 }
 
-func UpdatePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Page) error {
+func UpdatePageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -297,13 +297,13 @@ func UpdatePage(id uint32, m *Page) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	})
 	return err
 }
 
-func SavePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *Page) (err error) {
+func SavePageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	} else {
@@ -315,12 +315,12 @@ func SavePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return SavePageWithTxn(txn, alloc, m)
 	})
 }
 
-func ReadPageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
+func ReadPageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -341,7 +341,7 @@ func ReadPage(id uint32, m *Page) (*Page, error) {
 		m = &Page{}
 	}
 
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		m, err = ReadPageWithTxn(txn, alloc, id, m)
 		return err
 	})
@@ -349,7 +349,7 @@ func ReadPage(id uint32, m *Page) (*Page, error) {
 }
 
 func ReadPageByReplicaSetAndIDWithTxn(
-	txn *rony.StoreLocalTxn, alloc *tools.Allocator,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
 	replicaSet uint64, id uint32, m *Page,
 ) (*Page, error) {
 	if alloc == nil {
@@ -372,14 +372,14 @@ func ReadPageByReplicaSetAndID(replicaSet uint64, id uint32, m *Page) (*Page, er
 		m = &Page{}
 	}
 
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		m, err = ReadPageByReplicaSetAndIDWithTxn(txn, alloc, replicaSet, id, m)
 		return err
 	})
 	return m, err
 }
 
-func DeletePageWithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, id uint32) error {
+func DeletePageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id uint32) error {
 	m := &Page{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
 	if err != nil {
@@ -402,7 +402,7 @@ func DeletePage(id uint32) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return DeletePageWithTxn(txn, alloc, id)
 	})
 }
@@ -411,7 +411,7 @@ type PageOrder string
 
 const PageOrderByReplicaSet PageOrder = "ReplicaSet"
 
-func IterPages(txn *rony.StoreLocalTxn, alloc *tools.Allocator, cb func(m *Page) bool, orderBy ...PageOrder) error {
+func IterPages(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *Page) bool, orderBy ...PageOrder) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -457,7 +457,7 @@ func ListPage(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *rony.StoreLocalTxn) error {
+	err := store.View(func(txn *rony.StoreTxn) error {
 		opt := store.DefaultIteratorOptions
 		if len(orderBy) == 0 {
 			opt.Prefix = alloc.Gen('M', C_Page, 299066170)
@@ -501,7 +501,7 @@ func ListPage(
 	return res, err
 }
 
-func IterPageByReplicaSet(txn *rony.StoreLocalTxn, alloc *tools.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
+func IterPageByReplicaSet(txn *rony.StoreTxn, alloc *tools.Allocator, replicaSet uint64, cb func(m *Page) bool) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -538,7 +538,7 @@ func ListPageByReplicaSet(
 	defer alloc.ReleaseAll()
 
 	res := make([]*Page, 0, lo.Limit())
-	err := store.View(func(txn *rony.StoreLocalTxn) error {
+	err := store.View(func(txn *rony.StoreTxn) error {
 		opt := store.DefaultIteratorOptions
 		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, replicaSet)
 		opt.Reverse = lo.Backward()

@@ -63,7 +63,7 @@ func DB() *LocalDB {
 // Update executes a function, creating and managing a read-write transaction
 // for the user. Error returned by the function is relayed by the Update method.
 // It retries in case of badger.ErrConflict returned.
-func Update(fn func(txn *rony.StoreLocalTxn) error) (err error) {
+func Update(fn func(txn *rony.StoreTxn) error) (err error) {
 	retry := conflictRetry
 Retry:
 	err = db.Update(fn)
@@ -79,7 +79,7 @@ Retry:
 
 // View executes a function creating and managing a read-only transaction for the user. Error
 // returned by the function is relayed by the View method. It retries in case of badger.ErrConflict returned.
-func View(fn func(txn *rony.StoreLocalTxn) error) (err error) {
+func View(fn func(txn *rony.StoreTxn) error) (err error) {
 	retry := conflictRetry
 Retry:
 	err = db.View(fn)

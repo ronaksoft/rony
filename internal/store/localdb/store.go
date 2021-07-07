@@ -84,7 +84,7 @@ func runVlogGC(db *badger.DB, threshold int64) {
 	}
 }
 
-func (s *Store) ViewLocal(fn func(txn *rony.StoreLocalTxn) error) error {
+func (s *Store) View(fn func(txn *rony.StoreTxn) error) error {
 	retry := defaultConflictRetries
 Retry:
 	err := s.db.View(fn)
@@ -98,7 +98,7 @@ Retry:
 	return err
 }
 
-func (s *Store) UpdateLocal(fn func(txn *rony.StoreLocalTxn) error) error {
+func (s *Store) Update(fn func(txn *rony.StoreTxn) error) error {
 	retry := defaultConflictRetries
 Retry:
 	err := s.db.Update(fn)
@@ -110,14 +110,6 @@ Retry:
 		}
 	}
 	return err
-}
-
-func (s *Store) View(fn func(rony.StoreTxn) error) error {
-	panic("BUG! not supported")
-}
-
-func (s *Store) Update(fn func(txn rony.StoreTxn) error) error {
-	panic("BUG! not supported")
 }
 
 func (s *Store) Shutdown() {

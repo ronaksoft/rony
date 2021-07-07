@@ -184,12 +184,12 @@ const genCreate = `
 func Create{{.Name}} (m *{{.Type}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return Create{{.Name}}WithTxn (txn, alloc, m)
 	})
 }
 
-func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -243,7 +243,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m 
 `
 
 const genUpdate = `
-func Update{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *{{.Name}}) error {
+func Update{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -265,7 +265,7 @@ func Update{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) error {
 		return store.ErrEmptyObject
 	}
 	
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		return Update{{.Name}}WithTxn(txn, alloc, m)
 	})
 	return err 
@@ -273,7 +273,7 @@ func Update{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) error {
 `
 
 const genSave = `
-func Save{{.Name}}WithTxn (txn *rony.StoreLocalTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+func Save{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
 	if store.Exists(txn, alloc, {{(call .DBKey "m.")}}) {
 		return Update{{.Name}}WithTxn(txn, alloc, m)
 	} else {
@@ -285,7 +285,7 @@ func Save{{.Name}} (m *{{.Name}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return Save{{.Name}}WithTxn(txn, alloc, m)
 	})
 }
@@ -293,7 +293,7 @@ func Save{{.Name}} (m *{{.Name}}) error {
 `
 
 const genRead = `
-func Read{{.Name}}WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func Read{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -314,7 +314,7 @@ func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 		m = &{{.Name}}{}
 	}
 
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		m, err = Read{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}}, m)
 		return err 
 	})
@@ -324,7 +324,7 @@ func Read{{.Name}} ({{call .FuncArgs ""}}, m *{{.Name}}) (*{{.Name}}, error) {
 {{- range .Views }}
 
 func Read{{.Name}}By{{call .String "" "And" false}}WithTxn (
-	txn *rony.StoreLocalTxn, alloc *tools.Allocator,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
 	{{call .FuncArgs ""}}, m *{{.Name}},
 ) (*{{.Name}}, error) {
 	if alloc == nil {
@@ -347,7 +347,7 @@ func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{
 		m = &{{.Name}}{}
 	}
 
-	err := store.View(func(txn *rony.StoreLocalTxn) (err error) {
+	err := store.View(func(txn *rony.StoreTxn) (err error) {
 		m, err = Read{{.Name}}By{{call .String "" "And" false}}WithTxn (txn, alloc, {{call .String "" "," true}}, m)
 		return err 
 	})
@@ -358,7 +358,7 @@ func Read{{.Name}}By{{call .String "" "And" false}}({{call .FuncArgs ""}}, m *{{
 `
 
 const genDelete = `
-func Delete{{.Name}}WithTxn(txn *rony.StoreLocalTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}) error {
+func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{call .FuncArgs ""}}) error {
 	{{- if or (gt (len .Views) 0) (.HasIndex) }}
 		m := &{{.Name}}{}
 		err := store.Unmarshal(txn, alloc, m, {{call .DBKey ""}})
@@ -406,7 +406,7 @@ func Delete{{.Name}}({{call .FuncArgs ""}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreLocalTxn) error {
+	return store.Update(func(txn *rony.StoreTxn) error {
 		return Delete{{.Name}}WithTxn(txn, alloc, {{call .String "" "," true}})
 	})
 }
@@ -474,7 +474,7 @@ func (g *Generator) genIter(m *protogen.Message) {
 	mn := g.m(m).Name
 	orderType := fmt.Sprintf("%sOrder", g.m(m).Name)
 
-	g.g.P("func Iter", inflection.Plural(mn), "(txn *rony.StoreLocalTxn, alloc *tools.Allocator, cb func(m *", mn, ") bool, orderBy ...", orderType, ")  error {")
+	g.g.P("func Iter", inflection.Plural(mn), "(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *", mn, ") bool, orderBy ...", orderType, ")  error {")
 	g.blockAlloc()
 
 	g.g.P("exitLoop := false")
@@ -526,7 +526,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Table.StringPKs("", "And", false),
-			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).Table.FuncArgsPKs(""), ", cb func(m *", mn, ") bool) error {",
+			"(txn *rony.StoreTxn, alloc *tools.Allocator,", g.m(m).Table.FuncArgsPKs(""), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.blockAlloc()
 		g.g.P("exitLoop := false")
@@ -561,7 +561,7 @@ func (g *Generator) genIterByPK(m *protogen.Message) {
 		g.g.P(
 			"func Iter", mn, "By",
 			g.m(m).Views[idx].StringPKs("", "And", false),
-			"(txn *rony.StoreLocalTxn, alloc *tools.Allocator,", g.m(m).Views[idx].FuncArgsPKs(""), ", cb func(m *", mn, ") bool) error {",
+			"(txn *rony.StoreTxn, alloc *tools.Allocator,", g.m(m).Views[idx].FuncArgsPKs(""), ", cb func(m *", mn, ") bool) error {",
 		)
 		g.g.P("if alloc == nil {")
 
@@ -606,7 +606,7 @@ func (g *Generator) genList(m *protogen.Message) {
 	g.g.P("defer alloc.ReleaseAll()")
 	g.g.P()
 	g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-	g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
+	g.g.P("err := store.View(func(txn *rony.StoreTxn) error {")
 	g.g.P("opt := store.DefaultIteratorOptions")
 	if len(g.m(m).Views) > 0 {
 		g.g.P("if len(orderBy) == 0 {")
@@ -676,7 +676,7 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
+		g.g.P("err := store.View(func(txn *rony.StoreTxn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
 		g.g.P("opt.Prefix = alloc.Gen(", g.m(m).Table.DBKeyPrefix(""), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
@@ -730,7 +730,7 @@ func (g *Generator) genListByPK(m *protogen.Message) {
 		g.g.P("defer alloc.ReleaseAll()")
 		g.g.P()
 		g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-		g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
+		g.g.P("err := store.View(func(txn *rony.StoreTxn) error {")
 		g.g.P("opt := store.DefaultIteratorOptions")
 		g.g.P("opt.Prefix = alloc.Gen(", g.m(m).Views[idx].DBKeyPrefix(""), ")")
 		g.g.P("opt.Reverse = lo.Backward()")
@@ -788,7 +788,7 @@ func (g *Generator) genListByIndex(m *protogen.Message) {
 				g.g.P("defer alloc.ReleaseAll()")
 				g.g.P()
 				g.g.P("res := make([]*", mn, ", 0, lo.Limit())")
-				g.g.P("err := store.View(func(txn *rony.StoreLocalTxn) error {")
+				g.g.P("err := store.View(func(txn *rony.StoreTxn) error {")
 				g.g.P("opt := store.DefaultIteratorOptions")
 				g.g.P("opt.Prefix = alloc.Gen(", indexPrefix(g.m(m), ftName, tools.ToLowerCamel(ftNameS)), ")")
 				g.g.P("opt.Reverse = lo.Backward()")

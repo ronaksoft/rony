@@ -15,12 +15,12 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func Delete(txn *rony.StoreLocalTxn, alloc *tools.Allocator, keyParts ...interface{}) error {
+func Delete(txn *rony.StoreTxn, alloc *tools.Allocator, keyParts ...interface{}) error {
 	key := alloc.Gen(keyParts...)
 	return txn.Delete(key)
 }
 
-func Move(txn *rony.StoreLocalTxn, oldKey, newKey []byte) error {
+func Move(txn *rony.StoreTxn, oldKey, newKey []byte) error {
 	item, err := txn.Get(oldKey)
 	if err != nil {
 		return err
@@ -34,12 +34,12 @@ func Move(txn *rony.StoreLocalTxn, oldKey, newKey []byte) error {
 	return txn.Delete(oldKey)
 }
 
-func Set(txn *rony.StoreLocalTxn, alloc *tools.Allocator, val []byte, keyParts ...interface{}) error {
+func Set(txn *rony.StoreTxn, alloc *tools.Allocator, val []byte, keyParts ...interface{}) error {
 	key := alloc.Gen(keyParts...)
 	return txn.Set(key, val)
 }
 
-func Get(txn *rony.StoreLocalTxn, alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error) {
+func Get(txn *rony.StoreTxn, alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error) {
 	item, err := txn.Get(alloc.Gen(keyParts...))
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func Get(txn *rony.StoreLocalTxn, alloc *tools.Allocator, keyParts ...interface{
 	return b, nil
 }
 
-func GetByKey(txn *rony.StoreLocalTxn, alloc *tools.Allocator, key []byte) ([]byte, error) {
+func GetByKey(txn *rony.StoreTxn, alloc *tools.Allocator, key []byte) ([]byte, error) {
 	item, err := txn.Get(key)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func GetByKey(txn *rony.StoreLocalTxn, alloc *tools.Allocator, key []byte) ([]by
 	return b, nil
 }
 
-func Exists(txn *rony.StoreLocalTxn, alloc *tools.Allocator, keyParts ...interface{}) bool {
+func Exists(txn *rony.StoreTxn, alloc *tools.Allocator, keyParts ...interface{}) bool {
 	_, err := Get(txn, alloc, keyParts...)
 	if err != nil && err == ErrKeyNotFound {
 		return false
@@ -75,12 +75,12 @@ func Exists(txn *rony.StoreLocalTxn, alloc *tools.Allocator, keyParts ...interfa
 	return true
 }
 
-func Marshal(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
+func Marshal(txn *rony.StoreTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
 	val := alloc.Marshal(m)
 	return Set(txn, alloc, val, keyParts...)
 }
 
-func Unmarshal(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
+func Unmarshal(txn *rony.StoreTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
 	val, err := Get(txn, alloc, keyParts...)
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func Unmarshal(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m proto.Message,
 	return proto.Unmarshal(val, m)
 }
 
-func UnmarshalMerge(txn *rony.StoreLocalTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
+func UnmarshalMerge(txn *rony.StoreTxn, alloc *tools.Allocator, m proto.Message, keyParts ...interface{}) error {
 	val, err := Get(txn, alloc, keyParts...)
 	if err != nil {
 		return err
