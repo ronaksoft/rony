@@ -165,6 +165,5 @@ scenarios and will be cited.
 
 - [x] Auto-generate REST handlers
 - [ ] Auto-generate test units
-- [ ] Distributed store
 - [ ] Implement scenario tests using `edgetest` framework
 
