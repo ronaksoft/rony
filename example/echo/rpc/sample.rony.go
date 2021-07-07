@@ -155,6 +155,7 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	defer PoolEchoRequest.Put(req)
 	res := PoolEchoResponse.Get()
 	defer PoolEchoResponse.Put(res)
+
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
@@ -173,9 +174,39 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 			return nil
 		}
 	}
+	e.SetHandler(
+		edge.NewHandlerOptions().SetConstructor(C_SampleEcho).
+			SetHandler(handlerFunc(C_SampleEcho)...).
+			Append(sw.echoWrapper),
+	)
+	e.SetRestProxy(
+		"get", "/echo/:ID/:Random",
+		edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer),
+	)
+}
 
-	e.SetHandler(edge.NewHandlerOptions().SetConstructor(C_SampleEcho).SetHandler(handlerFunc(C_SampleEcho)...).Append(sw.echoWrapper))
-	e.SetRestProxy("get", "/echo/:ID/:Random", edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer))
+func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+	out := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(out)
+	in := rony.PoolMessageEnvelope.Get()
+	defer rony.PoolMessageEnvelope.Put(in)
+	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
+	err := ctx.TunnelRequest(replicaSet, out, in)
+	if err != nil {
+		return err
+	}
+
+	switch in.GetConstructor() {
+	case C_EchoResponse:
+		_ = res.Unmarshal(in.GetMessage())
+		return nil
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(in.GetMessage())
+		return x
+	default:
+		return errors.ErrUnexpectedTunnelResponse
+	}
 }
 
 // method:"get"  path:"/echo/:ID/:Random"  bind_variables:"Random=RandomText"  json_encode:true
@@ -214,30 +245,6 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	return errors.ErrInternalServer
 }
 
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
-	out := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(out)
-	in := rony.PoolMessageEnvelope.Get()
-	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_SampleEcho, req, kvs...)
-	err := ctx.TunnelRequest(replicaSet, out, in)
-	if err != nil {
-		return err
-	}
-
-	switch in.GetConstructor() {
-	case C_EchoResponse:
-		_ = res.Unmarshal(in.GetMessage())
-		return nil
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(in.GetMessage())
-		return x
-	default:
-		return errors.ErrUnexpectedTunnelResponse
-	}
-}
-
 type SampleClient struct {
 	c edgec.Client
 }
@@ -247,7 +254,6 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 		c: ec,
 	}
 }
-
 func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
@@ -265,15 +271,15 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 		return x, nil
 	case rony.C_Error:
 		x := &rony.Error{}
-		_ = proto.Unmarshal(in.Message, x)
-		return nil, fmt.Errorf("%s:%s", x.GetCode(), x.GetItems())
+		_ = x.Unmarshal(in.Message)
+		return nil, x
 	default:
-		return nil, fmt.Errorf("unknown message: %d", in.GetConstructor())
+		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
 	}
 }
 
 func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, error) {
-	// Bind the current flags to registered flags in config package
+	// Bind current flags to the registered flags in config package
 	err := config.BindCmdFlags(cmd)
 	if err != nil {
 		return nil, err

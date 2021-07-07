@@ -1,13 +1,10 @@
 package rpc
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
-	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 	"text/template"
@@ -49,8 +46,7 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
-
-			g.genServerRestProxy(s)
+			g.g.P(g.Exec(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
@@ -75,143 +71,65 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-func (g *Generator) genServerRestProxy(s *protogen.Service) {
-	for _, m := range s.Methods {
-		opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
-		restOpt, _ := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt)
-		if restOpt == nil {
-			continue
+const genServerRestProxy = `
+{{- $service := . }}
+{{- range .Methods }}
+func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	{{- if eq .Input.Pkg "" }}
+		req := Pool{{.Input.Name}}.Get()
+		defer Pool{{.Input.Name}}.Put(req)
+	{{- else }}
+		req := {{.Input.Pkg}}Pool{{.Input.Name}}.Get()
+		defer {{.Input.Pkg}}Pool{{.Input.Name}}.Put(req)
+	{{- end }}
+	
+	{{- if .Rest.Unmarshal }}
+	{{- if .Rest.Json }}
+		err := req.UnmarshalJSON(conn.Body())
+	{{- else }}
+		err := req.Unmarshal(conn.Body())
+	{{- end }}
+		if err != nil {
+			return err 
 		}
-		g.g.P("// ", restOpt.String())
+	{{- end }}
 
-		g.createRestClient(s, m, restOpt)
-		g.createRestServer(s, m, restOpt)
-	}
+	{{- range .Rest.ExtraCode }}
+	{{.}}
+	{{- end }}
+
+	ctx.FillEnvelope(conn.ConnID(), C_{{$service.Name}}{{.Name}}, req)
+	return nil
 }
-func (g *Generator) createRestClient(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
-	serviceName := string(s.Desc.Name())
-	methodName := string(m.Desc.Name())
-	methodConstructor := fmt.Sprintf("C_%s%s", serviceName, methodName)
-	inputPkg, inputType := z.DescParts(g.f, g.g, m.Desc.Input())
 
-	g.g.P(
-		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
-		tools.ToLowerCamel(methodName), "RestClient (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
-	)
-	if inputPkg == "" {
-		g.g.P("req := Pool", inputType, ".Get()")
-		g.g.P("defer Pool", inputType, ".Put(req)")
-	} else {
-		g.g.P("req := ", inputPkg, ".Pool", inputType, ".Get()")
-		g.g.P("defer ", inputPkg, ".Pool", inputType, ".Put(req)")
+func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
 	}
-
-	var pathVars []string
-	path := fmt.Sprintf("/%s", strings.Trim(opt.GetPath(), "/"))
-	for _, pv := range strings.Split(path, "/") {
-		if !strings.HasPrefix(pv, ":") {
-			continue
+	
+	switch envelope.Constructor {
+	case {{.Output.CName}}:
+		x := &{{.Output.Name}}{}
+		_ = x.Unmarshal(envelope.Message)
+		{{- if .Rest.Json }}
+		b, err := x.MarshalJSON()
+		{{- else }}
+		b, err := x.Marshal()
+		{{- end }}
+		if err != nil {
+			return err
 		}
-		pathVars = append(pathVars, strings.TrimLeft(pv, ":"))
+		return conn.WriteBinary(ctx.StreamID(), b)
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+		return errors.ErrInternalServer
 	}
-
-	bindVars := map[string]string{}
-	for _, bv := range strings.Split(opt.GetBindVariables(), ",") {
-		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
-		if len(parts) == 2 {
-			bindVars[parts[0]] = parts[1]
-		}
-	}
-
-	if len(m.Input.Fields) > len(pathVars) {
-		if opt.GetJsonEncode() {
-			g.g.P("err := req.UnmarshalJSON(conn.Body())")
-			g.g.P("if err != nil {")
-			g.g.P("return err")
-			g.g.P("}")
-		} else {
-			g.g.P("err := req.Unmarshal(conn.Body())")
-			g.g.P("if err != nil {")
-			g.g.P("return err")
-			g.g.P("}")
-		}
-	}
-
-	// Try to bind path variables to the input message
-	for _, pathVar := range pathVars {
-		varName := pathVar
-		if bindVars[pathVar] != "" {
-			varName = bindVars[pathVar]
-		}
-		for _, f := range m.Input.Fields {
-			if f.Desc.JSONName() == varName {
-				switch f.Desc.Kind() {
-				case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
-					g.g.P("req.", f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
-				case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-					g.g.P("req.", f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
-				case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
-					g.g.P("req.", f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
-				case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-					g.g.P("req.", f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
-				case protoreflect.StringKind:
-					g.g.P("req.", f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")")
-				case protoreflect.BytesKind:
-					g.g.P("req.", f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))")
-				case protoreflect.DoubleKind:
-					g.g.P("req.", f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
-				}
-			}
-		}
-	}
-
-	g.g.P("ctx.FillEnvelope(conn.ConnID(), ", methodConstructor, ", req)")
-	g.g.P("return nil")
-	g.g.P("}") // end of client side func block
-	g.g.P()
-
+	return errors.ErrUnexpectedResponse
 }
-func (g *Generator) createRestServer(s *protogen.Service, m *protogen.Method, opt *rony.RestOpt) {
-	serviceName := string(s.Desc.Name())
-	methodName := string(m.Desc.Name())
-	outputName := z.DescName(g.f, g.g, m.Desc.Output())
-	outputConstructor := fmt.Sprintf("C_%s", outputName)
-	g.g.P(
-		"func (sw *", tools.ToLowerCamel(serviceName), "Wrapper) ",
-		tools.ToLowerCamel(methodName), "RestServer (conn rony.RestConn, ctx *edge.DispatchCtx) error {",
-	)
-
-	g.g.P("envelope := ctx.BufferPop()")
-	g.g.P("if envelope == nil {")
-	g.g.P("return errors.ErrInternalServer")
-	g.g.P("}")
-
-	g.g.P("switch envelope.Constructor {")
-	g.g.P("case ", outputConstructor, ":")
-	g.g.P("x := &", outputName, "{}")
-	g.g.P("_ = x.Unmarshal(envelope.Message)")
-	if opt.GetJsonEncode() {
-		g.g.P("b, err := x.MarshalJSON()")
-	} else {
-		g.g.P("b, err := x.Marshal()")
-	}
-	g.g.P("if err != nil {")
-	g.g.P("return err")
-	g.g.P("}")
-	g.g.P("return conn.WriteBinary(ctx.StreamID(), b)")
-	g.g.P()
-	g.g.P("case rony.C_Error:")
-	g.g.P("x := &rony.Error{}")
-	g.g.P("_ = x.Unmarshal(envelope.Message)")
-	g.g.P()
-	g.g.P("default:")
-	g.g.P("return errors.ErrUnexpectedResponse")
-	g.g.P("}")
-	g.g.P()
-	g.g.P("return errors.ErrInternalServer")
-	g.g.P("}") // end of server side func block
-	g.g.P()
-}
+{{- end }}
+`
 
 const genServer = `
 type I{{.Name}} interface {

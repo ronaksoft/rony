@@ -825,7 +825,6 @@ func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *
 	}
 }
 
-// method:"get"  path:"/echo"  json_encode:true
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -833,6 +832,7 @@ func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCt
 	if err != nil {
 		return err
 	}
+
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 	return nil
 }
@@ -842,6 +842,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	if envelope == nil {
 		return errors.ErrInternalServer
 	}
+
 	switch envelope.Constructor {
 	case C_EchoResponse:
 		x := &EchoResponse{}
@@ -851,19 +852,13 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 			return err
 		}
 		return conn.WriteBinary(ctx.StreamID(), b)
-
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
-
-	default:
-		return errors.ErrUnexpectedResponse
+		return errors.ErrInternalServer
 	}
-
-	return errors.ErrInternalServer
+	return errors.ErrUnexpectedResponse
 }
-
-// method:"post"  path:"/set"
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
@@ -871,6 +866,7 @@ func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx
 	if err != nil {
 		return err
 	}
+
 	ctx.FillEnvelope(conn.ConnID(), C_SampleSet, req)
 	return nil
 }
@@ -880,6 +876,7 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	if envelope == nil {
 		return errors.ErrInternalServer
 	}
+
 	switch envelope.Constructor {
 	case C_SetResponse:
 		x := &SetResponse{}
@@ -889,23 +886,18 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 			return err
 		}
 		return conn.WriteBinary(ctx.StreamID(), b)
-
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
-
-	default:
-		return errors.ErrUnexpectedResponse
+		return errors.ErrInternalServer
 	}
-
-	return errors.ErrInternalServer
+	return errors.ErrUnexpectedResponse
 }
-
-// method:"get"  path:"/req/:Key/something"
 func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolGetRequest.Get()
 	defer PoolGetRequest.Put(req)
 	req.Key = tools.S2B(tools.GetString(conn.Get("Key"), ""))
+
 	ctx.FillEnvelope(conn.ConnID(), C_SampleGet, req)
 	return nil
 }
@@ -915,6 +907,7 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	if envelope == nil {
 		return errors.ErrInternalServer
 	}
+
 	switch envelope.Constructor {
 	case C_GetResponse:
 		x := &GetResponse{}
@@ -924,19 +917,13 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 			return err
 		}
 		return conn.WriteBinary(ctx.StreamID(), b)
-
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
-
-	default:
-		return errors.ErrUnexpectedResponse
+		return errors.ErrInternalServer
 	}
-
-	return errors.ErrInternalServer
+	return errors.ErrUnexpectedResponse
 }
-
-// method:"get"  path:"/echo_tunnel/:X/:YY"  bind_variables:"X=Int,YY=Timestamp"
 func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -944,8 +931,7 @@ func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.Disp
 	if err != nil {
 		return err
 	}
-	req.Int = tools.StrToInt64(tools.GetString(conn.Get("X"), "0"))
-	req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("YY"), "0"))
+
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoTunnel, req)
 	return nil
 }
@@ -955,6 +941,7 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 	if envelope == nil {
 		return errors.ErrInternalServer
 	}
+
 	switch envelope.Constructor {
 	case C_EchoResponse:
 		x := &EchoResponse{}
@@ -964,16 +951,72 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 			return err
 		}
 		return conn.WriteBinary(ctx.StreamID(), b)
-
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
+		return errors.ErrInternalServer
+	}
+	return errors.ErrUnexpectedResponse
+}
+func (sw *sampleWrapper) echoInternalRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
 
-	default:
-		return errors.ErrUnexpectedResponse
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoInternal, req)
+	return nil
+}
+
+func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
 	}
 
-	return errors.ErrInternalServer
+	switch envelope.Constructor {
+	case C_EchoResponse:
+		x := &EchoResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.Marshal()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+		return errors.ErrInternalServer
+	}
+	return errors.ErrUnexpectedResponse
+}
+func (sw *sampleWrapper) echoDelayRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := PoolEchoRequest.Get()
+	defer PoolEchoRequest.Put(req)
+
+	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoDelay, req)
+	return nil
+}
+
+func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	envelope := ctx.BufferPop()
+	if envelope == nil {
+		return errors.ErrInternalServer
+	}
+
+	switch envelope.Constructor {
+	case C_EchoResponse:
+		x := &EchoResponse{}
+		_ = x.Unmarshal(envelope.Message)
+		b, err := x.Marshal()
+		if err != nil {
+			return err
+		}
+		return conn.WriteBinary(ctx.StreamID(), b)
+	case rony.C_Error:
+		x := &rony.Error{}
+		_ = x.Unmarshal(envelope.Message)
+		return errors.ErrInternalServer
+	}
+	return errors.ErrUnexpectedResponse
 }
 
 type SampleClient struct {

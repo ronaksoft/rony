@@ -127,11 +127,15 @@ type MethodArg struct {
 	Output      MessageArg
 	RestEnabled bool
 	TunnelOnly  bool
-	Rest        struct {
-		Method string
-		Path   string
-		Json   bool
-	}
+	Rest        RestArg
+}
+
+type RestArg struct {
+	Method    string
+	Path      string
+	Json      bool
+	Unmarshal bool
+	ExtraCode []string
 }
 
 func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Method) MethodArg {
@@ -143,18 +147,71 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 	arg.Output = GetMessageArg(file, gFile, m.Output)
 	opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
 	restOpt := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt)
-	rest := struct {
-		Method string
-		Path   string
-		Json   bool
-	}{Method: "", Path: "", Json: false}
+	rest := RestArg{Method: "", Path: "", Json: false}
 	if restOpt != nil {
 		rest.Method = restOpt.GetMethod()
 		rest.Path = fmt.Sprintf("/%s", strings.Trim(restOpt.GetPath(), "/"))
 		rest.Json = restOpt.GetJsonEncode()
+
+		var pathVars []string
+		bindVars := map[string]string{}
+		for _, pv := range strings.Split(rest.Path, "/") {
+			if !strings.HasPrefix(pv, ":") {
+				continue
+			}
+			pathVars = append(pathVars, strings.TrimLeft(pv, ":"))
+		}
+		for _, bv := range restOpt.GetBindVariables() {
+			parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
+			if len(parts) == 2 {
+				bindVars[parts[0]] = parts[1]
+			}
+		}
+
+		if len(arg.Input.Fields) > len(pathVars) {
+			rest.Unmarshal = true
+		}
+
+		for _, pathVar := range pathVars {
+			varName := pathVar
+			if bindVars[pathVar] != "" {
+				varName = bindVars[pathVar]
+			}
+			for _, f := range m.Input.Fields {
+				if f.Desc.JSONName() == varName {
+					var ec string
+
+					switch f.Desc.Kind() {
+					case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+					case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+					case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+					case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+					case protoreflect.StringKind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")")
+					case protoreflect.BytesKind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))")
+					case protoreflect.DoubleKind:
+						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+					default:
+						ec = ""
+					}
+
+					if ec != "" {
+						rest.ExtraCode = append(rest.ExtraCode, ec)
+					}
+				}
+			}
+		}
+
 	}
+
 	arg.RestEnabled = restOpt != nil
 	arg.TunnelOnly = proto.GetExtension(opt, rony.E_RonyInternal).(bool)
 	arg.Rest = rest
+
 	return arg
 }
