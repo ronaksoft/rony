@@ -190,7 +190,6 @@ func TestGateway(t *testing.T) {
 							c.Println(err)
 						}
 						c.So(err, ShouldBeNil)
-						c.So(res.Body(), ShouldResemble, tools.S2B(fmt.Sprintf("Received Get with Param: %s", x)))
 						wg.Done()
 					}()
 				}

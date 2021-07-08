@@ -29,7 +29,7 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	edgeServer := testEnv.EdgeServer("Adam", 8081, 100000)
+	edgeServer := testEnv.EdgeServer("Adam", 8081, 1000)
 	rony.SetLogLevel(0)
 	service.RegisterSample(
 		&service.Sample{
@@ -91,10 +91,10 @@ func TestClient_Connect(t *testing.T) {
 				res, err := clnt.Echo(&service.EchoRequest{Int: 123})
 				c.So(err, ShouldBeNil)
 				c.So(res.Int, ShouldEqual, 123)
-				time.Sleep(time.Second * 3)
+				time.Sleep(time.Second * 2)
 			}
 		})
-		Convey("One Connection With Slow Request", func(c C) {
+		SkipConvey("One Connection With Slow Request", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
