@@ -22,7 +22,7 @@ message EchoRequest {
     string RandomText = 2;
 }
 
-// Response1
+// EchoResponse
 message EchoResponse {
     int64 ReqID = 1;
     string RandomText = 2;

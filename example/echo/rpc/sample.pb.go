@@ -77,7 +77,7 @@ func (x *EchoRequest) GetRandomText() string {
 	return ""
 }
 
-// Response1
+// EchoResponse
 type EchoResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

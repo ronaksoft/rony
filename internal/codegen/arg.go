@@ -1,4 +1,4 @@
-package z
+package codegen
 
 import (
 	"fmt"
@@ -21,18 +21,22 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// MessageArg holds the data needed by the template engine to generate code based on the protogen.Message
 type MessageArg struct {
+	desc     protoreflect.MessageDescriptor
 	Fullname string
 	Name     string
 	NameCC   string // LowerCamelCase(Name)
-	CName    string // ConstructorName([Pkg.]C_Name)
+	CName    string // [Pkg.]C_Name
 	Pkg      string
 	C        uint32
 	Fields   []FieldArg
 }
 
 func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) MessageArg {
-	arg := MessageArg{}
+	arg := MessageArg{
+		desc: m.Desc,
+	}
 	arg.Pkg, arg.Name = DescParts(file, gFile, m.Desc)
 	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.C = crc32.ChecksumIEEE([]byte(m.Desc.Name()))
@@ -49,7 +53,9 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 	return arg
 }
 
+// FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
+	desc        protoreflect.FieldDescriptor
 	Name        string // Name of the field
 	NameCC      string // LowerCamelCase(Name)
 	Pkg         string
@@ -58,11 +64,12 @@ type FieldArg struct {
 	Kind        string
 	GoKind      string
 	Cardinality string
-	desc        protoreflect.FieldDescriptor
 }
 
 func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen.Field) FieldArg {
-	arg := FieldArg{}
+	arg := FieldArg{
+		desc: f.Desc,
+	}
 	arg.Name = f.GoName
 	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.Pkg, arg.Type = DescParts(file, gFile, f.Desc.Message())
@@ -73,33 +80,9 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 	return arg
 }
 
-type ModelArg struct {
-	Message  MessageArg
-	HasIndex bool
-	Table    DBArg
-	Views    []DBArg
-	Fields   []FieldArg
-}
-
-type ModelFieldArg struct {
-	FieldArg
-	HasIndex   bool
-	DBIndexKey func(pre, post string) string
-}
-
-type DBArg struct {
-	Name        string
-	Keys        []string
-	DBKey       func(prefix string) string
-	FuncArgs    func(prefix string) string
-	FuncArgsPKs func(prefix string) string
-	FuncArgsCKs func(prefix string) string
-	String      func(prefix string, sep string, lowerCamel bool) string
-	StringPKs   func(prefix string, sep string, lowerCamel bool) string
-	StringCKs   func(prefix string, sep string, lowerCamel bool) string
-}
-
+// ServiceArg holds the data needed by the template engine to generate code based on the protogen.Service
 type ServiceArg struct {
+	desc    protoreflect.ServiceDescriptor
 	Name    string
 	NameCC  string // LowerCamelCase(Name)
 	NameKC  string // KebabCase(Name)
@@ -108,7 +91,9 @@ type ServiceArg struct {
 }
 
 func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protogen.Service) ServiceArg {
-	arg := ServiceArg{}
+	arg := ServiceArg{
+		desc: s.Desc,
+	}
 	arg.Name = s.GoName
 	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.NameKC = tools.ToKebab(arg.Name)
@@ -119,7 +104,9 @@ func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protog
 	return arg
 }
 
+// MethodArg holds the data needed by the template engine to generate code based on the protogen.Method
 type MethodArg struct {
+	desc        protoreflect.MethodDescriptor
 	Name        string
 	NameCC      string // LowerCamelCase(Name)
 	NameKC      string // KebabCase(Name)
@@ -139,7 +126,9 @@ type RestArg struct {
 }
 
 func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Method) MethodArg {
-	arg := MethodArg{}
+	arg := MethodArg{
+		desc: m.Desc,
+	}
 	arg.Name = m.GoName
 	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.NameKC = tools.ToKebab(arg.Name)
@@ -215,3 +204,74 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 
 	return arg
 }
+
+type ModelArg struct {
+	Name    string
+	Message MessageArg
+	Table   ModelKey
+	Views   []ModelKey
+}
+
+type ModelFieldArg struct {
+	FieldArg
+	HasIndex bool
+}
+
+type ModelKey struct {
+	pks []Prop
+	cks []Prop
+}
+
+func (m *ModelKey) PartitionKeys() []Prop {
+	return m.pks
+}
+
+func (m *ModelKey) ClusteringKeys() []Prop {
+	return m.cks
+}
+
+func (m *ModelKey) Keys() []Prop {
+	var all []Prop
+	all = append(all, m.pks...)
+	all = append(all, m.cks...)
+	return all
+}
+
+func (m *ModelKey) StringNameTypes(namePrefix string, filter PropFilter) string {
+	panic("implement me")
+}
+
+func (m *ModelKey) StringNames(prefix string, sep string, nameCase TextCase) string {
+	panic("implement me")
+}
+
+type Prop struct {
+	Name      string
+	ProtoType string
+	CqlType   string
+	GoType    string
+	Order     Order
+}
+
+type PropFilter string
+
+const (
+	PropFilterALL = "ALL"
+	PropFilterPKs = "PKs"
+	PropFilterCKs = "CKs"
+)
+
+type Order string
+
+const (
+	ASC  Order = "asc"
+	DESC Order = "desc"
+)
+
+type TextCase string
+
+const (
+	CamelCase      TextCase = "CC"
+	LowerCamelCase TextCase = "LCC"
+	KebabCase      TextCase = "KC"
+)

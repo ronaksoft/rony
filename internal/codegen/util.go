@@ -1,4 +1,4 @@
-package z
+package codegen
 
 import (
 	"fmt"

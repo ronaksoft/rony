@@ -3,7 +3,7 @@ package aggregate
 import (
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
+	"github.com/ronaksoft/rony/internal/codegen"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -108,10 +108,10 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
 		keys:     agg.Table,
 	}
 
-	arg.Pkg, arg.Type = z.DescParts(g.f, g.g, m.Desc)
+	arg.Pkg, arg.Type = codegen.DescParts(g.f, g.g, m.Desc)
 	for _, ft := range m.Fields {
 		name := string(ft.Desc.Name())
-		pkg, typ := z.DescParts(g.f, g.g, ft.Desc.Message())
+		pkg, typ := codegen.DescParts(g.f, g.g, ft.Desc.Message())
 		opt, _ := ft.Desc.Options().(*descriptorpb.FieldOptions)
 		arg.Fields = append(
 			arg.Fields,
@@ -120,7 +120,7 @@ func GetArg(g *Generator, m *protogen.Message, agg *Aggregate) ModelArg {
 				Kind: arg.kind(ft.Desc),
 				Pkg:  pkg, Type: typ,
 				Name:      name,
-				ZeroValue: z.ZeroValue(ft.Desc),
+				ZeroValue: codegen.ZeroValue(ft.Desc),
 				HasIndex:  proto.GetExtension(opt, rony.E_RonyIndex).(bool),
 			},
 		)

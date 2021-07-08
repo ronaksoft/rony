@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
+	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -42,7 +42,7 @@ func (g *Generator) Generate() {
 
 		g.g.P("var _ = tools.TimeUnix()")
 		for _, s := range g.f.Services {
-			arg := z.GetServiceArg(g.f, g.g, s)
+			arg := codegen.GetServiceArg(g.f, g.g, s)
 			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/z"
+	"github.com/ronaksoft/rony/internal/codegen"
 	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -112,8 +112,8 @@ func (g *Generator) createModel(m *protogen.Message) {
 
 	// Generate Go and CQL kinds of the fields
 	for _, f := range m.Fields {
-		agg.FieldsCql[f.GoName] = z.CqlKind(f.Desc)
-		agg.FieldsGo[f.GoName] = z.GoKind(g.f, g.g, f.Desc)
+		agg.FieldsCql[f.GoName] = codegen.CqlKind(f.Desc)
+		agg.FieldsGo[f.GoName] = codegen.GoKind(g.f, g.g, f.Desc)
 		opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 		if proto.GetExtension(opt, rony.E_RonyIndex).(bool) {
 			agg.HasIndex = true
