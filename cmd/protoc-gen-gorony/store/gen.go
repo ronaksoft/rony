@@ -123,6 +123,12 @@ func (g *Generator) Generate() {
 				m.Table.Names(codegen.PropFilterALL, prefix, ",", nc),
 			)
 		},
+		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
+			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
+				m.Name, crc64.Checksum([]byte(f.Name), crcTab),
+				prefix, f.Name, postfix,
+			)
+		},
 		"String": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
 			nc := codegen.None
 			if lcc {
@@ -178,6 +184,7 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genIterByPK").Funcs(aggregateFuncs).Parse(genIterByPK)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genIListByPK").Funcs(aggregateFuncs).Parse(genListByPK)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
 		}
 	}
 
@@ -815,6 +822,58 @@ return res, err
 {{- end }}
 `
 
-const genListByIndex = ``
+const genListByIndex = `
+{{- $model := . -}}
+{{- range .Fields }}
+{{- if .HasIndex }}
+	{{- if ne .ProtoKind "message" }}
+		func List{{$model.Name}}By{{Singular .Name}} (
+			{{Singular .Name}} {{.GoKind}}, lo *store.ListOption, cond func(m *{{$model.Name}}) bool,
+		) ([]*{{$model.Name}}, error) {
+			alloc := tools.NewAllocator()
+			defer alloc.ReleaseAll()
 
+			res := make([]*{{$model.Name}}, 0, lo.Limit())
+			err := store.View(func(txn *rony.StoreTxn) error {
+				opt := store.DefaultIteratorOptions
+				opt.Prefix = alloc.Gen({{IndexDBPrefix $model .Name ""}})
+				iter := txn.NewIterator()
+				offset := lo.Skip()
+				limit := lo.Limit()
+				for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+					if offset--; offset >= 0 {
+						continue
+					}
+					if limit--; limit < 0 {
+						break
+					}
+					_ = iter.Item().Value(func (val []byte) error {
+						item, err := txn.Get(val)
+						if err != nil {
+							return err
+						}
+						return item.Value(func (val []byte) error {
+							m := &{{$model.Name}}{}
+							err := m.Unmarshal(val)
+							if err != nil {
+								return err
+							}
+							if cond == nil || cond(m) {
+								res = append(res, m)
+							} else {
+								limit++
+							}
+							return nil
+						})
+					})
+				}
+				iter.Close()			
+				return nil
+			})
+			return res, err
+		}
+	{{- end }}
+{{- end if }}
 
+{{ end }}
+`
