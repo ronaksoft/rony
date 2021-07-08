@@ -155,6 +155,7 @@ func SaveSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) 
 func SaveSingle1(m *Single1) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
+
 	return store.Update(func(txn *rony.StoreTxn) error {
 		return SaveSingle1WithTxn(txn, alloc, m)
 	})
@@ -204,6 +205,7 @@ func SaveSingle2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) 
 func SaveSingle2(m *Single2) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
+
 	return store.Update(func(txn *rony.StoreTxn) error {
 		return SaveSingle2WithTxn(txn, alloc, m)
 	})

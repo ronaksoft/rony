@@ -163,7 +163,8 @@ func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 					if idx <  zl {
 						z.{{.Name}} = append(z.{{.Name}}, append(z.{{.Name}}[idx][:0], x.{{.Name}}[idx]...))
 					} else {
-						z.{{.Name}} = append(z.{{.Name}}, append(nil, x.{{.Name}}[idx]...))
+						zb := pools.Bytes.GetCap(len(x.{{.Name}}[idx]))
+						z.{{.Name}} = append(z.{{.Name}}, append(zb, x.{{.Name}}[idx]...))
 					}
 				}
 			{{- else }}

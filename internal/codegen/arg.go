@@ -3,6 +3,7 @@ package codegen
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
+	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -31,6 +32,13 @@ type MessageArg struct {
 	Pkg      string
 	C        uint32
 	Fields   []FieldArg
+
+	// If message is representing a model then following parameters are filled
+	IsAggregate   bool
+	IsSingleton   bool
+	AggregateType string
+	Table         *ModelKey
+	Views         []*ModelKey
 }
 
 func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) MessageArg {
@@ -50,7 +58,121 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 	for _, f := range m.Fields {
 		arg.Fields = append(arg.Fields, GetFieldArg(file, gFile, f))
 	}
+
+	// parse model based on rony proto options
+	arg.parseModel(file, gFile, m)
 	return arg
+}
+
+func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
+	// Generate the aggregate description from proto options
+	aggregateDesc := strings.Builder{}
+	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+
+	ma.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
+	if ma.IsSingleton {
+		// if message is going to be singleton then it could not be aggregate
+		return
+	}
+
+	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
+		aggrType := proto.GetExtension(opt, rony.E_RonyAggregateType).(string)
+		if aggrType == "" {
+			panic("define rony_aggregate_type")
+		}
+		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", aggrType))
+	}
+	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
+		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
+	}
+	if views := proto.GetExtension(opt, rony.E_RonyAggregateView).([]string); len(views) > 0 {
+		for _, view := range views {
+			aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+		}
+	}
+
+	// Parse the generated description
+	t, err := parse.Parse(string(m.Desc.Name()), aggregateDesc.String())
+	if err != nil {
+		panic(err)
+	}
+
+	// Generate Go and CQL kinds of the fields
+	cqlTypes := map[string]string{}
+	goTypes := map[string]string{}
+	protoTypes := map[string]string{}
+	for _, f := range m.Fields {
+		protoTypes[f.GoName] = f.Desc.Kind().String()
+		cqlTypes[f.GoName] = CqlKind(f.Desc)
+		goTypes[f.GoName] = GoKind(file, gFile, f.Desc)
+	}
+	for _, n := range t.Root.Nodes {
+		switch n.Type() {
+		case parse.NodeModel:
+			ma.AggregateType = n.(*parse.ModelNode).Text
+			ma.IsAggregate = true
+		case parse.NodeTable:
+			ma.Table = &ModelKey{
+				Arg: ma,
+			}
+			nn := n.(*parse.TableNode)
+			for _, k := range nn.PartitionKeys {
+				ma.Table.pks = append(ma.Table.pks, Prop{
+					Name:      k,
+					ProtoType: protoTypes[k],
+					CqlType:   cqlTypes[k],
+					GoType:    goTypes[k],
+					Order:     "",
+				})
+			}
+			for _, k := range nn.ClusteringKeys {
+				order := ASC
+				if strings.HasPrefix(k, "-") {
+					order = DESC
+				}
+
+				k = strings.TrimLeft(k, "-")
+				ma.Table.cks = append(ma.Table.cks, Prop{
+					Name:      k,
+					ProtoType: protoTypes[k],
+					CqlType:   cqlTypes[k],
+					GoType:    goTypes[k],
+					Order:     order,
+				})
+			}
+		case parse.NodeView:
+			view := &ModelKey{
+				Arg: ma,
+			}
+			nn := n.(*parse.ViewNode)
+			for _, k := range nn.PartitionKeys {
+				view.pks = append(view.pks, Prop{
+					Name:      k,
+					ProtoType: protoTypes[k],
+					CqlType:   cqlTypes[k],
+					GoType:    goTypes[k],
+					Order:     "",
+				})
+			}
+
+			for _, k := range nn.ClusteringKeys {
+				order := ASC
+				if strings.HasPrefix(k, "-") {
+					order = DESC
+				}
+
+				k = strings.TrimLeft(k, "-")
+				view.cks = append(view.cks, Prop{
+					Name:      k,
+					ProtoType: protoTypes[k],
+					CqlType:   cqlTypes[k],
+					GoType:    goTypes[k],
+					Order:     order,
+				})
+			}
+			ma.Views = append(ma.Views, view)
+		}
+	}
 }
 
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
@@ -64,6 +186,7 @@ type FieldArg struct {
 	Kind        string
 	GoKind      string
 	Cardinality string
+	HasIndex    bool
 }
 
 func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen.Field) FieldArg {
@@ -77,6 +200,9 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 	arg.GoKind = GoKind(file, gFile, f.Desc)
 	arg.Cardinality = f.Desc.Cardinality().String()
 	arg.ZeroValue = ZeroValue(f.Desc)
+
+	opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
+	arg.HasIndex = proto.GetExtension(opt, rony.E_RonyIndex).(bool)
 	return arg
 }
 
@@ -205,21 +331,14 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 	return arg
 }
 
-type ModelArg struct {
-	Name    string
-	Message MessageArg
-	Table   ModelKey
-	Views   []ModelKey
-}
-
-type ModelFieldArg struct {
-	FieldArg
-	HasIndex bool
-}
-
 type ModelKey struct {
+	Arg *MessageArg
 	pks []Prop
 	cks []Prop
+}
+
+func (m *ModelKey) Name() string {
+	return m.Arg.Name
 }
 
 func (m *ModelKey) PartitionKeys() []Prop {
@@ -237,12 +356,76 @@ func (m *ModelKey) Keys() []Prop {
 	return all
 }
 
-func (m *ModelKey) StringNameTypes(namePrefix string, filter PropFilter) string {
-	panic("implement me")
+func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase TextCase, lang Language) string {
+	var props []Prop
+	switch filter {
+	case PropFilterALL:
+		props = m.Keys()
+	case PropFilterCKs:
+		props = m.ClusteringKeys()
+	case PropFilterPKs:
+		props = m.PartitionKeys()
+	}
+
+	sb := strings.Builder{}
+	for idx, p := range props {
+		if idx != 0 {
+			sb.WriteString(", ")
+		}
+
+		sb.WriteString(namePrefix)
+		switch nameCase {
+		case LowerCamelCase:
+			sb.WriteString(tools.ToLowerCamel(p.Name))
+		case CamelCase:
+			sb.WriteString(tools.ToCamel(p.Name))
+		case KebabCase:
+			sb.WriteString(tools.ToKebab(p.Name))
+		default:
+			sb.WriteString(p.Name)
+		}
+		sb.WriteRune(' ')
+		switch lang {
+		case LangGo:
+			sb.WriteString(p.GoType)
+		case LangCQL:
+			sb.WriteString(p.CqlType)
+		case LangProto:
+			sb.WriteString(p.ProtoType)
+		}
+	}
+	return sb.String()
 }
 
-func (m *ModelKey) StringNames(prefix string, sep string, nameCase TextCase) string {
-	panic("implement me")
+func (m *ModelKey) Names(filter PropFilter, prefix string, sep string, nameCase TextCase) string {
+	var props []Prop
+	switch filter {
+	case PropFilterALL:
+		props = m.Keys()
+	case PropFilterCKs:
+		props = m.ClusteringKeys()
+	case PropFilterPKs:
+		props = m.PartitionKeys()
+	}
+
+	sb := strings.Builder{}
+	for idx, p := range props {
+		if idx != 0 {
+			sb.WriteString(sep)
+		}
+		sb.WriteString(prefix)
+		switch nameCase {
+		case LowerCamelCase:
+			sb.WriteString(tools.ToLowerCamel(p.Name))
+		case CamelCase:
+			sb.WriteString(tools.ToCamel(p.Name))
+		case KebabCase:
+			sb.WriteString(tools.ToKebab(p.Name))
+		default:
+			sb.WriteString(p.Name)
+		}
+	}
+	return sb.String()
 }
 
 type Prop struct {
@@ -264,14 +447,23 @@ const (
 type Order string
 
 const (
-	ASC  Order = "asc"
-	DESC Order = "desc"
+	ASC  Order = "ASC"
+	DESC Order = "DESC"
 )
 
 type TextCase string
 
 const (
+	None           TextCase = ""
 	CamelCase      TextCase = "CC"
 	LowerCamelCase TextCase = "LCC"
 	KebabCase      TextCase = "KC"
+)
+
+type Language string
+
+const (
+	LangGo    Language = "GO"
+	LangCQL   Language = "CQL"
+	LangProto Language = "PROTO"
 )

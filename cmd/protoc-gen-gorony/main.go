@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/aggregate"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/singleton"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/store"
 	"google.golang.org/protobuf/compiler/protogen"
 	"strings"
 )
@@ -47,10 +46,11 @@ func main() {
 			g1.Generate()
 
 			// Generate Aggregate or Singleton repo functionality based on the 'rony_repo' option
-			g2 := aggregate.New(f, g)
-			g2.Generate()
+			// g2 := aggregate.New(f, g)
+			// g2.Generate()
 
-			g3 := singleton.New(f, g)
+			// Generate Local Store functionalities
+			g3 := store.New(f, g)
 			g3.Generate()
 
 			g4 := rpc.New(f, g)
