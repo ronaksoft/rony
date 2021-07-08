@@ -126,7 +126,7 @@ func (g *Generator) Generate() {
 		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
 			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
 				m.Name, crc64.Checksum([]byte(f.Name), crcTab),
-				prefix, f.Name, postfix,
+				prefix, inflection.Singular(f.Name), postfix,
 			)
 		},
 		"String": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
@@ -502,7 +502,7 @@ const (
 )
 {{- range .Fields }}
 	{{- if eq .Cardinality "repeated" }}
-		{{- if not (and (eq .Kind "message") (eq .Kind "group")) }}
+		{{- if not (or (eq .Kind "message") (eq .Kind "group")) }}
 			{{- if eq .Kind "bytes" }}
 				func (x *{{$model.Name}}) Has{{Singular .Name}}(xx {{.GoKind}}) bool {
 					for idx := range x.{{.Name}} {

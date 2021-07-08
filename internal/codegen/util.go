@@ -104,9 +104,9 @@ func GoKind(file *protogen.File, g *protogen.GeneratedFile, d protoreflect.Field
 		return "bool"
 	case protoreflect.EnumKind:
 		if pkg == "" {
-			return string(d.Name())
+			return string(d.Enum().Name())
 		} else {
-			return fmt.Sprintf("%s.%s", pkg, d.Name())
+			return fmt.Sprintf("%s.%s", pkg, d.Enum().Name())
 		}
 	}
 	return "unsupported"

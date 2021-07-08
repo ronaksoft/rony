@@ -104,10 +104,10 @@ func TestRestProxy(t *testing.T) {
 				Timestamp:  tools.NanoTime(),
 				ReplicaSet: tools.RandomUint64(0),
 			}
-			reqJson, err := protojson.Marshal(req)
+			reqJSON, err := protojson.Marshal(req)
 			c.So(err, ShouldBeNil)
 			err = s.REST().
-				Request(rony.MethodPost, "/echo", reqJson).
+				Request(rony.MethodPost, "/echo", reqJSON).
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					res := &service.EchoResponse{}
 					err = protojson.Unmarshal(b, res)

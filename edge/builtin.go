@@ -35,7 +35,7 @@ func newBuiltin(serverID string, gw rony.Gateway, c rony.Cluster) *Builtin {
 	return b
 }
 
-func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
+func (pm *Builtin) getNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	req := rony.PoolGetNodes.Get()
 	defer rony.PoolGetNodes.Put(req)
 	res := rony.PoolEdges.Get()
@@ -67,7 +67,7 @@ func (pm *Builtin) GetNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	ctx.PushMessage(rony.C_Edges, res)
 }
 
-func (pm *Builtin) GetAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
+func (pm *Builtin) getAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	req := rony.PoolGetNodes.Get()
 	defer rony.PoolGetNodes.Put(req)
 	res := rony.PoolEdges.Get()
@@ -93,7 +93,7 @@ func (pm *Builtin) GetAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	ctx.PushMessage(rony.C_Edges, res)
 }
 
-func (pm *Builtin) GetPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
+func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if pm.cluster.ReplicaSet() != 1 {
 		ctx.PushError(errors.ErrUnavailableRequest)
 		return
