@@ -349,10 +349,18 @@ func (m *ModelKey) PartitionKeys() []Prop {
 	return all
 }
 
+func (m *ModelKey) PKs() []Prop {
+	return m.PartitionKeys()
+}
+
 func (m *ModelKey) ClusteringKeys() []Prop {
 	var all []Prop
 	all = append(all, m.cks...)
 	return all
+}
+
+func (m *ModelKey) CKs() []Prop {
+	return m.ClusteringKeys()
 }
 
 func (m *ModelKey) Keys() []Prop {

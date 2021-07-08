@@ -510,6 +510,152 @@ func ListModel1(
 	return res, err
 }
 
+func IterModel1ByID(
+	txn *rony.StoreTxn, alloc *tools.Allocator, id int32, cb func(m *Model1) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model1, 4018441491, id)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+func IterModel1ByEnum0(
+	txn *rony.StoreTxn, alloc *tools.Allocator, enum Enum, cb func(m *Model1) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, enum)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel1ByID(
+	id int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model1, 4018441491, id)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model1, 4018441491, id, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+func ListModel1ByEnum0(
+	enum Enum, offsetShardKey int32, offsetID int32, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, enum)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model1, 2535881670, enum, offsetShardKey, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
 func CreateModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -751,6 +897,152 @@ func ListModel2(
 		}
 		opt.Reverse = lo.Backward()
 		osk := alloc.Gen('M', C_Model2, 1609271041, offsetID, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func IterModel2ByIDAndShardKey(
+	txn *rony.StoreTxn, alloc *tools.Allocator, id int64, shardKey int32, cb func(m *Model2) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, id, shardKey)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+func IterModel2ByP10(
+	txn *rony.StoreTxn, alloc *tools.Allocator, p1 string, cb func(m *Model2) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, p1)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel2ByIDAndShardKey(
+	id int64, shardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, id, shardKey)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model2, 1609271041, id, shardKey, offsetP1)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+func ListModel2ByP10(
+	p1 string, offsetShardKey int32, offsetID int64, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, p1)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model2, 2344331025, p1, offsetShardKey, offsetID)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -1085,6 +1377,226 @@ func ListModel3(
 		}
 		opt.Reverse = lo.Backward()
 		osk := alloc.Gen('M', C_Model3, 1609271041, offsetID, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func IterModel3ByIDAndShardKey(
+	txn *rony.StoreTxn, alloc *tools.Allocator, id int64, shardKey int32, cb func(m *Model3) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, id, shardKey)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model3{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+func IterModel3ByP10(
+	txn *rony.StoreTxn, alloc *tools.Allocator, p1 []byte, cb func(m *Model3) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, p1)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model3{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func IterModel3ByP11(
+	txn *rony.StoreTxn, alloc *tools.Allocator, p1 []byte, cb func(m *Model3) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, p1)
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model3{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel3ByIDAndShardKey(
+	id int64, shardKey int32, offsetP1 []byte, lo *store.ListOption, cond func(m *Model3) bool,
+) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model3, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, id, shardKey)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model3, 1609271041, id, shardKey, offsetP1)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+func ListModel3ByP10(
+	p1 []byte, offsetShardKey int32, offsetID int64, lo *store.ListOption, cond func(m *Model3) bool,
+) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model3, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, p1)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model3, 2344331025, p1, offsetShardKey, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+func ListModel3ByP11(
+	p1 []byte, offsetID int64, lo *store.ListOption, cond func(m *Model3) bool,
+) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*Model3, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, p1)
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model3, 3623577939, p1, offsetID)
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()

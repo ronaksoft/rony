@@ -70,6 +70,20 @@ func (g *Generator) Generate() {
 			}
 			return m.NameTypes(codegen.PropFilterALL, prefix, nc, codegen.LangGo)
 		},
+		"FuncArgsPKs": func(m codegen.ModelKey, prefix string) string {
+			nc := codegen.None
+			if prefix == "" {
+				nc = codegen.LowerCamelCase
+			}
+			return m.NameTypes(codegen.PropFilterPKs, prefix, nc, codegen.LangGo)
+		},
+		"FuncArgsCKs": func(m codegen.ModelKey, prefix string) string {
+			nc := codegen.None
+			if prefix == "" {
+				nc = codegen.LowerCamelCase
+			}
+			return m.NameTypes(codegen.PropFilterCKs, prefix, nc, codegen.LangGo)
+		},
 		"DBKey": func(m codegen.ModelKey, prefix string) string {
 			nc := codegen.None
 			if prefix == "" {
@@ -116,6 +130,20 @@ func (g *Generator) Generate() {
 			}
 			return m.Names(codegen.PropFilterALL, prefix, sep, nc)
 		},
+		"StringPKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
+			nc := codegen.None
+			if lcc {
+				nc = codegen.LowerCamelCase
+			}
+			return m.Names(codegen.PropFilterPKs, prefix, sep, nc)
+		},
+		"StringCKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
+			nc := codegen.None
+			if lcc {
+				nc = codegen.LowerCamelCase
+			}
+			return m.Names(codegen.PropFilterCKs, prefix, sep, nc)
+		},
 		"OrderTypes": func(m codegen.MessageArg) map[string]int {
 			var (
 				uniqueOrders = make(map[string]int)
@@ -148,6 +176,8 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genAggregateHelpers").Funcs(aggregateFuncs).Parse(genAggregateHelpers)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genIterByPK").Funcs(aggregateFuncs).Parse(genIterByPK)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genIListByPK").Funcs(aggregateFuncs).Parse(genListByPK)), arg))
 		}
 	}
 
@@ -614,7 +644,177 @@ func List{{.Name}} (
 }
 
 `
-const genIterByPK = ``
 
-const genListByPK = ``
+const genIterByPK = `
+{{$model := .}}
+{{- if gt (len .Table.CKs) 0 }}
+func Iter{{.Name}}By{{StringPKs .Table "" "And" false}} (
+	txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgsPKs .Table ""}}, cb func(m *{{.Name}}) bool,
+) error {
+		if alloc == nil {
+			alloc = tools.NewAllocator()
+			defer alloc.ReleaseAll()
+		}
+
+		exitLoop := false
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table ""}})
+		iter := txn.NewIterator(opt)
+		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			_ = iter.Item().Value(func (val []byte) error {
+				m := &{{$model.Name}}{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				}
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		iter.Close()
+		return nil
+	}
+{{- end }}
+
+{{- range $idx, $v := .Views }}
+{{- if gt (len .CKs) 0 }}
+func Iter{{$model.Name}}By{{StringPKs . "" "And" false}}{{$idx}} (
+	txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgsPKs . ""}}, cb func(m *{{$model.Name}}) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen({{DBKeyPKs . ""}})
+	iter := txn.NewIterator(opt)
+	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func (val []byte) error {
+			m := &{{$model.Name}}{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil 
+}
+
+{{ end }}
+{{- end }}
+
+`
+
+const genListByPK = `
+{{$model := .}}
+{{- if gt (len .Table.CKs) 0}}
+func List{{.Name}}By{{StringPKs .Table "" "And" false}} (
+	{{FuncArgsPKs .Table ""}}, {{FuncArgsCKs .Table "offset"}}, lo *store.ListOption, cond func(m *{{.Name}}) bool,
+) ([]*{{.Name}}, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	res := make([]*{{.Name}}, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table ""}})
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen({{DBKeyPKs .Table ""}}, {{StringCKs .Table "offset" "," false}})
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func (val []byte) error {
+				m := &{{$model.Name}}{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
+{{- end }}
+
+{{- range $idx, $v := .Views }}
+{{- if gt (len .CKs) 0 }}
+func List{{$model.Name}}By{{StringPKs . "" "And" false}}{{$idx}} (
+	{{FuncArgsPKs . ""}}, {{FuncArgsCKs . "offset"}}, lo *store.ListOption, cond func(m *{{$model.Name}}) bool,
+) ([]*{{$model.Name}}, error) {
+alloc := tools.NewAllocator()
+defer alloc.ReleaseAll()
+
+res := make([]*{{$model.Name}}, 0, lo.Limit())
+err := store.View(func(txn *rony.StoreTxn) error {
+	opt := store.DefaultIteratorOptions
+	opt.Prefix = alloc.Gen({{DBKeyPKs . ""}})
+	opt.Reverse = lo.Backward()
+	osk := alloc.Gen({{DBKeyPKs . ""}}, {{StringCKs . "offset" "," false}})
+	iter := txn.NewIterator(opt)
+	offset := lo.Skip()
+	limit := lo.Limit()
+	for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+		if offset--; offset >= 0 {
+			continue
+		}
+		if limit--; limit < 0 {
+			break
+		}
+		_ = iter.Item().Value(func (val []byte) error {
+			m := &{{$model.Name}}{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if cond == nil || cond(m) {
+				res = append(res, m)
+			} else {
+				limit++
+			}
+			return nil
+		})
+	}
+		iter.Close()
+		return nil
+})
+return res, err
+}
+
+{{ end }}
+{{- end }}
+`
+
 const genListByIndex = ``
+
+
