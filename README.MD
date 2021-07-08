@@ -21,8 +21,8 @@ the '
 Tunnel' features in **Rony**.
 
 When we want to write a service to support sharding and replication, developers need to write a lot of code to manage their communication and how to write the code to handle these
-interactions between services and clients. **Rony** makes it easy. Rony internally uses Raft for consensuses  
-However, to develop your service using **Rony** framework, there are more works to initialize your code comparing to other RESTful frameworks. To help you setup the skeleton even
+interactions between services and clients. **Rony** makes it easy.   
+However, to develop your service using **Rony** framework, there are more works to initialize your code comparing to other RESTful frameworks. To help you set up the skeleton even
 faster there is an executable to makes the life easier for you.
 
 ### Overview Diagram
