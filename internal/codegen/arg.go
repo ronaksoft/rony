@@ -185,6 +185,7 @@ type FieldArg struct {
 	ZeroValue   string
 	Kind        string
 	GoKind      string
+	CqlKind     string
 	Cardinality string
 	HasIndex    bool
 }
@@ -198,6 +199,7 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 	arg.Pkg, arg.Type = DescParts(file, gFile, f.Desc.Message())
 	arg.Kind = f.Desc.Kind().String()
 	arg.GoKind = GoKind(file, gFile, f.Desc)
+	arg.CqlKind = CqlKind(f.Desc)
 	arg.Cardinality = f.Desc.Cardinality().String()
 	arg.ZeroValue = ZeroValue(f.Desc)
 
@@ -342,11 +344,15 @@ func (m *ModelKey) Name() string {
 }
 
 func (m *ModelKey) PartitionKeys() []Prop {
-	return m.pks
+	var all []Prop
+	all = append(all, m.pks...)
+	return all
 }
 
 func (m *ModelKey) ClusteringKeys() []Prop {
-	return m.cks
+	var all []Prop
+	all = append(all, m.cks...)
+	return all
 }
 
 func (m *ModelKey) Keys() []Prop {
@@ -356,6 +362,8 @@ func (m *ModelKey) Keys() []Prop {
 	return all
 }
 
+// NameTypes is kind of strings.Join function which returns a custom format of combination of model properties.
+// This is a helper function used in code generator templates.
 func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase TextCase, lang Language) string {
 	var props []Prop
 	switch filter {
@@ -397,6 +405,8 @@ func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase Text
 	return sb.String()
 }
 
+// Names is kind of strings.Join function which returns a custom format of property names.
+// This is a helper function used in code generator templates.
 func (m *ModelKey) Names(filter PropFilter, prefix string, sep string, nameCase TextCase) string {
 	var props []Prop
 	switch filter {

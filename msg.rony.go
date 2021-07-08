@@ -3,6 +3,7 @@
 package rony
 
 import (
+	bytes "bytes"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
@@ -559,3 +560,5 @@ func init() {
 	registry.RegisterConstructor(3267106379, "GetAllNodes")
 	registry.RegisterConstructor(3032622721, "HttpBody")
 }
+
+var _ = bytes.MinRead

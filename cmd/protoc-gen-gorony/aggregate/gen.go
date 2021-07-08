@@ -47,9 +47,6 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 
-			g.genOrderByConstants(m)
-			g.genHasField(m)
-			g.genIter(m)
 			g.genList(m)
 			g.genIterByPK(m)
 			g.genListByPK(m)
@@ -173,113 +170,7 @@ func (g *Generator) m(m *protogen.Message) *Aggregate {
 	return g.model(m)
 }
 
-// genHasField generate helper function for repeated fields of the aggregate.
-func (g *Generator) genHasField(m *protogen.Message) {
-	for _, f := range m.Fields {
-		ftName := string(f.Desc.Name())
-		switch f.Desc.Cardinality() {
-		case protoreflect.Repeated:
-			switch f.Desc.Kind() {
-			case protoreflect.MessageKind, protoreflect.GroupKind:
-			case protoreflect.BytesKind:
-				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
-				g.g.P("for idx := range x.", ftName, "{")
-				g.g.P("if bytes.Equal(x.", ftName, "[idx], xx) {")
-				g.g.P("return true")
-				g.g.P("}") // end of if
-				g.g.P("}") // end of for
-				g.g.P("return false")
-				g.g.P("}") // end of func
-				g.g.P()
-			case protoreflect.EnumKind:
-				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", f.Enum.Desc.Name(), ") bool {")
-				g.g.P("for idx := range x.", ftName, "{")
-				g.g.P("if x.", ftName, "[idx] == xx {")
-				g.g.P("return true")
-				g.g.P("}") // end of if
-				g.g.P("}") // end of for
-				g.g.P("return false")
-				g.g.P("}") // end of func
-				g.g.P()
-			default:
-				mtName := m.Desc.Name()
-				g.g.P("func (x *", mtName, ") Has", inflection.Singular(ftName), "(xx ", g.m(m).FieldsGo[ftName], ") bool {")
-				g.g.P("for idx := range x.", ftName, "{")
-				g.g.P("if x.", ftName, "[idx] == xx {")
-				g.g.P("return true")
-				g.g.P("}") // end of if
-				g.g.P("}") // end of for
-				g.g.P("return false")
-				g.g.P("}") // end of func
-				g.g.P()
 
-			}
-
-		}
-	}
-}
-
-// genOrderByConstants generates constants used in Iter and List functions to identify the order.
-func (g *Generator) genOrderByConstants(m *protogen.Message) {
-	orderType := fmt.Sprintf("%sOrder", g.m(m).Name)
-	g.g.P("type ", orderType, " string")
-	for _, view := range g.m(m).Views {
-		orderName := fmt.Sprintf("%sOrderBy%s", g.m(m).Name, strings.Join(view.PKs, ""))
-		g.g.P("const ", orderName, " ", orderType, " =\"", strings.Join(view.PKs, ""), "\"")
-	}
-}
-func (g *Generator) genIter(m *protogen.Message) {
-	mn := g.m(m).Name
-	orderType := fmt.Sprintf("%sOrder", g.m(m).Name)
-
-	g.g.P("func Iter", inflection.Plural(mn), "(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *", mn, ") bool, orderBy ...", orderType, ")  error {")
-	g.blockAlloc()
-
-	g.g.P("exitLoop := false")
-	g.g.P("iterOpt := store.DefaultIteratorOptions")
-
-	if len(g.m(m).Views) > 0 {
-		g.g.P("if len(orderBy) == 0 {")
-		g.g.P("iterOpt.Prefix = alloc.Gen(", g.m(m).Table.DBIterPrefix(), ")")
-		g.g.P("} else {")
-		g.g.P("switch orderBy[0] {")
-		for idx, view := range g.m(m).Views {
-			orderName := fmt.Sprintf("%sOrderBy%s", g.m(m).Name, strings.Join(view.PKs, ""))
-			g.g.P("case ", orderName, ":")
-			g.g.P("iterOpt.Prefix = alloc.Gen(", g.m(m).Views[idx].DBIterPrefix(), ")")
-		}
-		g.g.P("default:")
-		g.g.P("iterOpt.Prefix = alloc.Gen(", g.m(m).Table.DBIterPrefix(), ")")
-		g.g.P("}")
-		g.g.P("}")
-	} else {
-		g.g.P("iterOpt.Prefix = alloc.Gen(", g.m(m).Table.DBIterPrefix(), ")")
-	}
-
-	g.g.P("iter := txn.NewIterator(iterOpt)")
-	g.g.P("for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {")
-	g.g.P("_ = iter.Item().Value(func (val []byte) error {")
-	g.g.P("m := &", mn, "{}")
-	g.g.P("err := m.Unmarshal(val)")
-	g.g.P("if err != nil {")
-	g.g.P("return err")
-	g.g.P("}") // end of if
-	g.g.P("if !cb(m) {")
-	g.g.P("exitLoop = true")
-	g.g.P("}") // end of if callback
-	g.g.P("return nil")
-	g.g.P("})") // end of iter.Value func
-	g.g.P("if exitLoop {")
-	g.g.P("break")
-	g.g.P("}")
-	g.g.P("}") // end of for
-	g.g.P("iter.Close()")
-	g.g.P("return nil")
-	g.g.P("}") // end of func List
-	g.g.P()
-}
 func (g *Generator) genIterByPK(m *protogen.Message) {
 	mn := g.m(m).Name
 	if len(g.m(m).Table.CKs) > 0 {

@@ -3,6 +3,7 @@
 package singleton
 
 import (
+	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
@@ -138,6 +139,8 @@ func init() {
 	registry.RegisterConstructor(683727308, "Single1")
 	registry.RegisterConstructor(2982774902, "Single2")
 }
+
+var _ = bytes.MinRead
 
 func SaveSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (err error) {
 	if alloc == nil {

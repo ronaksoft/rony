@@ -3,6 +3,7 @@
 package msg
 
 import (
+	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
@@ -242,6 +243,8 @@ func init() {
 	registry.RegisterConstructor(3023575326, "Page")
 }
 
+var _ = bytes.MinRead
+
 func CreatePage(m *Page) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -296,7 +299,7 @@ func UpdatePage(id uint32, m *Page) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
+	err := store.Update(func(txn *rony.StoreTxn) (err error) {
 		return UpdatePageWithTxn(txn, alloc, m)
 	})
 	return err
@@ -404,4 +407,102 @@ func DeletePage(id uint32) error {
 	return store.Update(func(txn *rony.StoreTxn) error {
 		return DeletePageWithTxn(txn, alloc, id)
 	})
+}
+
+type PageOrder string
+
+const (
+	PageOrderByReplicaSet PageOrder = "ReplicaSet"
+)
+
+func IterPages(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *Page) bool, orderBy ...PageOrder) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+	} else {
+		switch orderBy[0] {
+		case PageOrderByReplicaSet:
+			iterOpt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		}
+	}
+
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Page{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListPage(
+	offsetID uint32, lo *store.ListOption, cond func(m *Page) bool, orderBy ...PageOrder,
+) ([]*Page, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	iterOpt := store.DefaultIteratorOptions
+	res := make([]*Page, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		if len(orderBy) == 0 {
+			iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		} else {
+			switch orderBy[0] {
+			case PageOrderByReplicaSet:
+				iterOpt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+			default:
+				iterOpt.Prefix = alloc.Gen('M', C_Page, 299066170)
+			}
+		}
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Page, 299066170, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Page{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
 }

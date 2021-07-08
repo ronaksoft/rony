@@ -3,6 +3,7 @@
 package model
 
 import (
+	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
@@ -210,6 +211,8 @@ func init() {
 	registry.RegisterConstructor(2510714031, "Model3")
 }
 
+var _ = bytes.MinRead
+
 func CreateModel1(m *Model1) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -276,7 +279,7 @@ func UpdateModel1(id int32, shardKey int32, m *Model1) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
+	err := store.Update(func(txn *rony.StoreTxn) (err error) {
 		return UpdateModel1WithTxn(txn, alloc, m)
 	})
 	return err
@@ -400,6 +403,113 @@ func DeleteModel1(id int32, shardKey int32) error {
 	})
 }
 
+type Model1Order string
+
+const (
+	Model1OrderByEnum Model1Order = "Enum"
+)
+
+func (x *Model1) HasP2(xx string) bool {
+	for idx := range x.P2 {
+		if x.P2[idx] == xx {
+			return true
+		}
+	}
+	return false
+}
+
+func IterModel1(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *Model1) bool, orderBy ...Model1Order) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+	} else {
+		switch orderBy[0] {
+		case Model1OrderByEnum:
+			iterOpt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+		}
+	}
+
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model1{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel1(
+	offsetID int32, offsetShardKey int32, lo *store.ListOption, cond func(m *Model1) bool, orderBy ...Model1Order,
+) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	iterOpt := store.DefaultIteratorOptions
+	res := make([]*Model1, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		if len(orderBy) == 0 {
+			iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+		} else {
+			switch orderBy[0] {
+			case Model1OrderByEnum:
+				iterOpt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+			default:
+				iterOpt.Prefix = alloc.Gen('M', C_Model1, 4018441491)
+			}
+		}
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model1, 4018441491, offsetID)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
 func CreateModel2(m *Model2) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -454,7 +564,7 @@ func UpdateModel2(id int64, shardKey int32, p1 string, m *Model2) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
+	err := store.Update(func(txn *rony.StoreTxn) (err error) {
 		return UpdateModel2WithTxn(txn, alloc, m)
 	})
 	return err
@@ -564,6 +674,113 @@ func DeleteModel2(id int64, shardKey int32, p1 string) error {
 	})
 }
 
+type Model2Order string
+
+const (
+	Model2OrderByP1 Model2Order = "P1"
+)
+
+func (x *Model2) HasP2(xx string) bool {
+	for idx := range x.P2 {
+		if x.P2[idx] == xx {
+			return true
+		}
+	}
+	return false
+}
+
+func IterModel2(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *Model2) bool, orderBy ...Model2Order) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+	} else {
+		switch orderBy[0] {
+		case Model2OrderByP1:
+			iterOpt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		}
+	}
+
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model2{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel2(
+	offsetID int64, offsetShardKey int32, offsetP1 string, lo *store.ListOption, cond func(m *Model2) bool, orderBy ...Model2Order,
+) ([]*Model2, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	iterOpt := store.DefaultIteratorOptions
+	res := make([]*Model2, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		if len(orderBy) == 0 {
+			iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		} else {
+			switch orderBy[0] {
+			case Model2OrderByP1:
+				iterOpt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+			default:
+				iterOpt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+			}
+		}
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model2, 1609271041, offsetID, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
+}
+
 func CreateModel3(m *Model3) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -630,7 +847,7 @@ func UpdateModel3(id int64, shardKey int32, p1 []byte, m *Model3) error {
 		return store.ErrEmptyObject
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
+	err := store.Update(func(txn *rony.StoreTxn) (err error) {
 		return UpdateModel3WithTxn(txn, alloc, m)
 	})
 	return err
@@ -780,4 +997,120 @@ func DeleteModel3(id int64, shardKey int32, p1 []byte) error {
 	return store.Update(func(txn *rony.StoreTxn) error {
 		return DeleteModel3WithTxn(txn, alloc, id, shardKey, p1)
 	})
+}
+
+type Model3Order string
+
+const (
+	Model3OrderByP1 Model3Order = "P1"
+)
+
+func (x *Model3) HasP2(xx string) bool {
+	for idx := range x.P2 {
+		if x.P2[idx] == xx {
+			return true
+		}
+	}
+	return false
+}
+
+func (x *Model3) HasP5(xx []byte) bool {
+	for idx := range x.P5 {
+		if bytes.Equal(x.P5[idx], xx) {
+			return true
+		}
+	}
+	return false
+}
+
+func IterModel3(txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *Model3) bool, orderBy ...Model3Order) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	exitLoop := false
+	iterOpt := store.DefaultIteratorOptions
+	if len(orderBy) == 0 {
+		iterOpt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+	} else {
+		switch orderBy[0] {
+		case Model3OrderByP1:
+			iterOpt.Prefix = alloc.Gen('M', C_Model3, 3623577939)
+		default:
+			iterOpt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		}
+	}
+
+	iter := txn.NewIterator(iterOpt)
+	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
+		_ = iter.Item().Value(func(val []byte) error {
+			m := &Model3{}
+			err := m.Unmarshal(val)
+			if err != nil {
+				return err
+			}
+			if !cb(m) {
+				exitLoop = true
+			}
+			return nil
+		})
+		if exitLoop {
+			break
+		}
+	}
+	iter.Close()
+	return nil
+}
+
+func ListModel3(
+	offsetID int64, offsetShardKey int32, offsetP1 []byte, lo *store.ListOption, cond func(m *Model3) bool, orderBy ...Model3Order,
+) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	iterOpt := store.DefaultIteratorOptions
+	res := make([]*Model3, 0, lo.Limit())
+	err := store.View(func(txn *rony.StoreTxn) error {
+		opt := store.DefaultIteratorOptions
+		if len(orderBy) == 0 {
+			iterOpt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		} else {
+			switch orderBy[0] {
+			case Model3OrderByP1:
+				iterOpt.Prefix = alloc.Gen('M', C_Model3, 3623577939)
+			default:
+				iterOpt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+			}
+		}
+		opt.Reverse = lo.Backward()
+		osk := alloc.Gen('M', C_Model3, 1609271041, offsetID, offsetShardKey)
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+	return res, err
 }

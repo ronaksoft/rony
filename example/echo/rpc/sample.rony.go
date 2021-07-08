@@ -3,6 +3,7 @@
 package service
 
 import (
+	bytes "bytes"
 	fmt "fmt"
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
@@ -124,6 +125,7 @@ func init() {
 	registry.RegisterConstructor(3852587671, "SampleEcho")
 }
 
+var _ = bytes.MinRead
 var _ = tools.TimeUnix()
 
 type ISample interface {
