@@ -826,7 +826,7 @@ const genListByIndex = `
 {{- $model := . -}}
 {{- range .Fields }}
 {{- if .HasIndex }}
-	{{- if ne .ProtoKind "message" }}
+	{{- if ne .Kind "message" }}
 		func List{{$model.Name}}By{{Singular .Name}} (
 			{{Singular .Name}} {{.GoKind}}, lo *store.ListOption, cond func(m *{{$model.Name}}) bool,
 		) ([]*{{$model.Name}}, error) {
@@ -836,8 +836,8 @@ const genListByIndex = `
 			res := make([]*{{$model.Name}}, 0, lo.Limit())
 			err := store.View(func(txn *rony.StoreTxn) error {
 				opt := store.DefaultIteratorOptions
-				opt.Prefix = alloc.Gen({{IndexDBPrefix $model .Name ""}})
-				iter := txn.NewIterator()
+				opt.Prefix = alloc.Gen({{IndexDBPrefix $model . "" ""}})
+				iter := txn.NewIterator(opt)
 				offset := lo.Skip()
 				limit := lo.Limit()
 				for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
@@ -873,7 +873,7 @@ const genListByIndex = `
 			return res, err
 		}
 	{{- end }}
-{{- end if }}
+{{- end  }}
 
 {{ end }}
 `
