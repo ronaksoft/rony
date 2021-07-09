@@ -76,11 +76,7 @@ func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedF
 	}
 
 	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
-		aggrType := proto.GetExtension(opt, rony.E_RonyAggregateType).(string)
-		if aggrType == "" {
-			panic("define rony_aggregate_type")
-		}
-		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", aggrType))
+		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", ma.Name))
 	}
 	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
 		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))

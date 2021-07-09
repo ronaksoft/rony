@@ -45,18 +45,6 @@ extend google.protobuf.MessageOptions {
     // NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
     // cause unpredictable results.
     optional bool rony_singleton = 50002;
-    // rony_aggregate_type makes the code generator to generate appropriate functions based on the way you are going
-    // to handle actions on the aggregate.
-    // POSSIBLE_VALUES: "crud", "eventsource"
-    optional string rony_aggregate_type = 50010;
-    // rony_aggregate_command makes this message as a command which is ONLY used if rony_aggregate_type is set to 'eventsource'.
-    // If this option is set then you MUST also define rony_aggregate_link to identify which aggregate this command will work on.
-    optional bool rony_aggregate_command = 50011;
-    // rony_aggregate_event makes this message as an event which is ONLY used if rony_aggregate_type is set to 'eventsource'
-    // If this option is set then you MUST also define rony_aggregate_link to identify which aggregate this event will be read from.
-    optional bool rony_aggregate_event = 50012;
-    // rony_aggregate_link is the name of the aggregate message which we link this message to.
-    optional string rony_aggregate_link = 50013;
     // rony_aggregate_table creates a virtual table presentation to hold instances of this message, like rows in a table
     // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
     // NOTE: If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)

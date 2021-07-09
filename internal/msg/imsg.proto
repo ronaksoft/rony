@@ -34,7 +34,6 @@ message EdgeNode {
 // Page
 message Page {
     option (rony_aggregate) = true;
-    option (rony_aggregate_type) = "crud";
     option (rony_aggregate_table) = "(ID)";
     option (rony_aggregate_view) = "(ReplicaSet, ID)";
     uint32 ID = 1;

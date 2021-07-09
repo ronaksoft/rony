@@ -13,7 +13,6 @@ enum Enum {
 
 message Model1 {
     option (rony_aggregate) = true;
-    option (rony_aggregate_type) = "crud";
     option (rony_aggregate_table) = "(ID, ShardKey)";
     option (rony_aggregate_view) = "(Enum, ShardKey, ID)";
     int32 ID = 1;
@@ -26,7 +25,6 @@ message Model1 {
 
 message Model2 {
     option (rony_aggregate) = true;
-    option (rony_aggregate_type) = "crud";
     option (rony_aggregate_table) = "((ID, ShardKey), -P1)";
     option (rony_aggregate_view) = "(P1, ShardKey, ID)";
     int64 ID = 1;
@@ -38,7 +36,6 @@ message Model2 {
 
 message Model3 {
     option (rony_aggregate) = true;
-    option (rony_aggregate_type) = "crud";
     option (rony_aggregate_table) = "((ID, ShardKey), -P1)";
     option (rony_aggregate_view) = "(P1, ShardKey, ID)";
     option (rony_aggregate_view) = "(P1, ID)";
