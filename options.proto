@@ -61,5 +61,6 @@ extend google.protobuf.MessageOptions {
 }
 
 extend google.protobuf.FieldOptions {
+    // rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
     optional bool rony_index = 50001;
 }

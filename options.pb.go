@@ -246,6 +246,8 @@ var (
 
 // Extension fields to descriptorpb.FieldOptions.
 var (
+	// rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
+	//
 	// optional bool rony_index = 50001;
 	E_RonyIndex = &file_options_proto_extTypes[9]
 )
