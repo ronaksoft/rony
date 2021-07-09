@@ -94,7 +94,7 @@ func TestClient_Connect(t *testing.T) {
 				time.Sleep(time.Second * 2)
 			}
 		})
-		SkipConvey("One Connection With Slow Request", func(c C) {
+		Convey("One Connection With Slow Request", func(c C) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})

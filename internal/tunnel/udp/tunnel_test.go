@@ -110,7 +110,7 @@ func TestNewTunnel(t *testing.T) {
 			pools.ReleaseWaitGroup(wg)
 
 		})
-		SkipConvey("Send Concurrent Connection and Data", func(c C) {
+		Convey("Send Concurrent Connection and Data", func(c C) {
 			wg := pools.AcquireWaitGroup()
 			for i := 0; i < 200; i++ {
 				wg.Add(1)

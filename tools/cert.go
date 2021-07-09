@@ -37,7 +37,7 @@ func CertTemplate() (*x509.Certificate, error) {
 
 	tmpl := x509.Certificate{
 		SerialNumber:          serialNumber,
-		Subject:               pkix.Name{Organization: []string{"Yacht, Inc."}},
+		Subject:               pkix.Name{Organization: []string{"RSG"}},
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(time.Hour), // valid for an hour

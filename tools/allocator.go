@@ -127,7 +127,6 @@ func getSize(v ...interface{}) int {
 			default:
 				panic(fmt.Sprintf("unsupported slice type: %s", t.Elem().Kind().String()))
 			}
-
 		case reflect.String:
 			xb := StrToByte(reflect.ValueOf(x).String())
 			s += len(xb)

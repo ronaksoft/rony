@@ -551,7 +551,7 @@ func (x *GetNodes) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use getNodes.ProtoReflect.Descriptor instead.
+// Deprecated: Use GetNodes.ProtoReflect.Descriptor instead.
 func (*GetNodes) Descriptor() ([]byte, []int) {
 	return file_msg_proto_rawDescGZIP(), []int{7}
 }
