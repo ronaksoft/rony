@@ -91,5 +91,26 @@ func TestModel(t *testing.T) {
 			c.So(err, ShouldBeNil)
 			c.So(ms1, ShouldHaveLength, 0)
 		})
+		Convey("List/Iter", func(c C) {
+			total := int32(100)
+			for i := int32(0) ; i < total ;i++ {
+				m1 := &model.Model1{
+					ID:       int32(tools.FastRand()),
+					ShardKey: int32(tools.FastRand()),
+					P1:       tools.RandomID(32),
+					P2:       tools.RandomIDs(32, 43, 12, 10),
+					P5:       tools.RandomUint64(0),
+					Enum:     model.Enum_Something,
+				}
+				err := model.CreateModel1(m1)
+				c.So(err, ShouldBeNil)
+			}
+			m1s, err := model.ListModel1(0, 0, store.NewListOption().SetLimit(50), nil, model.Model1OrderByEnum)
+			c.So(err, ShouldBeNil)
+			c.So(m1s, ShouldHaveLength, 50)
+			m1s, err = model.ListModel1(0, 0, store.NewListOption().SetLimit(total * 2), nil, model.Model1OrderByEnum)
+			c.So(err, ShouldBeNil)
+			c.So(m1s, ShouldHaveLength, total)
+		})
 	})
 }
