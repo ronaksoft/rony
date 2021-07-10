@@ -262,13 +262,13 @@ func CreatePageWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err
 		return store.ErrAlreadyExists
 	}
 
-	// save entry
+	// save table entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Page, 299066170, m.ID)
 	if err != nil {
 		return
 	}
-	// save view [{ReplicaSet uint64 bigint uint64 } {ID uint32 int uint32 ASC}]
+	// save view entry
 	err = store.Set(txn, alloc, val, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
 	if err != nil {
 		return err

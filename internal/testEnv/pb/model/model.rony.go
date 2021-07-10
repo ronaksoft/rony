@@ -230,13 +230,13 @@ func CreateModel1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model1) 
 		return store.ErrAlreadyExists
 	}
 
-	// save entry
+	// save table entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Model1, 4018441491, m.ID, m.ShardKey)
 	if err != nil {
 		return
 	}
-	// save view [{Enum enum unsupported Enum } {ShardKey int32 int int32 ASC} {ID int32 int int32 ASC}]
+	// save view entry
 	err = store.Set(txn, alloc, val, 'M', C_Model1, 2535881670, m.Enum, m.ShardKey, m.ID)
 	if err != nil {
 		return err
@@ -249,9 +249,11 @@ func CreateModel1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model1) 
 		return
 	}
 	// update field index by saving new value: P2
-	err = store.Set(txn, alloc, key, 'I', C_Model1, uint64(4749204136736587776), m.P2, m.ID, m.ShardKey)
-	if err != nil {
-		return
+	for idx := range m.P2 {
+		err = store.Set(txn, alloc, key, 'I', C_Model1, uint64(4749204136736587776), m.P2[idx], m.ID, m.ShardKey)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -765,13 +767,13 @@ func CreateModel2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model2) 
 		return store.ErrAlreadyExists
 	}
 
-	// save entry
+	// save table entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Model2, 1609271041, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return
 	}
-	// save view [{P1 string blob string } {ShardKey int32 int int32 ASC} {ID int64 bigint int64 ASC}]
+	// save view entry
 	err = store.Set(txn, alloc, val, 'M', C_Model2, 2344331025, m.P1, m.ShardKey, m.ID)
 	if err != nil {
 		return err
@@ -1182,18 +1184,18 @@ func CreateModel3WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model3) 
 		return store.ErrAlreadyExists
 	}
 
-	// save entry
+	// save table entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, 'M', C_Model3, 1609271041, m.ID, m.ShardKey, m.P1)
 	if err != nil {
 		return
 	}
-	// save view [{P1 bytes blob []byte } {ShardKey int32 int int32 ASC} {ID int64 bigint int64 ASC}]
+	// save view entry
 	err = store.Set(txn, alloc, val, 'M', C_Model3, 2344331025, m.P1, m.ShardKey, m.ID)
 	if err != nil {
 		return err
 	}
-	// save view [{P1 bytes blob []byte } {ID int64 bigint int64 ASC}]
+	// save view entry
 	err = store.Set(txn, alloc, val, 'M', C_Model3, 3623577939, m.P1, m.ID)
 	if err != nil {
 		return err
@@ -1201,9 +1203,11 @@ func CreateModel3WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model3) 
 
 	key := alloc.Gen('M', C_Model3, 1609271041, m.ID, m.ShardKey, m.P1)
 	// update field index by saving new value: P5
-	err = store.Set(txn, alloc, key, 'I', C_Model3, uint64(5041938112515670016), m.P5, m.ID, m.ShardKey, m.P1)
-	if err != nil {
-		return
+	for idx := range m.P5 {
+		err = store.Set(txn, alloc, key, 'I', C_Model3, uint64(5041938112515670016), m.P5[idx], m.ID, m.ShardKey, m.P1)
+		if err != nil {
+			return
+		}
 	}
 
 	return

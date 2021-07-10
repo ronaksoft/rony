@@ -272,7 +272,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 		return store.ErrAlreadyExists
 	}
 	
-	// save entry
+	// save table entry
 	val := alloc.Marshal(m)
 	err = store.Set(txn, alloc, val, {{(DBKey .Table "m.")}})
 	if err != nil {
@@ -280,7 +280,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 	}
 
 	{{- range .Views }}
-	// save view {{.Keys}}
+	// save view entry
 	err = store.Set(txn, alloc, val, {{(DBKey . "m.")}})
 	if err != nil {
 		return err 
@@ -294,7 +294,7 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 		{{- range .Fields }}
 			{{- if .HasIndex }}
 				// update field index by saving new value: {{.Name}}
-				{{- if eq .Kind "repeated" }}
+				{{- if eq .Cardinality "repeated" }}
 					for idx := range m.{{.Name}} {
 						err = store.Set(txn, alloc, key, {{IndexDBKey $model . "m." "[idx]"}})
 						if err != nil {
