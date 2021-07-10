@@ -220,7 +220,6 @@ func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCt
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 	return nil
 }
-
 func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {

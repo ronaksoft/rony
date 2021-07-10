@@ -101,7 +101,6 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	ctx.FillEnvelope(conn.ConnID(), C_{{$service.Name}}{{.Name}}, req)
 	return nil
 }
-
 func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -128,7 +127,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, 
 	}
 	return errors.ErrUnexpectedResponse
 }
-{{- end }}
+{{ end }}
 `
 
 const genServer = `

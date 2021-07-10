@@ -838,7 +838,6 @@ func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCt
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 	return nil
 }
-
 func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -861,6 +860,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	}
 	return errors.ErrUnexpectedResponse
 }
+
 func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolSetRequest.Get()
 	defer PoolSetRequest.Put(req)
@@ -872,7 +872,6 @@ func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx
 	ctx.FillEnvelope(conn.ConnID(), C_SampleSet, req)
 	return nil
 }
-
 func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -895,6 +894,7 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	}
 	return errors.ErrUnexpectedResponse
 }
+
 func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolGetRequest.Get()
 	defer PoolGetRequest.Put(req)
@@ -903,7 +903,6 @@ func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx
 	ctx.FillEnvelope(conn.ConnID(), C_SampleGet, req)
 	return nil
 }
-
 func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -926,6 +925,7 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 	}
 	return errors.ErrUnexpectedResponse
 }
+
 func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -937,7 +937,6 @@ func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.Disp
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoTunnel, req)
 	return nil
 }
-
 func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -960,6 +959,7 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 	}
 	return errors.ErrUnexpectedResponse
 }
+
 func (sw *sampleWrapper) echoInternalRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -967,7 +967,6 @@ func (sw *sampleWrapper) echoInternalRestClient(conn rony.RestConn, ctx *edge.Di
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoInternal, req)
 	return nil
 }
-
 func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
@@ -990,6 +989,7 @@ func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.Di
 	}
 	return errors.ErrUnexpectedResponse
 }
+
 func (sw *sampleWrapper) echoDelayRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := PoolEchoRequest.Get()
 	defer PoolEchoRequest.Put(req)
@@ -997,7 +997,6 @@ func (sw *sampleWrapper) echoDelayRestClient(conn rony.RestConn, ctx *edge.Dispa
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoDelay, req)
 	return nil
 }
-
 func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	envelope := ctx.BufferPop()
 	if envelope == nil {
