@@ -933,6 +933,8 @@ func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.Disp
 	if err != nil {
 		return err
 	}
+	req.Int = tools.StrToInt64(tools.GetString(conn.Get("X"), "0"))
+	req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("YY"), "0"))
 
 	ctx.FillEnvelope(conn.ConnID(), C_SampleEchoTunnel, req)
 	return nil

@@ -12,23 +12,24 @@ service Sample {
             json_encode: true
         };
     }
-    rpc Set (SetRequest) returns (SetResponse){
+    rpc Set (SetRequest) returns (SetResponse) {
         option (rony_rest) = {
             method: "post"
             path: "/set"
         };
     }
-    rpc Get (GetRequest) returns (GetResponse){
+    rpc Get (GetRequest) returns (GetResponse) {
         option (rony_rest) = {
             method: "get"
             path: "/req/:Key/something"
         };
     }
-    rpc EchoTunnel (EchoRequest) returns (EchoResponse){
+    rpc EchoTunnel (EchoRequest) returns (EchoResponse) {
         option (rony_rest) = {
             method: "get"
             path: "/echo_tunnel/:X/:YY"
-            bind_variables: "X=Int,YY=Timestamp"
+            bind_variables: "X=Int"
+            bind_variables: "YY=Timestamp"
         };
     }
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {
