@@ -7,9 +7,7 @@ name: DevSkim
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    tags:  [ v* ]
   schedule:
     - cron: '41 12 * * 0'
 
