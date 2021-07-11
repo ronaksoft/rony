@@ -29,7 +29,6 @@ var (
 const (
 	len7  = int64(125) // 126 and 127 are reserved values
 	len16 = int64(^uint16(0))
-	len64 = int64((^uint64(0)) >> 1)
 )
 
 // ControlWriter is a wrapper around Writer that contains some guards for
@@ -273,7 +272,7 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		} else {
 			nn = copy(w.buf[w.n:], p)
 			w.n += nn
-			w.FlushFragment()
+			_ = w.FlushFragment()
 		}
 		n += nn
 		p = p[nn:]

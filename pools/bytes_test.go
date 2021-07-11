@@ -69,11 +69,11 @@ func TestByteSlicePoolPut(t *testing.T) {
 	p := NewByteSlice(0, 32)
 
 	miss := make([]byte, 5)
-	rand.Read(miss)
+	_, _ = rand.Read(miss)
 	p.Put(miss) // Should not reuse.
 
 	hit := make([]byte, 8)
-	rand.Read(hit)
+	_, _ = rand.Read(hit)
 	p.Put(hit) // Should reuse.
 
 	b := p.GetLen(5)

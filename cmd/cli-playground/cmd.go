@@ -645,7 +645,7 @@ var MemProf = &cobra.Command{
 			cmd.Println(err)
 			return
 		}
-		pprof.Lookup("heap").WriteTo(f1, 0)
+		_ = pprof.Lookup("heap").WriteTo(f1, 0)
 		_ = f1.Close()
 
 		f2, err := os.Create("rony-alloc.out")
@@ -653,7 +653,7 @@ var MemProf = &cobra.Command{
 			cmd.Println(err)
 			return
 		}
-		pprof.Lookup("allocs").WriteTo(f2, 0)
+		_ = pprof.Lookup("allocs").WriteTo(f2, 0)
 		_ = f2.Close()
 	},
 }
