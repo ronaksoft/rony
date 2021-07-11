@@ -10,7 +10,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/getsentry/sentry-go v0.10.0
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
 	github.com/gobuffalo/plush/v4 v4.1.4
@@ -29,15 +29,12 @@ require (
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.7.0
-	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/valyala/fasthttp v1.24.0
-	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
-	go.uber.org/zap v1.16.0
+	github.com/spf13/viper v1.8.1
+	github.com/valyala/fasthttp v1.28.0
+	github.com/valyala/tcplisten v1.0.0
+	go.uber.org/zap v1.18.1
 	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/protobuf v1.27.1
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
