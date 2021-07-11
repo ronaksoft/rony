@@ -1,6 +1,7 @@
-package rony
+package rony_test
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"sync"
@@ -18,10 +19,10 @@ import (
 
 func TestMessageEnvelope_Clone(t *testing.T) {
 	Convey("Clone (MessageEnvelope)", t, func(c C) {
-		src := &MessageEnvelope{
+		src := &rony.MessageEnvelope{
 			RequestID:   tools.RandomUint64(0),
 			Constructor: tools.RandomInt64(0),
-			Header: []*KeyValue{
+			Header: []*rony.KeyValue{
 				{
 					Key:   "Key1",
 					Value: "Value1",
@@ -45,7 +46,7 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 		}
 		wg.Wait()
 
-		src = &MessageEnvelope{
+		src = &rony.MessageEnvelope{
 			RequestID:   tools.RandomUint64(0),
 			Constructor: tools.RandomInt64(0),
 			Auth:        tools.StrToByte(tools.RandomID(10)),

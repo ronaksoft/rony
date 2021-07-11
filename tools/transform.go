@@ -110,6 +110,7 @@ func ToScreamingDelimited(s string, delimiter uint8, ignore uint8, screaming boo
 	for i, v := range []byte(s) {
 		if v == ' ' {
 			spaces++
+
 			continue
 		} else if start {
 			start = false
@@ -153,6 +154,7 @@ func ToScreamingDelimited(s string, delimiter uint8, ignore uint8, screaming boo
 					if vIsLow || vIsNum || nextIsNum {
 						n.WriteByte(delimiter)
 					}
+
 					continue
 				}
 			}

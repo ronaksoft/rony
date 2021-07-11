@@ -92,6 +92,7 @@ Retry:
 		if retry--; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
 			time.Sleep(time.Duration(tools.RandomInt64(int64(defaultMaxInterval))))
+
 			goto Retry
 		}
 	}
@@ -106,6 +107,7 @@ Retry:
 		if retry--; retry > 0 {
 			metrics.IncCounter(metrics.CntStoreConflicts)
 			time.Sleep(time.Duration(tools.RandomInt64(int64(defaultMaxInterval))))
+
 			goto Retry
 		}
 	}

@@ -123,8 +123,8 @@ func (ws *Websocket) Start() error {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
-	err := ws.Send(req, res)
-	if err != nil {
+
+	if err := ws.Send(req, res); err != nil {
 		return err
 	}
 	switch res.Constructor {
@@ -149,7 +149,6 @@ func (ws *Websocket) Start() error {
 
 	default:
 		return ErrUnknownResponse
-
 	}
 	return nil
 }
@@ -248,8 +247,8 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 		me.Fill(0, rony.C_MessageContainer, mc)
 		rony.PoolMessageContainer.Put(mc)
 	}
-	err := wsc.send(me)
-	if err != nil {
+
+	if err := wsc.send(me); err != nil {
 		log.Warn("EdgeClient (Websocket) got error on sending request", zap.Error(err))
 	}
 
@@ -373,8 +372,7 @@ func (ws *Websocket) ClusterInfo(replicaSets ...uint64) (*rony.Edges, error) {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{ReplicaSet: replicaSets})
-	err := ws.Send(req, res)
-	if err != nil {
+	if err := ws.Send(req, res); err != nil {
 		return nil, err
 	}
 	switch res.GetConstructor() {

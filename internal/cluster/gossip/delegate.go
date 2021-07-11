@@ -66,8 +66,7 @@ func (d *clusterDelegate) NotifyAlive(n *memberlist.Node) error {
 func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 	en := msg.PoolEdgeNode.Get()
 	defer msg.PoolEdgeNode.Put(en)
-	err := extractNode(n, en)
-	if err != nil {
+	if err := extractNode(n, en); err != nil {
 		log.Warn("Error On Cluster Node Update", zap.Error(err))
 		return
 	}

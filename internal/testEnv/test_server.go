@@ -54,7 +54,6 @@ func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err err
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
 	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
-
 		buf := pools.Buffer.FromProto(envelope)
 		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 		if err != nil {

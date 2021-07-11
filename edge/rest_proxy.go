@@ -277,6 +277,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 				} else {
 					paramValues = append(paramValues, q[start:])
 				}
+
 				break
 			} else {
 				n = n.findClosestParentWildcardNode()
@@ -307,6 +308,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 
 			i++
 			start = i
+
 			continue
 		}
 

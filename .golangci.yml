@@ -1,0 +1,24 @@
+linters:
+  enable-all: true
+  disable:
+    - lll
+    - wrapcheck
+    - interfacer
+    - golint
+    - scopelint
+    - maligned
+    - wsl
+    - tparallel
+    - gomnd
+    - godox
+    - forcetypeassert
+    - gochecknoglobals
+    - paralleltest
+    - gochecknoinits
+    - testpackage
+    - nestif
+#  presets:
+#    - bugs
+#    - unused
+  fast: true
+

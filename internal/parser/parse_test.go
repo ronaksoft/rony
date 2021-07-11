@@ -32,8 +32,7 @@ func TestLexer(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	_, err := Parse("PARSER", input)
-	if err != nil {
+	if _, err := Parse("PARSER", input); err != nil {
 		t.Fatal(err)
 	}
 	// for idx, n := range tr.Root.Nodes {

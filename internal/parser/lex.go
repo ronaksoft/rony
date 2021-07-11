@@ -219,8 +219,7 @@ func lexInsideAction(l *lexer) stateFn {
 	// Either number, quoted string, or identifier.
 	// Spaces separate arguments; runs of spaces turn into itemSpace.
 	// Pipe symbols separate and are emitted.
-	delim := l.atRightDelim()
-	if delim {
+	if delim := l.atRightDelim(); delim {
 		if l.parenDepth == 0 {
 			return lexRightDelim
 		}
@@ -289,6 +288,7 @@ Loop:
 			default:
 				l.emit(IDENT)
 			}
+
 			break Loop
 		}
 	}

@@ -61,7 +61,7 @@ func RandomID(n int) string {
 }
 
 func RandomIDs(n ...int) []string {
-	var str []string
+	var str = make([]string, 0, len(n))
 	for _, x := range n {
 		str = append(str, RandomID(x))
 	}

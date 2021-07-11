@@ -73,8 +73,7 @@ func (g *Generator) Generate() {
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	sb := &strings.Builder{}
-	err := t.Execute(sb, v)
-	if err != nil {
+	if err := t.Execute(sb, v); err != nil {
 		panic(err)
 	}
 	return sb.String()

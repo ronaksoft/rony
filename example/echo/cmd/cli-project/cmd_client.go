@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
+	"github.com/ronaksoft/rony/errors"
 	service "github.com/ronaksoft/rony/example/echo/rpc"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
@@ -18,7 +19,7 @@ var ClientCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := config.BindCmdFlags(cmd)
 		if err != nil {
-			return err
+			return errors.Wrap("bind flag:")(err)
 		}
 
 		// Sample code for creating a client
@@ -33,7 +34,7 @@ var ClientCmd = &cobra.Command{
 		// Start the websocket connection manager
 		err = wsc.Start()
 		if err != nil {
-			return err
+			return errors.Wrap("websocket client:")(err)
 		}
 
 		// Instantiate the client stub code and set its underlying client connection

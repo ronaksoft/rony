@@ -37,8 +37,7 @@ func Sha512(in, out []byte) error {
 }
 
 func MustSha512(in, out []byte) {
-	err := Sha512(in, out)
-	if err != nil {
+	if err := Sha512(in, out); err != nil {
 		panic(err)
 	}
 }
@@ -64,8 +63,7 @@ func Sha256(in, out []byte) error {
 }
 
 func MustSha256(in, out []byte) {
-	err := Sha256(in, out)
-	if err != nil {
+	if err := Sha256(in, out); err != nil {
 		panic(err)
 	}
 }

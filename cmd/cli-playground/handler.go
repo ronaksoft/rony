@@ -80,7 +80,6 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest
 		}
 	default:
 		return
-
 	}
 
 }

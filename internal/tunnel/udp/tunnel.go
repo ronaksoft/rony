@@ -58,6 +58,7 @@ func New(config Config) (*Tunnel, error) {
 
 	if ta.IP.IsUnspecified() {
 		addrs, err := net.InterfaceAddrs()
+
 		if err == nil {
 			for _, a := range addrs {
 				switch x := a.(type) {
@@ -147,8 +148,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	}
 
 	req := msg.PoolTunnelMessage.Get()
-	err := req.Unmarshal(frame)
-	if err != nil {
+	if err := req.Unmarshal(frame); err != nil {
 		log.Warn("Error On Tunnel's data received", zap.Error(err))
 		return nil, gnet.Close
 	}

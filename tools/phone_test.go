@@ -1,6 +1,7 @@
-package tools
+package tools_test
 
 import (
+	"github.com/ronaksoft/rony/tools"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestSanitizePhone(t *testing.T) {
 	}
 
 	for ph, cph := range phones {
-		sph := SanitizePhone(ph, "IR")
+		sph := tools.SanitizePhone(ph, "IR")
 		if sph != cph {
 			t.Fatal()
 		}

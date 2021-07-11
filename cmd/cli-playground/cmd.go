@@ -151,6 +151,7 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 				if err != nil {
 					cmd.Println("Error On Join", err)
 				}
+
 				break
 			}
 		}
@@ -511,6 +512,7 @@ var BenchCmd = &cobra.Command{
 					service.PoolEchoRequest.Put(req)
 					if err != nil {
 						cmd.Println("Error:", idx, i, err)
+
 						continue
 					}
 					d := time.Duration(tools.CPUTicks() - startTime)

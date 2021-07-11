@@ -104,11 +104,7 @@ func (h *Http) newConn(id string, replicaSet uint64, hostPorts ...string) *httpC
 }
 
 func (h *Http) Start() error {
-	err := h.initConn()
-	if err != nil {
-		return err
-	}
-	return nil
+	return h.initConn()
 }
 
 func (h *Http) initConn() error {
@@ -142,7 +138,6 @@ func (h *Http) initConn() error {
 	default:
 		fmt.Println(res)
 		return ErrUnknownResponse
-
 	}
 
 	return nil

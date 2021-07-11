@@ -68,6 +68,7 @@ func newZapLogger(core zapcore.Core, skip int) *zapLogger {
 		zap.AddStacktrace(ErrorLevel),
 		zap.AddCallerSkip(skip),
 	)
+
 	return l
 }
 
@@ -104,6 +105,7 @@ func Init(config Config) Logger {
 	}
 
 	DefaultLogger = newZapLogger(zapcore.NewTee(cores...), 2)
+
 	return DefaultLogger
 }
 

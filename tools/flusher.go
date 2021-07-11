@@ -167,6 +167,7 @@ func (w *worker) run() {
 				}
 			default:
 			}
+
 			break
 		}
 
@@ -174,15 +175,16 @@ func (w *worker) run() {
 			delta := w.f.minWaitTime - time.Duration(NanoTime()-startTime)
 			if delta > 0 {
 				time.Sleep(delta)
+
 				continue
 			}
-
 		}
 		w.f.Lock()
 		if len(el) == 0 {
 			// clean up and shutdown the worker
 			atomic.AddInt32(&w.f.readyWorkers, 1)
 			w.f.Unlock()
+
 			break
 		}
 		w.f.Unlock()

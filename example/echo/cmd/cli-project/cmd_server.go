@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/errors"
 	service "github.com/ronaksoft/rony/example/echo/rpc"
 	"github.com/spf13/cobra"
 	"os"
@@ -17,7 +18,7 @@ var ServerCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := config.BindCmdFlags(cmd)
 		if err != nil {
-			return err
+			return errors.Wrap("bind flag:")(err)
 		}
 
 		// Instantiate the edge server

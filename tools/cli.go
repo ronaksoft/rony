@@ -106,6 +106,7 @@ func PromptCompleter(rootCmd *cobra.Command) func(d prompt.Document) []prompt.Su
 			for _, cmd := range currCmd.Commands() {
 				if cmd.Name() == col {
 					currCmd = cmd
+
 					break
 				}
 			}
@@ -130,7 +131,6 @@ func PromptCompleter(rootCmd *cobra.Command) func(d prompt.Document) []prompt.Su
 					})
 				}
 			})
-
 		} else {
 			for _, cmd := range currCmd.Commands() {
 				if strings.HasPrefix(cmd.Name(), currWord) {

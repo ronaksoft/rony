@@ -149,7 +149,6 @@ func (ll *LinkedList) Get(index int32) (n *Node) {
 			n = n.next
 			index--
 		}
-
 	} else {
 		n = ll.tail
 		for index > 0 {

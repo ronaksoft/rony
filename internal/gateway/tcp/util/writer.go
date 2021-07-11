@@ -321,6 +321,7 @@ func (w *Writer) ReadFrom(src io.Reader) (n int64, err error) {
 	for err == nil {
 		if w.Available() == 0 {
 			err = w.FlushFragment()
+
 			continue
 		}
 

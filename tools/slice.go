@@ -44,6 +44,7 @@ func SliceInt64Diff(a, b []int64, cb func(int64)) {
 		for j := 0; j < len(b); j++ {
 			if a[i] == b[j] {
 				found = true
+
 				break
 			}
 		}
@@ -60,6 +61,7 @@ func SliceUint64Diff(a, b []uint64, cb func(uint64)) {
 		for j := 0; j < len(b); j++ {
 			if a[i] == b[j] {
 				found = true
+
 				break
 			}
 		}

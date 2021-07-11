@@ -401,7 +401,7 @@ func (edge *Server) StartGateway() error {
 	)
 
 	if edge.cluster != nil {
-		return edge.cluster.SetGatewayAddrs(edge.gateway.Addr())
+		return errors.Wrap("cluster:")(edge.cluster.SetGatewayAddrs(edge.gateway.Addr()))
 	}
 
 	return nil
@@ -504,6 +504,7 @@ func (edge *Server) getReplicaMember(replicaSet uint64) (target rony.ClusterMemb
 	}
 	for idx := range members {
 		target = members[idx]
+
 		break
 	}
 	return

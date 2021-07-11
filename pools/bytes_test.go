@@ -1,7 +1,8 @@
-package pools
+package pools_test
 
 import (
 	"crypto/rand"
+	"github.com/ronaksoft/rony/pools"
 	"reflect"
 	"strconv"
 	"testing"
@@ -41,7 +42,7 @@ func TestByteSlicePoolGet(t *testing.T) {
 		},
 	} {
 		t.Run("", func(t *testing.T) {
-			p := NewByteSlice(test.min, test.max)
+			p := pools.NewByteSlice(test.min, test.max)
 			act := p.Get(test.len, test.cap)
 			if n := len(act); n != test.len {
 				t.Errorf(
@@ -66,7 +67,7 @@ func TestByteSlicePoolGet(t *testing.T) {
 }
 
 func TestByteSlicePoolPut(t *testing.T) {
-	p := NewByteSlice(0, 32)
+	p := pools.NewByteSlice(0, 32)
 
 	miss := make([]byte, 5)
 	_, _ = rand.Read(miss)
@@ -103,8 +104,8 @@ func BenchmarkPool(b *testing.B) {
 			b.ReportAllocs()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					p := Bytes.GetLen(size)
-					Bytes.Put(p)
+					p := pools.Bytes.GetLen(size)
+					pools.Bytes.Put(p)
 				}
 			})
 		})
@@ -112,8 +113,8 @@ func BenchmarkPool(b *testing.B) {
 			b.ReportAllocs()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					p := Buffer.GetLen(size)
-					Buffer.Put(p)
+					p := pools.Buffer.GetLen(size)
+					pools.Buffer.Put(p)
 				}
 			})
 		})

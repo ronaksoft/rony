@@ -178,8 +178,8 @@ func benchSingleWebsocketClient(b *testing.B) {
 		RequestTimeout:  time.Second,
 		// ContextTimeout:  time.Second,
 	})
-	err := edgeClient.Start()
-	if err != nil {
+
+	if err := edgeClient.Start(); err != nil {
 		b.Fatal(err)
 	}
 	echoRequest := service.EchoRequest{

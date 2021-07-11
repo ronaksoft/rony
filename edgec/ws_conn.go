@@ -97,6 +97,7 @@ ConnectLoop:
 	if err != nil {
 		log.Debug("Dial failed", zap.Error(err), zap.Strings("Host", c.hostPorts))
 		time.Sleep(time.Duration(tools.RandomInt64(2000))*time.Millisecond + time.Second)
+
 		goto ConnectLoop
 	}
 	c.conn = conn
@@ -120,6 +121,7 @@ func (c *wsConn) receiver() {
 				c.connected = false
 				c.connect()
 			}
+
 			break
 		}
 		for idx := range ms {

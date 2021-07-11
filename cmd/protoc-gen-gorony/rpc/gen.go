@@ -64,8 +64,7 @@ func (g *Generator) Generate() {
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	sb := &strings.Builder{}
-	err := t.Execute(sb, v)
-	if err != nil {
+	if err := t.Execute(sb, v); err != nil {
 		panic(err)
 	}
 	return sb.String()
@@ -258,7 +257,7 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Name}}, kvs ...*rony.K
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 {{- end }}
