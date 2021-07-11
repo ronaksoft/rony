@@ -84,8 +84,7 @@ func newMember(sm *memberlist.Node) (*Member, error) {
 	en := msg.PoolEdgeNode.Get()
 	defer msg.PoolEdgeNode.Put(en)
 
-	err := extractNode(sm, en)
-	if err != nil {
+	if err := extractNode(sm, en); err != nil {
 		return nil, err
 	}
 

@@ -118,7 +118,6 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 			}
 			atomic.AddInt64(&latency, int64(d))
 			atomic.AddInt32(&cntReceivedPacket, int32(len(m)))
-
 		}
 	}()
 

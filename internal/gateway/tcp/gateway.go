@@ -217,9 +217,7 @@ func (g *Gateway) detectAddrs() error {
 			}
 		}
 	} else {
-
 		lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
-
 	}
 	g.addrsMtx.Lock()
 	g.addrs = append(g.addrs[:0], lAddrs...)

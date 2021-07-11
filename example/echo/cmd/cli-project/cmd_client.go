@@ -41,6 +41,7 @@ var ClientCmd = &cobra.Command{
 		service.RegisterSampleCli(&service.SampleCli{}, wsc, ShellCmd)
 
 		ShellCmd.AddCommand(ExitCmd)
+
 		p := prompt.New(tools.PromptExecutor(ShellCmd), tools.PromptCompleter(ShellCmd))
 		p.Run()
 		return nil

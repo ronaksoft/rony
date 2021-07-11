@@ -89,6 +89,7 @@ func (c *sentryCore) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 
 func (c *sentryCore) Sync() error {
 	c.hub.Flush(time.Second * 3)
+
 	return nil
 }
 

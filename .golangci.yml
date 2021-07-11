@@ -17,6 +17,11 @@ linters:
     - gochecknoinits
     - testpackage
     - nestif
+    - nakedret
+    - gocognit
+    - funlen
+    - gofumpt
+    - goimports
 #  presets:
 #    - bugs
 #    - unused

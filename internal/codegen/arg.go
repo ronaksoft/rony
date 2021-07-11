@@ -319,7 +319,6 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 				}
 			}
 		}
-
 	}
 
 	arg.RestEnabled = restOpt != nil

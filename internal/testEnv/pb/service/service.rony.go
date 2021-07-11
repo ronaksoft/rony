@@ -1051,7 +1051,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 func (c *SampleClient) Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error) {
@@ -1074,7 +1074,7 @@ func (c *SampleClient) Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 func (c *SampleClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error) {
@@ -1097,7 +1097,7 @@ func (c *SampleClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
@@ -1120,7 +1120,7 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
@@ -1143,7 +1143,7 @@ func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*Echo
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 

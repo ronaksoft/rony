@@ -42,6 +42,7 @@ func NewByteSlice(min, max int) *byteSlicePool {
 	logarithmicRange(min, max, func(n int) {
 		p.pool[n] = &sync.Pool{}
 	})
+
 	return p
 }
 
@@ -58,6 +59,7 @@ func (p *byteSlicePool) Get(n, c int) []byte {
 		if v != nil {
 			bts := v.([]byte)
 			bts = bts[:n]
+
 			return bts
 		} else {
 			return make([]byte, n, size)
@@ -98,6 +100,7 @@ func (bb *ByteBuffer) Read(p []byte) (n int, err error) {
 	}
 	n = copy(p, bb.b[bb.ri:])
 	bb.ri += n
+
 	return n, nil
 }
 
@@ -105,6 +108,7 @@ func newByteBuffer(n, c int) *ByteBuffer {
 	if n > c {
 		panic("requested length is greater than capacity")
 	}
+
 	return &ByteBuffer{b: make([]byte, n, c)}
 }
 
@@ -138,6 +142,7 @@ func (bb *ByteBuffer) CopyFrom(data []byte) {
 
 func (bb *ByteBuffer) CopyTo(data []byte) []byte {
 	copy(data, bb.b)
+
 	return data
 }
 

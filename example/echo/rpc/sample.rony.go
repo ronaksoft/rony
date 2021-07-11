@@ -272,7 +272,7 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 		_ = x.Unmarshal(in.Message)
 		return nil, x
 	default:
-		return nil, fmt.Errorf("unkown message :%d", in.GetConstructor())
+		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
 

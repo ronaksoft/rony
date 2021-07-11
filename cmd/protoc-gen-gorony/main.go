@@ -55,7 +55,6 @@ func main() {
 
 			g4 := rpc.New(f, g)
 			g4.Generate()
-
 		}
 		return nil
 	})

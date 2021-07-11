@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	// Counters & CounterVectors
 	CntGatewayIncomingHttpMessage      = "gateway_incoming_http_message"
 	CntGatewayIncomingWebsocketMessage = "gateway_incoming_websocket_message"
 	CntGatewayOutgoingHttpMessage      = "gateway_outgoing_http_message"
@@ -13,14 +12,10 @@ const (
 	CntTunnelIncomingMessage           = "tunnel_incoming_message"
 	CntTunnelOutgoingMessage           = "tunnel_outgoing_message"
 	CntStoreConflicts                  = "store_conflicts"
-
-	// Gauges & GaugeVectors
-	GaugeActiveWebsocketConnections = "gateway_active_websocket_conns"
-
-	// Histograms
-	HistGatewayRequestTime  = "gateway_request_time"
-	HistTunnelRequestTime   = "tunnel_request_time"
-	HistTunnelRoundtripTime = "tunnel_roundtrip_time"
+	GaugeActiveWebsocketConnections    = "gateway_active_websocket_conns"
+	HistGatewayRequestTime             = "gateway_request_time"
+	HistTunnelRequestTime              = "tunnel_request_time"
+	HistTunnelRoundtripTime            = "tunnel_roundtrip_time"
 )
 
 var (

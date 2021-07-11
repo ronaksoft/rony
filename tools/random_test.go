@@ -39,7 +39,6 @@ func BenchmarkRandomID(b *testing.B) {
 
 func TestRandomID(t *testing.T) {
 	x := tools.RandomID(10)
-	fmt.Println(x)
 	for i := 0; i < 1000; i++ {
 		tools.RandomID(10)
 	}

@@ -303,6 +303,7 @@ Loop:
 			}
 			rs = ws.redirect(xx)
 			wsc = ws.getConnByReplica(rs)
+
 			goto Loop
 		default:
 			x.DeepCopy(res)
