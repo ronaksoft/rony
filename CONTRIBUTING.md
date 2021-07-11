@@ -7,29 +7,29 @@ feel free to propose changes to this document in a pull request.
 There are a good few numbers of packages. All the packages which would never need to be accessed from
 outside the Rony are placed in the internal package.
 
-#### [Tools](github.com/ronaksoft/rony/tools)
+#### [Tools](tools)
 > For developing Rony we needed many helper functions, since we think they may be handy for others too, we
 placed them in this package. However, the reason of its existence was NOT to be
 a library for external use.
 
-#### [Pools](github.com/ronaksoft/rony/pools)
+#### [Pools](pools)
 > The auto-generated codes fully attached within Rony, we made this package also available to external
 worlds. This package handle pooling of frequently used structures such as Timers, WaitGroups, Buffers ...
 
 
-#### [Store](github.com/ronaksoft/rony/store)
+#### [Store](store)
 > Store packages contains the required functionality for accessing local storage, backed with BadgerDB. 
 
-#### [Registry](github.com/ronaksoft/rony/registry)
+#### [Registry](registry)
 > Registry holds names of the constructors (i.e., Aggregates, Models, Methods, Requests, Responses ...). 
 In Rony messages identified by a 64bit digit instead of long named strings. This approach off-pressure
 the golang runtime GC and also we wanted the lowest possible bandwidth overhead in RPC messages.
 
-#### [Edge](github.com/ronaksoft/rony/edge)
+#### [Edge](edge)
 > The core package of Rony. All the other components glued together in this package.
 RequestCtx, DispatchCtx, EdgeServer etc defined in this package.
 
-#### [EdgeC](github.com/ronaksoft/rony/edgec)
+#### [EdgeC](edgec)
 > Edge client package contains required structures and functionalities for Rony clients to interact with
 Edge servers.
 
