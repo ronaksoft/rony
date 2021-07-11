@@ -32,6 +32,7 @@ func ReadMessage(r io.Reader, s ws.State, m []Message) ([]Message, error) {
 				return err
 			}
 			m = append(m, Message{OpCode: hdr.OpCode, Payload: bts})
+
 			return nil
 		},
 	}
@@ -56,6 +57,7 @@ func ReadMessage(r io.Reader, s ws.State, m []Message) ([]Message, error) {
 	if err != nil {
 		return m, err
 	}
+
 	return append(m, Message{OpCode: h.OpCode, Payload: p}), nil
 }
 

@@ -52,7 +52,6 @@ func init() {
 	RootCmd.PersistentFlags().Int(FlagDemoReplica, 3, "")
 	RootCmd.PersistentFlags().String(FlagKey, "k", "")
 	RootCmd.PersistentFlags().String(FlagValue, "v", "")
-
 }
 
 var DemoStartCmd = &cobra.Command{

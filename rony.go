@@ -44,7 +44,6 @@ type LogLevel = log.Level
 // SetLogLevel is used for debugging purpose
 func SetLogLevel(l LogLevel) {
 	log.SetLevel(l)
-
 }
 
 func RegisterPrometheus(registerer prometheus.Registerer) {

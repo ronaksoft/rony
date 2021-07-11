@@ -9,7 +9,8 @@ package rpc
    Copyright Ronak Software Group 2020
 */
 
-// remote the extra / to enable go:generate commands
+// remove the extra / to enable go:generate commands
 ///go:generate protoc -I=. -I=$GOPATH/src -I=../vendor --go_out=paths=source_relative:. sample.proto
 ///go:generate protoc -I=. -I=$GOPATH/src -I=../vendor --gorony_out=paths=source_relative:. sample.proto
+
 func init() {}

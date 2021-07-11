@@ -62,5 +62,4 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 		}
 		wg.Wait()
 	})
-
 }

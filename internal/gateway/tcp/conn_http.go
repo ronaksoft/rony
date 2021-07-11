@@ -30,6 +30,7 @@ func (c *httpConn) Get(key string) interface{} {
 	c.mtx.Lock()
 	v := c.kv[key]
 	c.mtx.Unlock()
+
 	return v
 }
 
@@ -62,6 +63,7 @@ func (c *httpConn) WriteStatus(status int) {
 func (c *httpConn) WriteBinary(streamID int64, data []byte) (err error) {
 	_, err = c.ctx.Write(data)
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)
+
 	return err
 }
 

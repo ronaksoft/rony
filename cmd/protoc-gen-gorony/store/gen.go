@@ -187,7 +187,6 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
 		}
 	}
-
 }
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {

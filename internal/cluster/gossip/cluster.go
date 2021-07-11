@@ -84,6 +84,7 @@ func (c *Cluster) startGossip() error {
 	conf.BindPort = c.cfg.GossipPort
 	if s, err := memberlist.Create(conf); err != nil {
 		log.Warn("Error On Creating MemberList", zap.Error(err))
+
 		return err
 	} else {
 		c.gossip = s
@@ -138,7 +139,6 @@ func (c *Cluster) Shutdown() {
 	if err != nil {
 		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
 	}
-
 }
 
 func (c *Cluster) ServerID() []byte {
@@ -152,6 +152,7 @@ func (c *Cluster) Members() []rony.ClusterMember {
 		members = append(members, cm)
 	}
 	c.mtx.RUnlock()
+
 	return members
 }
 
@@ -164,6 +165,7 @@ func (c *Cluster) MembersByReplicaSet(replicaSets ...uint64) []rony.ClusterMembe
 		}
 	}
 	c.mtx.RUnlock()
+
 	return members
 }
 

@@ -251,7 +251,6 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 	if err := wsc.send(me); err != nil {
 		log.Warn("EdgeClient (Websocket) got error on sending request", zap.Error(err))
 	}
-
 }
 
 func (ws *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {

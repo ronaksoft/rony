@@ -108,7 +108,6 @@ func TestNewTunnel(t *testing.T) {
 			}
 			wg.Wait()
 			pools.ReleaseWaitGroup(wg)
-
 		})
 		Convey("Send Concurrent Connection and Data", func(c C) {
 			wg := pools.AcquireWaitGroup()
@@ -146,7 +145,6 @@ func TestNewTunnel(t *testing.T) {
 			}
 			wg.Wait()
 			pools.ReleaseWaitGroup(wg)
-
 		})
 	})
 }

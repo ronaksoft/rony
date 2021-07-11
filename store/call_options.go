@@ -25,6 +25,7 @@ func NewListOption() *ListOption {
 
 func (o *ListOption) SetSkip(skip int32) *ListOption {
 	o.skip = skip
+
 	return o
 }
 
@@ -36,6 +37,7 @@ func (o *ListOption) SetLimit(limit int32) *ListOption {
 	if limit > 0 && limit < 1000 {
 		o.limit = limit
 	}
+
 	return o
 }
 

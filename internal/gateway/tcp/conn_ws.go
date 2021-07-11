@@ -164,7 +164,6 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 			log.Warn("Error On StartEvent (Pool)", zap.Error(err))
 		}
 	}
-
 }
 
 func (wc *websocketConn) read(ms []wsutil.Message) ([]wsutil.Message, error) {

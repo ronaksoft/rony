@@ -132,7 +132,6 @@ func benchHttpSingleEdgeClient(b *testing.B) {
 	})
 	b.Log("Failed / OK:", cntErr, "/", cntOK)
 	_ = edgeClient.Close()
-
 }
 func benchMultiWebsocketClient(b *testing.B) {
 	echoRequest := service.EchoRequest{
@@ -166,7 +165,6 @@ func benchMultiWebsocketClient(b *testing.B) {
 		}
 		_ = edgeClient.Close()
 	})
-
 }
 func benchSingleWebsocketClient(b *testing.B) {
 	edgeClient := edgec.NewWebsocket(edgec.WebsocketConfig{

@@ -11,7 +11,6 @@ import "go.uber.org/zap"
    Copyright Ronak Software Group 2020
 */
 
-// PanicOnError
 func PanicOnError(guideText string, err error, args ...interface{}) {
 	if err != nil {
 		DefaultLogger.Fatal(guideText,
@@ -21,7 +20,6 @@ func PanicOnError(guideText string, err error, args ...interface{}) {
 	}
 }
 
-// PanicOnError
 func ErrorOnError(guideText string, err error, args ...interface{}) {
 	if err != nil {
 		DefaultLogger.Error(guideText,
@@ -31,7 +29,6 @@ func ErrorOnError(guideText string, err error, args ...interface{}) {
 	}
 }
 
-// WarnOnError
 func WarnOnError(guideText string, err error, args ...interface{}) {
 	if err != nil {
 		DefaultLogger.Warn(guideText,

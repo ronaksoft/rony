@@ -57,7 +57,6 @@ func (h *Sample) EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoRes
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
-
 }
 
 var EchoRest = edge.NewRestProxy(

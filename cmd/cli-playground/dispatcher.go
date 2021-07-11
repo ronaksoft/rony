@@ -21,7 +21,6 @@ func (d dispatcher) OnClose(conn rony.Conn) {
 
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	log.Info("OnMessage", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
-
 }
 
 func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
@@ -45,5 +44,4 @@ func (d dispatcher) Done(ctx *edge.DispatchCtx) {
 			pools.Buffer.Put(buf)
 		}
 	}
-
 }

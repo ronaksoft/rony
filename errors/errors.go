@@ -33,6 +33,7 @@ func NewF(code Code, item string, format string, args ...interface{}) *rony.Erro
 func Message(reqID uint64, errCode Code, errItem string) *rony.MessageEnvelope {
 	msg := &rony.MessageEnvelope{}
 	ToMessage(msg, reqID, errCode, errItem)
+
 	return msg
 }
 
@@ -63,6 +64,7 @@ var (
 
 func genWithErrorAndItem(code Code) func(item string, err error) *rony.Error {
 	codeString := string(code)
+
 	return func(item string, err error) *rony.Error {
 		if err != nil {
 			return &rony.Error{

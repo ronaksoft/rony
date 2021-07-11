@@ -106,7 +106,6 @@ func (edge *Server) SetHandler(ho *HandlerOption) {
 	for c := range ho.constructors {
 		edge.handlers[c] = ho
 	}
-
 }
 
 // GetHandler returns the handlers of the constructor

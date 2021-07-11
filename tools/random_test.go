@@ -1,13 +1,10 @@
 package tools_test
 
 import (
-	"fmt"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
-	"runtime"
 	"sync"
 	"testing"
-	"time"
 )
 
 /*
@@ -37,17 +34,6 @@ func BenchmarkRandomID(b *testing.B) {
 	})
 }
 
-func TestRandomID(t *testing.T) {
-	x := tools.RandomID(10)
-	for i := 0; i < 1000; i++ {
-		tools.RandomID(10)
-	}
-
-	time.Sleep(time.Second)
-	runtime.GC()
-	fmt.Println(x)
-}
-
 func TestSecureRandomInt63(t *testing.T) {
 	t.Parallel()
 	Convey("SecureRandom", t, func(c C) {
@@ -69,5 +55,4 @@ func TestSecureRandomInt63(t *testing.T) {
 		}
 		wg.Wait()
 	})
-
 }

@@ -82,5 +82,4 @@ func compileProto(g *genny.Generator) {
 			return nil
 		})
 	}
-
 }

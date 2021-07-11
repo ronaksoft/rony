@@ -78,7 +78,6 @@ func ZeroValue(f protoreflect.FieldDescriptor) string {
 	default:
 		return "0"
 	}
-
 }
 
 func GoKind(file *protogen.File, g *protogen.GeneratedFile, d protoreflect.FieldDescriptor) string {

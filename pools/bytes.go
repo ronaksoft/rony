@@ -152,6 +152,7 @@ func (bb *ByteBuffer) AppendFrom(data []byte) {
 
 func (bb *ByteBuffer) AppendTo(data []byte) []byte {
 	data = append(data, bb.b...)
+
 	return data
 }
 
@@ -181,6 +182,7 @@ func NewByteBuffer(min, max int) *byteBufferPool {
 	logarithmicRange(min, max, func(n int) {
 		p.pool[n] = &sync.Pool{}
 	})
+
 	return p
 }
 
@@ -197,6 +199,7 @@ func (p *byteBufferPool) Get(n, c int) *ByteBuffer {
 		if v != nil {
 			bb := v.(*ByteBuffer)
 			bb.b = bb.b[:n]
+
 			return bb
 		} else {
 			return newByteBuffer(n, size)
@@ -231,12 +234,14 @@ func (p *byteBufferPool) FromProto(m proto.Message) *ByteBuffer {
 	buf := p.GetCap(mo.Size(m))
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), m)
 	buf.SetBytes(&bb)
+
 	return buf
 }
 
 func (p *byteBufferPool) FromBytes(b []byte) *ByteBuffer {
 	buf := p.GetCap(len(b))
 	buf.AppendFrom(b)
+
 	return buf
 }
 
@@ -263,6 +268,7 @@ func ceilToPowerOfTwo(n int) int {
 	n--
 	n = fillBits(n)
 	n++
+
 	return n
 }
 
@@ -273,5 +279,6 @@ func fillBits(n int) int {
 	n |= n >> 8
 	n |= n >> 16
 	n |= n >> 32
+
 	return n
 }

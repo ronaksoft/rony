@@ -22,6 +22,11 @@ linters:
     - funlen
     - gofumpt
     - goimports
+    - godot
+    - gci
+    - gocyclo
+    - forbidigo
+    - prealloc
 #  presets:
 #    - bugs
 #    - unused

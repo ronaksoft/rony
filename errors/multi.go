@@ -23,6 +23,7 @@ func (e *Multi) Error() string {
 	if len(e.errs) == 1 {
 		return e.errs[0].Error()
 	}
+
 	return fmt.Sprintf("Errors: %d, %v", len(e.errs), e.errs)
 }
 

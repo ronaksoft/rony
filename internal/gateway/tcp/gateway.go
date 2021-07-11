@@ -183,7 +183,6 @@ func (g *Gateway) watchdog() {
 		}
 		time.Sleep(time.Second * 15)
 	}
-
 }
 
 func (g *Gateway) detectAddrs() error {
@@ -277,9 +276,10 @@ func (g *Gateway) Shutdown() {
 
 	g.connsMtx.Lock()
 	for id, c := range g.conns {
-		fmt.Println("Conn(", id, ") Stalled",
-			time.Duration(tools.CPUTicks()-atomic.LoadInt64(&c.startTime)),
-			time.Duration(tools.CPUTicks()-(atomic.LoadInt64(&c.lastActivity))),
+		log.Info("Conn Stalled",
+			zap.Uint64("ID", id),
+			zap.Duration("SinceStart", time.Duration(tools.CPUTicks()-atomic.LoadInt64(&c.startTime))),
+			zap.Duration("SinceLastActivity", time.Duration(tools.CPUTicks()-(atomic.LoadInt64(&c.lastActivity)))),
 		)
 	}
 	g.connsMtx.Unlock()
@@ -464,7 +464,6 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 		} else {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}
-
 	}
 	return
 }

@@ -199,6 +199,5 @@ func TestGateway(t *testing.T) {
 			wg.Wait()
 			time.Sleep(time.Second)
 		})
-
 	})
 }

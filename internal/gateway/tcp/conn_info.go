@@ -94,6 +94,7 @@ func acquireConnInfo(reqCtx *fasthttp.RequestCtx) *connInfo {
 		reqCtx.Request.Header.SetBytesKV(tools.S2B(fasthttp.HeaderConnection), ronyUpgrade)
 		mt.upgrade = true
 	}
+
 	return mt
 }
 

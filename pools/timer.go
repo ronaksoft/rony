@@ -26,6 +26,7 @@ func AcquireTimer(timeout time.Duration) *time.Timer {
 	if t.Reset(timeout) {
 		panic("BUG: Active timer trapped into acquireTimer()")
 	}
+
 	return t
 }
 

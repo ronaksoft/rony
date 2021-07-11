@@ -75,6 +75,7 @@ func (c *ControlWriter) Write(p []byte) (n int, err error) {
 	if c.n+len(p) > c.limit {
 		return 0, ErrControlOverflow
 	}
+
 	return c.w.Write(p)
 }
 
@@ -131,6 +132,7 @@ func GetWriter(dest io.Writer, state ws.State, op ws.OpCode, n int) *Writer {
 	if x != nil {
 		w := x.(*Writer)
 		w.Reset(dest, state, op)
+
 		return w
 	}
 	// NOTE: we use m instead of n, because m is an attempt to reuse w of such

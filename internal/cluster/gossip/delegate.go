@@ -51,7 +51,6 @@ func (d *clusterDelegate) nodeData() []byte {
 
 func (d *clusterDelegate) NotifyJoin(n *memberlist.Node) {
 	d.addMember(n)
-
 }
 
 func (d *clusterDelegate) NotifyUpdate(n *memberlist.Node) {

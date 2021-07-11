@@ -145,7 +145,6 @@ func TestRestProxy(t *testing.T) {
 				RunShort()
 			c.So(err, ShouldBeNil)
 		})
-
 	})
 }
 

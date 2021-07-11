@@ -194,5 +194,4 @@ func (w *worker) run() {
 		}
 		el = el[:0]
 	}
-
 }

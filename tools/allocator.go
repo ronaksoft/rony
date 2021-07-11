@@ -84,6 +84,7 @@ func (bk *Allocator) Gen(v ...interface{}) []byte {
 	}
 
 	bk.blocks = append(bk.blocks, b)
+
 	return *b.Bytes()
 }
 
@@ -91,6 +92,7 @@ func (bk *Allocator) Gen(v ...interface{}) []byte {
 func (bk *Allocator) Marshal(m proto.Message) []byte {
 	buf := pools.Buffer.FromProto(m)
 	bk.blocks = append(bk.blocks, buf)
+
 	return *buf.Bytes()
 }
 
@@ -99,6 +101,7 @@ func (bk *Allocator) FillWith(v []byte) []byte {
 	b := pools.Buffer.GetCap(len(v))
 	b.AppendFrom(v)
 	bk.blocks = append(bk.blocks, b)
+
 	return *b.Bytes()
 }
 

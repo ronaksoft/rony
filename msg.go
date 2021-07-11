@@ -40,6 +40,7 @@ func (x *MessageEnvelope) Clone() *MessageEnvelope {
 		}
 		kv.DeepCopy(c.Header[idx])
 	}
+
 	return c
 }
 
@@ -72,6 +73,7 @@ func (x *MessageEnvelope) Get(key, defaultVal string) string {
 			return kv.Value
 		}
 	}
+
 	return defaultVal
 }
 

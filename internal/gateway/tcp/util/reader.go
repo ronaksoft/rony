@@ -115,6 +115,7 @@ func (r *Reader) Discard() (err error) {
 		}
 	}
 	r.reset()
+
 	return err
 }
 
@@ -159,6 +160,7 @@ func (r *Reader) NextFrame() (hdr ws.Header, err error) {
 				// Ensure that src is empty.
 				_, err = io.Copy(ioutil.Discard, &r.raw)
 			}
+
 			return
 		}
 	} else {

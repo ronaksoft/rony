@@ -68,6 +68,5 @@ func TestNewFlusherPool(t *testing.T) {
 			c.So(in, ShouldEqual, total)
 			c.So(out, ShouldEqual, total)
 		})
-
 	})
 }

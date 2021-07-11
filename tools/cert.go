@@ -104,6 +104,6 @@ func GetCertificate(keyPath, certPath string) tls.Certificate {
 	if err != nil {
 		log.Fatal("invalid key pair", zap.Error(err))
 	}
-	return rootTLSCert
 
+	return rootTLSCert
 }
