@@ -4,39 +4,37 @@ feel free to propose changes to this document in a pull request.
 
 ## What should I know before I get started?
 
----
 There are a good few numbers of packages. All the packages which would never need to be accessed from
 outside the Rony are placed in the internal package.
 
-#### Tools[github.com/ronaksoft/rony/tools]
-For developing Rony we needed many helper functions, since we think they may be handy for others too, we
+#### [Tools](github.com/ronaksoft/rony/tools)
+> For developing Rony we needed many helper functions, since we think they may be handy for others too, we
 placed them in this package. However, the reason of its existence was NOT to be
 a library for external use.
 
-#### Pools[github.com/ronaksoft/rony/pools]
-The auto-generated codes fully attached within Rony, we made this package also available to external
+#### [Pools](github.com/ronaksoft/rony/pools)
+> The auto-generated codes fully attached within Rony, we made this package also available to external
 worlds. This package handle pooling of frequently used structures such as Timers, WaitGroups, Buffers ...
 
 
-#### Store[github.com/ronaksoft/rony/store]
-Store packages contains the required functionality for accessing local storage, backed with BadgerDB. 
+#### [Store](github.com/ronaksoft/rony/store)
+> Store packages contains the required functionality for accessing local storage, backed with BadgerDB. 
 
-#### Registry[github.com/ronaksoft/rony/registry]
-Registry holds names of the constructors (i.e., Aggregates, Models, Methods, Requests, Responses ...). 
+#### [Registry](github.com/ronaksoft/rony/registry)
+> Registry holds names of the constructors (i.e., Aggregates, Models, Methods, Requests, Responses ...). 
 In Rony messages identified by a 64bit digit instead of long named strings. This approach off-pressure
 the golang runtime GC and also we wanted the lowest possible bandwidth overhead in RPC messages.
 
-#### Edge[github.com/ronaksoft/rony/edge]
-The core package of Rony. All the other components glued together in this package.
+#### [Edge](github.com/ronaksoft/rony/edge)
+> The core package of Rony. All the other components glued together in this package.
 RequestCtx, DispatchCtx, EdgeServer etc defined in this package.
 
-#### EdgeC[github.com/ronaksoft/rony/edgec]
-Edge client package contains required structures and functionalities for Rony clients to interact with
+#### [EdgeC](github.com/ronaksoft/rony/edgec)
+> Edge client package contains required structures and functionalities for Rony clients to interact with
 Edge servers.
 
 ## Coding Convention
 
----
 Start reading Rony's code you'll get the hang of it. We optimize for readability:
 
 * We ALWAYS put spaces after list items and method parameters ([1, 2, 3], not [1,2,3]), around operators (x += 1, not x+=1), and around hash arrows.
