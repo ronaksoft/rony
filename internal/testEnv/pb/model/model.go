@@ -10,5 +10,5 @@ package model
 */
 
 //go:generate protoc -I=. -I=../../../.. --go_out=. model.proto
-//go:generate protoc -I=. -I=../../../.. --gorony_out=. model.proto
+//go:generate protoc -I=. -I=../../../.. --gorony_out=option=cql:. model.proto
 func init() {}

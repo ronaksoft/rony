@@ -27,7 +27,6 @@ type MessageArg struct {
 	desc     protoreflect.MessageDescriptor
 	Fullname string
 	Name     string
-	NameCC   string // LowerCamelCase(Name)
 	CName    string // [Pkg.]C_Name
 	Pkg      string
 	C        uint32
@@ -46,7 +45,6 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 		desc: m.Desc,
 	}
 	arg.Pkg, arg.Name = DescParts(file, gFile, m.Desc)
-	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.C = crc32.ChecksumIEEE([]byte(m.Desc.Name()))
 	if arg.Pkg == "" {
 		arg.CName = fmt.Sprintf("C_%s", arg.Name)
@@ -66,29 +64,14 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 
 func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
 	// Generate the aggregate description from proto options
-	aggregateDesc := strings.Builder{}
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-
 	ma.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
 	if ma.IsSingleton {
 		// if message is going to be singleton then it could not be aggregate
 		return
 	}
 
-	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
-		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", ma.Name))
-	}
-	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
-		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
-	}
-	if views := proto.GetExtension(opt, rony.E_RonyAggregateView).([]string); len(views) > 0 {
-		for _, view := range views {
-			aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
-		}
-	}
-
-	// Parse the generated description
-	t, err := parse.Parse(string(m.Desc.Name()), aggregateDesc.String())
+	t, err := Parse(m)
 	if err != nil {
 		panic(err)
 	}
@@ -171,11 +154,41 @@ func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedF
 	}
 }
 
+func Parse(m *protogen.Message) (*parse.Tree, error) {
+	aggregateDesc := strings.Builder{}
+	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
+		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", m.Desc.Name()))
+	}
+	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
+		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
+	}
+	if views := proto.GetExtension(opt, rony.E_RonyAggregateView).([]string); len(views) > 0 {
+		for _, view := range views {
+			aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
+		}
+	}
+
+	// Parse the generated description
+	return parse.Parse(string(m.Desc.Name()), aggregateDesc.String())
+}
+
+func (ma MessageArg) NameCC() string {
+	return tools.ToLowerCamel(ma.Name)
+}
+
+func (ma MessageArg) NameKC() string {
+	return tools.ToKebab(ma.Name)
+}
+
+func (ma MessageArg) NameSC() string {
+	return tools.ToSnake(ma.Name)
+}
+
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
 	desc        protoreflect.FieldDescriptor
 	Name        string // Name of the field
-	NameCC      string // LowerCamelCase(Name)
 	Pkg         string
 	Type        string
 	ZeroValue   string
@@ -191,7 +204,6 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 		desc: f.Desc,
 	}
 	arg.Name = f.GoName
-	arg.NameCC = tools.ToLowerCamel(arg.Name)
 	arg.Pkg, arg.Type = DescParts(file, gFile, f.Desc.Message())
 	arg.Kind = f.Desc.Kind().String()
 	arg.GoKind = GoKind(file, gFile, f.Desc)
@@ -202,6 +214,18 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 	opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 	arg.HasIndex = proto.GetExtension(opt, rony.E_RonyIndex).(bool)
 	return arg
+}
+
+func (fa *FieldArg) NameCC() string {
+	return tools.ToLowerCamel(fa.Name)
+}
+
+func (fa *FieldArg) NameKC() string {
+	return tools.ToKebab(fa.Name)
+}
+
+func (fa *FieldArg) NameSC() string {
+	return tools.ToSnake(fa.Name)
 }
 
 // ServiceArg holds the data needed by the template engine to generate code based on the protogen.Service
@@ -392,6 +416,8 @@ func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase Text
 			sb.WriteString(tools.ToCamel(p.Name))
 		case KebabCase:
 			sb.WriteString(tools.ToKebab(p.Name))
+		case SnakeCase:
+			sb.WriteString(tools.ToSnake(p.Name))
 		default:
 			sb.WriteString(p.Name)
 		}
@@ -434,6 +460,8 @@ func (m *ModelKey) Names(filter PropFilter, prefix string, sep string, nameCase 
 			sb.WriteString(tools.ToCamel(p.Name))
 		case KebabCase:
 			sb.WriteString(tools.ToKebab(p.Name))
+		case SnakeCase:
+			sb.WriteString(tools.ToSnake(p.Name))
 		default:
 			sb.WriteString(p.Name)
 		}
@@ -471,6 +499,7 @@ const (
 	CamelCase      TextCase = "CC"
 	LowerCamelCase TextCase = "LCC"
 	KebabCase      TextCase = "KC"
+	SnakeCase      TextCase = "SC"
 )
 
 type Language string

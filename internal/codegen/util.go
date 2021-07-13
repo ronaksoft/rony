@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"hash/crc64"
 )
 
 /*
@@ -15,6 +16,10 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+var (
+	CrcTab = crc64.MakeTable(crc64.ISO)
+)
 
 func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
 	p, t := DescParts(file, g, desc)
@@ -125,6 +130,8 @@ func CqlKind(d protoreflect.FieldDescriptor) string {
 		return "blob"
 	case protoreflect.BoolKind:
 		return "boolean"
+	case protoreflect.EnumKind:
+		return "int"
 	}
 	return "unsupported"
 	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))

@@ -21,10 +21,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var (
-	crcTab = crc64.MakeTable(crc64.ISO)
-)
-
 type Generator struct {
 	f *protogen.File
 	g *protogen.GeneratedFile
@@ -118,14 +114,14 @@ func (g *Generator) Generate() {
 				nc = codegen.LowerCamelCase
 			}
 			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
-				m.Name, crc64.Checksum([]byte(f.Name), crcTab),
+				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
 				prefix, f.Name, postfix,
 				m.Table.Names(codegen.PropFilterALL, prefix, ",", nc),
 			)
 		},
 		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
 			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
-				m.Name, crc64.Checksum([]byte(f.Name), crcTab),
+				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
 				prefix, inflection.Singular(f.Name), postfix,
 			)
 		},
