@@ -51,6 +51,7 @@ func (g *Generator) Generate() {
 		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genClone").Parse(genClone)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
 
 		if _, ok := g.plugins["no_edge_dep"]; !ok {
@@ -195,6 +196,15 @@ func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 			{{- end }}
 		{{- end }}
 	{{- end }}
+}
+
+`
+
+const genClone = `
+func (x *{{.Name}}) Clone() *{{.Name}} {
+	z := &{{.Name}}{}
+	x.DeepCopy(z)
+	return z
 }
 
 `
