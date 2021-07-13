@@ -23,27 +23,6 @@ func init() {}
 	Extra methods for MessageEnvelope
 */
 
-func (x *MessageEnvelope) Clone() *MessageEnvelope {
-	c := PoolMessageEnvelope.Get()
-	c.Constructor = x.Constructor
-	c.RequestID = x.RequestID
-	c.Message = append(c.Message[:0], x.Message...)
-	c.Auth = append(c.Auth[:0], x.Auth...)
-	if cap(c.Header) >= len(x.Header) {
-		c.Header = c.Header[:len(x.Header)]
-	} else {
-		c.Header = make([]*KeyValue, len(x.Header))
-	}
-	for idx, kv := range x.Header {
-		if c.Header[idx] == nil {
-			c.Header[idx] = &KeyValue{}
-		}
-		kv.DeepCopy(c.Header[idx])
-	}
-
-	return c
-}
-
 func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
 	x.RequestID = reqID
 	x.Constructor = constructor
@@ -108,15 +87,4 @@ func (x *Error) Expand() (string, string) {
 
 func (x *Error) ToEnvelope(me *MessageEnvelope) {
 	me.Fill(me.RequestID, C_Error, x)
-}
-
-/*
-	Extra methods for KeyValue
- */
-
-func (x *KeyValue) Clone() *KeyValue {
-	c := PoolKeyValue.Get()
-	c.Key = x.GetKey()
-	c.Value = x.GetValue()
-	return c
 }

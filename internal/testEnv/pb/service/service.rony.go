@@ -51,6 +51,12 @@ func (x *GetRequest) DeepCopy(z *GetRequest) {
 	z.Key = append(z.Key[:0], x.Key...)
 }
 
+func (x *GetRequest) Clone() *GetRequest {
+	z := &GetRequest{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *GetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -101,6 +107,12 @@ var PoolGetResponse = poolGetResponse{}
 func (x *GetResponse) DeepCopy(z *GetResponse) {
 	z.Key = append(z.Key[:0], x.Key...)
 	z.Value = append(z.Value[:0], x.Value...)
+}
+
+func (x *GetResponse) Clone() *GetResponse {
+	z := &GetResponse{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *GetResponse) Unmarshal(b []byte) error {
@@ -155,6 +167,12 @@ func (x *SetRequest) DeepCopy(z *SetRequest) {
 	z.Value = append(z.Value[:0], x.Value...)
 }
 
+func (x *SetRequest) Clone() *SetRequest {
+	z := &SetRequest{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *SetRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -203,6 +221,12 @@ var PoolSetResponse = poolSetResponse{}
 
 func (x *SetResponse) DeepCopy(z *SetResponse) {
 	z.OK = x.OK
+}
+
+func (x *SetResponse) Clone() *SetResponse {
+	z := &SetResponse{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *SetResponse) Unmarshal(b []byte) error {
@@ -257,6 +281,12 @@ func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.Int = x.Int
 	z.Timestamp = x.Timestamp
 	z.ReplicaSet = x.ReplicaSet
+}
+
+func (x *EchoRequest) Clone() *EchoRequest {
+	z := &EchoRequest{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *EchoRequest) Unmarshal(b []byte) error {
@@ -315,6 +345,12 @@ func (x *EchoResponse) DeepCopy(z *EchoResponse) {
 	z.Timestamp = x.Timestamp
 	z.Delay = x.Delay
 	z.ServerID = x.ServerID
+}
+
+func (x *EchoResponse) Clone() *EchoResponse {
+	z := &EchoResponse{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *EchoResponse) Unmarshal(b []byte) error {
@@ -391,6 +427,12 @@ func (x *Message1) DeepCopy(z *Message1) {
 	}
 }
 
+func (x *Message1) Clone() *Message1 {
+	z := &Message1{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *Message1) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -453,6 +495,12 @@ func (x *Message2) DeepCopy(z *Message2) {
 		PoolMessage1.Put(z.M1)
 		z.M1 = nil
 	}
+}
+
+func (x *Message2) Clone() *Message2 {
+	z := &Message2{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Message2) Unmarshal(b []byte) error {

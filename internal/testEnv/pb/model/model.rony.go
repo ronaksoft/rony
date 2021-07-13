@@ -57,6 +57,12 @@ func (x *Model1) DeepCopy(z *Model1) {
 	z.Enum = x.Enum
 }
 
+func (x *Model1) Clone() *Model1 {
+	z := &Model1{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *Model1) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -113,6 +119,12 @@ func (x *Model2) DeepCopy(z *Model2) {
 	z.P1 = x.P1
 	z.P2 = append(z.P2[:0], x.P2...)
 	z.P5 = x.P5
+}
+
+func (x *Model2) Clone() *Model2 {
+	z := &Model2{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Model2) Unmarshal(b []byte) error {
@@ -183,6 +195,12 @@ func (x *Model3) DeepCopy(z *Model3) {
 			z.P5 = append(z.P5, append(zb, x.P5[idx]...))
 		}
 	}
+}
+
+func (x *Model3) Clone() *Model3 {
+	z := &Model3{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Model3) Unmarshal(b []byte) error {

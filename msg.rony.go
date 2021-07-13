@@ -61,6 +61,12 @@ func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	}
 }
 
+func (x *MessageEnvelope) Clone() *MessageEnvelope {
+	z := &MessageEnvelope{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *MessageEnvelope) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -107,6 +113,12 @@ var PoolKeyValue = poolKeyValue{}
 func (x *KeyValue) DeepCopy(z *KeyValue) {
 	z.Key = x.Key
 	z.Value = x.Value
+}
+
+func (x *KeyValue) Clone() *KeyValue {
+	z := &KeyValue{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *KeyValue) Unmarshal(b []byte) error {
@@ -167,6 +179,12 @@ func (x *MessageContainer) DeepCopy(z *MessageContainer) {
 	}
 }
 
+func (x *MessageContainer) Clone() *MessageContainer {
+	z := &MessageContainer{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *MessageContainer) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -215,6 +233,12 @@ func (x *Error) DeepCopy(z *Error) {
 	z.Code = x.Code
 	z.Items = x.Items
 	z.Description = x.Description
+}
+
+func (x *Error) Clone() *Error {
+	z := &Error{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Error) Unmarshal(b []byte) error {
@@ -277,6 +301,12 @@ func (x *Redirect) DeepCopy(z *Redirect) {
 	z.WaitInSec = x.WaitInSec
 }
 
+func (x *Redirect) Clone() *Redirect {
+	z := &Redirect{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *Redirect) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -325,6 +355,12 @@ func (x *Edge) DeepCopy(z *Edge) {
 	z.ReplicaSet = x.ReplicaSet
 	z.ServerID = x.ServerID
 	z.HostPorts = append(z.HostPorts[:0], x.HostPorts...)
+}
+
+func (x *Edge) Clone() *Edge {
+	z := &Edge{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Edge) Unmarshal(b []byte) error {
@@ -383,6 +419,12 @@ func (x *Edges) DeepCopy(z *Edges) {
 	}
 }
 
+func (x *Edges) Clone() *Edges {
+	z := &Edges{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *Edges) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -429,6 +471,12 @@ func (x *GetNodes) DeepCopy(z *GetNodes) {
 	z.ReplicaSet = append(z.ReplicaSet[:0], x.ReplicaSet...)
 }
 
+func (x *GetNodes) Clone() *GetNodes {
+	z := &GetNodes{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *GetNodes) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -470,6 +518,12 @@ func (p *poolGetAllNodes) Put(x *GetAllNodes) {
 var PoolGetAllNodes = poolGetAllNodes{}
 
 func (x *GetAllNodes) DeepCopy(z *GetAllNodes) {
+}
+
+func (x *GetAllNodes) Clone() *GetAllNodes {
+	z := &GetAllNodes{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *GetAllNodes) Unmarshal(b []byte) error {
@@ -530,6 +584,12 @@ func (x *HttpBody) DeepCopy(z *HttpBody) {
 		z.Header = append(z.Header, xx)
 	}
 	z.Body = append(z.Body[:0], x.Body...)
+}
+
+func (x *HttpBody) Clone() *HttpBody {
+	z := &HttpBody{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *HttpBody) Unmarshal(b []byte) error {

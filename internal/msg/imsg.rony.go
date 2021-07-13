@@ -48,6 +48,12 @@ func (x *GetPage) DeepCopy(z *GetPage) {
 	z.ReplicaSet = x.ReplicaSet
 }
 
+func (x *GetPage) Clone() *GetPage {
+	z := &GetPage{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *GetPage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -118,6 +124,12 @@ func (x *TunnelMessage) DeepCopy(z *TunnelMessage) {
 	}
 }
 
+func (x *TunnelMessage) Clone() *TunnelMessage {
+	z := &TunnelMessage{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *TunnelMessage) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -172,6 +184,12 @@ func (x *EdgeNode) DeepCopy(z *EdgeNode) {
 	z.TunnelAddr = append(z.TunnelAddr[:0], x.TunnelAddr...)
 }
 
+func (x *EdgeNode) Clone() *EdgeNode {
+	z := &EdgeNode{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *EdgeNode) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -218,6 +236,12 @@ var PoolPage = poolPage{}
 func (x *Page) DeepCopy(z *Page) {
 	z.ID = x.ID
 	z.ReplicaSet = x.ReplicaSet
+}
+
+func (x *Page) Clone() *Page {
+	z := &Page{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *Page) Unmarshal(b []byte) error {

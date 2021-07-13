@@ -53,6 +53,12 @@ func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.RandomText = x.RandomText
 }
 
+func (x *EchoRequest) Clone() *EchoRequest {
+	z := &EchoRequest{}
+	x.DeepCopy(z)
+	return z
+}
+
 func (x *EchoRequest) Unmarshal(b []byte) error {
 	return proto.UnmarshalOptions{}.Unmarshal(b, x)
 }
@@ -99,6 +105,12 @@ var PoolEchoResponse = poolEchoResponse{}
 func (x *EchoResponse) DeepCopy(z *EchoResponse) {
 	z.ReqID = x.ReqID
 	z.RandomText = x.RandomText
+}
+
+func (x *EchoResponse) Clone() *EchoResponse {
+	z := &EchoResponse{}
+	x.DeepCopy(z)
+	return z
 }
 
 func (x *EchoResponse) Unmarshal(b []byte) error {
