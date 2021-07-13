@@ -60,6 +60,7 @@ func (c *Conn) Body() []byte {
 func (c *Conn) Get(key string) interface{} {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+
 	return c.kv[key]
 }
 
@@ -79,6 +80,7 @@ func (c *Conn) ClientIP() string {
 
 func (c *Conn) WriteBinary(streamID int64, data []byte) error {
 	c.onMessage(c.id, streamID, data, c.httpHdr)
+
 	return nil
 }
 

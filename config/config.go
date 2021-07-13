@@ -39,6 +39,7 @@ func Init(configFileName string, configSearchPaths ...string) error {
 	}
 
 	_Viper.SetConfigName(configFileName)
+
 	return _Viper.ReadInConfig()
 }
 
@@ -120,6 +121,7 @@ func GetInt32Slice(key string) []int32 {
 	for _, i := range ints {
 		int32s = append(int32s, int32(i))
 	}
+
 	return int32s
 }
 
@@ -129,6 +131,7 @@ func GetInt64Slice(key string) []int64 {
 	for _, i := range ints {
 		int64s = append(int64s, int64(i))
 	}
+
 	return int64s
 }
 

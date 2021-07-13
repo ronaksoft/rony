@@ -46,6 +46,7 @@ var CreateProjectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		return r.Run()
 	},
 }
@@ -77,6 +78,7 @@ func setupSkeleton(g *genny.Generator) {
 			g.File(genny.NewFileS(filepath.Join(projectPath, realPath), s))
 			_ = f.Close()
 		}
+
 		return nil
 	})
 	if err != nil {

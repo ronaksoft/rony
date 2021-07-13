@@ -47,11 +47,13 @@ func (o *ListOption) Limit() int32 {
 
 func (o *ListOption) SetForward() *ListOption {
 	o.reverse = false
+
 	return o
 }
 
 func (o *ListOption) SetBackward() *ListOption {
 	o.reverse = true
+
 	return o
 }
 
@@ -71,21 +73,25 @@ func NewIterOption() *IterOption {
 
 func (o *IterOption) SetOffsetKey(offset []byte) *IterOption {
 	o.offsetKey = offset
+
 	return o
 }
 
 func (o *IterOption) SetForward() *IterOption {
 	o.reverse = false
+
 	return o
 }
 
 func (o *IterOption) SetBackward() *IterOption {
 	o.reverse = true
+
 	return o
 }
 
 func (o *IterOption) SetOnClose(f func(key []byte)) *IterOption {
 	o.onClose = f
+
 	return o
 }
 

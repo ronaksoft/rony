@@ -201,16 +201,19 @@ var EchoCmd = &cobra.Command{
 		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddrs)
+
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
@@ -224,6 +227,7 @@ var EchoCmd = &cobra.Command{
 		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		defer ec.Close()
@@ -262,16 +266,19 @@ var EchoTunnelCmd = &cobra.Command{
 		n, _ := cmd.Flags().GetInt("n")
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddrs)
+
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
@@ -286,6 +293,7 @@ var EchoTunnelCmd = &cobra.Command{
 		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		defer ec.Close()
@@ -326,16 +334,19 @@ var SetCmd = &cobra.Command{
 		val, _ := cmd.Flags().GetString("val")
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddrs)
+
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
@@ -349,6 +360,7 @@ var SetCmd = &cobra.Command{
 		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		defer ec.Close()
@@ -388,16 +400,19 @@ var GetCmd = &cobra.Command{
 		key, _ := cmd.Flags().GetString("key")
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddrs)
+
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
@@ -411,6 +426,7 @@ var GetCmd = &cobra.Command{
 		err := ec.Start()
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		defer ec.Close()
@@ -448,21 +464,25 @@ var BenchCmd = &cobra.Command{
 		serverID, _ := cmd.Flags().GetString(FlagServerID)
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddr := e1.Stats().GatewayAddr
 		if len(gatewayAddr) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddr)
+
 			return
 		}
 		parts := strings.Split(gatewayAddr[0], ":")
 		if len(parts) != 2 {
 			cmd.Println("Invalid Gateway Addr", gatewayAddr)
+
 			return
 		}
 		var (
@@ -475,6 +495,7 @@ var BenchCmd = &cobra.Command{
 		f, err := os.Create("rony-bench.trace")
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		err = trace.Start(f)
@@ -498,6 +519,7 @@ var BenchCmd = &cobra.Command{
 				err := ec.Start()
 				if err != nil {
 					cmd.Println(err)
+
 					return
 				}
 				c := service.NewSampleClient(ec)
@@ -532,11 +554,13 @@ var Members = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			cmd.Println("Needs ServerID, e.g. echo First.01")
+
 			return
 		}
 		e1 := Edges[args[0]]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 
@@ -564,16 +588,19 @@ var ClusterCmd = &cobra.Command{
 		replicaSet, _ := cmd.Flags().GetUint64(FlagReplicaSet)
 		if len(serverID) == 0 {
 			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
+
 			return
 		}
 		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
+
 			return
 		}
 		gatewayAddrs := e1.Stats().GatewayAddr
 		if len(gatewayAddrs) == 0 {
 			cmd.Println("No Gateway Addr", gatewayAddrs)
+
 			return
 		}
 		ec := edgec.NewWebsocket(edgec.WebsocketConfig{
@@ -603,6 +630,7 @@ var ClusterCmd = &cobra.Command{
 
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		for idx, n := range edges.Nodes {
@@ -618,6 +646,7 @@ var Trace = &cobra.Command{
 		f, err := os.Create("rony-bench.trace")
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		err = trace.Start(f)
@@ -644,6 +673,7 @@ var MemProf = &cobra.Command{
 		f1, err := os.Create("rony-mem.out")
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		_ = pprof.Lookup("heap").WriteTo(f1, 0)
@@ -652,6 +682,7 @@ var MemProf = &cobra.Command{
 		f2, err := os.Create("rony-alloc.out")
 		if err != nil {
 			cmd.Println(err)
+
 			return
 		}
 		_ = pprof.Lookup("allocs").WriteTo(f2, 0)

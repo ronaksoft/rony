@@ -43,6 +43,7 @@ func CertTemplate() (*x509.Certificate, error) {
 		NotAfter:              time.Now().Add(time.Hour), // valid for an hour
 		BasicConstraintsValid: true,
 	}
+
 	return &tmpl, nil
 }
 
@@ -59,6 +60,7 @@ func CreateCert(template, parent *x509.Certificate, pub interface{}, parentPriv 
 	// PEM encode the certificate (this is a standard TLS encoding)
 	b := pem.Block{Type: "CERTIFICATE", Bytes: certDER}
 	certPEM = pem.EncodeToMemory(&b)
+
 	return
 }
 

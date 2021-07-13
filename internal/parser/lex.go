@@ -28,6 +28,7 @@ func (i tokenItem) String() string {
 	case i.tok > keyword_beg && i.tok < keyword_end:
 		return fmt.Sprintf("%d: <%s>", i.tok, i.val)
 	}
+
 	return fmt.Sprintf("%d: %q", i.tok, i.val)
 }
 
@@ -65,6 +66,7 @@ type lexer struct {
 func (l *lexer) next() rune {
 	if int(l.pos) >= len(l.input) {
 		l.width = 0
+
 		return eof
 	}
 	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
@@ -73,6 +75,7 @@ func (l *lexer) next() rune {
 	if r == '\n' {
 		l.line++
 	}
+
 	return r
 }
 
@@ -80,6 +83,7 @@ func (l *lexer) next() rune {
 func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
+
 	return r
 }
 
@@ -158,6 +162,7 @@ func (l *lexer) atTerminator() bool {
 	if rd, _ := utf8.DecodeRuneInString(rightDelim); rd == r {
 		return true
 	}
+
 	return false
 }
 
@@ -171,6 +176,7 @@ func lex(name, input string) *lexer {
 		startLine: 1,
 	}
 	go l.run()
+
 	return l
 }
 
@@ -184,6 +190,7 @@ func lexText(l *lexer) stateFn {
 			l.emit(TEXT)
 		}
 		l.ignore()
+
 		return lexLeftDelim
 	}
 	l.pos = Pos(len(l.input))
@@ -194,6 +201,7 @@ func lexText(l *lexer) stateFn {
 		l.ignore()
 	}
 	l.emit(EOF)
+
 	return nil
 }
 
@@ -203,6 +211,7 @@ func lexLeftDelim(l *lexer) stateFn {
 	l.emit(L_DELIM)
 	l.ignore()
 	l.parenDepth = 0
+
 	return lexInsideAction
 }
 
@@ -211,6 +220,7 @@ func lexRightDelim(l *lexer) stateFn {
 	l.pos += Pos(len(rightDelim))
 	l.emit(R_DELIM)
 	l.ignore()
+
 	return lexText
 }
 
@@ -230,14 +240,17 @@ func lexInsideAction(l *lexer) stateFn {
 		return l.errorf("unclosed action")
 	case isSpace(r):
 		l.backup() // Put space back in case we have " -}}".
+
 		return lexSpace
 	case r == '@':
 		l.emit(AT_SIGN)
+
 		return lexIdentifier
 	case r == ',':
 		l.emit(COMMA)
 	case isAlphaNumeric(r):
 		l.backup()
+
 		return lexIdentifier
 	case r == '(':
 		l.emit(L_PAREN)
@@ -292,6 +305,7 @@ Loop:
 			break Loop
 		}
 	}
+
 	return lexInsideAction
 }
 

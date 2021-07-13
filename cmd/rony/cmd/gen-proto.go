@@ -39,6 +39,7 @@ var GenProtoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		return r.Run()
 	},
 }
@@ -79,6 +80,7 @@ func compileProto(g *genny.Generator) {
 				cmd2.Dir = filepath.Dir(projectPathAbs)
 				g.Command(cmd2)
 			}
+
 			return nil
 		})
 	}

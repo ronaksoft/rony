@@ -88,6 +88,7 @@ func TestByteSlicePoolPut(t *testing.T) {
 
 func data(p []byte) uintptr {
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&p))
+
 	return hdr.Data
 }
 

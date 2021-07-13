@@ -176,6 +176,7 @@ func (c *Cluster) MemberByHash(h uint64) rony.ClusterMember {
 	if m == nil {
 		return nil
 	}
+
 	return m
 }
 
@@ -186,6 +187,7 @@ func (c *Cluster) MemberByID(serverID string) rony.ClusterMember {
 	if m == nil {
 		return nil
 	}
+
 	return m
 }
 
@@ -195,11 +197,13 @@ func (c *Cluster) TotalReplicas() int {
 
 func (c *Cluster) SetGatewayAddrs(hostPorts []string) error {
 	c.localGatewayAddr = hostPorts
+
 	return c.updateCluster(gossipUpdateTimeout)
 }
 
 func (c *Cluster) SetTunnelAddrs(hostPorts []string) error {
 	c.localTunnelAddr = hostPorts
+
 	return c.updateCluster(gossipUpdateTimeout)
 }
 

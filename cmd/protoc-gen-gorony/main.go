@@ -19,6 +19,7 @@ func main() {
 					plugins[p] = struct{}{}
 				}
 			}
+
 			return nil
 		},
 		ImportRewriteFunc: func(path protogen.GoImportPath) protogen.GoImportPath {
@@ -27,6 +28,7 @@ func main() {
 			case "github.com/scylladb/gocqlx":
 				return "github.com/scylladb/gocqlx/v2"
 			}
+
 			return path
 		},
 	}
@@ -56,6 +58,7 @@ func main() {
 			g4 := rpc.New(f, g)
 			g4.Generate()
 		}
+
 		return nil
 	})
 }

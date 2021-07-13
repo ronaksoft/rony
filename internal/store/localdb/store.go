@@ -54,6 +54,7 @@ func New(cfg Config) (*Store, error) {
 func newDB(config Config) (*badger.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
 	opt.Logger = nil
+
 	return badger.Open(opt)
 }
 
@@ -96,6 +97,7 @@ Retry:
 			goto Retry
 		}
 	}
+
 	return err
 }
 
@@ -111,6 +113,7 @@ Retry:
 			goto Retry
 		}
 	}
+
 	return err
 }
 

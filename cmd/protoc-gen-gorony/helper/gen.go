@@ -77,6 +77,7 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	if err := t.Execute(sb, v); err != nil {
 		panic(err)
 	}
+
 	return sb.String()
 }
 

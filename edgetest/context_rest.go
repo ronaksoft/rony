@@ -34,6 +34,7 @@ func newRESTContext(gw *dummyGateway.Gateway) *restCtx {
 		gw:     gw,
 		doneCh: make(chan struct{}, 1),
 	}
+
 	return c
 }
 
@@ -43,6 +44,7 @@ func (c *restCtx) Request(method, path string, body []byte, kvs ...*rony.KeyValu
 	c.path = path
 	c.body = body
 	c.kvs = kvs
+
 	return c
 }
 
@@ -50,6 +52,7 @@ func (c *restCtx) Request(method, path string, body []byte, kvs ...*rony.KeyValu
 // if the response was not fully acceptable
 func (c *restCtx) Expect(cf CheckFunc) *restCtx {
 	c.expect = cf
+
 	return c
 }
 

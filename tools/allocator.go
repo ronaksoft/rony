@@ -137,5 +137,6 @@ func getSize(v ...interface{}) int {
 			panic(fmt.Sprintf("unsupported type: %s", reflect.TypeOf(x).Kind()))
 		}
 	}
+
 	return s
 }
