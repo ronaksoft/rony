@@ -245,6 +245,22 @@ func (x *Model1) HasP2(xx string) bool {
 	return false
 }
 
+type Model1MountKey interface {
+	makeItPrivate()
+}
+
+type Model1PK struct {
+	ID int32
+}
+
+func (Model1PK) makeItPrivate() {}
+
+type Model1CustomerSortPK struct {
+	Enum Enum
+}
+
+func (Model1CustomerSortPK) makeItPrivate() {}
+
 type Model1LocalRepo struct {
 	s rony.Store
 }
@@ -253,14 +269,6 @@ func NewModel1LocalRepo(s rony.Store) *Model1LocalRepo {
 	return &Model1LocalRepo{
 		s: s,
 	}
-}
-
-func (r *Model1LocalRepo) Create(m *Model1) error {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.CreateWithTxn(txn, alloc, m)
-	})
 }
 
 func (r *Model1LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model1) (err error) {
@@ -301,6 +309,14 @@ func (r *Model1LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 
 	return
+}
+
+func (r *Model1LocalRepo) Create(m *Model1) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn(txn, alloc, m)
+	})
 }
 
 func (r *Model1LocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model1) error {
@@ -377,7 +393,7 @@ func (r *Model1LocalRepo) Read(id int32, shardKey int32, enum Enum, m *Model1) (
 	return m, err
 }
 
-func (r *Model1LocalRepo) ReadByEnumAndShardKeyAndIDWithTxn(
+func (r *Model1LocalRepo) ReadByCustomerSortWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	enum Enum, shardKey int32, id int32, m *Model1,
 ) (*Model1, error) {
@@ -393,7 +409,7 @@ func (r *Model1LocalRepo) ReadByEnumAndShardKeyAndIDWithTxn(
 	return m, err
 }
 
-func (r *Model1LocalRepo) ReadByEnumAndShardKeyAndID(enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+func (r *Model1LocalRepo) ReadByCustomerSort(enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -402,13 +418,18 @@ func (r *Model1LocalRepo) ReadByEnumAndShardKeyAndID(enum Enum, shardKey int32, 
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadByEnumAndShardKeyAndIDWithTxn(txn, alloc, enum, shardKey, id, m)
+		m, err = r.ReadByCustomerSortWithTxn(txn, alloc, enum, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
 func (r *Model1LocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id int32, shardKey int32, enum Enum) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
 	m := &Model1{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model1, 1248998560, id, shardKey, enum)
 	if err != nil {
@@ -450,6 +471,175 @@ func (r *Model1LocalRepo) Delete(id int32, shardKey int32, enum Enum) error {
 	})
 }
 
+func (r *Model1LocalRepo) ListWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model1MountKey, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	res := make([]*Model1, 0, lo.Limit())
+
+	switch mk := mk.(type) {
+	case Model1PK:
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model1, 1248998560)
+		}
+
+	case Model1CustomerSortPK:
+		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model1, 2535881670)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+
+	return res, err
+}
+
+func (r *Model1LocalRepo) List(
+	mk Model1MountKey, lo *store.ListOption, cond func(m *Model1) bool,
+) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	var (
+		res []*Model1
+		err error
+	)
+	err = r.s.View(func(txn *rony.StoreTxn) error {
+		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *Model1LocalRepo) IterWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model1MountKey, ito *store.IterOption, cb func(m *Model1) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = ito.Backward()
+
+	switch mk := mk.(type) {
+	case Model1PK:
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model1, 1248998560)
+		}
+
+	case Model1CustomerSortPK:
+		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model1, 2535881670)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		if ito.OffsetKey() == nil {
+			iter.Rewind()
+		} else {
+			iter.Seek(ito.OffsetKey())
+		}
+		exitLoop := false
+		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model1{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				}
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		if item := iter.Item(); item != nil {
+			ito.OnClose(item.KeyCopy(nil))
+		} else {
+			ito.OnClose(nil)
+		}
+		iter.Close()
+		return nil
+	})
+
+	return err
+}
+
+func (r *Model1LocalRepo) Iter(
+	mk Model1MountKey, ito *store.IterOption, cb func(m *Model1) bool,
+) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return r.s.View(func(txn *rony.StoreTxn) error {
+		return r.IterWithTxn(txn, alloc, mk, ito, cb)
+	})
+}
+
 func (x *Model2) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -459,6 +649,23 @@ func (x *Model2) HasP2(xx string) bool {
 	return false
 }
 
+type Model2MountKey interface {
+	makeItPrivate()
+}
+
+type Model2PK struct {
+	ID       int64
+	ShardKey int32
+}
+
+func (Model2PK) makeItPrivate() {}
+
+type Model2P1ShardKeyIDPK struct {
+	P1 string
+}
+
+func (Model2P1ShardKeyIDPK) makeItPrivate() {}
+
 type Model2LocalRepo struct {
 	s rony.Store
 }
@@ -467,14 +674,6 @@ func NewModel2LocalRepo(s rony.Store) *Model2LocalRepo {
 	return &Model2LocalRepo{
 		s: s,
 	}
-}
-
-func (r *Model2LocalRepo) Create(m *Model2) error {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.CreateWithTxn(txn, alloc, m)
-	})
 }
 
 func (r *Model2LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model2) (err error) {
@@ -501,6 +700,14 @@ func (r *Model2LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 
 	return
+}
+
+func (r *Model2LocalRepo) Create(m *Model2) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn(txn, alloc, m)
+	})
 }
 
 func (r *Model2LocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model2) error {
@@ -577,7 +784,7 @@ func (r *Model2LocalRepo) Read(id int64, shardKey int32, p1 string, m *Model2) (
 	return m, err
 }
 
-func (r *Model2LocalRepo) ReadByP1AndShardKeyAndIDWithTxn(
+func (r *Model2LocalRepo) ReadByP1ShardKeyIDWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	p1 string, shardKey int32, id int64, m *Model2,
 ) (*Model2, error) {
@@ -593,7 +800,7 @@ func (r *Model2LocalRepo) ReadByP1AndShardKeyAndIDWithTxn(
 	return m, err
 }
 
-func (r *Model2LocalRepo) ReadByP1AndShardKeyAndID(p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+func (r *Model2LocalRepo) ReadByP1ShardKeyID(p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -602,13 +809,18 @@ func (r *Model2LocalRepo) ReadByP1AndShardKeyAndID(p1 string, shardKey int32, id
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadByP1AndShardKeyAndIDWithTxn(txn, alloc, p1, shardKey, id, m)
+		m, err = r.ReadByP1ShardKeyIDWithTxn(txn, alloc, p1, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
 func (r *Model2LocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 string) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
 	m := &Model2{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model2, 1609271041, id, shardKey, p1)
 	if err != nil {
@@ -636,6 +848,175 @@ func (r *Model2LocalRepo) Delete(id int64, shardKey int32, p1 string) error {
 	})
 }
 
+func (r *Model2LocalRepo) ListWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model2MountKey, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	res := make([]*Model2, 0, lo.Limit())
+
+	switch mk := mk.(type) {
+	case Model2PK:
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model2, 1609271041)
+		}
+
+	case Model2P1ShardKeyIDPK:
+		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model2, 2344331025)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+
+	return res, err
+}
+
+func (r *Model2LocalRepo) List(
+	mk Model2MountKey, lo *store.ListOption, cond func(m *Model2) bool,
+) ([]*Model2, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	var (
+		res []*Model2
+		err error
+	)
+	err = r.s.View(func(txn *rony.StoreTxn) error {
+		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *Model2LocalRepo) IterWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model2MountKey, ito *store.IterOption, cb func(m *Model2) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = ito.Backward()
+
+	switch mk := mk.(type) {
+	case Model2PK:
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model2, 1609271041)
+		}
+
+	case Model2P1ShardKeyIDPK:
+		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model2, 2344331025)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		if ito.OffsetKey() == nil {
+			iter.Rewind()
+		} else {
+			iter.Seek(ito.OffsetKey())
+		}
+		exitLoop := false
+		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model2{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				}
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		if item := iter.Item(); item != nil {
+			ito.OnClose(item.KeyCopy(nil))
+		} else {
+			ito.OnClose(nil)
+		}
+		iter.Close()
+		return nil
+	})
+
+	return err
+}
+
+func (r *Model2LocalRepo) Iter(
+	mk Model2MountKey, ito *store.IterOption, cb func(m *Model2) bool,
+) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return r.s.View(func(txn *rony.StoreTxn) error {
+		return r.IterWithTxn(txn, alloc, mk, ito, cb)
+	})
+}
+
 func (x *Model3) HasP2(xx string) bool {
 	for idx := range x.P2 {
 		if x.P2[idx] == xx {
@@ -654,6 +1035,29 @@ func (x *Model3) HasP5(xx []byte) bool {
 	return false
 }
 
+type Model3MountKey interface {
+	makeItPrivate()
+}
+
+type Model3PK struct {
+	ID       int64
+	ShardKey int32
+}
+
+func (Model3PK) makeItPrivate() {}
+
+type Model3P1ShardKeyIDPK struct {
+	P1 []byte
+}
+
+func (Model3P1ShardKeyIDPK) makeItPrivate() {}
+
+type Model3P1IDPK struct {
+	P1 []byte
+}
+
+func (Model3P1IDPK) makeItPrivate() {}
+
 type Model3LocalRepo struct {
 	s rony.Store
 }
@@ -662,14 +1066,6 @@ func NewModel3LocalRepo(s rony.Store) *Model3LocalRepo {
 	return &Model3LocalRepo{
 		s: s,
 	}
-}
-
-func (r *Model3LocalRepo) Create(m *Model3) error {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.CreateWithTxn(txn, alloc, m)
-	})
 }
 
 func (r *Model3LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model3) (err error) {
@@ -710,6 +1106,14 @@ func (r *Model3LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 
 	return
+}
+
+func (r *Model3LocalRepo) Create(m *Model3) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn(txn, alloc, m)
+	})
 }
 
 func (r *Model3LocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Model3) error {
@@ -786,7 +1190,7 @@ func (r *Model3LocalRepo) Read(id int64, shardKey int32, p1 []byte, m *Model3) (
 	return m, err
 }
 
-func (r *Model3LocalRepo) ReadByP1AndShardKeyAndIDWithTxn(
+func (r *Model3LocalRepo) ReadByP1ShardKeyIDWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	p1 []byte, shardKey int32, id int64, m *Model3,
 ) (*Model3, error) {
@@ -802,7 +1206,7 @@ func (r *Model3LocalRepo) ReadByP1AndShardKeyAndIDWithTxn(
 	return m, err
 }
 
-func (r *Model3LocalRepo) ReadByP1AndShardKeyAndID(p1 []byte, shardKey int32, id int64, m *Model3) (*Model3, error) {
+func (r *Model3LocalRepo) ReadByP1ShardKeyID(p1 []byte, shardKey int32, id int64, m *Model3) (*Model3, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -811,13 +1215,13 @@ func (r *Model3LocalRepo) ReadByP1AndShardKeyAndID(p1 []byte, shardKey int32, id
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadByP1AndShardKeyAndIDWithTxn(txn, alloc, p1, shardKey, id, m)
+		m, err = r.ReadByP1ShardKeyIDWithTxn(txn, alloc, p1, shardKey, id, m)
 		return err
 	})
 	return m, err
 }
 
-func (r *Model3LocalRepo) ReadByP1AndIDWithTxn(
+func (r *Model3LocalRepo) ReadByP1IDWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	p1 []byte, id int64, m *Model3,
 ) (*Model3, error) {
@@ -833,7 +1237,7 @@ func (r *Model3LocalRepo) ReadByP1AndIDWithTxn(
 	return m, err
 }
 
-func (r *Model3LocalRepo) ReadByP1AndID(p1 []byte, id int64, m *Model3) (*Model3, error) {
+func (r *Model3LocalRepo) ReadByP1ID(p1 []byte, id int64, m *Model3) (*Model3, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -842,13 +1246,18 @@ func (r *Model3LocalRepo) ReadByP1AndID(p1 []byte, id int64, m *Model3) (*Model3
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadByP1AndIDWithTxn(txn, alloc, p1, id, m)
+		m, err = r.ReadByP1IDWithTxn(txn, alloc, p1, id, m)
 		return err
 	})
 	return m, err
 }
 
 func (r *Model3LocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id int64, shardKey int32, p1 []byte) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
 	m := &Model3{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Model3, 1609271041, id, shardKey, p1)
 	if err != nil {
@@ -884,6 +1293,191 @@ func (r *Model3LocalRepo) Delete(id int64, shardKey int32, p1 []byte) error {
 
 	return r.s.Update(func(txn *rony.StoreTxn) error {
 		return r.DeleteWithTxn(txn, alloc, id, shardKey, p1)
+	})
+}
+
+func (r *Model3LocalRepo) ListWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model3MountKey, lo *store.ListOption, cond func(m *Model3) bool,
+) ([]*Model3, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	res := make([]*Model3, 0, lo.Limit())
+
+	switch mk := mk.(type) {
+	case Model3PK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 1609271041)
+		}
+
+	case Model3P1ShardKeyIDPK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 2344331025)
+		}
+
+	case Model3P1IDPK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 3623577939)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+
+	return res, err
+}
+
+func (r *Model3LocalRepo) List(
+	mk Model3MountKey, lo *store.ListOption, cond func(m *Model3) bool,
+) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	var (
+		res []*Model3
+		err error
+	)
+	err = r.s.View(func(txn *rony.StoreTxn) error {
+		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *Model3LocalRepo) IterWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk Model3MountKey, ito *store.IterOption, cb func(m *Model3) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = ito.Backward()
+
+	switch mk := mk.(type) {
+	case Model3PK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 1609271041)
+		}
+
+	case Model3P1ShardKeyIDPK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 2344331025)
+		}
+
+	case Model3P1IDPK:
+		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Model3, 3623577939)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		if ito.OffsetKey() == nil {
+			iter.Rewind()
+		} else {
+			iter.Seek(ito.OffsetKey())
+		}
+		exitLoop := false
+		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Model3{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				}
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		if item := iter.Item(); item != nil {
+			ito.OnClose(item.KeyCopy(nil))
+		} else {
+			ito.OnClose(nil)
+		}
+		iter.Close()
+		return nil
+	})
+
+	return err
+}
+
+func (r *Model3LocalRepo) Iter(
+	mk Model3MountKey, ito *store.IterOption, cb func(m *Model3) bool,
+) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return r.s.View(func(txn *rony.StoreTxn) error {
+		return r.IterWithTxn(txn, alloc, mk, ito, cb)
 	})
 }
 
@@ -1021,22 +1615,6 @@ func (r *Model1RemoteRepo) GetByCustomerSort(enum Enum, shardKey int32, id int32
 	err = m.Unmarshal(b)
 	return m, err
 }
-
-type Model1MountKey interface {
-	makeItPrivate()
-}
-
-type Model1PK struct {
-	ID int32
-}
-
-func (Model1PK) makeItPrivate() {}
-
-type Model1CustomerSortPK struct {
-	Enum Enum
-}
-
-func (Model1CustomerSortPK) makeItPrivate() {}
 
 func (r *Model1RemoteRepo) List(mk Model1MountKey, limit uint) ([]*Model1, error) {
 	var (
@@ -1196,23 +1774,6 @@ func (r *Model2RemoteRepo) GetByP1ShardKeyID(p1 string, shardKey int32, id int64
 	err = m.Unmarshal(b)
 	return m, err
 }
-
-type Model2MountKey interface {
-	makeItPrivate()
-}
-
-type Model2PK struct {
-	ID       int64
-	ShardKey int32
-}
-
-func (Model2PK) makeItPrivate() {}
-
-type Model2P1ShardKeyIDPK struct {
-	P1 string
-}
-
-func (Model2P1ShardKeyIDPK) makeItPrivate() {}
 
 func (r *Model2RemoteRepo) List(mk Model2MountKey, limit uint) ([]*Model2, error) {
 	var (
@@ -1404,29 +1965,6 @@ func (r *Model3RemoteRepo) GetByP1ID(p1 []byte, id int64, m *Model3) (*Model3, e
 	err = m.Unmarshal(b)
 	return m, err
 }
-
-type Model3MountKey interface {
-	makeItPrivate()
-}
-
-type Model3PK struct {
-	ID       int64
-	ShardKey int32
-}
-
-func (Model3PK) makeItPrivate() {}
-
-type Model3P1ShardKeyIDPK struct {
-	P1 []byte
-}
-
-func (Model3P1ShardKeyIDPK) makeItPrivate() {}
-
-type Model3P1IDPK struct {
-	P1 []byte
-}
-
-func (Model3P1IDPK) makeItPrivate() {}
 
 func (r *Model3RemoteRepo) List(mk Model3MountKey, limit uint) ([]*Model3, error) {
 	var (

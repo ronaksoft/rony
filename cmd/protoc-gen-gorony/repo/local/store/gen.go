@@ -51,6 +51,26 @@ func (g *Generator) Generate() {
 		"Plural": func(x string) string {
 			return inflection.Plural(x)
 		},
+		"MVName": func(m codegen.ModelKey) string {
+			alias := m.Alias()
+			if alias == "" {
+				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+			}
+			sb := strings.Builder{}
+			sb.WriteString(m.Name())
+			sb.WriteString(alias)
+			return sb.String()
+		},
+		"MVAlias": func(m codegen.ModelKey, prefix string) string {
+			if m.Alias() != "" {
+				return m.Alias()
+			}
+			sb := strings.Builder{}
+			sb.WriteString(prefix)
+			sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
+
+			return sb.String()
+		},
 		"HasIndex": func(m codegen.MessageArg) bool {
 			for _, f := range m.Fields {
 				if f.HasIndex {
@@ -169,12 +189,15 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genMountKey").Funcs(aggregateFuncs).Parse(genMountKey)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(aggregateFuncs).Parse(genSave)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(aggregateFuncs).Parse(genRead)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
 
 		}
 	}
@@ -254,6 +277,49 @@ func (r *{{$repoName}}) Read (m *{{$modelName}}) (*{{$modelName}}, error) {
 
 `
 
+const genHelpers = `
+{{$model := .}}
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+{{- range .Fields }}
+	{{- if eq .Cardinality "repeated" }}
+		{{- if not (or (eq .Kind "message") (eq .Kind "group")) }}
+			{{- if eq .Kind "bytes" }}
+				func (x *{{$modelName}}) Has{{Singular .Name}}(xx {{.GoKind}}) bool {
+					for idx := range x.{{.Name}} {
+						if bytes.Equal(x.{{.Name}}[idx], xx) {
+							return true
+						}
+					}
+					return false
+				}
+
+			{{- else if eq .Kind "enum" }}
+				func (x *{{$modelName}}) Has{{Singular .Name}} (xx {{.GoKind}}) bool {
+					for idx := range x.{{.Name}} {
+						if x.{{.Name}}[idx] == xx {
+							return true
+						}
+					}
+					return false
+				}
+
+			{{- else }}
+				func (x *{{$modelName}})Has{{Singular .Name}} (xx {{.GoKind}}) bool {
+					for idx := range x.{{.Name}} {
+						if x.{{.Name}}[idx] == xx {
+							return true
+						}
+					}
+					return false
+				}
+
+			{{- end }}
+		{{- end }}
+	{{- end }}
+{{ end }}
+`
+
 const genLocalRepo = `
 {{$repoName := print .Name "LocalRepo"}}
 type {{$repoName}} struct {
@@ -272,14 +338,6 @@ const genCreate = `
 {{$model := .}}
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) Create(m *{{$modelName}}) error {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.CreateWithTxn (txn, alloc, m)
-	})
-}
-
 func (r *{{$repoName}}) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -326,6 +384,14 @@ func (r *{{$repoName}}) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	{{- end }}
 	
 	return
+}
+
+func (r *{{$repoName}}) Create(m *{{$modelName}}) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn (txn, alloc, m)
+	})
 }
 `
 
@@ -417,7 +483,7 @@ func (r *{{$repoName}}) Read ({{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$mo
 	return m, err
 }
 {{ range .Views }}
-func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}WithTxn (
+func (r *{{$repoName}}) ReadBy{{MVAlias . ""}}WithTxn (
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	{{FuncArgs . ""}}, m *{{$modelName}},
 ) (*{{$modelName}}, error) {
@@ -433,7 +499,7 @@ func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}WithTxn (
 	return m, err
 }
 
-func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}({{FuncArgs . ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
+func (r *{{$repoName}}) ReadBy{{MVAlias . ""}}({{FuncArgs . ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -442,7 +508,7 @@ func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}({{FuncArgs . ""}}, m *
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadBy{{String . "" "And" false}}WithTxn (txn, alloc, {{String . "" "," true}}, m)
+		m, err = r.ReadBy{{MVAlias . ""}}WithTxn (txn, alloc, {{String . "" "," true}}, m)
 		return err 
 	})
 	return m, err
@@ -455,7 +521,11 @@ const genDelete = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}) error {
-	{{- if or (gt (len .Views) 0) (HasIndex .) }}
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+	{{ if or (gt (len .Views) 0) (HasIndex .) }}
 		m := &{{$modelName}}{}
 		err := store.Unmarshal(txn, alloc, m, {{DBKey .Table ""}})
 		if err != nil {
@@ -507,45 +577,210 @@ func (r *{{$repoName}})  Delete({{FuncArgs .Table ""}}) error {
 }
 `
 
-const genHelpers = `
+const genMountKey = `
+{{$modelName := .Name}}
+type {{$modelName}}MountKey interface {
+	makeItPrivate()
+}
+
+type {{$modelName}}PK struct {
+{{- range .Table.PKs }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{$modelName}}PK) makeItPrivate() {}
+
+{{- range .Views }}
+
+type {{MVName .}}PK struct {
+{{- range .PKs }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{MVName .}}PK) makeItPrivate() {}
+{{ end }}
+`
+
+const genIter = `
 {{$model := .}}
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
-{{- range .Fields }}
-	{{- if eq .Cardinality "repeated" }}
-		{{- if not (or (eq .Kind "message") (eq .Kind "group")) }}
-			{{- if eq .Kind "bytes" }}
-				func (x *{{$modelName}}) Has{{Singular .Name}}(xx {{.GoKind}}) bool {
-					for idx := range x.{{.Name}} {
-						if bytes.Equal(x.{{.Name}}[idx], xx) {
-							return true
-						}
-					}
-					return false
-				}
+func (r *{{$repoName}}) IterWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk {{$modelName}}MountKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+	
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = ito.Backward()
 
-			{{- else if eq .Kind "enum" }}
-				func (x *{{$modelName}}) Has{{Singular .Name}} (xx {{.GoKind}}) bool {
-					for idx := range x.{{.Name}} {
-						if x.{{.Name}}[idx] == xx {
-							return true
-						}
-					}
-					return false
-				}
-
-			{{- else }}
-				func (x *{{$modelName}})Has{{Singular .Name}} (xx {{.GoKind}}) bool {
-					for idx := range x.{{.Name}} {
-						if x.{{.Name}}[idx] == xx {
-							return true
-						}
-					}
-					return false
-				}
-
-			{{- end }}
-		{{- end }}
-	{{- end }}
+	switch mk := mk.(type) {
+	case {{$modelName}}PK:
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "mk."}})
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen({{DBPrefix .Table}})
+		}
+{{ range .Views }}
+	case {{MVName .}}PK:
+		opt.Prefix = alloc.Gen({{DBKeyPKs . "mk."}})
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen({{DBPrefix .}})
+		}
 {{ end }}
+	default:
+		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		if ito.OffsetKey() == nil {
+			iter.Rewind()
+		} else {
+			iter.Seek(ito.OffsetKey())
+		}
+		exitLoop := false
+		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &{{$modelName}}{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				} 
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		if item := iter.Item(); item != nil {
+			ito.OnClose(item.KeyCopy(nil))
+		} else {
+			ito.OnClose(nil)
+		}
+		iter.Close()
+		return nil
+	})
+
+	return err
+}
+
+func (r *{{$repoName}}) Iter(
+	mk {{$modelName}}MountKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	
+
+	return r.s.View(func(txn *rony.StoreTxn) error {
+		return r.IterWithTxn(txn, alloc, mk, ito, cb)
+	})
+}
 `
+
+const genList = `
+{{$model := .}}
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) ListWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk {{$modelName}}MountKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+) ([]*{{$modelName}}, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+	
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	res := make([]*{{$modelName}}, 0, lo.Limit())
+	
+	switch mk := mk.(type) {
+	case {{$modelName}}PK:
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "mk."}})
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen({{DBPrefix .Table}})
+		}
+{{ range .Views }}
+	case {{MVName .}}PK:
+		opt.Prefix = alloc.Gen({{DBKeyPKs . "mk."}})
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen({{DBPrefix .}})
+		}
+{{ end }}
+	default:
+		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &{{$modelName}}{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+
+	return res, err
+}
+
+func (r *{{$repoName}}) List(
+	mk {{$modelName}}MountKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+) ([]*{{$modelName}}, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	
+	var (
+		res []*{{$modelName}}
+		err error
+	)
+	err = r.s.View(func(txn *rony.StoreTxn) error {
+		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+`
+
+const gentListByIndex = ``

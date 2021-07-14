@@ -19,6 +19,7 @@ var (
 )
 
 type (
+	Item    = badger.Item
 	Entry   = badger.Entry
 	LocalDB = badger.DB
 )

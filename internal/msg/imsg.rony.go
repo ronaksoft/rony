@@ -272,6 +272,22 @@ func init() {
 
 var _ = bytes.MinRead
 
+type PageMountKey interface {
+	makeItPrivate()
+}
+
+type PagePK struct {
+	ID uint32
+}
+
+func (PagePK) makeItPrivate() {}
+
+type PageReplicaSetIDPK struct {
+	ReplicaSet uint64
+}
+
+func (PageReplicaSetIDPK) makeItPrivate() {}
+
 type PageLocalRepo struct {
 	s rony.Store
 }
@@ -280,14 +296,6 @@ func NewPageLocalRepo(s rony.Store) *PageLocalRepo {
 	return &PageLocalRepo{
 		s: s,
 	}
-}
-
-func (r *PageLocalRepo) Create(m *Page) error {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.CreateWithTxn(txn, alloc, m)
-	})
 }
 
 func (r *PageLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
@@ -314,6 +322,14 @@ func (r *PageLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	}
 
 	return
+}
+
+func (r *PageLocalRepo) Create(m *Page) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn(txn, alloc, m)
+	})
 }
 
 func (r *PageLocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) error {
@@ -390,7 +406,7 @@ func (r *PageLocalRepo) Read(id uint32, m *Page) (*Page, error) {
 	return m, err
 }
 
-func (r *PageLocalRepo) ReadByReplicaSetAndIDWithTxn(
+func (r *PageLocalRepo) ReadByReplicaSetIDWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator,
 	replicaSet uint64, id uint32, m *Page,
 ) (*Page, error) {
@@ -406,7 +422,7 @@ func (r *PageLocalRepo) ReadByReplicaSetAndIDWithTxn(
 	return m, err
 }
 
-func (r *PageLocalRepo) ReadByReplicaSetAndID(replicaSet uint64, id uint32, m *Page) (*Page, error) {
+func (r *PageLocalRepo) ReadByReplicaSetID(replicaSet uint64, id uint32, m *Page) (*Page, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -415,13 +431,18 @@ func (r *PageLocalRepo) ReadByReplicaSetAndID(replicaSet uint64, id uint32, m *P
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadByReplicaSetAndIDWithTxn(txn, alloc, replicaSet, id, m)
+		m, err = r.ReadByReplicaSetIDWithTxn(txn, alloc, replicaSet, id, m)
 		return err
 	})
 	return m, err
 }
 
 func (r *PageLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id uint32) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
 	m := &Page{}
 	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
 	if err != nil {
@@ -446,5 +467,174 @@ func (r *PageLocalRepo) Delete(id uint32) error {
 
 	return r.s.Update(func(txn *rony.StoreTxn) error {
 		return r.DeleteWithTxn(txn, alloc, id)
+	})
+}
+
+func (r *PageLocalRepo) ListWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk PageMountKey, lo *store.ListOption, cond func(m *Page) bool,
+) ([]*Page, error) {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	res := make([]*Page, 0, lo.Limit())
+
+	switch mk := mk.(type) {
+	case PagePK:
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170, mk.ID)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Page, 299066170)
+		}
+
+	case PageReplicaSetIDPK:
+		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
+		if lo.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Page, 1040696757)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Page{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
+				return nil
+			})
+		}
+		iter.Close()
+		return nil
+	})
+
+	return res, err
+}
+
+func (r *PageLocalRepo) List(
+	mk PageMountKey, lo *store.ListOption, cond func(m *Page) bool,
+) ([]*Page, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	var (
+		res []*Page
+		err error
+	)
+	err = r.s.View(func(txn *rony.StoreTxn) error {
+		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *PageLocalRepo) IterWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, mk PageMountKey, ito *store.IterOption, cb func(m *Page) bool,
+) error {
+	if alloc == nil {
+		alloc = tools.NewAllocator()
+		defer alloc.ReleaseAll()
+	}
+
+	var validPrefix []byte
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = ito.Backward()
+
+	switch mk := mk.(type) {
+	case PagePK:
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170, mk.ID)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Page, 299066170)
+		}
+
+	case PageReplicaSetIDPK:
+		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
+		if ito.CheckPrefix() {
+			validPrefix = opt.Prefix
+		} else {
+			validPrefix = alloc.Gen('M', C_Page, 1040696757)
+		}
+
+	default:
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		validPrefix = opt.Prefix
+	}
+
+	err := r.s.View(func(txn *rony.StoreTxn) error {
+		iter := txn.NewIterator(opt)
+		if ito.OffsetKey() == nil {
+			iter.Rewind()
+		} else {
+			iter.Seek(ito.OffsetKey())
+		}
+		exitLoop := false
+		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+			_ = iter.Item().Value(func(val []byte) error {
+				m := &Page{}
+				err := m.Unmarshal(val)
+				if err != nil {
+					return err
+				}
+				if !cb(m) {
+					exitLoop = true
+				}
+				return nil
+			})
+			if exitLoop {
+				break
+			}
+		}
+		if item := iter.Item(); item != nil {
+			ito.OnClose(item.KeyCopy(nil))
+		} else {
+			ito.OnClose(nil)
+		}
+		iter.Close()
+		return nil
+	})
+
+	return err
+}
+
+func (r *PageLocalRepo) Iter(
+	mk PageMountKey, ito *store.IterOption, cb func(m *Page) bool,
+) error {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	return r.s.View(func(txn *rony.StoreTxn) error {
+		return r.IterWithTxn(txn, alloc, mk, ito, cb)
 	})
 }

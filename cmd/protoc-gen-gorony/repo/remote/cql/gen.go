@@ -438,30 +438,6 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 const genListByPK = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
-
-type {{$modelName}}MountKey interface {
-	makeItPrivate()
-}
-
-type {{$modelName}}PK struct {
-{{- range .Table.PKs }}
-{{.Name}}  {{.GoType}}
-{{- end }}
-}
-
-func ({{$modelName}}PK) makeItPrivate() {}
-
-{{- range .Views }}
-
-type {{MVName .}}PK struct {
-{{- range .PKs }}
-{{.Name}}  {{.GoType}}
-{{- end }}
-}
-
-func ({{MVName .}}PK) makeItPrivate() {}
-{{ end }}
-
 func (r *{{$repoName}}) List(mk {{$modelName}}MountKey, limit uint) ([]*{{$modelName}}, error) {
 	var (
 		q *gocqlx.Queryx

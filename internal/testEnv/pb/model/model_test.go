@@ -53,7 +53,7 @@ func TestModelLocalRepo(t *testing.T) {
 			m2, err := repo.Read(m1.ID, m1.ShardKey, m1.Enum, nil)
 			c.So(err, ShouldBeNil)
 			c.So(proto.Equal(m1, m2), ShouldBeTrue)
-			m3, err := repo.ReadByEnumAndShardKeyAndID(m1.Enum, m1.ShardKey, m1.ID, nil)
+			m3, err := repo.ReadByCustomerSort(m1.Enum, m1.ShardKey, m1.ID, nil)
 			c.So(err, ShouldBeNil)
 			c.So(proto.Equal(m1, m3), ShouldBeTrue)
 			m1.P1 = tools.RandomID(32)
@@ -64,11 +64,11 @@ func TestModelLocalRepo(t *testing.T) {
 			c.So(err, ShouldBeNil)
 			c.So(proto.Equal(m1, m5), ShouldBeTrue)
 
-			m6, err := repo.ReadByEnumAndShardKeyAndID(m1.Enum, m1.ShardKey, m1.ID, nil)
+			m6, err := repo.ReadByCustomerSort(m1.Enum, m1.ShardKey, m1.ID, nil)
 			c.So(err, ShouldBeNil)
 			c.So(proto.Equal(m1, m6), ShouldBeTrue)
 
-			_, err = repo.ReadByEnumAndShardKeyAndID(m2.Enum, m2.ShardKey, m2.ID, nil)
+			_, err = repo.ReadByCustomerSort(m2.Enum, m2.ShardKey, m2.ID, nil)
 			c.So(err, ShouldBeNil)
 
 			err = repo.Delete(m2.ID, m2.ShardKey, m2.Enum)
