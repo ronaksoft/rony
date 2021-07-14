@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/remote/cql"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/local/store"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/remote/cql"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/store"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"strings"

@@ -24,7 +24,7 @@ type queryBuilderFunc func() *gocqlx.Queryx
 // NewQueryPool creates a new query pool
 func NewQueryPool(genFunc queryBuilderFunc) *QueryPool {
 	return &QueryPool{
-		gen:  genFunc,
+		gen: genFunc,
 	}
 }
 

@@ -144,7 +144,6 @@ func (g *Generator) generateGo() {
 		"KeyArgs": func(m codegen.ModelKey) string {
 			return m.NameTypes(codegen.PropFilterALL, "", codegen.LowerCamelCase, codegen.LangGo)
 		},
-
 	}
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(g.f, g.g, m)
@@ -152,7 +151,6 @@ func (g *Generator) generateGo() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
-			// g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/qb"})
 
 			g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(funcs).Parse(genRemoteRepo)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(funcs).Parse(genCRUD)), arg))
@@ -392,9 +390,5 @@ func (r *{{$repoName}}) Get({{KeyArgs .Table}}, m *{{$modelName}}) (*{{$modelNam
 
 
 `
-
-const genUpdate = ``
-const genDelete = ``
-const genRead = ``
 const genListByPK = ``
 const genListByIndex = ``
