@@ -85,7 +85,7 @@ func TestModelLocalRepo(t *testing.T) {
 			for i := int32(0); i < total; i++ {
 				err := repo.Create(&model.Model3{
 					ID:       int64(i + start),
-					ShardKey: int32(tools.FastRand()),
+					ShardKey: tools.RandomInt32(10),
 					P1:       tools.S2B(tools.RandomID(32)),
 					P2:       tools.RandomIDs(32, 43, 12, 10),
 					P5:       nil,
@@ -116,14 +116,40 @@ func TestModelLocalRepo(t *testing.T) {
 			c.So(err, ShouldBeNil)
 			c.So(res, ShouldHaveLength, total/2)
 			c.So(res[0].ID, ShouldEqual, start+10)
-		})
-	})
-}
 
-func TestModelRemoteRepo(t *testing.T) {
-	SkipConvey("Model - RemoteRep Auto-Generated Code Tests", t, func(c C) {
-		SkipConvey("Create/Read/Update/Read", func(c C) {
-			// TODO:: write test
+
+			res, err = repo.List(
+				model.Model3PK{
+					ID:       int64(start + 10),
+					ShardKey: 4,
+				},
+				store.NewListOption().SetLimit(total/2),
+				nil,
+			)
+			c.So(err, ShouldBeNil)
+			c.So(res, ShouldHaveLength, total/2)
+			c.So(res[0].ID, ShouldBeGreaterThanOrEqualTo, start+10)
+			c.So(res[0].ID, ShouldBeLessThanOrEqualTo, start+11)
+
+			res, err = repo.List(
+				model.Model3PK{
+					ID:       int64(start + 10),
+					ShardKey: 4,
+				},
+				store.NewListOption().SetLimit(total/2).SetBackward(),
+				nil,
+			)
+			c.So(err, ShouldBeNil)
+			c.So(res[0].ID, ShouldBeGreaterThanOrEqualTo, start+9)
+			c.So(res[0].ID, ShouldBeLessThanOrEqualTo, start+10)
+
+			res, err = repo.List(
+				nil,
+				store.NewListOption().SetLimit(total*2).SetSkip(10),
+				nil,
+			)
+			c.So(err, ShouldBeNil)
+			c.So(res, ShouldHaveLength, total-10)
 		})
 	})
 }
