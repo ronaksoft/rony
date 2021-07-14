@@ -40,14 +40,6 @@ func New(cfg Config) (*Store, error) {
 	mandatoryVlogTicker = time.NewTicker(time.Minute * 10)
 	go runVlogGC(db, 1<<30)
 
-	store.Init(store.Config{
-		DB:                  db,
-		ConflictRetries:     cfg.ConflictRetries,
-		ConflictMaxInterval: cfg.ConflictMaxInterval,
-		BatchWorkers:        cfg.BatchWorkers,
-		BatchSize:           cfg.BatchSize,
-	})
-
 	return st, nil
 }
 

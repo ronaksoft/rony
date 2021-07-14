@@ -5,7 +5,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/msg"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,16 +20,20 @@ import (
 
 // Builtin keep track of pages distribution over Edge servers.
 type Builtin struct {
+	pageRepo *msg.PageLocalRepo
 	cluster  rony.Cluster
 	gateway  rony.Gateway
+	store    rony.Store
 	serverID string
 }
 
-func newBuiltin(serverID string, gw rony.Gateway, c rony.Cluster) *Builtin {
+func newBuiltin(edgeServer *Server) *Builtin {
 	b := &Builtin{
-		cluster:  c,
-		gateway:  gw,
-		serverID: serverID,
+		cluster:  edgeServer.Cluster(),
+		gateway:  edgeServer.Gateway(),
+		store:    edgeServer.Store(),
+		serverID: edgeServer.GetServerID(),
+		pageRepo: msg.NewPageLocalRepo(edgeServer.Store()),
 	}
 	return b
 }
@@ -112,8 +115,8 @@ func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	err = store.Update(func(txn *badger.Txn) (err error) {
-		_, err = msg.ReadPageWithTxn(txn, alloc, req.GetPageID(), res)
+	err = pm.store.Update(func(txn *badger.Txn) (err error) {
+		_, err = pm.pageRepo.ReadWithTxn(txn, alloc, req.GetPageID(), res)
 		if err == nil {
 			return
 		}
@@ -122,7 +125,7 @@ func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		}
 		res.ReplicaSet = req.GetReplicaSet()
 		res.ID = req.GetPageID()
-		return msg.SavePageWithTxn(txn, alloc, res)
+		return pm.pageRepo.SaveWithTxn(txn, alloc, res)
 	})
 	if err != nil {
 		ctx.PushError(errors.GenInternalErr(err.Error(), err))

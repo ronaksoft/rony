@@ -157,7 +157,17 @@ func init() {
 
 var _ = bytes.MinRead
 
-func SaveSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (err error) {
+type Single1LocalSingleton struct {
+	s rony.Store
+}
+
+func NewSingle1LocalSingleton(s rony.Store) *Single1LocalSingleton {
+	return &Single1LocalSingleton{
+		s: s,
+	}
+}
+
+func (r *Single1LocalSingleton) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -170,16 +180,16 @@ func SaveSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) 
 	return nil
 }
 
-func SaveSingle1(m *Single1) (err error) {
+func (r *Single1LocalSingleton) Save(m *Single1) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return SaveSingle1WithTxn(txn, alloc, m)
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.SaveWithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
+func (r *Single1LocalSingleton) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -192,7 +202,7 @@ func ReadSingle1WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) 
 	return m, err
 }
 
-func ReadSingle1(m *Single1) (*Single1, error) {
+func (r *Single1LocalSingleton) Read(m *Single1) (*Single1, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -200,14 +210,24 @@ func ReadSingle1(m *Single1) (*Single1, error) {
 		m = &Single1{}
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = ReadSingle1WithTxn(txn, alloc, m)
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		m, err = r.ReadWithTxn(txn, alloc, m)
 		return
 	})
 	return m, err
 }
 
-func SaveSingle2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (err error) {
+type Single2LocalSingleton struct {
+	s rony.Store
+}
+
+func NewSingle2LocalSingleton(s rony.Store) *Single2LocalSingleton {
+	return &Single2LocalSingleton{
+		s: s,
+	}
+}
+
+func (r *Single2LocalSingleton) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -220,16 +240,16 @@ func SaveSingle2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) 
 	return nil
 }
 
-func SaveSingle2(m *Single2) (err error) {
+func (r *Single2LocalSingleton) Save(m *Single2) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return SaveSingle2WithTxn(txn, alloc, m)
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.SaveWithTxn(txn, alloc, m)
 	})
 }
 
-func ReadSingle2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
+func (r *Single2LocalSingleton) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -242,7 +262,7 @@ func ReadSingle2WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) 
 	return m, err
 }
 
-func ReadSingle2(m *Single2) (*Single2, error) {
+func (r *Single2LocalSingleton) Read(m *Single2) (*Single2, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -250,8 +270,8 @@ func ReadSingle2(m *Single2) (*Single2, error) {
 		m = &Single2{}
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = ReadSingle2WithTxn(txn, alloc, m)
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		m, err = r.ReadWithTxn(txn, alloc, m)
 		return
 	})
 	return m, err

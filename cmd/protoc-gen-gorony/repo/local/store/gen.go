@@ -163,19 +163,19 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-			g.g.P(g.Exec(template.Must(template.New("genSingletonSave").Funcs(singletonFuncs).Parse(genSingletonSave)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genSingletonRead").Funcs(singletonFuncs).Parse(genSingletonRead)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(singletonFuncs).Parse(genSingleton)), arg))
 		} else if arg.IsAggregate {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
+			g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(aggregateFuncs).Parse(genSave)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(aggregateFuncs).Parse(genRead)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
 
-			g.g.P(g.Exec(template.Must(template.New("genAggregateCreate").Funcs(aggregateFuncs).Parse(genAggregateCreate)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genAggregateUpdate").Funcs(aggregateFuncs).Parse(genAggregateUpdate)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genAggregateSave").Funcs(aggregateFuncs).Parse(genAggregateSave)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genAggregateRead").Funcs(aggregateFuncs).Parse(genAggregateRead)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genAggregateDelete").Funcs(aggregateFuncs).Parse(genAggregateDelete)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genAggregateHelpers").Funcs(aggregateFuncs).Parse(genAggregateHelpers)), arg))
 		}
 	}
 }
@@ -188,8 +188,21 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-const genSingletonSave = `
-func Save{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+const genSingleton = `
+{{$model := .}}
+{{$repoName := print .Name "LocalSingleton"}}
+{{$modelName := .Name}}
+type {{$repoName}} struct {
+    s rony.Store
+}
+
+func New{{$repoName}}(s rony.Store) *{{$repoName}} {
+	return &{{$repoName}}{
+		s: s,
+	}
+}
+
+func (r *{{$repoName}}) SaveWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -202,18 +215,16 @@ func Save{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Nam
 	return nil
 }
 
-func Save{{.Name}} (m *{{.Name}}) (err error) {
+func (r *{{$repoName}}) Save (m *{{$modelName}}) (err error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return Save{{.Name}}WithTxn(txn, alloc, m)
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.SaveWithTxn(txn, alloc, m)
 	})
 }
-`
 
-const genSingletonRead = `
-func Read{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (*{{.Name}}, error) {
+func (r *{{$repoName}}) ReadWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -226,60 +237,74 @@ func Read{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Nam
 	return m, err
 }
 
-func Read{{.Name}} (m *{{.Name}}) (*{{.Name}}, error) {
+func (r *{{$repoName}}) Read (m *{{$modelName}}) (*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		m = &{{.Name}}{}
+		m = &{{$modelName}}{}
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = Read{{.Name}}WithTxn(txn, alloc, m)
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		m, err = r.ReadWithTxn(txn, alloc, m)
 		return
 	})
 	return m, err 
 }
+
 `
 
-const genAggregateCreate = `
+const genLocalRepo = `
+{{$repoName := print .Name "LocalRepo"}}
+type {{$repoName}} struct {
+    s rony.Store
+}
+
+func New{{$repoName}}(s rony.Store) *{{$repoName}} {
+	return &{{$repoName}}{
+		s: s,
+	}
+}
+
+`
+
+const genCreate = `
 {{$model := .}}
-func Create{{.Name}} (m *{{.Name}}) error {
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) Create(m *{{$modelName}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return Create{{.Name}}WithTxn (txn, alloc, m)
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.CreateWithTxn (txn, alloc, m)
 	})
 }
 
-func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+func (r *{{$repoName}}) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	if store.Exists(txn, alloc, {{DBKey .Table "m."}}) {
+	key := alloc.Gen({{DBKey .Table "m."}})
+	if store.ExistsByKey(txn, alloc, key) {
 		return store.ErrAlreadyExists
 	}
 	
 	// save table entry
 	val := alloc.Marshal(m)
-	err = store.Set(txn, alloc, val, {{(DBKey .Table "m.")}})
+	err = store.SetByKey(txn, val, key)
 	if err != nil {
 		return
 	}
-
-	{{- range .Views }}
+	{{range .Views }}
 	// save view entry
 	err = store.Set(txn, alloc, val, {{(DBKey . "m.")}})
 	if err != nil {
 		return err 
 	}
 	{{- end }}
-	
-	
-	{{- if HasIndex . }}
-
-		key := alloc.Gen({{(DBKey .Table "m.")}})
+	{{ if HasIndex . }}
+		// key := alloc.Gen({{(DBKey .Table "m.")}})
 		{{- range .Fields }}
 			{{- if .HasIndex }}
 				// update field index by saving new value: {{.Name}}
@@ -302,25 +327,27 @@ func Create{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.N
 	
 	return
 }
-
 `
 
-const genAggregateUpdate = `
-func Update{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) error {
+const genUpdate = `
+{{$model := .}}
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) UpdateWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
 	
-	err := Delete{{.Name}}WithTxn(txn, alloc, {{String .Table "m." "," false}})
+	err := r.DeleteWithTxn(txn, alloc, {{String .Table "m." "," false}})
 	if err != nil {
 		return err
 	}
 	
-	return Create{{.Name}}WithTxn(txn, alloc, m)
+	return r.CreateWithTxn(txn, alloc, m)
 }
 
-func Update{{.Name}} ({{FuncArgs .Table ""}}, m *{{.Name}}) error {
+func (r *{{$repoName}}) Update ({{FuncArgs .Table ""}}, m *{{$modelName}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -328,37 +355,41 @@ func Update{{.Name}} ({{FuncArgs .Table ""}}, m *{{.Name}}) error {
 		return store.ErrEmptyObject
 	}
 	
-	err := store.Update(func(txn *rony.StoreTxn) (err error) {
-		return Update{{.Name}}WithTxn(txn, alloc, m)
+	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {
+		return r.UpdateWithTxn(txn, alloc, m)
 	})
+
 	return err 
 }
 `
 
-const genAggregateSave = `
+const genSave = `
 {{$model := .}}
-func Save{{.Name}}WithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{.Name}}) (err error) {
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) SaveWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if store.Exists(txn, alloc, {{DBKey .Table "m."}}) {
-		return Update{{.Name}}WithTxn(txn, alloc, m)
+		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
-		return Create{{.Name}}WithTxn(txn, alloc, m)
+		return r.CreateWithTxn(txn, alloc, m)
 	}
 }
 
-func Save{{.Name}} (m *{{.Name}}) error {
+func (r *{{$repoName}}) Save (m *{{$modelName}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return Save{{.Name}}WithTxn(txn, alloc, m)
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.SaveWithTxn(txn, alloc, m)
 	})
 }
-
 `
 
-const genAggregateRead = `
+const genRead = `
 {{$model := .}}
-func Read{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -371,27 +402,25 @@ func Read{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs
 	return m, nil
 }
 
-func Read{{.Name}} ({{FuncArgs .Table ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func (r *{{$repoName}}) Read ({{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		m = &{{.Name}}{}
+		m = &{{$modelName}}{}
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = Read{{.Name}}WithTxn(txn, alloc, {{String .Table "" "," true}}, m)
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		m, err = r.ReadWithTxn(txn, alloc, {{String .Table "" "," true}}, m)
 		return err 
 	})
 	return m, err
 }
-
-{{- range .Views }}
-
-func Read{{.Name}}By{{String . "" "And" false}}WithTxn (
+{{ range .Views }}
+func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}WithTxn (
 	txn *rony.StoreTxn, alloc *tools.Allocator,
-	{{FuncArgs . ""}}, m *{{.Name}},
-) (*{{.Name}}, error) {
+	{{FuncArgs . ""}}, m *{{$modelName}},
+) (*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -404,29 +433,30 @@ func Read{{.Name}}By{{String . "" "And" false}}WithTxn (
 	return m, err
 }
 
-func Read{{.Name}}By{{String . "" "And" false}}({{FuncArgs . ""}}, m *{{.Name}}) (*{{.Name}}, error) {
+func (r *{{$repoName}}) ReadBy{{String . "" "And" false}}({{FuncArgs . ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		m = &{{.Name}}{}
+		m = &{{$modelName}}{}
 	}
 
-	err := store.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = Read{{.Name}}By{{String . "" "And" false}}WithTxn (txn, alloc, {{String . "" "," true}}, m)
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		m, err = r.ReadBy{{String . "" "And" false}}WithTxn (txn, alloc, {{String . "" "," true}}, m)
 		return err 
 	})
 	return m, err
 }
-
-{{- end }}
+{{ end }}
 `
 
-const genAggregateDelete = `
+const genDelete = `
 {{$model := .}}
-func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}) error {
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}) error {
 	{{- if or (gt (len .Views) 0) (HasIndex .) }}
-		m := &{{.Name}}{}
+		m := &{{$modelName}}{}
 		err := store.Unmarshal(txn, alloc, m, {{DBKey .Table ""}})
 		if err != nil {
 			return err 
@@ -439,7 +469,6 @@ func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncAr
 		return err 
 	}
 	{{- range .Fields }}
-		
 		{{ if .HasIndex }}
 			// delete field index
 			{{- if eq .Cardinality "repeated" }}
@@ -468,32 +497,25 @@ func Delete{{.Name}}WithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncAr
 	return nil
 }
 
-func Delete{{.Name}}({{FuncArgs .Table ""}}) error {
+func (r *{{$repoName}})  Delete({{FuncArgs .Table ""}}) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
-	return store.Update(func(txn *rony.StoreTxn) error {
-		return Delete{{.Name}}WithTxn(txn, alloc, {{String .Table "" "," true}})
+	return r.s.Update(func(txn *rony.StoreTxn) error {
+		return r.DeleteWithTxn(txn, alloc, {{String .Table "" "," true}})
 	})
 }
-
 `
 
-const genAggregateHelpers = `
+const genHelpers = `
 {{$model := .}}
-
-type {{.Name}}Order string
-
-const (
-{{- range $order, $idx := OrderTypes . }}
-	{{$model.Name}}OrderBy{{$order}} {{$model.Name}}Order = "{{$order}}"
-{{- end }}
-)
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
 {{- range .Fields }}
 	{{- if eq .Cardinality "repeated" }}
 		{{- if not (or (eq .Kind "message") (eq .Kind "group")) }}
 			{{- if eq .Kind "bytes" }}
-				func (x *{{$model.Name}}) Has{{Singular .Name}}(xx {{.GoKind}}) bool {
+				func (x *{{$modelName}}) Has{{Singular .Name}}(xx {{.GoKind}}) bool {
 					for idx := range x.{{.Name}} {
 						if bytes.Equal(x.{{.Name}}[idx], xx) {
 							return true
@@ -503,7 +525,7 @@ const (
 				}
 
 			{{- else if eq .Kind "enum" }}
-				func (x *{{$model.Name}}) Has{{Singular .Name}} (xx {{.GoKind}}) bool {
+				func (x *{{$modelName}}) Has{{Singular .Name}} (xx {{.GoKind}}) bool {
 					for idx := range x.{{.Name}} {
 						if x.{{.Name}}[idx] == xx {
 							return true
@@ -513,7 +535,7 @@ const (
 				}
 
 			{{- else }}
-				func (x *{{$model.Name}})Has{{Singular .Name}} (xx {{.GoKind}}) bool {
+				func (x *{{$modelName}})Has{{Singular .Name}} (xx {{.GoKind}}) bool {
 					for idx := range x.{{.Name}} {
 						if x.{{.Name}}[idx] == xx {
 							return true

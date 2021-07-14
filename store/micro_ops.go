@@ -39,6 +39,10 @@ func Set(txn *rony.StoreTxn, alloc *tools.Allocator, val []byte, keyParts ...int
 	return txn.Set(key, val)
 }
 
+func SetByKey(txn *rony.StoreTxn, val, key []byte) error {
+	return txn.Set(key, val)
+}
+
 func Get(txn *rony.StoreTxn, alloc *tools.Allocator, keyParts ...interface{}) ([]byte, error) {
 	item, err := txn.Get(alloc.Gen(keyParts...))
 	if err != nil {
@@ -69,6 +73,14 @@ func GetByKey(txn *rony.StoreTxn, alloc *tools.Allocator, key []byte) ([]byte, e
 
 func Exists(txn *rony.StoreTxn, alloc *tools.Allocator, keyParts ...interface{}) bool {
 	_, err := Get(txn, alloc, keyParts...)
+	if err != nil && err == ErrKeyNotFound {
+		return false
+	}
+	return true
+}
+
+func ExistsByKey(txn *rony.StoreTxn, alloc *tools.Allocator, key []byte) bool {
+	_, err := GetByKey(txn, alloc, key)
 	if err != nil && err == ErrKeyNotFound {
 		return false
 	}

@@ -280,6 +280,7 @@ PRIMARY KEY {{PrimaryKey .}}
 {{- WithClusteringKey . -}};
 {{ end }}
 `
+
 const genRemoteRepo = `
 {{$repoName := print .Name "RemoteRepo"}}
 type {{$repoName}} struct {
@@ -350,6 +351,7 @@ func (r *{{$repoName}}) {{MVAlias . "MV"}}() *table.Table {
 }
 {{ end }}
 `
+
 const genCRUD = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
