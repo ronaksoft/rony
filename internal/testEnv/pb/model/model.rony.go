@@ -479,38 +479,30 @@ func (r *Model1LocalRepo) ListWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = lo.Backward()
 	res := make([]*Model1, 0, lo.Limit())
 
 	switch mk := mk.(type) {
 	case Model1PK:
-		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model1, 1248998560)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
+		seekKey = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
 
 	case Model1CustomerSortPK:
-		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model1, 2535881670)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+		seekKey = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -567,41 +559,33 @@ func (r *Model1LocalRepo) IterWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
 	switch mk := mk.(type) {
 	case Model1PK:
-		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model1, 1248998560)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
+		seekKey = alloc.Gen('M', C_Model1, 1248998560, mk.ID)
 
 	case Model1CustomerSortPK:
-		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model1, 2535881670)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model1, 2535881670)
+		seekKey = alloc.Gen('M', C_Model1, 2535881670, mk.Enum)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model1, 1248998560)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
-			iter.Rewind()
+			iter.Seek(seekKey)
 		} else {
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+		for ; iter.Valid(); iter.Next() {
 			_ = iter.Item().Value(func(val []byte) error {
 				m := &Model1{}
 				err := m.Unmarshal(val)
@@ -856,38 +840,30 @@ func (r *Model2LocalRepo) ListWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = lo.Backward()
 	res := make([]*Model2, 0, lo.Limit())
 
 	switch mk := mk.(type) {
 	case Model2PK:
-		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model2, 1609271041)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		seekKey = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
 
 	case Model2P1ShardKeyIDPK:
-		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model2, 2344331025)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+		seekKey = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -944,41 +920,33 @@ func (r *Model2LocalRepo) IterWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
 	switch mk := mk.(type) {
 	case Model2PK:
-		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model2, 1609271041)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
+		seekKey = alloc.Gen('M', C_Model2, 1609271041, mk.ID, mk.ShardKey)
 
 	case Model2P1ShardKeyIDPK:
-		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model2, 2344331025)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model2, 2344331025)
+		seekKey = alloc.Gen('M', C_Model2, 2344331025, mk.P1)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model2, 1609271041)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
-			iter.Rewind()
+			iter.Seek(seekKey)
 		} else {
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+		for ; iter.Valid(); iter.Next() {
 			_ = iter.Item().Value(func(val []byte) error {
 				m := &Model2{}
 				err := m.Unmarshal(val)
@@ -1304,46 +1272,34 @@ func (r *Model3LocalRepo) ListWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = lo.Backward()
 	res := make([]*Model3, 0, lo.Limit())
 
 	switch mk := mk.(type) {
 	case Model3PK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 1609271041)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		seekKey = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
 
 	case Model3P1ShardKeyIDPK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 2344331025)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025)
+		seekKey = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
 
 	case Model3P1IDPK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 3623577939)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939)
+		seekKey = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -1400,49 +1356,37 @@ func (r *Model3LocalRepo) IterWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
 	switch mk := mk.(type) {
 	case Model3PK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 1609271041)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
+		seekKey = alloc.Gen('M', C_Model3, 1609271041, mk.ID, mk.ShardKey)
 
 	case Model3P1ShardKeyIDPK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 2344331025)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 2344331025)
+		seekKey = alloc.Gen('M', C_Model3, 2344331025, mk.P1)
 
 	case Model3P1IDPK:
-		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Model3, 3623577939)
-		}
+		opt.Prefix = alloc.Gen('M', C_Model3, 3623577939)
+		seekKey = alloc.Gen('M', C_Model3, 3623577939, mk.P1)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Model3, 1609271041)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
-			iter.Rewind()
+			iter.Seek(seekKey)
 		} else {
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+		for ; iter.Valid(); iter.Next() {
 			_ = iter.Item().Value(func(val []byte) error {
 				m := &Model3{}
 				err := m.Unmarshal(val)

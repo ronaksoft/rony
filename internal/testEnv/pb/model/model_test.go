@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/model"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
@@ -21,7 +22,7 @@ import (
 */
 
 var (
-	store rony.Store
+	sampleStore rony.Store
 )
 
 func TestMain(m *testing.M) {
@@ -29,7 +30,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	store = s
+	sampleStore = s
 
 	code := m.Run()
 	_ = os.RemoveAll("./_hdd")
@@ -38,8 +39,8 @@ func TestMain(m *testing.M) {
 
 func TestModelLocalRepo(t *testing.T) {
 	Convey("Model - LocalRepo Auto-Generated Code Tests", t, func(c C) {
-		SkipConvey("Create/Read/Update/Read", func(c C) {
-			repo := model.NewModel1LocalRepo(store)
+		Convey("Create/Read/Update/Read", func(c C) {
+			repo := model.NewModel1LocalRepo(sampleStore)
 			m1 := &model.Model1{
 				ID:       int32(tools.FastRand()),
 				ShardKey: int32(tools.FastRand()),
@@ -76,6 +77,45 @@ func TestModelLocalRepo(t *testing.T) {
 
 			_, err = repo.Read(m1.ID, m1.ShardKey, m1.Enum, nil)
 			c.So(err, ShouldNotBeNil)
+		})
+		Convey("List/Iter", func(c C) {
+			repo := model.NewModel3LocalRepo(sampleStore)
+			total := int32(100)
+			start := int32(10)
+			for i := int32(0); i < total; i++ {
+				err := repo.Create(&model.Model3{
+					ID:       int64(i + start),
+					ShardKey: int32(tools.FastRand()),
+					P1:       tools.S2B(tools.RandomID(32)),
+					P2:       tools.RandomIDs(32, 43, 12, 10),
+					P5:       nil,
+				})
+				c.So(err, ShouldBeNil)
+			}
+
+			res, err := repo.List(
+				model.Model3PK{
+					ID:       0,
+					ShardKey: 0,
+				},
+				store.NewListOption().SetLimit(total/2),
+				nil,
+			)
+			c.So(err, ShouldBeNil)
+			c.So(res, ShouldHaveLength, total/2)
+			c.So(res[0].ID, ShouldEqual, start)
+
+			res, err = repo.List(
+				model.Model3PK{
+					ID:       int64(start + 10),
+					ShardKey: 0,
+				},
+				store.NewListOption().SetLimit(total/2),
+				nil,
+			)
+			c.So(err, ShouldBeNil)
+			c.So(res, ShouldHaveLength, total/2)
+			c.So(res[0].ID, ShouldEqual, start+10)
 		})
 	})
 }

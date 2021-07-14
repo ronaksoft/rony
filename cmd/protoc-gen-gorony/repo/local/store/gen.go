@@ -615,41 +615,33 @@ func (r *{{$repoName}}) IterWithTxn(
 		defer alloc.ReleaseAll()
 	}
 	
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
 	switch mk := mk.(type) {
 	case {{$modelName}}PK:
-		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "mk."}})
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen({{DBPrefix .Table}})
-		}
+		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
+		seekKey = alloc.Gen({{DBKeyPKs .Table "mk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
-		opt.Prefix = alloc.Gen({{DBKeyPKs . "mk."}})
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen({{DBPrefix .}})
-		}
+		opt.Prefix = alloc.Gen({{DBPrefix .}})
+		seekKey = alloc.Gen({{DBKeyPKs . "mk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
-			iter.Rewind()
+			iter.Seek(seekKey)
 		} else {
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+		for ; iter.Valid(); iter.Next() {
 			_ = iter.Item().Value(func(val []byte) error {
 				m := &{{$modelName}}{}
 				err := m.Unmarshal(val)
@@ -702,38 +694,30 @@ func (r *{{$repoName}}) ListWithTxn(
 		defer alloc.ReleaseAll()
 	}
 	
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = lo.Backward()
 	res := make([]*{{$modelName}}, 0, lo.Limit())
 	
 	switch mk := mk.(type) {
 	case {{$modelName}}PK:
-		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "mk."}})
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen({{DBPrefix .Table}})
-		}
+		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
+		seekKey = alloc.Gen({{DBKeyPKs .Table "mk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
-		opt.Prefix = alloc.Gen({{DBKeyPKs . "mk."}})
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen({{DBPrefix .}})
-		}
+		opt.Prefix = alloc.Gen({{DBPrefix .}})
+		seekKey = alloc.Gen({{DBKeyPKs . "mk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}

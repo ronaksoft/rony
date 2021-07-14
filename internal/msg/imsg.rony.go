@@ -478,38 +478,30 @@ func (r *PageLocalRepo) ListWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = lo.Backward()
 	res := make([]*Page, 0, lo.Limit())
 
 	switch mk := mk.(type) {
 	case PagePK:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170, mk.ID)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Page, 299066170)
-		}
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		seekKey = alloc.Gen('M', C_Page, 299066170, mk.ID)
 
 	case PageReplicaSetIDPK:
-		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
-		if lo.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Page, 1040696757)
-		}
+		opt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+		seekKey = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Rewind(); iter.ValidForPrefix(validPrefix); iter.Next() {
+		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -566,41 +558,33 @@ func (r *PageLocalRepo) IterWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	var validPrefix []byte
+	var seekKey []byte
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
 	switch mk := mk.(type) {
 	case PagePK:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170, mk.ID)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Page, 299066170)
-		}
+		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		seekKey = alloc.Gen('M', C_Page, 299066170, mk.ID)
 
 	case PageReplicaSetIDPK:
-		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
-		if ito.CheckPrefix() {
-			validPrefix = opt.Prefix
-		} else {
-			validPrefix = alloc.Gen('M', C_Page, 1040696757)
-		}
+		opt.Prefix = alloc.Gen('M', C_Page, 1040696757)
+		seekKey = alloc.Gen('M', C_Page, 1040696757, mk.ReplicaSet)
 
 	default:
 		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
-		validPrefix = opt.Prefix
+		seekKey = opt.Prefix
 	}
 
 	err := r.s.View(func(txn *rony.StoreTxn) error {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
-			iter.Rewind()
+			iter.Seek(seekKey)
 		} else {
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.ValidForPrefix(validPrefix); iter.Next() {
+		for ; iter.Valid(); iter.Next() {
 			_ = iter.Item().Value(func(val []byte) error {
 				m := &Page{}
 				err := m.Unmarshal(val)

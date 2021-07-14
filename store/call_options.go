@@ -13,7 +13,6 @@ type ListOption struct {
 	skip    int32
 	limit   int32
 	reverse bool
-	checkPrefix bool
 }
 
 func NewListOption() *ListOption {
@@ -28,15 +27,6 @@ func (o *ListOption) SetSkip(skip int32) *ListOption {
 	o.skip = skip
 
 	return o
-}
-
-func (o *ListOption) MustCheckPrefix() *ListOption {
-	o.checkPrefix = true
-	return o
-}
-
-func (o *ListOption) CheckPrefix() bool {
-	return o.checkPrefix
 }
 
 func (o *ListOption) Skip() int32 {
@@ -75,20 +65,10 @@ type IterOption struct {
 	reverse   bool
 	offsetKey []byte
 	onClose   func(key []byte)
-	checkPrefix bool
 }
 
 func NewIterOption() *IterOption {
 	return &IterOption{}
-}
-
-func (o *IterOption) MustCheckPrefix() *IterOption {
-	o.checkPrefix = true
-	return o
-}
-
-func (o *IterOption) CheckPrefix() bool {
-	return o.checkPrefix
 }
 
 func (o *IterOption) SetOffsetKey(offset []byte) *IterOption {
