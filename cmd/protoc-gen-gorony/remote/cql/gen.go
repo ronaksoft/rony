@@ -2,10 +2,13 @@ package cql
 
 import (
 	"github.com/jinzhu/inflection"
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/codegen"
 	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 	"text/template"
 )
@@ -50,6 +53,10 @@ func NewCQL(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 
 func Check(f *protogen.File) bool {
 	for _, m := range f.Messages {
+		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+		if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) != nil {
+			return true
+		}
 		t, _ := codegen.Parse(m)
 		if t == nil {
 			continue
@@ -75,34 +82,60 @@ func (g *Generator) Generate() {
 }
 
 func (g *Generator) generateGo() {
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "bytes"})
-	g.g.P("var _ = bytes.MinRead")
-
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(g.f, g.g, m)
-		if arg.IsSingleton {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+		funcs := map[string]interface{}{
+			"Singular": func(x string) string {
+				return inflection.Singular(x)
+			},
+			"Plural": func(x string) string {
+				return inflection.Plural(x)
+			},
+			"MVNameSC": func(m codegen.ModelKey) string {
+				sb := strings.Builder{}
+				sb.WriteString(tools.ToSnake(m.Name()))
+				sb.WriteString("_by_")
+				sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
+				if m.OrderByAlias() != "" {
+					sb.WriteString("_")
+					sb.WriteString(tools.ToSnake(m.OrderByAlias()))
+				} else if m.Index() > 0 {
+					sb.WriteString("_")
+					sb.WriteString(tools.IntToStr(m.Index()))
+				}
+				return sb.String()
+			},
+			"MVName": func(m codegen.ModelKey) string {
+				sb := strings.Builder{}
+				sb.WriteString(m.Name())
+				sb.WriteString("By")
+				sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "", codegen.None))
+				if m.OrderByAlias() != "" {
+					sb.WriteString(m.OrderByAlias())
+				} else if m.Index() > 0 {
+					sb.WriteString(tools.IntToStr(m.Index()))
+				}
+				return sb.String()
+			},
+			"Columns": func(m codegen.ModelKey) string {
+				sb := strings.Builder{}
+				sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
+				sb.WriteString(", \"sdata\"")
+				return sb.String()
+			},
+			"PartKeys": func(m codegen.ModelKey) string {
+				return m.Names(codegen.PropFilterPKs, "\"", "\"", ", ", codegen.SnakeCase)
+			},
+			"SortKeys": func(m codegen.ModelKey) string {
+				return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
+			},
+		}
+		if arg.IsAggregate {
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
-			// g.g.P(g.Exec(template.Must(template.New("genSingletonSave").Funcs(singletonFuncs).Parse(genSingletonSave)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genSingletonRead").Funcs(singletonFuncs).Parse(genSingletonRead)), arg))
-		} else if arg.IsAggregate {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateCreate").Funcs(aggregateFuncs).Parse(genAggregateCreate)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateUpdate").Funcs(aggregateFuncs).Parse(genAggregateUpdate)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateSave").Funcs(aggregateFuncs).Parse(genAggregateSave)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateRead").Funcs(aggregateFuncs).Parse(genAggregateRead)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateDelete").Funcs(aggregateFuncs).Parse(genAggregateDelete)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genAggregateHelpers").Funcs(aggregateFuncs).Parse(genAggregateHelpers)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genIterByPK").Funcs(aggregateFuncs).Parse(genIterByPK)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genIListByPK").Funcs(aggregateFuncs).Parse(genListByPK)), arg))
-			// g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genTable").Funcs(funcs).Parse(genTable)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(funcs).Parse(genRemoteRepo)), arg))
 		}
 	}
 }
@@ -118,11 +151,11 @@ func (g *Generator) generateCql() {
 		"PrimaryKey": func(m codegen.ModelKey) string {
 			sb := strings.Builder{}
 			sb.WriteString("((")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", ", ", codegen.SnakeCase))
+			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", ", ", codegen.SnakeCase))
 			sb.WriteString(")")
 			if len(m.CKs()) > 0 {
 				sb.WriteString(", ")
-				sb.WriteString(m.Names(codegen.PropFilterCKs, "", ", ", codegen.SnakeCase))
+				sb.WriteString(m.Names(codegen.PropFilterCKs, "", "", ", ", codegen.SnakeCase))
 			}
 			sb.WriteString(")")
 			return sb.String()
@@ -148,11 +181,18 @@ func (g *Generator) generateCql() {
 			sb.WriteString(")")
 			return sb.String()
 		},
-		"MVName": func(m codegen.ModelKey) string {
+		"MVNameSC": func(m codegen.ModelKey) string {
 			sb := strings.Builder{}
 			sb.WriteString(tools.ToSnake(m.Name()))
 			sb.WriteString("_by_")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "_", codegen.SnakeCase))
+			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
+			if m.OrderByAlias() != "" {
+				sb.WriteString("_")
+				sb.WriteString(tools.ToSnake(m.OrderByAlias()))
+			} else if m.Index() > 0 {
+				sb.WriteString("_")
+				sb.WriteString(tools.IntToStr(m.Index()))
+			}
 			return sb.String()
 		},
 		"MVWhere": func(m codegen.ModelKey) string {
@@ -173,7 +213,6 @@ func (g *Generator) generateCql() {
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(g.f, g.g, m)
 		if arg.IsAggregate {
-			// g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 			g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(funcs).Parse(genCQL)), arg))
 		}
 	}
@@ -188,10 +227,6 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-func x() {
-	// codegen.MessageArg{}.Table.
-}
-
 const genCQL = `
 {{$model := .}}
 CREATE TABLE tab_{{Singular .NameSC}} 
@@ -203,7 +238,7 @@ CREATE TABLE tab_{{Singular .NameSC}}
 	PRIMARY KEY {{PrimaryKey .Table}}
 ){{WithClusteringKey .Table}};
 {{ range .Views }}
-CREATE MATERIALIZED VIEW view_{{MVName .}} AS
+CREATE MATERIALIZED VIEW view_{{MVNameSC .}} AS
 SELECT *
 FROM tab_{{Singular $model.NameSC}}
 {{MVWhere .}}
@@ -211,7 +246,33 @@ PRIMARY KEY {{PrimaryKey .}}
 {{- WithClusteringKey . -}};
 {{ end }}
 `
+const genTable = `
+var tab{{.Name}} = table.New(table.Metadata{
+	Name: "tab_{{Singular .NameSC}}",
+	Columns: []string{ {{- Columns .Table -}} },
+	PartKey: []string{ {{- PartKeys .Table -}} },
+	SortKey: []string{ {{- SortKeys .Table -}} },
+})
+{{ range .Views }}
+var view{{MVName .}} = table.New(table.Metadata{
+	Name: "view_{{MVNameSC .}}",
+	Columns: []string{ {{- Columns . -}} },
+	PartKey: []string{ {{- PartKeys . -}} },
+	SortKey: []string{ {{- SortKeys . -}} },
+})
+{{ end }}
+`
+const genRemoteRepo = `
+type {{.Name}}RemoteRepo struct {
+	s gocqlx.Session
+}
 
+func New{{.Name}}RemoteRepo(s gocqlx.Session) *{{.Name}}RemoteRepo {
+	return &{{.Name}}RemoteRepo{
+		s: s,
+	}
+}
+`
 const genCreate = ``
 const genCreateIF = ``
 const genUpdate = ``

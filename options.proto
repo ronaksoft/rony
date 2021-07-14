@@ -18,6 +18,13 @@ message RestOpt {
     optional bool json_encode = 4;
 }
 
+// PrimaryKeyOpt is the container for aggregate primary key settings. It is going to replace old
+// rony_aggregate_table & rony_aggregate_view options.
+message PrimaryKeyOpt {
+    repeated string PartKey = 1;
+    repeated string SortKey = 2;
+    optional string OrderName = 3;
+}
 
 extend google.protobuf.ServiceOptions {
     // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
@@ -48,7 +55,9 @@ extend google.protobuf.MessageOptions {
     // rony_aggregate_table creates a virtual table presentation to hold instances of this message, like rows in a table
     // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
     // NOTE: If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
+    // @Deprecated [use rony_table instead]
     optional string rony_aggregate_table = 50014;
+    optional PrimaryKeyOpt rony_table = 50024;
     // rony_aggregate_view creates a materialized view of the aggregate based on the primary key.
     // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
     // NOTE (1): If there is only one partition key then you could safely drop the parenthesis, i.e. (pk1, ck1, ck2)
@@ -56,7 +65,9 @@ extend google.protobuf.MessageOptions {
     //           follow the same order as table. for example the following is correct:
     //                  rony_aggregate_table = ((a, b), c)
     //                  rony_aggregate_view = ((c, a), d, b)
+    // @Deprecated [use rony_view instead]
     repeated string rony_aggregate_view = 50015;
+    repeated PrimaryKeyOpt rony_view = 50025;
 
 }
 

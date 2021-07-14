@@ -9,8 +9,8 @@ CREATE TABLE tab_model_1
 	p_5  bigint,
 	enum  int,
 	sdata  blob,
-	PRIMARY KEY ((id), shard_key)
-) WITH CLUSTERING ORDER BY (shard_key ASC);
+	PRIMARY KEY ((id), shard_key, enum)
+) WITH CLUSTERING ORDER BY (shard_key ASC, enum ASC);
 
 CREATE MATERIALIZED VIEW view_model_1_by_enum AS
 SELECT *
@@ -56,7 +56,7 @@ CREATE TABLE tab_model_3
 	PRIMARY KEY ((id, shard_key), p_1)
 ) WITH CLUSTERING ORDER BY (p_1 DESC);
 
-CREATE MATERIALIZED VIEW view_model_3_by_p_1 AS
+CREATE MATERIALIZED VIEW view_model_3_by_p_1_shard AS
 SELECT *
 FROM tab_model_3
 WHERE p_1 IS NOT null
@@ -64,7 +64,7 @@ AND shard_key IS NOT null
 AND id IS NOT null
 PRIMARY KEY ((p_1), shard_key, id) WITH CLUSTERING ORDER BY (shard_key ASC, id ASC);
 
-CREATE MATERIALIZED VIEW view_model_3_by_p_1 AS
+CREATE MATERIALIZED VIEW view_model_3_by_p_1_id AS
 SELECT *
 FROM tab_model_3
 WHERE p_1 IS NOT null

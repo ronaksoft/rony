@@ -57,20 +57,112 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 		arg.Fields = append(arg.Fields, GetFieldArg(file, gFile, f))
 	}
 
-	// parse model based on rony proto options
-	arg.parseModel(file, gFile, m)
+	// Generate the aggregate description from proto options
+	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+	arg.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
+	if arg.IsSingleton {
+		// if message is going to be singleton then it could not be aggregate
+		return arg
+	}
+
+	if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) == nil {
+		// parse model based on rony proto options
+		arg.parseLegacyModel(file, gFile, m)
+		return arg
+	}
+
+	arg.IsAggregate = true
+	arg.parsePrimaryKeyOpt(file, gFile, m)
+
 	return arg
 }
 
-func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
-	// Generate the aggregate description from proto options
+func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	ma.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
-	if ma.IsSingleton {
-		// if message is going to be singleton then it could not be aggregate
-		return
+	tablePK := proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt)
+	viewPKs := proto.GetExtension(opt, rony.E_RonyView).([]*rony.PrimaryKeyOpt)
+
+	// Generate Go and CQL kinds of the fields
+	cqlTypes := map[string]string{}
+	goTypes := map[string]string{}
+	protoTypes := map[string]string{}
+	uniqueView := map[string]*ModelKey{}
+	for _, f := range m.Fields {
+		protoTypes[f.GoName] = f.Desc.Kind().String()
+		cqlTypes[f.GoName] = CqlKind(f.Desc)
+		goTypes[f.GoName] = GoKind(file, gFile, f.Desc)
 	}
 
+	// Fill Table's ModelKey
+	ma.Table = &ModelKey{
+		Arg: ma,
+	}
+	for _, k := range tablePK.PartKey {
+		ma.Table.pks = append(ma.Table.pks, Prop{
+			Name:      k,
+			ProtoType: protoTypes[k],
+			CqlType:   cqlTypes[k],
+			GoType:    goTypes[k],
+			Order:     "",
+		})
+	}
+	for _, k := range tablePK.SortKey {
+		order := ASC
+		if strings.HasPrefix(k, "-") {
+			order = DESC
+		}
+
+		k = strings.TrimLeft(k, "-")
+		ma.Table.cks = append(ma.Table.cks, Prop{
+			Name:      k,
+			ProtoType: protoTypes[k],
+			CqlType:   cqlTypes[k],
+			GoType:    goTypes[k],
+			Order:     order,
+		})
+	}
+
+	// Fill Views' ModelKey
+	for _, v := range viewPKs {
+		view := &ModelKey{
+			Arg:          ma,
+			orderByAlias: v.GetOrderName(),
+		}
+		for _, k := range v.PartKey {
+			view.pks = append(view.pks, Prop{
+				Name:      k,
+				ProtoType: protoTypes[k],
+				CqlType:   cqlTypes[k],
+				GoType:    goTypes[k],
+				Order:     "",
+			})
+		}
+		for _, k := range v.SortKey {
+			order := ASC
+			if strings.HasPrefix(k, "-") {
+				order = DESC
+			}
+			k = strings.TrimLeft(k, "-")
+			view.cks = append(view.cks, Prop{
+				Name:      k,
+				ProtoType: protoTypes[k],
+				CqlType:   cqlTypes[k],
+				GoType:    goTypes[k],
+				Order:     order,
+			})
+		}
+		if !ma.Table.IsSubset(view) {
+			panic("BUG!! views must be subset of the table")
+		}
+		if oldView, ok := uniqueView[view.Names(PropFilterPKs, "", "", "", None)]; ok {
+			view.index = oldView.index + 1
+		}
+		uniqueView[view.Names(PropFilterPKs, "", "", "", None)] = view
+		ma.Views = append(ma.Views, view)
+	}
+}
+
+func (ma *MessageArg) parseLegacyModel(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
 	t, err := Parse(m)
 	if err != nil {
 		panic(err)
@@ -80,6 +172,7 @@ func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedF
 	cqlTypes := map[string]string{}
 	goTypes := map[string]string{}
 	protoTypes := map[string]string{}
+	uniqueView := map[string]*ModelKey{}
 	for _, f := range m.Fields {
 		protoTypes[f.GoName] = f.Desc.Kind().String()
 		cqlTypes[f.GoName] = CqlKind(f.Desc)
@@ -149,6 +242,10 @@ func (ma *MessageArg) parseModel(file *protogen.File, gFile *protogen.GeneratedF
 					Order:     order,
 				})
 			}
+			if oldView, ok := uniqueView[view.Names(PropFilterPKs, "", "", "", None)]; ok {
+				view.index = oldView.index + 1
+			}
+			uniqueView[view.Names(PropFilterPKs, "", "", "", None)] = view
 			ma.Views = append(ma.Views, view)
 		}
 	}
@@ -183,6 +280,15 @@ func (ma MessageArg) NameKC() string {
 
 func (ma MessageArg) NameSC() string {
 	return tools.ToSnake(ma.Name)
+}
+
+func (ma MessageArg) ViewsByPK() map[string][]*ModelKey {
+	var res = map[string][]*ModelKey{}
+	for _, v := range ma.Views {
+		k := v.Names(PropFilterPKs, "", "", "", None)
+		res[k] = append(res[k], v)
+	}
+	return res
 }
 
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
@@ -256,13 +362,23 @@ func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protog
 type MethodArg struct {
 	desc        protoreflect.MethodDescriptor
 	Name        string
-	NameCC      string // LowerCamelCase(Name)
-	NameKC      string // KebabCase(Name)
 	Input       MessageArg
 	Output      MessageArg
 	RestEnabled bool
 	TunnelOnly  bool
 	Rest        RestArg
+}
+
+func (ma MethodArg) NameCC() string {
+	return tools.ToLowerCamel(ma.Name)
+}
+
+func (ma MethodArg) NameKC() string {
+	return tools.ToKebab(ma.Name)
+}
+
+func (ma MethodArg) NameSC() string {
+	return tools.ToSnake(ma.Name)
 }
 
 type RestArg struct {
@@ -278,8 +394,6 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 		desc: m.Desc,
 	}
 	arg.Name = m.GoName
-	arg.NameCC = tools.ToLowerCamel(arg.Name)
-	arg.NameKC = tools.ToKebab(arg.Name)
 	arg.Input = GetMessageArg(file, gFile, m.Input)
 	arg.Output = GetMessageArg(file, gFile, m.Output)
 	opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
@@ -353,13 +467,19 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 }
 
 type ModelKey struct {
-	Arg *MessageArg
-	pks []Prop
-	cks []Prop
+	Arg          *MessageArg
+	pks          []Prop
+	cks          []Prop
+	index        int
+	orderByAlias string
 }
 
 func (m *ModelKey) Name() string {
 	return m.Arg.Name
+}
+
+func (m *ModelKey) OrderByAlias() string {
+	return m.orderByAlias
 }
 
 func (m *ModelKey) PartitionKeys() []Prop {
@@ -387,6 +507,26 @@ func (m *ModelKey) Keys() []Prop {
 	all = append(all, m.pks...)
 	all = append(all, m.cks...)
 	return all
+}
+
+func (m *ModelKey) Index() int {
+	return m.index
+}
+
+func (m *ModelKey) IsSubset(n *ModelKey) bool {
+	for _, np := range n.Keys() {
+		found := false
+		for _, mp := range m.Keys() {
+			if mp.Name == np.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // NameTypes is kind of strings.Join function which returns a custom format of combination of model properties.
@@ -436,7 +576,7 @@ func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase Text
 
 // Names is kind of strings.Join function which returns a custom format of property names.
 // This is a helper function used in code generator templates.
-func (m *ModelKey) Names(filter PropFilter, prefix string, sep string, nameCase TextCase) string {
+func (m *ModelKey) Names(filter PropFilter, prefix, postfix string, sep string, nameCase TextCase) string {
 	var props []Prop
 	switch filter {
 	case PropFilterALL:
@@ -465,6 +605,7 @@ func (m *ModelKey) Names(filter PropFilter, prefix string, sep string, nameCase 
 		default:
 			sb.WriteString(p.Name)
 		}
+		sb.WriteString(postfix)
 	}
 	return sb.String()
 }

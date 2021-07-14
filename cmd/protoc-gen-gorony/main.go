@@ -67,6 +67,9 @@ func main() {
 					generatedFile2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.cql", protoFile.GeneratedFilenamePrefix), protoFile.GoImportPath)
 					g5 := cql.NewCQL(protoFile, generatedFile2)
 					g5.Generate()
+
+					g6 := cql.NewGO(protoFile, generatedFile)
+					g6.Generate()
 				}
 			}
 

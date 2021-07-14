@@ -87,8 +87,8 @@ func (g *Generator) Generate() {
 			}
 			return fmt.Sprintf("'M', C_%s, %d, %s",
 				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", ",", codegen.None))),
-				m.Names(codegen.PropFilterALL, prefix, ",", nc),
+				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+				m.Names(codegen.PropFilterALL, prefix, "", ",", nc),
 			)
 		},
 		"DBKeyPKs": func(m codegen.ModelKey, prefix string) string {
@@ -98,14 +98,14 @@ func (g *Generator) Generate() {
 			}
 			return fmt.Sprintf("'M', C_%s, %d, %s",
 				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", ",", codegen.None))),
-				m.Names(codegen.PropFilterPKs, prefix, ",", nc),
+				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+				m.Names(codegen.PropFilterPKs, prefix, "", ",", nc),
 			)
 		},
 		"DBPrefix": func(m codegen.ModelKey) string {
 			return fmt.Sprintf("'M', C_%s, %d",
 				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", ",", codegen.None))),
+				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
 			)
 		},
 		"IndexDBKey": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
@@ -116,7 +116,7 @@ func (g *Generator) Generate() {
 			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
 				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
 				prefix, f.Name, postfix,
-				m.Table.Names(codegen.PropFilterALL, prefix, ",", nc),
+				m.Table.Names(codegen.PropFilterALL, prefix, "", ",", nc),
 			)
 		},
 		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
@@ -130,28 +130,28 @@ func (g *Generator) Generate() {
 			if lcc {
 				nc = codegen.LowerCamelCase
 			}
-			return m.Names(codegen.PropFilterALL, prefix, sep, nc)
+			return m.Names(codegen.PropFilterALL, prefix, "", sep, nc)
 		},
 		"StringPKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
 			nc := codegen.None
 			if lcc {
 				nc = codegen.LowerCamelCase
 			}
-			return m.Names(codegen.PropFilterPKs, prefix, sep, nc)
+			return m.Names(codegen.PropFilterPKs, prefix, "", sep, nc)
 		},
 		"StringCKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
 			nc := codegen.None
 			if lcc {
 				nc = codegen.LowerCamelCase
 			}
-			return m.Names(codegen.PropFilterCKs, prefix, sep, nc)
+			return m.Names(codegen.PropFilterCKs, prefix, "", sep, nc)
 		},
 		"OrderTypes": func(m codegen.MessageArg) map[string]int {
 			var (
 				uniqueOrders = make(map[string]int)
 			)
 			for idx, v := range m.Views {
-				uniqueOrders[v.Names(codegen.PropFilterPKs, "", "", codegen.None)] = idx
+				uniqueOrders[v.Names(codegen.PropFilterPKs, "", "", "", codegen.None)] = idx
 			}
 
 			return uniqueOrders
@@ -176,11 +176,6 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genAggregateRead").Funcs(aggregateFuncs).Parse(genAggregateRead)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genAggregateDelete").Funcs(aggregateFuncs).Parse(genAggregateDelete)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genAggregateHelpers").Funcs(aggregateFuncs).Parse(genAggregateHelpers)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genIterByPK").Funcs(aggregateFuncs).Parse(genIterByPK)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genIListByPK").Funcs(aggregateFuncs).Parse(genListByPK)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
 		}
 	}
 }
@@ -530,344 +525,5 @@ const (
 			{{- end }}
 		{{- end }}
 	{{- end }}
-{{ end }}
-`
-
-const genIter = `
-{{$model := .}}
-func Iter{{Plural .Name}} (txn *rony.StoreTxn, alloc *tools.Allocator, cb func(m *{{.Name}}) bool, orderBy ...{{.Name}}Order) error {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	iterOpt := store.DefaultIteratorOptions
-
-	{{- if gt (len .Views) 0 }}
-		if len(orderBy) == 0 {
-			iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		} else {
-			switch orderBy[0] {
-			{{- range $order, $idx := OrderTypes .}}
-			case {{$model.Name}}OrderBy{{$order}}:
-				iterOpt.Prefix = alloc.Gen({{DBPrefix (index $model.Views $idx)}})
-			{{- end }}
-			default:
-				iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-			}
-		}
-	{{- else }}
-		iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-	{{- end }}
-
-	iter := txn.NewIterator(iterOpt)
-	for iter.Rewind(); iter.ValidForPrefix(iterOpt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func (val []byte) error {
-			m := &{{$model.Name}}{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err 
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil
-}
-
-`
-
-const genList = `
-{{$model := .}}
-func List{{.Name}} (
-{{FuncArgs .Table "offset"}}, lo *store.ListOption, cond func(m *{{.Name}}) bool, orderBy ... {{.Name}}Order,
-) ([]* {{.Name}}, error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	iterOpt := store.DefaultIteratorOptions
-	res := make([]*{{.Name}}, 0, lo.Limit())
-	err := store.View(func(txn *rony.StoreTxn) error {
-		opt := store.DefaultIteratorOptions
-		{{- if gt (len .Views) 0 }}
-			if len(orderBy) == 0 {
-				iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-			} else {
-				switch orderBy[0] {
-				{{- range $order, $idx := OrderTypes .}}
-				case {{$model.Name}}OrderBy{{$order}}:
-					iterOpt.Prefix = alloc.Gen({{DBPrefix (index $model.Views $idx)}})
-				{{- end }}
-				default:
-					iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-				}
-			}
-		{{- else }}
-			iterOpt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		{{- end }}
-		opt.Reverse = lo.Backward()
-		osk := alloc.Gen({{DBKeyPKs .Table "offset"}})
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func(val []byte) error {
-				m := &{{$model.Name}}{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err 
-				}
-				if cond == nil || cond(m) {
-					res = append(res, m)
-				} else {
-					limit++
-				}
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-`
-
-const genIterByPK = `
-{{$model := .}}
-{{- if gt (len .Table.CKs) 0 }}
-func Iter{{.Name}}By{{StringPKs .Table "" "And" false}} (
-	txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgsPKs .Table ""}}, cb func(m *{{.Name}}) bool,
-) error {
-		if alloc == nil {
-			alloc = tools.NewAllocator()
-			defer alloc.ReleaseAll()
-		}
-
-		exitLoop := false
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.Gen({{DBKeyPKs .Table ""}})
-		iter := txn.NewIterator(opt)
-		for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			_ = iter.Item().Value(func (val []byte) error {
-				m := &{{$model.Name}}{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				if !cb(m) {
-					exitLoop = true
-				}
-				return nil
-			})
-			if exitLoop {
-				break
-			}
-		}
-		iter.Close()
-		return nil
-	}
-{{- end }}
-
-{{- range $idx, $v := .Views }}
-{{- if gt (len .CKs) 0 }}
-func Iter{{$model.Name}}By{{StringPKs . "" "And" false}}{{$idx}} (
-	txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgsPKs . ""}}, cb func(m *{{$model.Name}}) bool,
-) error {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	exitLoop := false
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.Gen({{DBKeyPKs . ""}})
-	iter := txn.NewIterator(opt)
-	for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		_ = iter.Item().Value(func (val []byte) error {
-			m := &{{$model.Name}}{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if !cb(m) {
-				exitLoop = true
-			}
-			return nil
-		})
-		if exitLoop {
-			break
-		}
-	}
-	iter.Close()
-	return nil 
-}
-
-{{ end }}
-{{- end }}
-
-`
-
-const genListByPK = `
-{{$model := .}}
-{{- if gt (len .Table.CKs) 0}}
-func List{{.Name}}By{{StringPKs .Table "" "And" false}} (
-	{{FuncArgsPKs .Table ""}}, {{FuncArgsCKs .Table "offset"}}, lo *store.ListOption, cond func(m *{{.Name}}) bool,
-) ([]*{{.Name}}, error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	res := make([]*{{.Name}}, 0, lo.Limit())
-	err := store.View(func(txn *rony.StoreTxn) error {
-		opt := store.DefaultIteratorOptions
-		opt.Prefix = alloc.Gen({{DBKeyPKs .Table ""}})
-		opt.Reverse = lo.Backward()
-		osk := alloc.Gen({{DBKeyPKs .Table ""}}, {{StringCKs .Table "offset" "," false}})
-		iter := txn.NewIterator(opt)
-		offset := lo.Skip()
-		limit := lo.Limit()
-		for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-			if offset--; offset >= 0 {
-				continue
-			}
-			if limit--; limit < 0 {
-				break
-			}
-			_ = iter.Item().Value(func (val []byte) error {
-				m := &{{$model.Name}}{}
-				err := m.Unmarshal(val)
-				if err != nil {
-					return err
-				}
-				if cond == nil || cond(m) {
-					res = append(res, m)
-				} else {
-					limit++
-				}
-				return nil
-			})
-		}
-		iter.Close()
-		return nil
-	})
-	return res, err
-}
-
-{{- end }}
-
-{{- range $idx, $v := .Views }}
-{{- if gt (len .CKs) 0 }}
-func List{{$model.Name}}By{{StringPKs . "" "And" false}}{{$idx}} (
-	{{FuncArgsPKs . ""}}, {{FuncArgsCKs . "offset"}}, lo *store.ListOption, cond func(m *{{$model.Name}}) bool,
-) ([]*{{$model.Name}}, error) {
-alloc := tools.NewAllocator()
-defer alloc.ReleaseAll()
-
-res := make([]*{{$model.Name}}, 0, lo.Limit())
-err := store.View(func(txn *rony.StoreTxn) error {
-	opt := store.DefaultIteratorOptions
-	opt.Prefix = alloc.Gen({{DBKeyPKs . ""}})
-	opt.Reverse = lo.Backward()
-	osk := alloc.Gen({{DBKeyPKs . ""}}, {{StringCKs . "offset" "," false}})
-	iter := txn.NewIterator(opt)
-	offset := lo.Skip()
-	limit := lo.Limit()
-	for iter.Seek(osk); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-		if offset--; offset >= 0 {
-			continue
-		}
-		if limit--; limit < 0 {
-			break
-		}
-		_ = iter.Item().Value(func (val []byte) error {
-			m := &{{$model.Name}}{}
-			err := m.Unmarshal(val)
-			if err != nil {
-				return err
-			}
-			if cond == nil || cond(m) {
-				res = append(res, m)
-			} else {
-				limit++
-			}
-			return nil
-		})
-	}
-		iter.Close()
-		return nil
-})
-return res, err
-}
-
-{{ end }}
-{{- end }}
-`
-
-const genListByIndex = `
-{{- $model := . -}}
-{{- range .Fields }}
-{{- if .HasIndex }}
-	{{- if ne .Kind "message" }}
-		func List{{$model.Name}}By{{Singular .Name}} (
-			{{Singular .Name}} {{.GoKind}}, lo *store.ListOption, cond func(m *{{$model.Name}}) bool,
-		) ([]*{{$model.Name}}, error) {
-			alloc := tools.NewAllocator()
-			defer alloc.ReleaseAll()
-
-			res := make([]*{{$model.Name}}, 0, lo.Limit())
-			err := store.View(func(txn *rony.StoreTxn) error {
-				opt := store.DefaultIteratorOptions
-				opt.Prefix = alloc.Gen({{IndexDBPrefix $model . "" ""}})
-				iter := txn.NewIterator(opt)
-				offset := lo.Skip()
-				limit := lo.Limit()
-				for iter.Rewind(); iter.ValidForPrefix(opt.Prefix); iter.Next() {
-					if offset--; offset >= 0 {
-						continue
-					}
-					if limit--; limit < 0 {
-						break
-					}
-					_ = iter.Item().Value(func (val []byte) error {
-						item, err := txn.Get(val)
-						if err != nil {
-							return err
-						}
-						return item.Value(func (val []byte) error {
-							m := &{{$model.Name}}{}
-							err := m.Unmarshal(val)
-							if err != nil {
-								return err
-							}
-							if cond == nil || cond(m) {
-								res = append(res, m)
-							} else {
-								limit++
-							}
-							return nil
-						})
-					})
-				}
-				iter.Close()			
-				return nil
-			})
-			return res, err
-		}
-	{{- end }}
-{{- end  }}
-
 {{ end }}
 `

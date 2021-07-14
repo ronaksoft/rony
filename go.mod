@@ -27,6 +27,7 @@ require (
 	github.com/panjf2000/gnet v1.4.2
 	github.com/prometheus/client_golang v1.11.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
+	github.com/scylladb/gocqlx/v2 v2.4.0
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.2.1
