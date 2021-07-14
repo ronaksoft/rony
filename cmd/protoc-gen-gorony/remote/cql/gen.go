@@ -82,60 +82,80 @@ func (g *Generator) Generate() {
 }
 
 func (g *Generator) generateGo() {
+	funcs := map[string]interface{}{
+		"Singular": func(x string) string {
+			return inflection.Singular(x)
+		},
+		"Plural": func(x string) string {
+			return inflection.Plural(x)
+		},
+		"MVNameSC": func(m codegen.ModelKey) string {
+			sb := strings.Builder{}
+			sb.WriteString(tools.ToSnake(m.Name()))
+			sb.WriteString("_by_")
+			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
+			if m.OrderByAlias() != "" {
+				sb.WriteString("_")
+				sb.WriteString(tools.ToSnake(m.OrderByAlias()))
+			} else if m.Index() > 0 {
+				sb.WriteString("_")
+				sb.WriteString(tools.IntToStr(m.Index()))
+			}
+			return sb.String()
+		},
+		"MVName": func(m codegen.ModelKey) string {
+			sb := strings.Builder{}
+			sb.WriteString(m.Name())
+			sb.WriteString("By")
+			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "", codegen.None))
+			if m.OrderByAlias() != "" {
+				sb.WriteString(m.OrderByAlias())
+			} else if m.Index() > 0 {
+				sb.WriteString(tools.IntToStr(m.Index()))
+			}
+			return sb.String()
+		},
+		"Columns": func(m codegen.ModelKey) string {
+			sb := strings.Builder{}
+			sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
+			sb.WriteString(", \"sdata\"")
+			return sb.String()
+		},
+		"ColumnsValue": func(m codegen.ModelKey, prefix, postfix string) string {
+			textCase := codegen.LowerCamelCase
+			if prefix != "" {
+				textCase = codegen.None
+			}
+			sb := strings.Builder{}
+			sb.WriteString(m.Names(codegen.PropFilterALL, prefix, postfix, ", ", textCase))
+			return sb.String()
+		},
+		"Where": func(m codegen.ModelKey) string {
+			sb := strings.Builder{}
+			sb.WriteString(m.Names(codegen.PropFilterALL, "qb.Eq(\"", "\")", ", ", codegen.SnakeCase))
+			return sb.String()
+		},
+		"PartKeys": func(m codegen.ModelKey) string {
+			return m.Names(codegen.PropFilterPKs, "\"", "\"", ", ", codegen.SnakeCase)
+		},
+		"SortKeys": func(m codegen.ModelKey) string {
+			return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
+		},
+		"KeyArgs": func(m codegen.ModelKey) string {
+			return m.NameTypes(codegen.PropFilterALL, "", codegen.LowerCamelCase, codegen.LangGo)
+		},
+
+	}
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(g.f, g.g, m)
-		funcs := map[string]interface{}{
-			"Singular": func(x string) string {
-				return inflection.Singular(x)
-			},
-			"Plural": func(x string) string {
-				return inflection.Plural(x)
-			},
-			"MVNameSC": func(m codegen.ModelKey) string {
-				sb := strings.Builder{}
-				sb.WriteString(tools.ToSnake(m.Name()))
-				sb.WriteString("_by_")
-				sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
-				if m.OrderByAlias() != "" {
-					sb.WriteString("_")
-					sb.WriteString(tools.ToSnake(m.OrderByAlias()))
-				} else if m.Index() > 0 {
-					sb.WriteString("_")
-					sb.WriteString(tools.IntToStr(m.Index()))
-				}
-				return sb.String()
-			},
-			"MVName": func(m codegen.ModelKey) string {
-				sb := strings.Builder{}
-				sb.WriteString(m.Name())
-				sb.WriteString("By")
-				sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "", codegen.None))
-				if m.OrderByAlias() != "" {
-					sb.WriteString(m.OrderByAlias())
-				} else if m.Index() > 0 {
-					sb.WriteString(tools.IntToStr(m.Index()))
-				}
-				return sb.String()
-			},
-			"Columns": func(m codegen.ModelKey) string {
-				sb := strings.Builder{}
-				sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
-				sb.WriteString(", \"sdata\"")
-				return sb.String()
-			},
-			"PartKeys": func(m codegen.ModelKey) string {
-				return m.Names(codegen.PropFilterPKs, "\"", "\"", ", ", codegen.SnakeCase)
-			},
-			"SortKeys": func(m codegen.ModelKey) string {
-				return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
-			},
-		}
 		if arg.IsAggregate {
+			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
+			// g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/qb"})
 
-			g.g.P(g.Exec(template.Must(template.New("genTable").Funcs(funcs).Parse(genTable)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(funcs).Parse(genRemoteRepo)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(funcs).Parse(genCRUD)), arg))
 		}
 	}
 }
@@ -246,35 +266,133 @@ PRIMARY KEY {{PrimaryKey .}}
 {{- WithClusteringKey . -}};
 {{ end }}
 `
-const genTable = `
-var tab{{.Name}} = table.New(table.Metadata{
-	Name: "tab_{{Singular .NameSC}}",
-	Columns: []string{ {{- Columns .Table -}} },
-	PartKey: []string{ {{- PartKeys .Table -}} },
-	SortKey: []string{ {{- SortKeys .Table -}} },
-})
-{{ range .Views }}
-var view{{MVName .}} = table.New(table.Metadata{
-	Name: "view_{{MVNameSC .}}",
-	Columns: []string{ {{- Columns . -}} },
-	PartKey: []string{ {{- PartKeys . -}} },
-	SortKey: []string{ {{- SortKeys . -}} },
-})
-{{ end }}
-`
 const genRemoteRepo = `
-type {{.Name}}RemoteRepo struct {
+{{$repoName := print .Name "RemoteRepo"}}
+type {{$repoName}} struct {
+	qp map[string]*pools.QueryPool
+	t *table.Table
+	v map[string]*table.Table
 	s gocqlx.Session
 }
 
-func New{{.Name}}RemoteRepo(s gocqlx.Session) *{{.Name}}RemoteRepo {
-	return &{{.Name}}RemoteRepo{
+func New{{$repoName}}(s gocqlx.Session) *{{$repoName}} {
+	r := &{{$repoName}}{
 		s: s,
 	}
+	r.t = table.New(table.Metadata{
+		Name: "tab_{{Singular .NameSC}}",
+		Columns: []string{ {{- Columns .Table -}} },
+		PartKey: []string{ {{- PartKeys .Table -}} },
+		SortKey: []string{ {{- SortKeys .Table -}} },
+	})
+{{ range .Views }}
+	r.v["{{.Alias}}"]= table.New(table.Metadata{
+		Name: "view_{{MVNameSC .}}",
+		Columns: []string{ {{- Columns . -}} },
+		PartKey: []string{ {{- PartKeys . -}} },
+		SortKey: []string{ {{- SortKeys . -}} },
+	})
+{{ end }}
+    
+	r.qp = map[string]*pools.QueryPool{
+		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Unique().Query(s)
+		}),
+		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Query(s)
+		}),
+		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.UpdateBuilder().Set("sdata").Query(s)
+		}),
+		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.DeleteBuilder().Query(s)
+		}),
+		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.GetQuery(s)
+		}),
+
+	}
+	return r
 }
+
+func (r *{{$repoName}}) Table() *table.Table {
+	return r.t
+}
+
+func (r *{{$repoName}}) T() *table.Table {
+	return r.t
+}
+
+{{ range .Views }}
+func (r *{{$repoName}}) {{.Alias}}() *table.Table {
+	return r.v["{{.Alias}}"]
+}
+{{ end }}
 `
-const genCreate = ``
-const genCreateIF = ``
+const genCRUD = `
+{{$repoName := print .Name "RemoteRepo"}}
+{{$modelName := .Name}}
+func (r *{{$repoName}}) Insert(m *{{$modelName}}, replace bool) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+	
+	var q *gocqlx.Queryx
+	if replace {
+		q = r.qp["insertIF"].GetQuery()
+		defer r.qp["insertIF"].Put(q)
+	} else {
+		q = r.qp["insert"].GetQuery()
+		defer r.qp["insert"].Put(q)
+	}
+	
+
+	q.Bind({{ColumnsValue .Table "m." ""}}, *buf.Bytes())
+	return q.Exec()
+}
+
+func (r *{{$repoName}}) Update(m *{{$modelName}}) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+	
+	q := r.qp["update"].GetQuery()
+	defer r.qp["update"].Put(q)
+
+	
+	q.Bind(*buf.Bytes(), {{ColumnsValue .Table "m." ""}})
+	return q.Exec()
+}
+
+func (r *{{$repoName}}) Delete({{KeyArgs .Table}}) error {
+	q := r.qp["delete"].GetQuery()
+	defer r.qp["delete"].Put(q)
+
+	
+	q.Bind({{ColumnsValue .Table "" ""}})
+	return q.Exec()
+}
+
+func (r *{{$repoName}}) Get({{KeyArgs .Table}}, m *{{$modelName}}) (*{{$modelName}}, error) {
+	q := r.qp["get"].GetQuery()
+	defer r.qp["get"].Put(q)
+
+	if m == nil {
+		m = &{{$modelName}}{}
+	}
+
+	q.Bind({{ColumnsValue .Table "" ""}})
+
+	var b []byte
+	err := q.Scan({{ColumnsValue .Table "&m." ""}}, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+
+`
+
 const genUpdate = ``
 const genDelete = ``
 const genRead = ``

@@ -471,11 +471,19 @@ type ModelKey struct {
 	pks          []Prop
 	cks          []Prop
 	index        int
+	alias        string
 	orderByAlias string
 }
 
 func (m *ModelKey) Name() string {
 	return m.Arg.Name
+}
+
+func (m *ModelKey) Alias() string {
+	if m.alias != "" {
+		return m.alias
+	}
+	return m.Names(PropFilterALL, "", "", "", None)
 }
 
 func (m *ModelKey) OrderByAlias() string {

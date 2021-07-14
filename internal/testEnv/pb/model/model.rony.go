@@ -866,81 +866,349 @@ func (x *Model3) HasP5(xx []byte) bool {
 	return false
 }
 
-var tabModel1 = table.New(table.Metadata{
-	Name:    "tab_model_1",
-	Columns: []string{"id", "shard_key", "enum", "sdata"},
-	PartKey: []string{"id"},
-	SortKey: []string{"shard_key", "enum"},
-})
-
-var viewModel1ByEnum = table.New(table.Metadata{
-	Name:    "view_model_1_by_enum",
-	Columns: []string{"enum", "shard_key", "id", "sdata"},
-	PartKey: []string{"enum"},
-	SortKey: []string{"shard_key", "id"},
-})
-
 type Model1RemoteRepo struct {
-	s gocqlx.Session
+	qp map[string]*pools.QueryPool
+	t  *table.Table
+	v  map[string]*table.Table
+	s  gocqlx.Session
 }
 
 func NewModel1RemoteRepo(s gocqlx.Session) *Model1RemoteRepo {
-	return &Model1RemoteRepo{
+	r := &Model1RemoteRepo{
 		s: s,
 	}
+	r.t = table.New(table.Metadata{
+		Name:    "tab_model_1",
+		Columns: []string{"id", "shard_key", "enum", "sdata"},
+		PartKey: []string{"id"},
+		SortKey: []string{"shard_key", "enum"},
+	})
+
+	r.v["EnumShardKeyID"] = table.New(table.Metadata{
+		Name:    "view_model_1_by_enum",
+		Columns: []string{"enum", "shard_key", "id", "sdata"},
+		PartKey: []string{"enum"},
+		SortKey: []string{"shard_key", "id"},
+	})
+
+	r.qp = map[string]*pools.QueryPool{
+		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Unique().Query(s)
+		}),
+		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Query(s)
+		}),
+		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.UpdateBuilder().Set("sdata").Query(s)
+		}),
+		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.DeleteBuilder().Query(s)
+		}),
+		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.GetQuery(s)
+		}),
+	}
+	return r
 }
 
-var tabModel2 = table.New(table.Metadata{
-	Name:    "tab_model_2",
-	Columns: []string{"id", "shard_key", "p_1", "sdata"},
-	PartKey: []string{"id", "shard_key"},
-	SortKey: []string{"p_1"},
-})
+func (r *Model1RemoteRepo) Table() *table.Table {
+	return r.t
+}
 
-var viewModel2ByP1 = table.New(table.Metadata{
-	Name:    "view_model_2_by_p_1",
-	Columns: []string{"p_1", "shard_key", "id", "sdata"},
-	PartKey: []string{"p_1"},
-	SortKey: []string{"shard_key", "id"},
-})
+func (r *Model1RemoteRepo) T() *table.Table {
+	return r.t
+}
+
+func (r *Model1RemoteRepo) EnumShardKeyID() *table.Table {
+	return r.v["EnumShardKeyID"]
+}
+
+func (r *Model1RemoteRepo) Insert(m *Model1, replace bool) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	var q *gocqlx.Queryx
+	if replace {
+		q = r.qp["insertIF"].GetQuery()
+		defer r.qp["insertIF"].Put(q)
+	} else {
+		q = r.qp["insert"].GetQuery()
+		defer r.qp["insert"].Put(q)
+	}
+
+	q.Bind(m.ID, m.ShardKey, m.Enum, *buf.Bytes())
+	return q.Exec()
+}
+
+func (r *Model1RemoteRepo) Update(m *Model1) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	q := r.qp["update"].GetQuery()
+	defer r.qp["update"].Put(q)
+
+	q.Bind(*buf.Bytes(), m.ID, m.ShardKey, m.Enum)
+	return q.Exec()
+}
+
+func (r *Model1RemoteRepo) Delete(id int32, shardKey int32, enum Enum) error {
+	q := r.qp["delete"].GetQuery()
+	defer r.qp["delete"].Put(q)
+
+	q.Bind(id, shardKey, enum)
+	return q.Exec()
+}
+
+func (r *Model1RemoteRepo) Get(id int32, shardKey int32, enum Enum, m *Model1) (*Model1, error) {
+	q := r.qp["get"].GetQuery()
+	defer r.qp["get"].Put(q)
+
+	if m == nil {
+		m = &Model1{}
+	}
+
+	q.Bind(id, shardKey, enum)
+
+	var b []byte
+	err := q.Scan(&m.ID, &m.ShardKey, &m.Enum, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
 
 type Model2RemoteRepo struct {
-	s gocqlx.Session
+	qp map[string]*pools.QueryPool
+	t  *table.Table
+	v  map[string]*table.Table
+	s  gocqlx.Session
 }
 
 func NewModel2RemoteRepo(s gocqlx.Session) *Model2RemoteRepo {
-	return &Model2RemoteRepo{
+	r := &Model2RemoteRepo{
 		s: s,
 	}
+	r.t = table.New(table.Metadata{
+		Name:    "tab_model_2",
+		Columns: []string{"id", "shard_key", "p_1", "sdata"},
+		PartKey: []string{"id", "shard_key"},
+		SortKey: []string{"p_1"},
+	})
+
+	r.v["P1ShardKeyID"] = table.New(table.Metadata{
+		Name:    "view_model_2_by_p_1",
+		Columns: []string{"p_1", "shard_key", "id", "sdata"},
+		PartKey: []string{"p_1"},
+		SortKey: []string{"shard_key", "id"},
+	})
+
+	r.qp = map[string]*pools.QueryPool{
+		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Unique().Query(s)
+		}),
+		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Query(s)
+		}),
+		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.UpdateBuilder().Set("sdata").Query(s)
+		}),
+		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.DeleteBuilder().Query(s)
+		}),
+		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.GetQuery(s)
+		}),
+	}
+	return r
 }
 
-var tabModel3 = table.New(table.Metadata{
-	Name:    "tab_model_3",
-	Columns: []string{"id", "shard_key", "p_1", "sdata"},
-	PartKey: []string{"id", "shard_key"},
-	SortKey: []string{"p_1"},
-})
+func (r *Model2RemoteRepo) Table() *table.Table {
+	return r.t
+}
 
-var viewModel3ByP1Shard = table.New(table.Metadata{
-	Name:    "view_model_3_by_p_1_shard",
-	Columns: []string{"p_1", "shard_key", "id", "sdata"},
-	PartKey: []string{"p_1"},
-	SortKey: []string{"shard_key", "id"},
-})
+func (r *Model2RemoteRepo) T() *table.Table {
+	return r.t
+}
 
-var viewModel3ByP1ID = table.New(table.Metadata{
-	Name:    "view_model_3_by_p_1_id",
-	Columns: []string{"p_1", "id", "sdata"},
-	PartKey: []string{"p_1"},
-	SortKey: []string{"id"},
-})
+func (r *Model2RemoteRepo) P1ShardKeyID() *table.Table {
+	return r.v["P1ShardKeyID"]
+}
+
+func (r *Model2RemoteRepo) Insert(m *Model2, replace bool) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	var q *gocqlx.Queryx
+	if replace {
+		q = r.qp["insertIF"].GetQuery()
+		defer r.qp["insertIF"].Put(q)
+	} else {
+		q = r.qp["insert"].GetQuery()
+		defer r.qp["insert"].Put(q)
+	}
+
+	q.Bind(m.ID, m.ShardKey, m.P1, *buf.Bytes())
+	return q.Exec()
+}
+
+func (r *Model2RemoteRepo) Update(m *Model2) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	q := r.qp["update"].GetQuery()
+	defer r.qp["update"].Put(q)
+
+	q.Bind(*buf.Bytes(), m.ID, m.ShardKey, m.P1)
+	return q.Exec()
+}
+
+func (r *Model2RemoteRepo) Delete(id int64, shardKey int32, p1 string) error {
+	q := r.qp["delete"].GetQuery()
+	defer r.qp["delete"].Put(q)
+
+	q.Bind(id, shardKey, p1)
+	return q.Exec()
+}
+
+func (r *Model2RemoteRepo) Get(id int64, shardKey int32, p1 string, m *Model2) (*Model2, error) {
+	q := r.qp["get"].GetQuery()
+	defer r.qp["get"].Put(q)
+
+	if m == nil {
+		m = &Model2{}
+	}
+
+	q.Bind(id, shardKey, p1)
+
+	var b []byte
+	err := q.Scan(&m.ID, &m.ShardKey, &m.P1, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
 
 type Model3RemoteRepo struct {
-	s gocqlx.Session
+	qp map[string]*pools.QueryPool
+	t  *table.Table
+	v  map[string]*table.Table
+	s  gocqlx.Session
 }
 
 func NewModel3RemoteRepo(s gocqlx.Session) *Model3RemoteRepo {
-	return &Model3RemoteRepo{
+	r := &Model3RemoteRepo{
 		s: s,
 	}
+	r.t = table.New(table.Metadata{
+		Name:    "tab_model_3",
+		Columns: []string{"id", "shard_key", "p_1", "sdata"},
+		PartKey: []string{"id", "shard_key"},
+		SortKey: []string{"p_1"},
+	})
+
+	r.v["P1ShardKeyID"] = table.New(table.Metadata{
+		Name:    "view_model_3_by_p_1_shard",
+		Columns: []string{"p_1", "shard_key", "id", "sdata"},
+		PartKey: []string{"p_1"},
+		SortKey: []string{"shard_key", "id"},
+	})
+
+	r.v["P1ID"] = table.New(table.Metadata{
+		Name:    "view_model_3_by_p_1_id",
+		Columns: []string{"p_1", "id", "sdata"},
+		PartKey: []string{"p_1"},
+		SortKey: []string{"id"},
+	})
+
+	r.qp = map[string]*pools.QueryPool{
+		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Unique().Query(s)
+		}),
+		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.InsertBuilder().Query(s)
+		}),
+		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.UpdateBuilder().Set("sdata").Query(s)
+		}),
+		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.DeleteBuilder().Query(s)
+		}),
+		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.t.GetQuery(s)
+		}),
+	}
+	return r
+}
+
+func (r *Model3RemoteRepo) Table() *table.Table {
+	return r.t
+}
+
+func (r *Model3RemoteRepo) T() *table.Table {
+	return r.t
+}
+
+func (r *Model3RemoteRepo) P1ShardKeyID() *table.Table {
+	return r.v["P1ShardKeyID"]
+}
+
+func (r *Model3RemoteRepo) P1ID() *table.Table {
+	return r.v["P1ID"]
+}
+
+func (r *Model3RemoteRepo) Insert(m *Model3, replace bool) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	var q *gocqlx.Queryx
+	if replace {
+		q = r.qp["insertIF"].GetQuery()
+		defer r.qp["insertIF"].Put(q)
+	} else {
+		q = r.qp["insert"].GetQuery()
+		defer r.qp["insert"].Put(q)
+	}
+
+	q.Bind(m.ID, m.ShardKey, m.P1, *buf.Bytes())
+	return q.Exec()
+}
+
+func (r *Model3RemoteRepo) Update(m *Model3) error {
+	buf := pools.Buffer.FromProto(m)
+	defer pools.Buffer.Put(buf)
+
+	q := r.qp["update"].GetQuery()
+	defer r.qp["update"].Put(q)
+
+	q.Bind(*buf.Bytes(), m.ID, m.ShardKey, m.P1)
+	return q.Exec()
+}
+
+func (r *Model3RemoteRepo) Delete(id int64, shardKey int32, p1 []byte) error {
+	q := r.qp["delete"].GetQuery()
+	defer r.qp["delete"].Put(q)
+
+	q.Bind(id, shardKey, p1)
+	return q.Exec()
+}
+
+func (r *Model3RemoteRepo) Get(id int64, shardKey int32, p1 []byte, m *Model3) (*Model3, error) {
+	q := r.qp["get"].GetQuery()
+	defer r.qp["get"].Put(q)
+
+	if m == nil {
+		m = &Model3{}
+	}
+
+	q.Bind(id, shardKey, p1)
+
+	var b []byte
+	err := q.Scan(&m.ID, &m.ShardKey, &m.P1, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
 }
