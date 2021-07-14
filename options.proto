@@ -23,7 +23,9 @@ message RestOpt {
 message PrimaryKeyOpt {
     repeated string PartKey = 1;
     repeated string SortKey = 2;
-    optional string OrderName = 3;
+    // Alias could be used to override the name of materialized view. If this is not set, Rony automatically
+    // generates for you.
+    optional string Alias = 4;
 }
 
 extend google.protobuf.ServiceOptions {

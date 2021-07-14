@@ -22,3 +22,7 @@ type Store interface {
 	Update(fn func(*StoreTxn) error) error
 	Shutdown()
 }
+
+type MountKey interface {
+	private()
+}

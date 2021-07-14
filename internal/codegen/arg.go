@@ -95,7 +95,8 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 
 	// Fill Table's ModelKey
 	ma.Table = &ModelKey{
-		Arg: ma,
+		Arg:   ma,
+		alias: tablePK.GetAlias(),
 	}
 	for _, k := range tablePK.PartKey {
 		ma.Table.pks = append(ma.Table.pks, Prop{
@@ -125,8 +126,8 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 	// Fill Views' ModelKey
 	for _, v := range viewPKs {
 		view := &ModelKey{
-			Arg:          ma,
-			orderByAlias: v.GetOrderName(),
+			Arg:   ma,
+			alias: v.GetAlias(),
 		}
 		for _, k := range v.PartKey {
 			view.pks = append(view.pks, Prop{
@@ -467,12 +468,11 @@ func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protoge
 }
 
 type ModelKey struct {
-	Arg          *MessageArg
-	pks          []Prop
-	cks          []Prop
-	index        int
-	alias        string
-	orderByAlias string
+	Arg   *MessageArg
+	pks   []Prop
+	cks   []Prop
+	index int
+	alias string
 }
 
 func (m *ModelKey) Name() string {
@@ -480,14 +480,7 @@ func (m *ModelKey) Name() string {
 }
 
 func (m *ModelKey) Alias() string {
-	if m.alias != "" {
-		return m.alias
-	}
-	return m.Names(PropFilterALL, "", "", "", None)
-}
-
-func (m *ModelKey) OrderByAlias() string {
-	return m.orderByAlias
+	return m.alias
 }
 
 func (m *ModelKey) PartitionKeys() []Prop {

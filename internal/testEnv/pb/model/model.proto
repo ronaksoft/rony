@@ -21,6 +21,7 @@ message Model1 {
         PartKey: "Enum"
         SortKey: "ShardKey"
         SortKey: "ID"
+        Alias: "CustomerSort"
     };
     int32 ID = 1;
     int32 ShardKey = 2;
@@ -58,12 +59,10 @@ message Model3 {
         PartKey: "P1"
         SortKey: "ShardKey"
         SortKey: "ID"
-        OrderName: "Shard"
     };
     option (rony_view) = {
         PartKey: "P1"
         SortKey: "ID"
-        OrderName: "ID"
     };
     int64 ID = 1;
     int32 ShardKey = 2;

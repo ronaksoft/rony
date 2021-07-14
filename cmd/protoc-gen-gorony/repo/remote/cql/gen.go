@@ -90,29 +90,34 @@ func (g *Generator) generateGo() {
 			return inflection.Plural(x)
 		},
 		"MVNameSC": func(m codegen.ModelKey) string {
+			alias := m.Alias()
+			if alias == "" {
+				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+			}
 			sb := strings.Builder{}
 			sb.WriteString(tools.ToSnake(m.Name()))
-			sb.WriteString("_by_")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
-			if m.OrderByAlias() != "" {
-				sb.WriteString("_")
-				sb.WriteString(tools.ToSnake(m.OrderByAlias()))
-			} else if m.Index() > 0 {
-				sb.WriteString("_")
-				sb.WriteString(tools.IntToStr(m.Index()))
-			}
+			sb.WriteString("_")
+			sb.WriteString(tools.ToSnake(alias))
 			return sb.String()
 		},
 		"MVName": func(m codegen.ModelKey) string {
+			alias := m.Alias()
+			if alias == "" {
+				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+			}
 			sb := strings.Builder{}
 			sb.WriteString(m.Name())
-			sb.WriteString("By")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "", codegen.None))
-			if m.OrderByAlias() != "" {
-				sb.WriteString(m.OrderByAlias())
-			} else if m.Index() > 0 {
-				sb.WriteString(tools.IntToStr(m.Index()))
+			sb.WriteString(alias)
+			return sb.String()
+		},
+		"MVAlias": func(m codegen.ModelKey, prefix string) string {
+			if m.Alias() != "" {
+				return m.Alias()
 			}
+			sb := strings.Builder{}
+			sb.WriteString(prefix)
+			sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
+
 			return sb.String()
 		},
 		"Columns": func(m codegen.ModelKey) string {
@@ -130,6 +135,15 @@ func (g *Generator) generateGo() {
 			sb.WriteString(m.Names(codegen.PropFilterALL, prefix, postfix, ", ", textCase))
 			return sb.String()
 		},
+		"ColumnsValuePKs": func(m codegen.ModelKey, prefix, postfix string) string {
+			textCase := codegen.LowerCamelCase
+			if prefix != "" {
+				textCase = codegen.None
+			}
+			sb := strings.Builder{}
+			sb.WriteString(m.Names(codegen.PropFilterPKs, prefix, postfix, ", ", textCase))
+			return sb.String()
+		},
 		"Where": func(m codegen.ModelKey) string {
 			sb := strings.Builder{}
 			sb.WriteString(m.Names(codegen.PropFilterALL, "qb.Eq(\"", "\")", ", ", codegen.SnakeCase))
@@ -141,8 +155,12 @@ func (g *Generator) generateGo() {
 		"SortKeys": func(m codegen.ModelKey) string {
 			return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
 		},
-		"KeyArgs": func(m codegen.ModelKey) string {
-			return m.NameTypes(codegen.PropFilterALL, "", codegen.LowerCamelCase, codegen.LangGo)
+		"FuncArgs": func(m codegen.ModelKey, prefix string) string {
+			textCase := codegen.LowerCamelCase
+			if prefix != "" {
+				textCase = codegen.None
+			}
+			return m.NameTypes(codegen.PropFilterALL, prefix, textCase, codegen.LangGo)
 		},
 	}
 	for _, m := range g.f.Messages {
@@ -154,6 +172,7 @@ func (g *Generator) generateGo() {
 
 			g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(funcs).Parse(genRemoteRepo)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(funcs).Parse(genCRUD)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(funcs).Parse(genListByPK)), arg))
 		}
 	}
 }
@@ -200,17 +219,14 @@ func (g *Generator) generateCql() {
 			return sb.String()
 		},
 		"MVNameSC": func(m codegen.ModelKey) string {
+			alias := m.Alias()
+			if alias == "" {
+				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+			}
 			sb := strings.Builder{}
 			sb.WriteString(tools.ToSnake(m.Name()))
-			sb.WriteString("_by_")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", "_", codegen.SnakeCase))
-			if m.OrderByAlias() != "" {
-				sb.WriteString("_")
-				sb.WriteString(tools.ToSnake(m.OrderByAlias()))
-			} else if m.Index() > 0 {
-				sb.WriteString("_")
-				sb.WriteString(tools.IntToStr(m.Index()))
-			}
+			sb.WriteString("_")
+			sb.WriteString(tools.ToSnake(alias))
 			return sb.String()
 		},
 		"MVWhere": func(m codegen.ModelKey) string {
@@ -276,21 +292,23 @@ type {{$repoName}} struct {
 func New{{$repoName}}(s gocqlx.Session) *{{$repoName}} {
 	r := &{{$repoName}}{
 		s: s,
+		t: table.New(table.Metadata{
+			Name: "tab_{{Singular .NameSC}}",
+			Columns: []string{ {{- Columns .Table -}} },
+			PartKey: []string{ {{- PartKeys .Table -}} },
+			SortKey: []string{ {{- SortKeys .Table -}} },
+		}),
+		v: map[string]*table.Table{
+		{{- range .Views }}
+		"{{MVAlias . ""}}": table.New(table.Metadata{
+			Name: "view_{{MVNameSC .}}",
+			Columns: []string{ {{- Columns . -}} },
+			PartKey: []string{ {{- PartKeys . -}} },
+			SortKey: []string{ {{- SortKeys . -}} },
+		}),
+		{{- end }}
+		},
 	}
-	r.t = table.New(table.Metadata{
-		Name: "tab_{{Singular .NameSC}}",
-		Columns: []string{ {{- Columns .Table -}} },
-		PartKey: []string{ {{- PartKeys .Table -}} },
-		SortKey: []string{ {{- SortKeys .Table -}} },
-	})
-{{ range .Views }}
-	r.v["{{.Alias}}"]= table.New(table.Metadata{
-		Name: "view_{{MVNameSC .}}",
-		Columns: []string{ {{- Columns . -}} },
-		PartKey: []string{ {{- PartKeys . -}} },
-		SortKey: []string{ {{- SortKeys . -}} },
-	})
-{{ end }}
     
 	r.qp = map[string]*pools.QueryPool{
 		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
@@ -308,6 +326,11 @@ func New{{$repoName}}(s gocqlx.Session) *{{$repoName}} {
 		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s)
 		}),
+		{{- range .Views }}
+		"getBy{{MVAlias . ""}}": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.v["{{MVAlias . ""}}"].GetQuery(s)
+		}),
+		{{- end }}
 
 	}
 	return r
@@ -322,8 +345,8 @@ func (r *{{$repoName}}) T() *table.Table {
 }
 
 {{ range .Views }}
-func (r *{{$repoName}}) {{.Alias}}() *table.Table {
-	return r.v["{{.Alias}}"]
+func (r *{{$repoName}}) {{MVAlias . "MV"}}() *table.Table {
+	return r.v["{{MVAlias . ""}}"]
 }
 {{ end }}
 `
@@ -360,7 +383,7 @@ func (r *{{$repoName}}) Update(m *{{$modelName}}) error {
 	return q.Exec()
 }
 
-func (r *{{$repoName}}) Delete({{KeyArgs .Table}}) error {
+func (r *{{$repoName}}) Delete({{FuncArgs .Table ""}}) error {
 	q := r.qp["delete"].GetQuery()
 	defer r.qp["delete"].Put(q)
 
@@ -369,7 +392,7 @@ func (r *{{$repoName}}) Delete({{KeyArgs .Table}}) error {
 	return q.Exec()
 }
 
-func (r *{{$repoName}}) Get({{KeyArgs .Table}}, m *{{$modelName}}) (*{{$modelName}}, error) {
+func (r *{{$repoName}}) Get({{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	q := r.qp["get"].GetQuery()
 	defer r.qp["get"].Put(q)
 
@@ -387,8 +410,77 @@ func (r *{{$repoName}}) Get({{KeyArgs .Table}}, m *{{$modelName}}) (*{{$modelNam
 	err = m.Unmarshal(b)
 	return m, err
 }
+{{ range .Views }}
+func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
+	q := r.qp["getBy{{MVAlias . ""}}"].GetQuery()
+	defer r.qp["getBy{{MVAlias . ""}}"].Put(q)
 
+	if m == nil {
+		m = &{{$modelName}}{}
+	}
 
+	q.Bind({{ColumnsValue . "" ""}})
+
+	var b []byte
+	err := q.Scan({{ColumnsValue . "&m." ""}}, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+{{ end }}
 `
-const genListByPK = ``
-const genListByIndex = ``
+
+const genListByPK = `
+{{$repoName := print .Name "RemoteRepo"}}
+{{$modelName := .Name}}
+
+type {{$modelName}}MountKey interface {
+	makeItPrivate()
+}
+
+type {{$modelName}}PK struct {
+{{- range .Table.PKs }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{$modelName}}PK) makeItPrivate() {}
+
+{{- range .Views }}
+
+type {{MVName .}}PK struct {
+{{- range .PKs }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{MVName .}}PK) makeItPrivate() {}
+{{ end }}
+
+func (r *{{$repoName}}) List(mk {{$modelName}}MountKey, limit uint) ([]*{{$modelName}}, error) {
+	var (
+		q *gocqlx.Queryx
+		res []*{{$modelName}}
+		err error
+	)
+
+	switch mk := mk.(type) {
+	case {{$modelName}}PK:
+		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind({{ColumnsValuePKs .Table "mk." ""}})
+{{ range .Views }}
+	case {{MVName .}}PK:
+		q = r.v["{{MVAlias . ""}}"].SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind({{ColumnsValuePKs . "mk." ""}})
+{{ end }}
+	default:
+		panic("BUG!! incorrect mount key")
+	}
+	err = q.SelectRelease(&res)
+
+	return res, err
+}
+`

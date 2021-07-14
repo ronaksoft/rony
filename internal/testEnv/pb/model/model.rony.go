@@ -876,20 +876,21 @@ type Model1RemoteRepo struct {
 func NewModel1RemoteRepo(s gocqlx.Session) *Model1RemoteRepo {
 	r := &Model1RemoteRepo{
 		s: s,
+		t: table.New(table.Metadata{
+			Name:    "tab_model_1",
+			Columns: []string{"id", "shard_key", "enum", "sdata"},
+			PartKey: []string{"id"},
+			SortKey: []string{"shard_key", "enum"},
+		}),
+		v: map[string]*table.Table{
+			"CustomerSort": table.New(table.Metadata{
+				Name:    "view_model_1_customer_sort",
+				Columns: []string{"enum", "shard_key", "id", "sdata"},
+				PartKey: []string{"enum"},
+				SortKey: []string{"shard_key", "id"},
+			}),
+		},
 	}
-	r.t = table.New(table.Metadata{
-		Name:    "tab_model_1",
-		Columns: []string{"id", "shard_key", "enum", "sdata"},
-		PartKey: []string{"id"},
-		SortKey: []string{"shard_key", "enum"},
-	})
-
-	r.v["EnumShardKeyID"] = table.New(table.Metadata{
-		Name:    "view_model_1_by_enum",
-		Columns: []string{"enum", "shard_key", "id", "sdata"},
-		PartKey: []string{"enum"},
-		SortKey: []string{"shard_key", "id"},
-	})
 
 	r.qp = map[string]*pools.QueryPool{
 		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
@@ -907,6 +908,9 @@ func NewModel1RemoteRepo(s gocqlx.Session) *Model1RemoteRepo {
 		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s)
 		}),
+		"getByCustomerSort": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.v["CustomerSort"].GetQuery(s)
+		}),
 	}
 	return r
 }
@@ -919,8 +923,8 @@ func (r *Model1RemoteRepo) T() *table.Table {
 	return r.t
 }
 
-func (r *Model1RemoteRepo) EnumShardKeyID() *table.Table {
-	return r.v["EnumShardKeyID"]
+func (r *Model1RemoteRepo) CustomerSort() *table.Table {
+	return r.v["CustomerSort"]
 }
 
 func (r *Model1RemoteRepo) Insert(m *Model1, replace bool) error {
@@ -978,6 +982,65 @@ func (r *Model1RemoteRepo) Get(id int32, shardKey int32, enum Enum, m *Model1) (
 	return m, err
 }
 
+func (r *Model1RemoteRepo) GetByCustomerSort(enum Enum, shardKey int32, id int32, m *Model1) (*Model1, error) {
+	q := r.qp["getByCustomerSort"].GetQuery()
+	defer r.qp["getByCustomerSort"].Put(q)
+
+	if m == nil {
+		m = &Model1{}
+	}
+
+	q.Bind(enum, shardKey, id)
+
+	var b []byte
+	err := q.Scan(&m.Enum, &m.ShardKey, &m.ID, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+type Model1MountKey interface {
+	makeItPrivate()
+}
+
+type Model1PK struct {
+	ID int32
+}
+
+func (Model1PK) makeItPrivate() {}
+
+type Model1CustomerSortPK struct {
+	Enum Enum
+}
+
+func (Model1CustomerSortPK) makeItPrivate() {}
+
+func (r *Model1RemoteRepo) List(mk Model1MountKey, limit uint) ([]*Model1, error) {
+	var (
+		q   *gocqlx.Queryx
+		res []*Model1
+		err error
+	)
+
+	switch mk := mk.(type) {
+	case Model1PK:
+		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.ID)
+
+	case Model1CustomerSortPK:
+		q = r.v["CustomerSort"].SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.Enum)
+
+	default:
+		panic("BUG!! incorrect mount key")
+	}
+	err = q.SelectRelease(&res)
+
+	return res, err
+}
+
 type Model2RemoteRepo struct {
 	qp map[string]*pools.QueryPool
 	t  *table.Table
@@ -988,20 +1051,21 @@ type Model2RemoteRepo struct {
 func NewModel2RemoteRepo(s gocqlx.Session) *Model2RemoteRepo {
 	r := &Model2RemoteRepo{
 		s: s,
+		t: table.New(table.Metadata{
+			Name:    "tab_model_2",
+			Columns: []string{"id", "shard_key", "p_1", "sdata"},
+			PartKey: []string{"id", "shard_key"},
+			SortKey: []string{"p_1"},
+		}),
+		v: map[string]*table.Table{
+			"P1ShardKeyID": table.New(table.Metadata{
+				Name:    "view_model_2_p_1_shard_key_id",
+				Columns: []string{"p_1", "shard_key", "id", "sdata"},
+				PartKey: []string{"p_1"},
+				SortKey: []string{"shard_key", "id"},
+			}),
+		},
 	}
-	r.t = table.New(table.Metadata{
-		Name:    "tab_model_2",
-		Columns: []string{"id", "shard_key", "p_1", "sdata"},
-		PartKey: []string{"id", "shard_key"},
-		SortKey: []string{"p_1"},
-	})
-
-	r.v["P1ShardKeyID"] = table.New(table.Metadata{
-		Name:    "view_model_2_by_p_1",
-		Columns: []string{"p_1", "shard_key", "id", "sdata"},
-		PartKey: []string{"p_1"},
-		SortKey: []string{"shard_key", "id"},
-	})
 
 	r.qp = map[string]*pools.QueryPool{
 		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
@@ -1019,6 +1083,9 @@ func NewModel2RemoteRepo(s gocqlx.Session) *Model2RemoteRepo {
 		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s)
 		}),
+		"getByP1ShardKeyID": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.v["P1ShardKeyID"].GetQuery(s)
+		}),
 	}
 	return r
 }
@@ -1031,7 +1098,7 @@ func (r *Model2RemoteRepo) T() *table.Table {
 	return r.t
 }
 
-func (r *Model2RemoteRepo) P1ShardKeyID() *table.Table {
+func (r *Model2RemoteRepo) MVP1ShardKeyID() *table.Table {
 	return r.v["P1ShardKeyID"]
 }
 
@@ -1090,6 +1157,66 @@ func (r *Model2RemoteRepo) Get(id int64, shardKey int32, p1 string, m *Model2) (
 	return m, err
 }
 
+func (r *Model2RemoteRepo) GetByP1ShardKeyID(p1 string, shardKey int32, id int64, m *Model2) (*Model2, error) {
+	q := r.qp["getByP1ShardKeyID"].GetQuery()
+	defer r.qp["getByP1ShardKeyID"].Put(q)
+
+	if m == nil {
+		m = &Model2{}
+	}
+
+	q.Bind(p1, shardKey, id)
+
+	var b []byte
+	err := q.Scan(&m.P1, &m.ShardKey, &m.ID, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+type Model2MountKey interface {
+	makeItPrivate()
+}
+
+type Model2PK struct {
+	ID       int64
+	ShardKey int32
+}
+
+func (Model2PK) makeItPrivate() {}
+
+type Model2P1ShardKeyIDPK struct {
+	P1 string
+}
+
+func (Model2P1ShardKeyIDPK) makeItPrivate() {}
+
+func (r *Model2RemoteRepo) List(mk Model2MountKey, limit uint) ([]*Model2, error) {
+	var (
+		q   *gocqlx.Queryx
+		res []*Model2
+		err error
+	)
+
+	switch mk := mk.(type) {
+	case Model2PK:
+		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.ID, mk.ShardKey)
+
+	case Model2P1ShardKeyIDPK:
+		q = r.v["P1ShardKeyID"].SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.P1)
+
+	default:
+		panic("BUG!! incorrect mount key")
+	}
+	err = q.SelectRelease(&res)
+
+	return res, err
+}
+
 type Model3RemoteRepo struct {
 	qp map[string]*pools.QueryPool
 	t  *table.Table
@@ -1100,27 +1227,27 @@ type Model3RemoteRepo struct {
 func NewModel3RemoteRepo(s gocqlx.Session) *Model3RemoteRepo {
 	r := &Model3RemoteRepo{
 		s: s,
+		t: table.New(table.Metadata{
+			Name:    "tab_model_3",
+			Columns: []string{"id", "shard_key", "p_1", "sdata"},
+			PartKey: []string{"id", "shard_key"},
+			SortKey: []string{"p_1"},
+		}),
+		v: map[string]*table.Table{
+			"P1ShardKeyID": table.New(table.Metadata{
+				Name:    "view_model_3_p_1_shard_key_id",
+				Columns: []string{"p_1", "shard_key", "id", "sdata"},
+				PartKey: []string{"p_1"},
+				SortKey: []string{"shard_key", "id"},
+			}),
+			"P1ID": table.New(table.Metadata{
+				Name:    "view_model_3_p_1_id",
+				Columns: []string{"p_1", "id", "sdata"},
+				PartKey: []string{"p_1"},
+				SortKey: []string{"id"},
+			}),
+		},
 	}
-	r.t = table.New(table.Metadata{
-		Name:    "tab_model_3",
-		Columns: []string{"id", "shard_key", "p_1", "sdata"},
-		PartKey: []string{"id", "shard_key"},
-		SortKey: []string{"p_1"},
-	})
-
-	r.v["P1ShardKeyID"] = table.New(table.Metadata{
-		Name:    "view_model_3_by_p_1_shard",
-		Columns: []string{"p_1", "shard_key", "id", "sdata"},
-		PartKey: []string{"p_1"},
-		SortKey: []string{"shard_key", "id"},
-	})
-
-	r.v["P1ID"] = table.New(table.Metadata{
-		Name:    "view_model_3_by_p_1_id",
-		Columns: []string{"p_1", "id", "sdata"},
-		PartKey: []string{"p_1"},
-		SortKey: []string{"id"},
-	})
 
 	r.qp = map[string]*pools.QueryPool{
 		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
@@ -1138,6 +1265,12 @@ func NewModel3RemoteRepo(s gocqlx.Session) *Model3RemoteRepo {
 		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s)
 		}),
+		"getByP1ShardKeyID": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.v["P1ShardKeyID"].GetQuery(s)
+		}),
+		"getByP1ID": pools.NewQueryPool(func() *gocqlx.Queryx {
+			return r.v["P1ID"].GetQuery(s)
+		}),
 	}
 	return r
 }
@@ -1150,11 +1283,11 @@ func (r *Model3RemoteRepo) T() *table.Table {
 	return r.t
 }
 
-func (r *Model3RemoteRepo) P1ShardKeyID() *table.Table {
+func (r *Model3RemoteRepo) MVP1ShardKeyID() *table.Table {
 	return r.v["P1ShardKeyID"]
 }
 
-func (r *Model3RemoteRepo) P1ID() *table.Table {
+func (r *Model3RemoteRepo) MVP1ID() *table.Table {
 	return r.v["P1ID"]
 }
 
@@ -1211,4 +1344,93 @@ func (r *Model3RemoteRepo) Get(id int64, shardKey int32, p1 []byte, m *Model3) (
 	}
 	err = m.Unmarshal(b)
 	return m, err
+}
+
+func (r *Model3RemoteRepo) GetByP1ShardKeyID(p1 []byte, shardKey int32, id int64, m *Model3) (*Model3, error) {
+	q := r.qp["getByP1ShardKeyID"].GetQuery()
+	defer r.qp["getByP1ShardKeyID"].Put(q)
+
+	if m == nil {
+		m = &Model3{}
+	}
+
+	q.Bind(p1, shardKey, id)
+
+	var b []byte
+	err := q.Scan(&m.P1, &m.ShardKey, &m.ID, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+func (r *Model3RemoteRepo) GetByP1ID(p1 []byte, id int64, m *Model3) (*Model3, error) {
+	q := r.qp["getByP1ID"].GetQuery()
+	defer r.qp["getByP1ID"].Put(q)
+
+	if m == nil {
+		m = &Model3{}
+	}
+
+	q.Bind(p1, id)
+
+	var b []byte
+	err := q.Scan(&m.P1, &m.ID, &b)
+	if err != nil {
+		return m, err
+	}
+	err = m.Unmarshal(b)
+	return m, err
+}
+
+type Model3MountKey interface {
+	makeItPrivate()
+}
+
+type Model3PK struct {
+	ID       int64
+	ShardKey int32
+}
+
+func (Model3PK) makeItPrivate() {}
+
+type Model3P1ShardKeyIDPK struct {
+	P1 []byte
+}
+
+func (Model3P1ShardKeyIDPK) makeItPrivate() {}
+
+type Model3P1IDPK struct {
+	P1 []byte
+}
+
+func (Model3P1IDPK) makeItPrivate() {}
+
+func (r *Model3RemoteRepo) List(mk Model3MountKey, limit uint) ([]*Model3, error) {
+	var (
+		q   *gocqlx.Queryx
+		res []*Model3
+		err error
+	)
+
+	switch mk := mk.(type) {
+	case Model3PK:
+		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.ID, mk.ShardKey)
+
+	case Model3P1ShardKeyIDPK:
+		q = r.v["P1ShardKeyID"].SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.P1)
+
+	case Model3P1IDPK:
+		q = r.v["P1ID"].SelectBuilder().Limit(limit).Query(r.s)
+		q.Bind(mk.P1)
+
+	default:
+		panic("BUG!! incorrect mount key")
+	}
+	err = q.SelectRelease(&res)
+
+	return res, err
 }
