@@ -16,6 +16,7 @@ require (
 	github.com/gobuffalo/plush/v4 v4.1.4
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
+	github.com/gocql/gocql v0.0.0-20200131111108-92af2e088537
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/memberlist v0.2.4

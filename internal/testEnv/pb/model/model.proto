@@ -63,6 +63,7 @@ message Model3 {
     option (rony_view) = {
         part_key: "P1"
         sort_key: "ID"
+        sort_key: "ShardKey"
     };
     int64 ID = 1;
     int32 ShardKey = 2;

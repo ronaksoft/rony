@@ -638,6 +638,10 @@ type Prop struct {
 	Order     Order
 }
 
+func (p *Prop) NameSC() string {
+	return tools.ToSnake(p.Name)
+}
+
 type PropFilter string
 
 const (

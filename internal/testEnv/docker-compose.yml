@@ -1,25 +1,10 @@
 version: '2'
 services:
 
-#  # KeyDB Permanent/Counter/Temp Cache
-#  cache:
-#    restart: always
-#    image: registry.ronaksoft.com/base/docker/redis:latest
-#    container_name: redis
-#    privileged: true
-#    command: redis-server /usr/local/etc/redis/redis.conf
-#    networks:
-#      - rony-net
-#    volumes:
-#      - ./redis.conf:/usr/local/etc/redis/redis.conf
-#      - ./_hdd/cache/:/data:rw
-#    ports:
-#      - 6379:6379
-
   # ScyllaDb Database
   scylla:
     restart: always
-    image: registry.ronaksoft.com/base/docker/scylladb:3.3.1
+    image: scylladb/scylla:4.4.3
     container_name: scylladb
     volumes:
       - ./_hdd/db-main/:/var/lib/scylla
@@ -28,25 +13,7 @@ services:
     ports:
       - 9042:9042
 
-  
-#  # Aerospike
-#  aerospike:
-#    restart: always
-#    image: registry.ronaksoft.com/base/docker/aerospike:latest
-#    container_name: aerospike
-#    command: asd --foreground --config-file /ronak/aerospike.conf
-#    ports:
-#      - 3000:3000
-#      - 3001:3001
-#      - 3002:3002
-#      - 3003:3003
-#    volumes:
-#      - ./_hdd/aerospike:/opt/aerospike/data
-#      - ./as-config.conf:/ronak/aerospike.conf
-#    networks:
-#      rony-net:
-#        aliases:
-#          - docker
+
 networks:
   rony-net:
     external:

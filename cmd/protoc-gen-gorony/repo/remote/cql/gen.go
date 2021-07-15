@@ -263,19 +263,19 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 
 const genCQL = `
 {{$model := .}}
-CREATE TABLE tab_{{Singular .NameSC}} 
+CREATE TABLE IF NOT EXISTS tab_{{Singular .NameSC}} 
 (
-{{- range .Fields }}
-	{{.NameSC}}  {{.CqlKind}},	
+{{- range .Table.Keys }}
+	{{.NameSC}}  {{.CqlType}},	
 {{- end }}
 	sdata  blob,
 	PRIMARY KEY {{PrimaryKey .Table}}
 ){{WithClusteringKey .Table}};
 {{ range .Views }}
-CREATE MATERIALIZED VIEW view_{{MVNameSC .}} AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS view_{{MVNameSC .}} AS
 SELECT *
 FROM tab_{{Singular $model.NameSC}}
-{{MVWhere .}}
+{{MVWhere $model.Table}}
 PRIMARY KEY {{PrimaryKey .}}
 {{- WithClusteringKey . -}};
 {{ end }}
