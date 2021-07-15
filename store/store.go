@@ -1,10 +1,9 @@
-package localdb
+package store
 
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
 	"time"
@@ -121,6 +120,6 @@ func (s *Store) Shutdown() {
 	}
 }
 
-func (s *Store) LocalDB() *store.LocalDB {
+func (s *Store) LocalDB() *LocalDB {
 	return s.db
 }

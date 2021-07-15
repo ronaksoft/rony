@@ -7,9 +7,9 @@ import (
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
-	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"net/http"
@@ -69,7 +69,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	}
 
 	if edgeServer.store == nil {
-		edgeServer.store, _ = localdb.New(localdb.DefaultConfig(edgeServer.dataDir))
+		edgeServer.store, _ = store.New(store.DefaultConfig(edgeServer.dataDir))
 	}
 
 	// register builtin rony handlers

@@ -1,4 +1,4 @@
-package localdb
+package store
 
 import (
 	"time"

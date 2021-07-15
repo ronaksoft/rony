@@ -2,7 +2,6 @@ package model_test
 
 import (
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/internal/store/localdb"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/model"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -26,7 +25,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	s, err := localdb.New(localdb.DefaultConfig("./_hdd"))
+	s, err := store.New(store.DefaultConfig("./_hdd"))
 	if err != nil {
 		panic(err)
 	}
