@@ -14,12 +14,14 @@ import (
 */
 
 type (
+	LocalDB  = badger.DB
 	StoreTxn = badger.Txn
 )
 
 type Store interface {
 	View(fn func(*StoreTxn) error) error
 	Update(fn func(*StoreTxn) error) error
+	LocalDB() *LocalDB
 	Shutdown()
 }
 

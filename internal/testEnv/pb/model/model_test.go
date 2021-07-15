@@ -170,13 +170,13 @@ func TestModelLocalRepo(t *testing.T) {
 				c.So(err, ShouldBeNil)
 			}
 
-			res, err := repo.ListByP1("A", store.NewListOption().SetLimit(total))
+			res, err := repo.ListByP1("A", store.NewListOption().SetLimit(total), nil)
 			c.So(err, ShouldBeNil)
 			for _, x := range res {
 				c.So(x.P1, ShouldEqual, "A")
 			}
 
-			res, err = repo.ListByP2("A", store.NewListOption().SetLimit(total))
+			res, err = repo.ListByP2("A", store.NewListOption().SetLimit(total), nil)
 			c.So(err, ShouldBeNil)
 			for _, x := range res {
 				c.So("A", ShouldBeIn, x.P2)

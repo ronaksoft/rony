@@ -189,7 +189,7 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(aggregateFuncs).Parse(genPartKey)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(aggregateFuncs).Parse(genPrimaryKey)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
@@ -578,14 +578,14 @@ func (r *{{$repoName}})  Delete({{FuncArgs .Table ""}}) error {
 }
 `
 
-const genPartKey = `
+const genPrimaryKey = `
 {{$modelName := .Name}}
-type {{$modelName}}PartKey interface {
+type {{$modelName}}PrimaryKey interface {
 	makeItPrivate()
 }
 
 type {{$modelName}}PK struct {
-{{- range .Table.PKs }}
+{{- range .Table.Keys }}
 {{.Name}}  {{.GoType}}
 {{- end }}
 }
@@ -595,7 +595,7 @@ func ({{$modelName}}PK) makeItPrivate() {}
 {{- range .Views }}
 
 type {{MVName .}}PK struct {
-{{- range .PKs }}
+{{- range .Keys }}
 {{.Name}}  {{.GoType}}
 {{- end }}
 }
@@ -609,7 +609,7 @@ const genIter = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PartKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -623,11 +623,11 @@ func (r *{{$repoName}}) IterWithTxn(
 	switch pk := pk.(type) {
 	case {{$modelName}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKeyPKs .Table "pk."}})
+		seekKey = alloc.Gen({{DBKey .Table "pk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKeyPKs . "pk."}})
+		seekKey = alloc.Gen({{DBKey . "pk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
@@ -671,7 +671,7 @@ func (r *{{$repoName}}) IterWithTxn(
 }
 
 func (r *{{$repoName}}) Iter(
-	pk {{$modelName}}PartKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	pk {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -688,7 +688,7 @@ const genList = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PartKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -703,11 +703,11 @@ func (r *{{$repoName}}) ListWithTxn(
 	switch pk := pk.(type) {
 	case {{$modelName}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKeyPKs .Table "pk."}})
+		seekKey = alloc.Gen({{DBKey .Table "pk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKeyPKs . "pk."}})
+		seekKey = alloc.Gen({{DBKey . "pk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
@@ -750,7 +750,7 @@ func (r *{{$repoName}}) ListWithTxn(
 }
 
 func (r *{{$repoName}}) List(
-	pk {{$modelName}}PartKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	pk {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -777,7 +777,7 @@ const genListByIndex = `
 {{$modelName := .Name}}
 {{ range .Fields }}
 {{ if .HasIndex }}
-func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{.NameCC}} {{.GoKind}}, lo *store.ListOption) ([]*{{$modelName}}, error) {
+func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{Singular .NameCC}} {{.GoKind}}, lo *store.ListOption, cond func(*{{$modelName}}) bool) ([]*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 
@@ -806,7 +806,11 @@ func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{.NameCC}} {{.GoKind}}, lo *s
 				if err != nil {
 					return err
 				}
-				res = append(res, m)
+				if cond == nil || cond(m) {
+					res = append(res, m)
+				} else {
+					limit++
+				}
 				return nil
 			})
 			if err != nil {

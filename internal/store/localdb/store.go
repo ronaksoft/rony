@@ -121,6 +121,6 @@ func (s *Store) Shutdown() {
 	}
 }
 
-func (s *Store) DB() *store.LocalDB {
+func (s *Store) LocalDB() *store.LocalDB {
 	return s.db
 }

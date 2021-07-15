@@ -37,6 +37,7 @@ type MessageArg struct {
 	IsSingleton   bool
 	AggregateType string
 	Table         *ModelKey
+	TableExtra    []Prop
 	Views         []*ModelKey
 }
 
@@ -87,6 +88,7 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 	goTypes := map[string]string{}
 	protoTypes := map[string]string{}
 	uniqueView := map[string]*ModelKey{}
+	extraProp := map[string]Prop{}
 	for _, f := range m.Fields {
 		protoTypes[f.GoName] = f.Desc.Kind().String()
 		cqlTypes[f.GoName] = CqlKind(f.Desc)
@@ -130,13 +132,17 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 			alias: v.GetAlias(),
 		}
 		for _, k := range v.PartKey {
-			view.pks = append(view.pks, Prop{
+			p := Prop{
 				Name:      k,
 				ProtoType: protoTypes[k],
 				CqlType:   cqlTypes[k],
 				GoType:    goTypes[k],
 				Order:     "",
-			})
+			}
+			if !ma.Table.HasProp(k) {
+				extraProp[k] = p
+			}
+			view.pks = append(view.pks, p)
 		}
 		for _, k := range v.SortKey {
 			order := ASC
@@ -144,22 +150,26 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 				order = DESC
 			}
 			k = strings.TrimLeft(k, "-")
-			view.cks = append(view.cks, Prop{
+			p := Prop{
 				Name:      k,
 				ProtoType: protoTypes[k],
 				CqlType:   cqlTypes[k],
 				GoType:    goTypes[k],
 				Order:     order,
-			})
-		}
-		if !ma.Table.IsSubset(view) {
-			panic("BUG!! views must be subset of the table")
+			}
+			if !ma.Table.HasProp(k) {
+				extraProp[k] = p
+			}
+			view.cks = append(view.cks, p)
 		}
 		if oldView, ok := uniqueView[view.Names(PropFilterPKs, "", "", "", None)]; ok {
 			view.index = oldView.index + 1
 		}
 		uniqueView[view.Names(PropFilterPKs, "", "", "", None)] = view
 		ma.Views = append(ma.Views, view)
+	}
+	for _, p := range extraProp {
+		ma.TableExtra = append(ma.TableExtra, p)
 	}
 }
 
@@ -528,6 +538,15 @@ func (m *ModelKey) IsSubset(n *ModelKey) bool {
 		}
 	}
 	return true
+}
+
+func (m *ModelKey) HasProp(name string) bool {
+	for _, p := range m.Keys() {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // NameTypes is kind of strings.Join function which returns a custom format of combination of model properties.

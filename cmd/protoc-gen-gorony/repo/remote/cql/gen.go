@@ -438,7 +438,7 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 const genListByPK = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) List(pk {{$modelName}}PartKey, limit uint) ([]*{{$modelName}}, error) {
+func (r *{{$repoName}}) List(pk {{$modelName}}PrimaryKey, limit uint) ([]*{{$modelName}}, error) {
 	var (
 		q *gocqlx.Queryx
 		res []*{{$modelName}}
