@@ -189,7 +189,7 @@ func (g *Generator) Generate() {
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 			g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genMountKey").Funcs(aggregateFuncs).Parse(genMountKey)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(aggregateFuncs).Parse(genPartKey)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
@@ -577,9 +577,9 @@ func (r *{{$repoName}})  Delete({{FuncArgs .Table ""}}) error {
 }
 `
 
-const genMountKey = `
+const genPartKey = `
 {{$modelName := .Name}}
-type {{$modelName}}MountKey interface {
+type {{$modelName}}PartKey interface {
 	makeItPrivate()
 }
 
@@ -608,7 +608,7 @@ const genIter = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, mk {{$modelName}}MountKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PartKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -619,14 +619,14 @@ func (r *{{$repoName}}) IterWithTxn(
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
-	switch mk := mk.(type) {
+	switch pk := pk.(type) {
 	case {{$modelName}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKeyPKs .Table "mk."}})
+		seekKey = alloc.Gen({{DBKeyPKs .Table "pk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKeyPKs . "mk."}})
+		seekKey = alloc.Gen({{DBKeyPKs . "pk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
@@ -670,14 +670,14 @@ func (r *{{$repoName}}) IterWithTxn(
 }
 
 func (r *{{$repoName}}) Iter(
-	mk {{$modelName}}MountKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	pk {{$modelName}}PartKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 	
 
 	return r.s.View(func(txn *rony.StoreTxn) error {
-		return r.IterWithTxn(txn, alloc, mk, ito, cb)
+		return r.IterWithTxn(txn, alloc, pk, ito, cb)
 	})
 }
 `
@@ -687,7 +687,7 @@ const genList = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, mk {{$modelName}}MountKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PartKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -699,14 +699,14 @@ func (r *{{$repoName}}) ListWithTxn(
 	opt.Reverse = lo.Backward()
 	res := make([]*{{$modelName}}, 0, lo.Limit())
 	
-	switch mk := mk.(type) {
+	switch pk := pk.(type) {
 	case {{$modelName}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKeyPKs .Table "mk."}})
+		seekKey = alloc.Gen({{DBKeyPKs .Table "pk."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
 		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKeyPKs . "mk."}})
+		seekKey = alloc.Gen({{DBKeyPKs . "pk."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
@@ -746,7 +746,7 @@ func (r *{{$repoName}}) ListWithTxn(
 }
 
 func (r *{{$repoName}}) List(
-	mk {{$modelName}}MountKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	pk {{$modelName}}PartKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
@@ -756,7 +756,7 @@ func (r *{{$repoName}}) List(
 		err error
 	)
 	err = r.s.View(func(txn *rony.StoreTxn) error {
-		res, err = r.ListWithTxn(txn, alloc, mk, lo, cond)
+		res, err = r.ListWithTxn(txn, alloc, pk, lo, cond)
 		return err
 	})
 	if err != nil {

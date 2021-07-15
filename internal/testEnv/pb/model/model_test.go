@@ -117,7 +117,6 @@ func TestModelLocalRepo(t *testing.T) {
 			c.So(res, ShouldHaveLength, total/2)
 			c.So(res[0].ID, ShouldEqual, start+10)
 
-
 			res, err = repo.List(
 				model.Model3PK{
 					ID:       int64(start + 10),

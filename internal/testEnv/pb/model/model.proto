@@ -13,15 +13,15 @@ enum Enum {
 
 message Model1 {
     option (rony_table) = {
-        PartKey: "ID"
-        SortKey: "ShardKey"
-        SortKey: "Enum"
+        part_key: "ID"
+        sort_key: "ShardKey"
+        sort_key: "Enum"
     };
     option (rony_view) = {
-        PartKey: "Enum"
-        SortKey: "ShardKey"
-        SortKey: "ID"
-        Alias: "CustomerSort"
+        part_key: "Enum"
+        sort_key: "ShardKey"
+        sort_key: "ID"
+        alias: "CustomerSort"
     };
     int32 ID = 1;
     int32 ShardKey = 2;
@@ -33,14 +33,14 @@ message Model1 {
 
 message Model2 {
     option (rony_table) = {
-        PartKey: "ID"
-        PartKey: "ShardKey"
-        SortKey: "-P1"
+        part_key: "ID"
+        part_key: "ShardKey"
+        sort_key: "-P1"
     };
     option (rony_view) = {
-        PartKey: "P1"
-        SortKey: "ShardKey"
-        SortKey: "ID"
+        part_key: "P1"
+        sort_key: "ShardKey"
+        sort_key: "ID"
     };
     int64 ID = 1;
     int32 ShardKey = 2;
@@ -51,18 +51,18 @@ message Model2 {
 
 message Model3 {
     option (rony_table) = {
-        PartKey: "ID"
-        PartKey: "ShardKey"
-        SortKey: "-P1"
+        part_key: "ID"
+        part_key: "ShardKey"
+        sort_key: "-P1"
     };
     option (rony_view) = {
-        PartKey: "P1"
-        SortKey: "ShardKey"
-        SortKey: "ID"
+        part_key: "P1"
+        sort_key: "ShardKey"
+        sort_key: "ID"
     };
     option (rony_view) = {
-        PartKey: "P1"
-        SortKey: "ID"
+        part_key: "P1"
+        sort_key: "ID"
     };
     int64 ID = 1;
     int32 ShardKey = 2;

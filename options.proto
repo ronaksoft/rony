@@ -21,11 +21,11 @@ message RestOpt {
 // PrimaryKeyOpt is the container for aggregate primary key settings. It is going to replace old
 // rony_aggregate_table & rony_aggregate_view options.
 message PrimaryKeyOpt {
-    repeated string PartKey = 1;
-    repeated string SortKey = 2;
+    repeated string part_key = 1;
+    repeated string sort_key = 2;
     // Alias could be used to override the name of materialized view. If this is not set, Rony automatically
     // generates for you.
-    optional string Alias = 4;
+    optional string alias = 4;
 }
 
 extend google.protobuf.ServiceOptions {

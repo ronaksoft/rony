@@ -438,21 +438,21 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 const genListByPK = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) List(mk {{$modelName}}MountKey, limit uint) ([]*{{$modelName}}, error) {
+func (r *{{$repoName}}) List(pk {{$modelName}}PartKey, limit uint) ([]*{{$modelName}}, error) {
 	var (
 		q *gocqlx.Queryx
 		res []*{{$modelName}}
 		err error
 	)
 
-	switch mk := mk.(type) {
+	switch pk := pk.(type) {
 	case {{$modelName}}PK:
 		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
-		q.Bind({{ColumnsValuePKs .Table "mk." ""}})
+		q.Bind({{ColumnsValuePKs .Table "pk." ""}})
 {{ range .Views }}
 	case {{MVName .}}PK:
 		q = r.v["{{MVAlias . ""}}"].SelectBuilder().Limit(limit).Query(r.s)
-		q.Bind({{ColumnsValuePKs . "mk." ""}})
+		q.Bind({{ColumnsValuePKs . "pk." ""}})
 {{ end }}
 	default:
 		panic("BUG!! incorrect mount key")
