@@ -502,7 +502,7 @@ func (r *PageLocalRepo) ListWithTxn(
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
+		for iter.Seek(seekKey); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -588,7 +588,7 @@ func (r *PageLocalRepo) IterWithTxn(
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.Valid(); iter.Next() {
+		for ; iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			err = iter.Item().Value(func(val []byte) error {
 				m := &Page{}
 				err := m.Unmarshal(val)

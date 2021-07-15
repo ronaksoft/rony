@@ -506,7 +506,7 @@ func (r *Model1LocalRepo) ListWithTxn(
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
+		for iter.Seek(seekKey); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -592,7 +592,7 @@ func (r *Model1LocalRepo) IterWithTxn(
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.Valid(); iter.Next() {
+		for ; iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			err = iter.Item().Value(func(val []byte) error {
 				m := &Model1{}
 				err := m.Unmarshal(val)
@@ -639,7 +639,7 @@ func (r *Model1LocalRepo) ListByP1(p1 string, lo *store.ListOption, cond func(*M
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+		for iter.Seek(opt.Prefix); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -689,7 +689,7 @@ func (r *Model1LocalRepo) ListByP2(p2 string, lo *store.ListOption, cond func(*M
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+		for iter.Seek(opt.Prefix); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -969,7 +969,7 @@ func (r *Model2LocalRepo) ListWithTxn(
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
+		for iter.Seek(seekKey); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -1055,7 +1055,7 @@ func (r *Model2LocalRepo) IterWithTxn(
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.Valid(); iter.Next() {
+		for ; iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			err = iter.Item().Value(func(val []byte) error {
 				m := &Model2{}
 				err := m.Unmarshal(val)
@@ -1408,7 +1408,7 @@ func (r *Model3LocalRepo) ListWithTxn(
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
+		for iter.Seek(seekKey); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -1498,7 +1498,7 @@ func (r *Model3LocalRepo) IterWithTxn(
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.Valid(); iter.Next() {
+		for ; iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			err = iter.Item().Value(func(val []byte) error {
 				m := &Model3{}
 				err := m.Unmarshal(val)
@@ -1545,7 +1545,7 @@ func (r *Model3LocalRepo) ListByP5(p5 []byte, lo *store.ListOption, cond func(*M
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+		for iter.Seek(opt.Prefix); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}

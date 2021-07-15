@@ -642,7 +642,7 @@ func (r *{{$repoName}}) IterWithTxn(
 			iter.Seek(ito.OffsetKey())
 		}
 		exitLoop := false
-		for ; iter.Valid(); iter.Next() {
+		for ; iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			err = iter.Item().Value(func(val []byte) error {
 				m := &{{$modelName}}{}
 				err := m.Unmarshal(val)
@@ -714,7 +714,7 @@ func (r *{{$repoName}}) ListWithTxn(
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(seekKey); iter.Valid(); iter.Next() {
+		for iter.Seek(seekKey); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
@@ -785,7 +785,7 @@ func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{Singular .NameCC}} {{.GoKind
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
-		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+		for iter.Seek(opt.Prefix); iter.ValidForPrefix(opt.Prefix); iter.Next() {
 			if offset--; offset >= 0 {
 				continue
 			}
