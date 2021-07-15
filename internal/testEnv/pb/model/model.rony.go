@@ -1728,17 +1728,27 @@ func (r *Model1RemoteRepo) List(pk Model1PrimaryKey, limit uint) ([]*Model1, err
 
 	switch pk := pk.(type) {
 	case Model1PK:
-		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q = r.t.SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.ID)
 
 	case Model1CustomerSortPK:
-		q = r.v["CustomerSort"].SelectBuilder().Limit(limit).Query(r.s)
+		q = r.v["CustomerSort"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.Enum)
 
 	default:
 		panic("BUG!! incorrect mount key")
 	}
-	err = q.SelectRelease(&res)
+
+	buf := pools.Buffer.GetCap(1024)
+	defer pools.Buffer.Put(buf)
+	iter := q.Iter()
+	for iter.Scan(buf.Bytes()) {
+		m := &Model1{}
+		err = m.Unmarshal(*buf.Bytes())
+		res = append(res, m)
+		buf.Reset()
+	}
+	err = iter.Close()
 
 	return res, err
 }
@@ -1887,17 +1897,27 @@ func (r *Model2RemoteRepo) List(pk Model2PrimaryKey, limit uint) ([]*Model2, err
 
 	switch pk := pk.(type) {
 	case Model2PK:
-		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q = r.t.SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.ID, pk.ShardKey)
 
 	case Model2P1ShardKeyIDPK:
-		q = r.v["P1ShardKeyID"].SelectBuilder().Limit(limit).Query(r.s)
+		q = r.v["P1ShardKeyID"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.P1)
 
 	default:
 		panic("BUG!! incorrect mount key")
 	}
-	err = q.SelectRelease(&res)
+
+	buf := pools.Buffer.GetCap(1024)
+	defer pools.Buffer.Put(buf)
+	iter := q.Iter()
+	for iter.Scan(buf.Bytes()) {
+		m := &Model2{}
+		err = m.Unmarshal(*buf.Bytes())
+		res = append(res, m)
+		buf.Reset()
+	}
+	err = iter.Close()
 
 	return res, err
 }
@@ -2078,21 +2098,31 @@ func (r *Model3RemoteRepo) List(pk Model3PrimaryKey, limit uint) ([]*Model3, err
 
 	switch pk := pk.(type) {
 	case Model3PK:
-		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q = r.t.SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.ID, pk.ShardKey)
 
 	case Model3P1ShardKeyIDPK:
-		q = r.v["P1ShardKeyID"].SelectBuilder().Limit(limit).Query(r.s)
+		q = r.v["P1ShardKeyID"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.P1)
 
 	case Model3P1IDShardKeyPK:
-		q = r.v["P1IDShardKey"].SelectBuilder().Limit(limit).Query(r.s)
+		q = r.v["P1IDShardKey"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind(pk.P1)
 
 	default:
 		panic("BUG!! incorrect mount key")
 	}
-	err = q.SelectRelease(&res)
+
+	buf := pools.Buffer.GetCap(1024)
+	defer pools.Buffer.Put(buf)
+	iter := q.Iter()
+	for iter.Scan(buf.Bytes()) {
+		m := &Model3{}
+		err = m.Unmarshal(*buf.Bytes())
+		res = append(res, m)
+		buf.Reset()
+	}
+	err = iter.Close()
 
 	return res, err
 }

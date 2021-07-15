@@ -447,17 +447,27 @@ func (r *{{$repoName}}) List(pk {{$modelName}}PrimaryKey, limit uint) ([]*{{$mod
 
 	switch pk := pk.(type) {
 	case {{$modelName}}PK:
-		q = r.t.SelectBuilder().Limit(limit).Query(r.s)
+		q = r.t.SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind({{ColumnsValuePKs .Table "pk." ""}})
 {{ range .Views }}
 	case {{MVName .}}PK:
-		q = r.v["{{MVAlias . ""}}"].SelectBuilder().Limit(limit).Query(r.s)
+		q = r.v["{{MVAlias . ""}}"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind({{ColumnsValuePKs . "pk." ""}})
 {{ end }}
 	default:
 		panic("BUG!! incorrect mount key")
 	}
-	err = q.SelectRelease(&res)
+	
+	buf := pools.Buffer.GetCap(1024)
+	defer pools.Buffer.Put(buf)
+	iter := q.Iter()
+	for iter.Scan(buf.Bytes()) {
+			m := &{{$modelName}}{}
+			err = m.Unmarshal(*buf.Bytes())
+			res = append(res, m)
+			buf.Reset()
+	}
+	err = iter.Close()
 
 	return res, err
 }

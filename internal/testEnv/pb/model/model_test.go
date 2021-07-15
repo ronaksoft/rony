@@ -244,110 +244,34 @@ func TestModelRemoteRepo(t *testing.T) {
 			_, err = repo.Get(m1.ID, m1.ShardKey, m1.Enum, nil)
 			c.So(err, ShouldNotBeNil)
 		})
-		// Convey("List/Iter", func(c C) {
-		// 	repo := model.NewModel3LocalRepo(sampleStore)
-		// 	total := int32(100)
-		// 	start := int32(10)
-		// 	for i := int32(0); i < total; i++ {
-		// 		err := repo.Create(&model.Model3{
-		// 			ID:       int64(i + start),
-		// 			ShardKey: tools.RandomInt32(10),
-		// 			P1:       tools.S2B(tools.RandomID(32)),
-		// 			P2:       tools.RandomIDs(32, 43, 12, 10),
-		// 			P5:       nil,
-		// 		})
-		// 		c.So(err, ShouldBeNil)
-		// 	}
-		//
-		// 	res, err := repo.List(
-		// 		model.Model3PK{
-		// 			ID:       0,
-		// 			ShardKey: 0,
-		// 		},
-		// 		store.NewListOption().SetLimit(total/2),
-		// 		nil,
-		// 	)
-		// 	c.So(err, ShouldBeNil)
-		// 	c.So(res, ShouldHaveLength, total/2)
-		// 	c.So(res[0].ID, ShouldEqual, start)
-		//
-		// 	res, err = repo.List(
-		// 		model.Model3PK{
-		// 			ID:       int64(start + 10),
-		// 			ShardKey: 0,
-		// 		},
-		// 		store.NewListOption().SetLimit(total/2),
-		// 		nil,
-		// 	)
-		// 	c.So(err, ShouldBeNil)
-		// 	c.So(res, ShouldHaveLength, total/2)
-		// 	c.So(res[0].ID, ShouldEqual, start+10)
-		//
-		// 	res, err = repo.List(
-		// 		model.Model3PK{
-		// 			ID:       int64(start + 10),
-		// 			ShardKey: 4,
-		// 		},
-		// 		store.NewListOption().SetLimit(total/2),
-		// 		nil,
-		// 	)
-		// 	c.So(err, ShouldBeNil)
-		// 	c.So(res, ShouldHaveLength, total/2)
-		// 	c.So(res[0].ID, ShouldBeGreaterThanOrEqualTo, start+10)
-		// 	c.So(res[0].ID, ShouldBeLessThanOrEqualTo, start+11)
-		//
-		// 	res, err = repo.List(
-		// 		model.Model3PK{
-		// 			ID:       int64(start + 10),
-		// 			ShardKey: 4,
-		// 		},
-		// 		store.NewListOption().SetLimit(total/2).SetBackward(),
-		// 		nil,
-		// 	)
-		// 	c.So(err, ShouldBeNil)
-		// 	c.So(res[0].ID, ShouldBeGreaterThanOrEqualTo, start+9)
-		// 	c.So(res[0].ID, ShouldBeLessThanOrEqualTo, start+10)
-		//
-		// 	res, err = repo.List(
-		// 		nil,
-		// 		store.NewListOption().SetLimit(total*2).SetSkip(10),
-		// 		nil,
-		// 	)
-		// 	c.So(err, ShouldBeNil)
-		// 	c.So(res, ShouldHaveLength, total-10)
-		// })
-		// Convey("ListByIndex", func(c C) {
-		// 	repo := model.NewModel1LocalRepo(sampleStore)
-		// 	total := int32(100)
-		// 	start := int32(10)
-		// 	possibleValues := []string{"A", "B", "C", "D", "E", "F"}
-		// 	for i := int32(0); i < total; i++ {
-		// 		err := repo.Create(&model.Model1{
-		// 			ID:       i + start,
-		// 			ShardKey: tools.RandomInt32(10),
-		// 			P1:       possibleValues[tools.RandomInt(len(possibleValues))],
-		// 			P2: []string{
-		// 				possibleValues[tools.RandomInt(len(possibleValues))],
-		// 				possibleValues[tools.RandomInt(len(possibleValues))],
-		// 				possibleValues[tools.RandomInt(len(possibleValues))],
-		// 			},
-		// 			P5: tools.RandomUint64(0),
-		// 		})
-		// 		c.So(err, ShouldBeNil)
-		// 	}
-		//
-		// 	res, err := repo.ListByP1("A", store.NewListOption().SetLimit(total), nil)
-		// 	c.So(err, ShouldBeNil)
-		// 	for _, x := range res {
-		// 		c.So(x.P1, ShouldEqual, "A")
-		// 	}
-		//
-		// 	res, err = repo.ListByP2("A", store.NewListOption().SetLimit(total), nil)
-		// 	c.So(err, ShouldBeNil)
-		// 	for _, x := range res {
-		// 		c.So("A", ShouldBeIn, x.P2)
-		// 	}
-		// })
+		Convey("List/Iter", func(c C) {
+			repo := model.NewModel3RemoteRepo(scyllaDB)
+			total := int32(100)
+			start := int32(10)
+			for i := int32(0); i < total; i++ {
+				err := repo.Insert(&model.Model3{
+					ID:       int64(i + start),
+					ShardKey: tools.RandomInt32(3),
+					P1:       tools.S2B(tools.RandomID(32)),
+					P2:       tools.RandomIDs(32, 43, 12, 10),
+					P5:       nil,
+				}, false)
+				c.So(err, ShouldBeNil)
+			}
+
+			res, err := repo.List(
+				model.Model3PK{
+					ID:       int64(start),
+					ShardKey: 1,
+				},
+				uint(total/2),
+			)
+			c.So(err, ShouldBeNil)
+			for _, x := range res {
+				c.So(x.ID, ShouldEqual, start)
+				c.So(x.ShardKey, ShouldEqual, 1)
+			}
+		})
 	})
 
 }
