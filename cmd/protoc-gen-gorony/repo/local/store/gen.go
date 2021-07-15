@@ -658,12 +658,8 @@ func (r *{{$repoName}}) IterWithTxn(
 				break
 			}
 		}
-		if item := iter.Item(); item != nil {
-			ito.OnClose(item.KeyCopy(nil))
-		} else {
-			ito.OnClose(nil)
-		}
 		iter.Close()
+
 		return
 	})
 
