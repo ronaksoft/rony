@@ -150,5 +150,37 @@ func TestModelLocalRepo(t *testing.T) {
 			c.So(err, ShouldBeNil)
 			c.So(res, ShouldHaveLength, total-10)
 		})
+		Convey("ListByIndex", func(c C) {
+			repo := model.NewModel1LocalRepo(sampleStore)
+			total := int32(100)
+			start := int32(10)
+			possibleValues := []string{"A", "B", "C", "D", "E", "F"}
+			for i := int32(0); i < total; i++ {
+				err := repo.Create(&model.Model1{
+					ID:       i + start,
+					ShardKey: tools.RandomInt32(10),
+					P1:       possibleValues[tools.RandomInt(len(possibleValues))],
+					P2: []string{
+						possibleValues[tools.RandomInt(len(possibleValues))],
+						possibleValues[tools.RandomInt(len(possibleValues))],
+						possibleValues[tools.RandomInt(len(possibleValues))],
+					},
+					P5: tools.RandomUint64(0),
+				})
+				c.So(err, ShouldBeNil)
+			}
+
+			res, err := repo.ListByP1("A", store.NewListOption().SetLimit(total))
+			c.So(err, ShouldBeNil)
+			for _, x := range res {
+				c.So(x.P1, ShouldEqual, "A")
+			}
+
+			res, err = repo.ListByP2("A", store.NewListOption().SetLimit(total))
+			c.So(err, ShouldBeNil)
+			for _, x := range res {
+				c.So("A", ShouldBeIn, x.P2)
+			}
+		})
 	})
 }

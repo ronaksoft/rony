@@ -142,7 +142,7 @@ func (g *Generator) Generate() {
 		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
 			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
 				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
-				prefix, inflection.Singular(f.Name), postfix,
+				prefix, inflection.Singular(f.NameCC()), postfix,
 			)
 		},
 		"String": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
@@ -198,6 +198,7 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
+			g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
 
 		}
 	}
@@ -633,7 +634,7 @@ func (r *{{$repoName}}) IterWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
 			iter.Seek(seekKey)
@@ -642,7 +643,7 @@ func (r *{{$repoName}}) IterWithTxn(
 		}
 		exitLoop := false
 		for ; iter.Valid(); iter.Next() {
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &{{$modelName}}{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -653,7 +654,7 @@ func (r *{{$repoName}}) IterWithTxn(
 				} 
 				return nil
 			})
-			if exitLoop {
+			if err != nil || exitLoop {
 				break
 			}
 		}
@@ -663,7 +664,7 @@ func (r *{{$repoName}}) IterWithTxn(
 			ito.OnClose(nil)
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return err
@@ -713,7 +714,7 @@ func (r *{{$repoName}}) ListWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -724,7 +725,7 @@ func (r *{{$repoName}}) ListWithTxn(
 			if limit--; limit < 0 {
 				break
 			}
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &{{$modelName}}{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -737,9 +738,12 @@ func (r *{{$repoName}}) ListWithTxn(
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return res, err
@@ -767,4 +771,58 @@ func (r *{{$repoName}}) List(
 }
 `
 
-const gentListByIndex = ``
+const genListByIndex = `
+{{$model := .}}
+{{$repoName := print .Name "LocalRepo"}}
+{{$modelName := .Name}}
+{{ range .Fields }}
+{{ if .HasIndex }}
+func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{.NameCC}} {{.GoKind}}, lo *store.ListOption) ([]*{{$modelName}}, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	opt.Prefix = alloc.Gen({{IndexDBPrefix $model . "" ""}})
+	res := make([]*{{$modelName}}, 0, lo.Limit())
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			err = iter.Item().Value(func(val []byte) error {
+				b, err := store.GetByKey(txn, alloc, val)
+				if err != nil {
+					return err
+				}
+				m := &{{$modelName}}{}
+				err = m.Unmarshal(b)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+			if err != nil {
+				break
+			}
+		}
+		iter.Close()
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil 
+}
+{{ end }}
+{{ end }}
+
+`

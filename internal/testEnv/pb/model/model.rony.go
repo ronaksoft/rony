@@ -498,7 +498,7 @@ func (r *Model1LocalRepo) ListWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -509,7 +509,7 @@ func (r *Model1LocalRepo) ListWithTxn(
 			if limit--; limit < 0 {
 				break
 			}
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model1{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -522,9 +522,12 @@ func (r *Model1LocalRepo) ListWithTxn(
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return res, err
@@ -577,7 +580,7 @@ func (r *Model1LocalRepo) IterWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
 			iter.Seek(seekKey)
@@ -586,7 +589,7 @@ func (r *Model1LocalRepo) IterWithTxn(
 		}
 		exitLoop := false
 		for ; iter.Valid(); iter.Next() {
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model1{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -597,7 +600,7 @@ func (r *Model1LocalRepo) IterWithTxn(
 				}
 				return nil
 			})
-			if exitLoop {
+			if err != nil || exitLoop {
 				break
 			}
 		}
@@ -607,7 +610,7 @@ func (r *Model1LocalRepo) IterWithTxn(
 			ito.OnClose(nil)
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return err
@@ -622,6 +625,98 @@ func (r *Model1LocalRepo) Iter(
 	return r.s.View(func(txn *rony.StoreTxn) error {
 		return r.IterWithTxn(txn, alloc, pk, ito, cb)
 	})
+}
+
+func (r *Model1LocalRepo) ListByP1(p1 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	opt.Prefix = alloc.Gen('I', C_Model1, uint64(4843779728911368192), p1)
+	res := make([]*Model1, 0, lo.Limit())
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			err = iter.Item().Value(func(val []byte) error {
+				b, err := store.GetByKey(txn, alloc, val)
+				if err != nil {
+					return err
+				}
+				m := &Model1{}
+				err = m.Unmarshal(b)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+			if err != nil {
+				break
+			}
+		}
+		iter.Close()
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *Model1LocalRepo) ListByP2(p2 string, lo *store.ListOption) ([]*Model1, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	opt.Prefix = alloc.Gen('I', C_Model1, uint64(4749204136736587776), p2)
+	res := make([]*Model1, 0, lo.Limit())
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			err = iter.Item().Value(func(val []byte) error {
+				b, err := store.GetByKey(txn, alloc, val)
+				if err != nil {
+					return err
+				}
+				m := &Model1{}
+				err = m.Unmarshal(b)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+			if err != nil {
+				break
+			}
+		}
+		iter.Close()
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (x *Model2) HasP2(xx string) bool {
@@ -859,7 +954,7 @@ func (r *Model2LocalRepo) ListWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -870,7 +965,7 @@ func (r *Model2LocalRepo) ListWithTxn(
 			if limit--; limit < 0 {
 				break
 			}
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model2{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -883,9 +978,12 @@ func (r *Model2LocalRepo) ListWithTxn(
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return res, err
@@ -938,7 +1036,7 @@ func (r *Model2LocalRepo) IterWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
 			iter.Seek(seekKey)
@@ -947,7 +1045,7 @@ func (r *Model2LocalRepo) IterWithTxn(
 		}
 		exitLoop := false
 		for ; iter.Valid(); iter.Next() {
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model2{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -958,7 +1056,7 @@ func (r *Model2LocalRepo) IterWithTxn(
 				}
 				return nil
 			})
-			if exitLoop {
+			if err != nil || exitLoop {
 				break
 			}
 		}
@@ -968,7 +1066,7 @@ func (r *Model2LocalRepo) IterWithTxn(
 			ito.OnClose(nil)
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return err
@@ -1295,7 +1393,7 @@ func (r *Model3LocalRepo) ListWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -1306,7 +1404,7 @@ func (r *Model3LocalRepo) ListWithTxn(
 			if limit--; limit < 0 {
 				break
 			}
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model3{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -1319,9 +1417,12 @@ func (r *Model3LocalRepo) ListWithTxn(
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return res, err
@@ -1378,7 +1479,7 @@ func (r *Model3LocalRepo) IterWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
 			iter.Seek(seekKey)
@@ -1387,7 +1488,7 @@ func (r *Model3LocalRepo) IterWithTxn(
 		}
 		exitLoop := false
 		for ; iter.Valid(); iter.Next() {
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Model3{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -1398,7 +1499,7 @@ func (r *Model3LocalRepo) IterWithTxn(
 				}
 				return nil
 			})
-			if exitLoop {
+			if err != nil || exitLoop {
 				break
 			}
 		}
@@ -1408,7 +1509,7 @@ func (r *Model3LocalRepo) IterWithTxn(
 			ito.OnClose(nil)
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return err
@@ -1423,6 +1524,52 @@ func (r *Model3LocalRepo) Iter(
 	return r.s.View(func(txn *rony.StoreTxn) error {
 		return r.IterWithTxn(txn, alloc, pk, ito, cb)
 	})
+}
+
+func (r *Model3LocalRepo) ListByP5(p5 []byte, lo *store.ListOption) ([]*Model3, error) {
+	alloc := tools.NewAllocator()
+	defer alloc.ReleaseAll()
+
+	opt := store.DefaultIteratorOptions
+	opt.Reverse = lo.Backward()
+	opt.Prefix = alloc.Gen('I', C_Model3, uint64(5041938112515670016), p5)
+	res := make([]*Model3, 0, lo.Limit())
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
+		iter := txn.NewIterator(opt)
+		offset := lo.Skip()
+		limit := lo.Limit()
+		for iter.Seek(opt.Prefix); iter.Valid(); iter.Next() {
+			if offset--; offset >= 0 {
+				continue
+			}
+			if limit--; limit < 0 {
+				break
+			}
+			err = iter.Item().Value(func(val []byte) error {
+				b, err := store.GetByKey(txn, alloc, val)
+				if err != nil {
+					return err
+				}
+				m := &Model3{}
+				err = m.Unmarshal(b)
+				if err != nil {
+					return err
+				}
+				res = append(res, m)
+				return nil
+			})
+			if err != nil {
+				break
+			}
+		}
+		iter.Close()
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 type Model1RemoteRepo struct {

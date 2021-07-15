@@ -497,7 +497,7 @@ func (r *PageLocalRepo) ListWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		offset := lo.Skip()
 		limit := lo.Limit()
@@ -508,7 +508,7 @@ func (r *PageLocalRepo) ListWithTxn(
 			if limit--; limit < 0 {
 				break
 			}
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Page{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -521,9 +521,12 @@ func (r *PageLocalRepo) ListWithTxn(
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return res, err
@@ -576,7 +579,7 @@ func (r *PageLocalRepo) IterWithTxn(
 		seekKey = opt.Prefix
 	}
 
-	err := r.s.View(func(txn *rony.StoreTxn) error {
+	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
 		iter := txn.NewIterator(opt)
 		if ito.OffsetKey() == nil {
 			iter.Seek(seekKey)
@@ -585,7 +588,7 @@ func (r *PageLocalRepo) IterWithTxn(
 		}
 		exitLoop := false
 		for ; iter.Valid(); iter.Next() {
-			_ = iter.Item().Value(func(val []byte) error {
+			err = iter.Item().Value(func(val []byte) error {
 				m := &Page{}
 				err := m.Unmarshal(val)
 				if err != nil {
@@ -596,7 +599,7 @@ func (r *PageLocalRepo) IterWithTxn(
 				}
 				return nil
 			})
-			if exitLoop {
+			if err != nil || exitLoop {
 				break
 			}
 		}
@@ -606,7 +609,7 @@ func (r *PageLocalRepo) IterWithTxn(
 			ito.OnClose(nil)
 		}
 		iter.Close()
-		return nil
+		return
 	})
 
 	return err
