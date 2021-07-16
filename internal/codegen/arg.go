@@ -3,7 +3,6 @@ package codegen
 import (
 	"fmt"
 	"github.com/ronaksoft/rony"
-	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -33,12 +32,13 @@ type MessageArg struct {
 	Fields   []FieldArg
 
 	// If message is representing a model then following parameters are filled
-	IsAggregate   bool
-	IsSingleton   bool
-	AggregateType string
-	Table         *ModelKey
-	TableExtra    []Prop
-	Views         []*ModelKey
+	IsAggregate bool
+	IsSingleton bool
+	RemoteRepo  string
+	LocalRepo   string
+	Table       *ModelKey
+	TableExtra  []Prop
+	Views       []*ModelKey
 }
 
 func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) MessageArg {
@@ -66,9 +66,11 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 		return arg
 	}
 
+	arg.RemoteRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyRemoteRepo).(string))
+	arg.LocalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyLocalRepo).(string))
+
+	// If there is no table defined then it is not an aggregate
 	if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) == nil {
-		// parse model based on rony proto options
-		arg.parseLegacyModel(file, gFile, m)
 		return arg
 	}
 
@@ -171,114 +173,6 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 	for _, p := range extraProp {
 		ma.TableExtra = append(ma.TableExtra, p)
 	}
-}
-
-func (ma *MessageArg) parseLegacyModel(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
-	t, err := Parse(m)
-	if err != nil {
-		panic(err)
-	}
-
-	// Generate Go and CQL kinds of the fields
-	cqlTypes := map[string]string{}
-	goTypes := map[string]string{}
-	protoTypes := map[string]string{}
-	uniqueView := map[string]*ModelKey{}
-	for _, f := range m.Fields {
-		protoTypes[f.GoName] = f.Desc.Kind().String()
-		cqlTypes[f.GoName] = CqlKind(f.Desc)
-		goTypes[f.GoName] = GoKind(file, gFile, f.Desc)
-	}
-	for _, n := range t.Root.Nodes {
-		switch n.Type() {
-		case parse.NodeModel:
-			ma.AggregateType = n.(*parse.ModelNode).Text
-			ma.IsAggregate = true
-		case parse.NodeTable:
-			ma.Table = &ModelKey{
-				Arg: ma,
-			}
-			nn := n.(*parse.TableNode)
-			for _, k := range nn.PartitionKeys {
-				ma.Table.pks = append(ma.Table.pks, Prop{
-					Name:      k,
-					ProtoType: protoTypes[k],
-					CqlType:   cqlTypes[k],
-					GoType:    goTypes[k],
-					Order:     "",
-				})
-			}
-			for _, k := range nn.ClusteringKeys {
-				order := ASC
-				if strings.HasPrefix(k, "-") {
-					order = DESC
-				}
-
-				k = strings.TrimLeft(k, "-")
-				ma.Table.cks = append(ma.Table.cks, Prop{
-					Name:      k,
-					ProtoType: protoTypes[k],
-					CqlType:   cqlTypes[k],
-					GoType:    goTypes[k],
-					Order:     order,
-				})
-			}
-		case parse.NodeView:
-			view := &ModelKey{
-				Arg: ma,
-			}
-			nn := n.(*parse.ViewNode)
-			for _, k := range nn.PartitionKeys {
-				view.pks = append(view.pks, Prop{
-					Name:      k,
-					ProtoType: protoTypes[k],
-					CqlType:   cqlTypes[k],
-					GoType:    goTypes[k],
-					Order:     "",
-				})
-			}
-
-			for _, k := range nn.ClusteringKeys {
-				order := ASC
-				if strings.HasPrefix(k, "-") {
-					order = DESC
-				}
-
-				k = strings.TrimLeft(k, "-")
-				view.cks = append(view.cks, Prop{
-					Name:      k,
-					ProtoType: protoTypes[k],
-					CqlType:   cqlTypes[k],
-					GoType:    goTypes[k],
-					Order:     order,
-				})
-			}
-			if oldView, ok := uniqueView[view.Names(PropFilterPKs, "", "", "", None)]; ok {
-				view.index = oldView.index + 1
-			}
-			uniqueView[view.Names(PropFilterPKs, "", "", "", None)] = view
-			ma.Views = append(ma.Views, view)
-		}
-	}
-}
-
-func Parse(m *protogen.Message) (*parse.Tree, error) {
-	aggregateDesc := strings.Builder{}
-	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	if entity := proto.GetExtension(opt, rony.E_RonyAggregate).(bool); entity {
-		aggregateDesc.WriteString(fmt.Sprintf("{{@model %s}}\n", m.Desc.Name()))
-	}
-	if tab := proto.GetExtension(opt, rony.E_RonyAggregateTable).(string); tab != "" {
-		aggregateDesc.WriteString(fmt.Sprintf("{{@tab %s}}\n", tab))
-	}
-	if views := proto.GetExtension(opt, rony.E_RonyAggregateView).([]string); len(views) > 0 {
-		for _, view := range views {
-			aggregateDesc.WriteString(fmt.Sprintf("{{@view %s}}\n", view))
-		}
-	}
-
-	// Parse the generated description
-	return parse.Parse(string(m.Desc.Name()), aggregateDesc.String())
 }
 
 func (ma MessageArg) NameCC() string {

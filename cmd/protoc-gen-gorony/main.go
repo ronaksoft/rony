@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/local/store"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/remote/cql"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -53,25 +52,13 @@ func main() {
 			g1 := helper.New(protoFile, generatedFile, plugins)
 			g1.Generate()
 
-			// Generate Local Store functionalities
-			g3 := store.New(protoFile, generatedFile)
-			g3.Generate()
-
 			// Generate rpc helper functions (Server, Client and CLI)
-			g4 := rpc.New(protoFile, generatedFile)
-			g4.Generate()
+			g2 := rpc.New(protoFile, generatedFile)
+			g2.Generate()
 
-			if _, ok := plugins["cql"]; ok {
-				if cql.Check(protoFile) {
-					// TODO:: if generating cql is enabled
-					generatedFile2 := plugin.NewGeneratedFile(fmt.Sprintf("%s.cql", protoFile.GeneratedFilenamePrefix), protoFile.GoImportPath)
-					g5 := cql.NewCQL(protoFile, generatedFile2)
-					g5.Generate()
-
-					g6 := cql.NewGO(protoFile, generatedFile)
-					g6.Generate()
-				}
-			}
+			// Generate Local Store functionalities
+			g3 := repo.New(plugin, protoFile, generatedFile)
+			g3.Generate()
 
 		}
 

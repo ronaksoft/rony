@@ -12,6 +12,8 @@ enum Enum {
 
 
 message Model1 {
+    option (rony_local_repo) = "store";
+    option (rony_remote_repo) = "cql";
     option (rony_table) = {
         part_key: "ID"
         sort_key: "ShardKey"
@@ -32,6 +34,8 @@ message Model1 {
 }
 
 message Model2 {
+    option (rony_local_repo) = "store";
+    option (rony_remote_repo) = "cql";
     option (rony_table) = {
         part_key: "ID"
         part_key: "ShardKey"
@@ -50,6 +54,8 @@ message Model2 {
 }
 
 message Model3 {
+    option (rony_local_repo) = "store";
+    option (rony_remote_repo) = "cql";
     option (rony_table) = {
         part_key: "ID"
         part_key: "ShardKey"

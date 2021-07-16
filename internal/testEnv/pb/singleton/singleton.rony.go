@@ -7,12 +7,9 @@ package singleton
 
 import (
 	bytes "bytes"
-	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
-	store "github.com/ronaksoft/rony/store"
-	tools "github.com/ronaksoft/rony/tools"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
 	sync "sync"
@@ -156,123 +153,3 @@ func init() {
 }
 
 var _ = bytes.MinRead
-
-type Single1LocalSingleton struct {
-	s rony.Store
-}
-
-func NewSingle1LocalSingleton(s rony.Store) *Single1LocalSingleton {
-	return &Single1LocalSingleton{
-		s: s,
-	}
-}
-
-func (r *Single1LocalSingleton) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (err error) {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	err = store.Marshal(txn, alloc, m, 'S', C_Single1)
-	if err != nil {
-		return
-	}
-	return nil
-}
-
-func (r *Single1LocalSingleton) Save(m *Single1) (err error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.SaveWithTxn(txn, alloc, m)
-	})
-}
-
-func (r *Single1LocalSingleton) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single1) (*Single1, error) {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	err := store.Unmarshal(txn, alloc, m, 'S', C_Single1)
-	if err != nil {
-		return nil, err
-	}
-	return m, err
-}
-
-func (r *Single1LocalSingleton) Read(m *Single1) (*Single1, error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	if m == nil {
-		m = &Single1{}
-	}
-
-	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadWithTxn(txn, alloc, m)
-		return
-	})
-	return m, err
-}
-
-type Single2LocalSingleton struct {
-	s rony.Store
-}
-
-func NewSingle2LocalSingleton(s rony.Store) *Single2LocalSingleton {
-	return &Single2LocalSingleton{
-		s: s,
-	}
-}
-
-func (r *Single2LocalSingleton) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (err error) {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	err = store.Marshal(txn, alloc, m, 'S', C_Single2)
-	if err != nil {
-		return
-	}
-	return nil
-}
-
-func (r *Single2LocalSingleton) Save(m *Single2) (err error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	return r.s.Update(func(txn *rony.StoreTxn) error {
-		return r.SaveWithTxn(txn, alloc, m)
-	})
-}
-
-func (r *Single2LocalSingleton) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Single2) (*Single2, error) {
-	if alloc == nil {
-		alloc = tools.NewAllocator()
-		defer alloc.ReleaseAll()
-	}
-
-	err := store.Unmarshal(txn, alloc, m, 'S', C_Single2)
-	if err != nil {
-		return nil, err
-	}
-	return m, err
-}
-
-func (r *Single2LocalSingleton) Read(m *Single2) (*Single2, error) {
-	alloc := tools.NewAllocator()
-	defer alloc.ReleaseAll()
-
-	if m == nil {
-		m = &Single2{}
-	}
-
-	err := r.s.View(func(txn *rony.StoreTxn) (err error) {
-		m, err = r.ReadWithTxn(txn, alloc, m)
-		return
-	})
-	return m, err
-}

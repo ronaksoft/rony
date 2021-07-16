@@ -140,7 +140,6 @@ func init() {
 	registry.RegisterConstructor(3852587671, "SampleEcho")
 }
 
-var _ = bytes.MinRead
 var _ = tools.TimeUnix()
 
 type ISample interface {
@@ -328,3 +327,5 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 		genSampleEchoCmd(h, c),
 	)
 }
+
+var _ = bytes.MinRead

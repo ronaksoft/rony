@@ -2,13 +2,9 @@ package cql
 
 import (
 	"github.com/jinzhu/inflection"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/codegen"
-	parse "github.com/ronaksoft/rony/internal/parser"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 	"text/template"
 )
@@ -22,234 +18,31 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type genType int
-
-const (
-	GO genType = iota
-	CQL
-)
-
 type Generator struct {
 	f *protogen.File
 	g *protogen.GeneratedFile
-	t genType
 }
 
-func NewGO(f *protogen.File, g *protogen.GeneratedFile) *Generator {
+func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 	return &Generator{
 		f: f,
 		g: g,
-		t: GO,
 	}
 }
 
-func NewCQL(f *protogen.File, g *protogen.GeneratedFile) *Generator {
-	return &Generator{
-		f: f,
-		g: g,
-		t: CQL,
-	}
+func GenerateGo(g *Generator, arg codegen.MessageArg) {
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
+
+	g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(goFuncs).Parse(genPartKey)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(goFuncs).Parse(genRemoteRepo)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(goFuncs).Parse(genCRUD)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(goFuncs).Parse(genListByPK)), arg))
 }
 
-func Check(f *protogen.File) bool {
-	for _, m := range f.Messages {
-		opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-		if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) != nil {
-			return true
-		}
-		t, _ := codegen.Parse(m)
-		if t == nil {
-			continue
-		}
-		for _, n := range t.Root.Nodes {
-			switch n.Type() {
-			case parse.NodeModel:
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (g *Generator) Generate() {
-	switch g.t {
-	case GO:
-		g.generateGo()
-	case CQL:
-		g.generateCql()
-
-	}
-}
-
-func (g *Generator) generateGo() {
-	funcs := map[string]interface{}{
-		"Singular": func(x string) string {
-			return inflection.Singular(x)
-		},
-		"Plural": func(x string) string {
-			return inflection.Plural(x)
-		},
-		"MVNameSC": func(m codegen.ModelKey) string {
-			alias := m.Alias()
-			if alias == "" {
-				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
-			}
-			sb := strings.Builder{}
-			sb.WriteString(tools.ToSnake(m.Name()))
-			sb.WriteString("_")
-			sb.WriteString(tools.ToSnake(alias))
-			return sb.String()
-		},
-		"MVName": func(m codegen.ModelKey) string {
-			alias := m.Alias()
-			if alias == "" {
-				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
-			}
-			sb := strings.Builder{}
-			sb.WriteString(m.Name())
-			sb.WriteString(alias)
-			return sb.String()
-		},
-		"MVAlias": func(m codegen.ModelKey, prefix string) string {
-			if m.Alias() != "" {
-				return m.Alias()
-			}
-			sb := strings.Builder{}
-			sb.WriteString(prefix)
-			sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
-
-			return sb.String()
-		},
-		"Columns": func(m codegen.ModelKey) string {
-			sb := strings.Builder{}
-			sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
-			sb.WriteString(", \"sdata\"")
-			return sb.String()
-		},
-		"ColumnsValue": func(m codegen.ModelKey, prefix, postfix string) string {
-			textCase := codegen.LowerCamelCase
-			if prefix != "" {
-				textCase = codegen.None
-			}
-			sb := strings.Builder{}
-			sb.WriteString(m.Names(codegen.PropFilterALL, prefix, postfix, ", ", textCase))
-			return sb.String()
-		},
-		"ColumnsValuePKs": func(m codegen.ModelKey, prefix, postfix string) string {
-			textCase := codegen.LowerCamelCase
-			if prefix != "" {
-				textCase = codegen.None
-			}
-			sb := strings.Builder{}
-			sb.WriteString(m.Names(codegen.PropFilterPKs, prefix, postfix, ", ", textCase))
-			return sb.String()
-		},
-		"Where": func(m codegen.ModelKey) string {
-			sb := strings.Builder{}
-			sb.WriteString(m.Names(codegen.PropFilterALL, "qb.Eq(\"", "\")", ", ", codegen.SnakeCase))
-			return sb.String()
-		},
-		"PartKeys": func(m codegen.ModelKey) string {
-			return m.Names(codegen.PropFilterPKs, "\"", "\"", ", ", codegen.SnakeCase)
-		},
-		"SortKeys": func(m codegen.ModelKey) string {
-			return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
-		},
-		"FuncArgs": func(m codegen.ModelKey, prefix string) string {
-			textCase := codegen.LowerCamelCase
-			if prefix != "" {
-				textCase = codegen.None
-			}
-			return m.NameTypes(codegen.PropFilterALL, prefix, textCase, codegen.LangGo)
-		},
-	}
-	for _, m := range g.f.Messages {
-		arg := codegen.GetMessageArg(g.f, g.g, m)
-		if arg.IsAggregate {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
-
-			g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(funcs).Parse(genRemoteRepo)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(funcs).Parse(genCRUD)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(funcs).Parse(genListByPK)), arg))
-		}
-	}
-}
-
-func (g *Generator) generateCql() {
-	funcs := map[string]interface{}{
-		"Singular": func(x string) string {
-			return inflection.Singular(x)
-		},
-		"Plural": func(x string) string {
-			return inflection.Plural(x)
-		},
-		"PrimaryKey": func(m codegen.ModelKey) string {
-			sb := strings.Builder{}
-			sb.WriteString("((")
-			sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", ", ", codegen.SnakeCase))
-			sb.WriteString(")")
-			if len(m.CKs()) > 0 {
-				sb.WriteString(", ")
-				sb.WriteString(m.Names(codegen.PropFilterCKs, "", "", ", ", codegen.SnakeCase))
-			}
-			sb.WriteString(")")
-			return sb.String()
-		},
-		"WithClusteringKey": func(m codegen.ModelKey) string {
-			if len(m.CKs()) == 0 {
-				return ""
-			}
-			sb := strings.Builder{}
-			sb.WriteString(" WITH CLUSTERING ORDER BY (")
-			for idx, k := range m.CKs() {
-				if idx > 0 {
-					sb.WriteString(", ")
-				}
-				sb.WriteString(tools.ToSnake(k.Name))
-				sb.WriteRune(' ')
-				if k.Order == codegen.ASC {
-					sb.WriteString("ASC")
-				} else {
-					sb.WriteString("DESC")
-				}
-			}
-			sb.WriteString(")")
-			return sb.String()
-		},
-		"MVNameSC": func(m codegen.ModelKey) string {
-			alias := m.Alias()
-			if alias == "" {
-				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
-			}
-			sb := strings.Builder{}
-			sb.WriteString(tools.ToSnake(m.Name()))
-			sb.WriteString("_")
-			sb.WriteString(tools.ToSnake(alias))
-			return sb.String()
-		},
-		"MVWhere": func(m codegen.ModelKey) string {
-			sb := strings.Builder{}
-			for idx, k := range m.Keys() {
-				if idx == 0 {
-					sb.WriteString("WHERE ")
-				} else {
-					sb.WriteString("\r\n")
-					sb.WriteString("AND ")
-				}
-				sb.WriteString(tools.ToSnake(k.Name))
-				sb.WriteString(" IS NOT null")
-			}
-			return sb.String()
-		},
-	}
-	for _, m := range g.f.Messages {
-		arg := codegen.GetMessageArg(g.f, g.g, m)
-		if arg.IsAggregate {
-			g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(funcs).Parse(genCQL)), arg))
-		}
-	}
+func GenerateCQL(g *Generator, arg codegen.MessageArg) {
+	g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(cqlFuncs).Parse(genCQL)), arg))
 }
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {
@@ -259,6 +52,155 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	}
 
 	return sb.String()
+}
+
+var goFuncs = map[string]interface{}{
+	"Singular": func(x string) string {
+		return inflection.Singular(x)
+	},
+	"Plural": func(x string) string {
+		return inflection.Plural(x)
+	},
+	"MVNameSC": func(m codegen.ModelKey) string {
+		alias := m.Alias()
+		if alias == "" {
+			alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+		}
+		sb := strings.Builder{}
+		sb.WriteString(tools.ToSnake(m.Name()))
+		sb.WriteString("_")
+		sb.WriteString(tools.ToSnake(alias))
+		return sb.String()
+	},
+	"MVName": func(m codegen.ModelKey) string {
+		alias := m.Alias()
+		if alias == "" {
+			alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+		}
+		sb := strings.Builder{}
+		sb.WriteString(m.Name())
+		sb.WriteString(alias)
+		return sb.String()
+	},
+	"MVAlias": func(m codegen.ModelKey, prefix string) string {
+		if m.Alias() != "" {
+			return m.Alias()
+		}
+		sb := strings.Builder{}
+		sb.WriteString(prefix)
+		sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
+
+		return sb.String()
+	},
+	"Columns": func(m codegen.ModelKey) string {
+		sb := strings.Builder{}
+		sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
+		sb.WriteString(", \"sdata\"")
+		return sb.String()
+	},
+	"ColumnsValue": func(m codegen.ModelKey, prefix, postfix string) string {
+		textCase := codegen.LowerCamelCase
+		if prefix != "" {
+			textCase = codegen.None
+		}
+		sb := strings.Builder{}
+		sb.WriteString(m.Names(codegen.PropFilterALL, prefix, postfix, ", ", textCase))
+		return sb.String()
+	},
+	"ColumnsValuePKs": func(m codegen.ModelKey, prefix, postfix string) string {
+		textCase := codegen.LowerCamelCase
+		if prefix != "" {
+			textCase = codegen.None
+		}
+		sb := strings.Builder{}
+		sb.WriteString(m.Names(codegen.PropFilterPKs, prefix, postfix, ", ", textCase))
+		return sb.String()
+	},
+	"Where": func(m codegen.ModelKey) string {
+		sb := strings.Builder{}
+		sb.WriteString(m.Names(codegen.PropFilterALL, "qb.Eq(\"", "\")", ", ", codegen.SnakeCase))
+		return sb.String()
+	},
+	"PartKeys": func(m codegen.ModelKey) string {
+		return m.Names(codegen.PropFilterPKs, "\"", "\"", ", ", codegen.SnakeCase)
+	},
+	"SortKeys": func(m codegen.ModelKey) string {
+		return m.Names(codegen.PropFilterCKs, "\"", "\"", ", ", codegen.SnakeCase)
+	},
+	"FuncArgs": func(m codegen.ModelKey, prefix string) string {
+		textCase := codegen.LowerCamelCase
+		if prefix != "" {
+			textCase = codegen.None
+		}
+		return m.NameTypes(codegen.PropFilterALL, prefix, textCase, codegen.LangGo)
+	},
+}
+
+var cqlFuncs = map[string]interface{}{
+	"Singular": func(x string) string {
+		return inflection.Singular(x)
+	},
+	"Plural": func(x string) string {
+		return inflection.Plural(x)
+	},
+	"PrimaryKey": func(m codegen.ModelKey) string {
+		sb := strings.Builder{}
+		sb.WriteString("((")
+		sb.WriteString(m.Names(codegen.PropFilterPKs, "", "", ", ", codegen.SnakeCase))
+		sb.WriteString(")")
+		if len(m.CKs()) > 0 {
+			sb.WriteString(", ")
+			sb.WriteString(m.Names(codegen.PropFilterCKs, "", "", ", ", codegen.SnakeCase))
+		}
+		sb.WriteString(")")
+		return sb.String()
+	},
+	"WithClusteringKey": func(m codegen.ModelKey) string {
+		if len(m.CKs()) == 0 {
+			return ""
+		}
+		sb := strings.Builder{}
+		sb.WriteString(" WITH CLUSTERING ORDER BY (")
+		for idx, k := range m.CKs() {
+			if idx > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(tools.ToSnake(k.Name))
+			sb.WriteRune(' ')
+			if k.Order == codegen.ASC {
+				sb.WriteString("ASC")
+			} else {
+				sb.WriteString("DESC")
+			}
+		}
+		sb.WriteString(")")
+		return sb.String()
+	},
+	"MVNameSC": func(m codegen.ModelKey) string {
+		alias := m.Alias()
+		if alias == "" {
+			alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
+		}
+		sb := strings.Builder{}
+		sb.WriteString(tools.ToSnake(m.Name()))
+		sb.WriteString("_")
+		sb.WriteString(tools.ToSnake(alias))
+		return sb.String()
+	},
+	"MVWhere": func(m codegen.ModelKey) string {
+		sb := strings.Builder{}
+		for idx, k := range m.Keys() {
+			if idx == 0 {
+				sb.WriteString("WHERE ")
+			} else {
+				sb.WriteString("\r\n")
+				sb.WriteString("AND ")
+			}
+			sb.WriteString(tools.ToSnake(k.Name))
+			sb.WriteString(" IS NOT null")
+		}
+		return sb.String()
+	},
 }
 
 const genCQL = `
@@ -352,6 +294,32 @@ func (r *{{$repoName}}) {{MVAlias . "MV"}}() *table.Table {
 {{ end }}
 `
 
+const genPartKey = `
+{{$modelName := .Name}}
+type {{$modelName}}PartitionKey interface {
+	makeItPrivate()
+}
+
+type {{$modelName}}PartKey struct {
+{{- range .Table.Keys }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{$modelName}}PartKey) makeItPrivate() {}
+
+{{- range .Views }}
+
+type {{MVName .}}PartKey struct {
+{{- range .PKs }}
+{{.Name}}  {{.GoType}}
+{{- end }}
+}
+
+func ({{MVName .}}PartKey) makeItPrivate() {}
+{{ end }}
+`
+
 const genCRUD = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
@@ -438,7 +406,7 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 const genListByPK = `
 {{$repoName := print .Name "RemoteRepo"}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) List(pk {{$modelName}}PrimaryKey, limit uint) ([]*{{$modelName}}, error) {
+func (r *{{$repoName}}) List(pk {{$modelName}}PartitionKey, limit uint) ([]*{{$modelName}}, error) {
 	var (
 		q *gocqlx.Queryx
 		res []*{{$modelName}}

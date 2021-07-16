@@ -33,174 +33,168 @@ func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 	}
 }
 
-func (g *Generator) Generate() {
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "bytes"})
-	g.g.P("var _ = bytes.MinRead")
-
-	singletonFuncs := map[string]interface{}{
-		"DBKey": func(arg codegen.MessageArg) string {
-			return fmt.Sprintf("'S', C_%s",
-				arg.Name,
-			)
-		},
-	}
-	aggregateFuncs := map[string]interface{}{
-		"Singular": func(x string) string {
-			return inflection.Singular(x)
-		},
-		"Plural": func(x string) string {
-			return inflection.Plural(x)
-		},
-		"MVName": func(m codegen.ModelKey) string {
-			alias := m.Alias()
-			if alias == "" {
-				alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
-			}
-			sb := strings.Builder{}
-			sb.WriteString(m.Name())
-			sb.WriteString(alias)
-			return sb.String()
-		},
-		"MVAlias": func(m codegen.ModelKey, prefix string) string {
-			if m.Alias() != "" {
-				return m.Alias()
-			}
-			sb := strings.Builder{}
-			sb.WriteString(prefix)
-			sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
-
-			return sb.String()
-		},
-		"HasIndex": func(m codegen.MessageArg) bool {
-			for _, f := range m.Fields {
-				if f.HasIndex {
-					return true
-				}
-			}
-			return false
-		},
-		"FuncArgs": func(m codegen.ModelKey, prefix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return m.NameTypes(codegen.PropFilterALL, prefix, nc, codegen.LangGo)
-		},
-		"FuncArgsPKs": func(m codegen.ModelKey, prefix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return m.NameTypes(codegen.PropFilterPKs, prefix, nc, codegen.LangGo)
-		},
-		"FuncArgsCKs": func(m codegen.ModelKey, prefix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return m.NameTypes(codegen.PropFilterCKs, prefix, nc, codegen.LangGo)
-		},
-		"DBKey": func(m codegen.ModelKey, prefix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return fmt.Sprintf("'M', C_%s, %d, %s",
-				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
-				m.Names(codegen.PropFilterALL, prefix, "", ",", nc),
-			)
-		},
-		"DBKeyPKs": func(m codegen.ModelKey, prefix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return fmt.Sprintf("'M', C_%s, %d, %s",
-				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
-				m.Names(codegen.PropFilterPKs, prefix, "", ",", nc),
-			)
-		},
-		"DBPrefix": func(m codegen.ModelKey) string {
-			return fmt.Sprintf("'M', C_%s, %d",
-				m.Name(),
-				crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
-			)
-		},
-		"IndexDBKey": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
-			nc := codegen.None
-			if prefix == "" {
-				nc = codegen.LowerCamelCase
-			}
-			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
-				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
-				prefix, f.Name, postfix,
-				m.Table.Names(codegen.PropFilterALL, prefix, "", ",", nc),
-			)
-		},
-		"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
-			return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
-				m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
-				prefix, inflection.Singular(f.NameCC()), postfix,
-			)
-		},
-		"String": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
-			nc := codegen.None
-			if lcc {
-				nc = codegen.LowerCamelCase
-			}
-			return m.Names(codegen.PropFilterALL, prefix, "", sep, nc)
-		},
-		"StringPKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
-			nc := codegen.None
-			if lcc {
-				nc = codegen.LowerCamelCase
-			}
-			return m.Names(codegen.PropFilterPKs, prefix, "", sep, nc)
-		},
-		"StringCKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
-			nc := codegen.None
-			if lcc {
-				nc = codegen.LowerCamelCase
-			}
-			return m.Names(codegen.PropFilterCKs, prefix, "", sep, nc)
-		},
-		"OrderTypes": func(m codegen.MessageArg) map[string]int {
-			var (
-				uniqueOrders = make(map[string]int)
-			)
-			for idx, v := range m.Views {
-				uniqueOrders[v.Names(codegen.PropFilterPKs, "", "", "", codegen.None)] = idx
-			}
-
-			return uniqueOrders
-		},
-	}
-	for _, m := range g.f.Messages {
-		arg := codegen.GetMessageArg(g.f, g.g, m)
-		if arg.IsSingleton {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-			g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(singletonFuncs).Parse(genSingleton)), arg))
-		} else if arg.IsAggregate {
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-			g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-			g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(aggregateFuncs).Parse(genPrimaryKey)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(aggregateFuncs).Parse(genSave)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(aggregateFuncs).Parse(genRead)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
-
+var singletonFuncs = map[string]interface{}{
+	"DBKey": func(arg codegen.MessageArg) string {
+		return fmt.Sprintf("'S', C_%s",
+			arg.Name,
+		)
+	},
+}
+var aggregateFuncs = map[string]interface{}{
+	"Singular": func(x string) string {
+		return inflection.Singular(x)
+	},
+	"Plural": func(x string) string {
+		return inflection.Plural(x)
+	},
+	"MVName": func(m codegen.ModelKey) string {
+		alias := m.Alias()
+		if alias == "" {
+			alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
 		}
+		sb := strings.Builder{}
+		sb.WriteString(m.Name())
+		sb.WriteString(alias)
+		return sb.String()
+	},
+	"MVAlias": func(m codegen.ModelKey, prefix string) string {
+		if m.Alias() != "" {
+			return m.Alias()
+		}
+		sb := strings.Builder{}
+		sb.WriteString(prefix)
+		sb.WriteString(m.Names(codegen.PropFilterALL, "", "", "", codegen.None))
+
+		return sb.String()
+	},
+	"HasIndex": func(m codegen.MessageArg) bool {
+		for _, f := range m.Fields {
+			if f.HasIndex {
+				return true
+			}
+		}
+		return false
+	},
+	"FuncArgs": func(m codegen.ModelKey, prefix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return m.NameTypes(codegen.PropFilterALL, prefix, nc, codegen.LangGo)
+	},
+	"FuncArgsPKs": func(m codegen.ModelKey, prefix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return m.NameTypes(codegen.PropFilterPKs, prefix, nc, codegen.LangGo)
+	},
+	"FuncArgsCKs": func(m codegen.ModelKey, prefix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return m.NameTypes(codegen.PropFilterCKs, prefix, nc, codegen.LangGo)
+	},
+	"DBKey": func(m codegen.ModelKey, prefix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return fmt.Sprintf("'M', C_%s, %d, %s",
+			m.Name(),
+			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+			m.Names(codegen.PropFilterALL, prefix, "", ",", nc),
+		)
+	},
+	"DBKeyPKs": func(m codegen.ModelKey, prefix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return fmt.Sprintf("'M', C_%s, %d, %s",
+			m.Name(),
+			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+			m.Names(codegen.PropFilterPKs, prefix, "", ",", nc),
+		)
+	},
+	"DBPrefix": func(m codegen.ModelKey) string {
+		return fmt.Sprintf("'M', C_%s, %d",
+			m.Name(),
+			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+		)
+	},
+	"IndexDBKey": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
+		nc := codegen.None
+		if prefix == "" {
+			nc = codegen.LowerCamelCase
+		}
+		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
+			m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
+			prefix, f.Name, postfix,
+			m.Table.Names(codegen.PropFilterALL, prefix, "", ",", nc),
+		)
+	},
+	"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
+		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
+			m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
+			prefix, inflection.Singular(f.NameCC()), postfix,
+		)
+	},
+	"String": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
+		nc := codegen.None
+		if lcc {
+			nc = codegen.LowerCamelCase
+		}
+		return m.Names(codegen.PropFilterALL, prefix, "", sep, nc)
+	},
+	"StringPKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
+		nc := codegen.None
+		if lcc {
+			nc = codegen.LowerCamelCase
+		}
+		return m.Names(codegen.PropFilterPKs, prefix, "", sep, nc)
+	},
+	"StringCKs": func(m codegen.ModelKey, prefix, sep string, lcc bool) string {
+		nc := codegen.None
+		if lcc {
+			nc = codegen.LowerCamelCase
+		}
+		return m.Names(codegen.PropFilterCKs, prefix, "", sep, nc)
+	},
+	"OrderTypes": func(m codegen.MessageArg) map[string]int {
+		var (
+			uniqueOrders = make(map[string]int)
+		)
+		for idx, v := range m.Views {
+			uniqueOrders[v.Names(codegen.PropFilterPKs, "", "", "", codegen.None)] = idx
+		}
+
+		return uniqueOrders
+	},
+}
+
+func Generate(g *Generator, arg codegen.MessageArg) {
+	if arg.IsSingleton {
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+		g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(singletonFuncs).Parse(genSingleton)), arg))
+	} else if arg.IsAggregate {
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
+		g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(aggregateFuncs).Parse(genPrimaryKey)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(aggregateFuncs).Parse(genSave)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(aggregateFuncs).Parse(genRead)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
 	}
 }
 
