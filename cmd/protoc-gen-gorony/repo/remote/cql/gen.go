@@ -31,18 +31,22 @@ func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 }
 
 func GenerateGo(g *Generator, arg codegen.MessageArg) {
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
+	if arg.IsAggregate {
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
-	g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(goFuncs).Parse(genPartKey)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(goFuncs).Parse(genRemoteRepo)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(goFuncs).Parse(genCRUD)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(goFuncs).Parse(genListByPK)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(goFuncs).Parse(genPartKey)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(goFuncs).Parse(genRemoteRepo)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(goFuncs).Parse(genCRUD)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(goFuncs).Parse(genListByPK)), arg))
+	}
 }
 
 func GenerateCQL(g *Generator, arg codegen.MessageArg) {
-	g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(cqlFuncs).Parse(genCQL)), arg))
+	if arg.IsAggregate {
+		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(cqlFuncs).Parse(genCQL)), arg))
+	}
 }
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {

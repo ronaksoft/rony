@@ -56,7 +56,7 @@ func main() {
 			g2 := rpc.New(protoFile, generatedFile)
 			g2.Generate()
 
-			// Generate Local Store functionalities
+			// Generate Repository functionalities
 			g3 := repo.New(plugin, protoFile, generatedFile)
 			g3.Generate()
 

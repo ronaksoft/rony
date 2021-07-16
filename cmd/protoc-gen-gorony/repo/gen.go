@@ -40,7 +40,7 @@ func (g *Generator) Generate() {
 	var cqlGen *protogen.GeneratedFile
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(g.f, g.g, m)
-		if arg.IsAggregate {
+		if arg.IsAggregate || arg.IsSingleton {
 			switch arg.LocalRepo {
 			case "store":
 				store.Generate(store.New(g.f, g.g), arg)

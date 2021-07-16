@@ -60,14 +60,13 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 
 	// Generate the aggregate description from proto options
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
+	arg.RemoteRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyRemoteRepo).(string))
+	arg.LocalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyLocalRepo).(string))
 	arg.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
 	if arg.IsSingleton {
 		// if message is going to be singleton then it could not be aggregate
 		return arg
 	}
-
-	arg.RemoteRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyRemoteRepo).(string))
-	arg.LocalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyLocalRepo).(string))
 
 	// If there is no table defined then it is not an aggregate
 	if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) == nil {
