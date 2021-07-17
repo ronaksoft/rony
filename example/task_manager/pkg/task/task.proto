@@ -1,10 +1,11 @@
 syntax = "proto3";
 package task;
-import "github.com/ronaksoft/rony/options.proto";
+import "options.proto";
 option go_package = "github.com/ronaksoft/rony/example/task_manager/pkg/task";
 
 
 message Task {
+    option (rony_local_repo) = "store";
     option (rony_table) = {
         part_key: "ID"
     };
@@ -16,6 +17,7 @@ message Task {
 }
 
 message Session {
+    option (rony_local_repo) = "store";
     option (rony_table) = {
         part_key: "ID"
     };

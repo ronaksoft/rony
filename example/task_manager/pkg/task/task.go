@@ -9,5 +9,5 @@ package task
    Copyright Ronak Software Group 2020
 */
 
-//go:generate protoc -I=. -I=$GOPATH/src -I=../../vendor --go_out=paths=source_relative:. task.proto
+//go:generate protoc -I=. -I=../../../.. --go_out=paths=source_relative:. task.proto
 func init() {}

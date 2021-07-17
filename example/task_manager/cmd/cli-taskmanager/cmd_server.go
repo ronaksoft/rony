@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/example/task_manager/rpc"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -40,7 +41,8 @@ var ServerCmd = &cobra.Command{
 		)
 
 		// Register the implemented service into the edge server
-		// rpc.RegisterSampleService(&rpc.SampleService{}, edgeServer)
+		rpc.RegisterAuth(&rpc.Auth{}, edgeServer)
+		rpc.RegisterTaskManager(&rpc.TaskManager{}, edgeServer)
 
 		// Start the edge server components
 		edgeServer.Start()

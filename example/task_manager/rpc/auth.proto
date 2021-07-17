@@ -1,6 +1,6 @@
 syntax = "proto3";
 package rpc ;
-import "github.com/ronaksoft/rony/options.proto";
+import "options.proto";
 option go_package = "github.com/ronaksoft/rony/example/task_manager/rpc";
 
 

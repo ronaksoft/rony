@@ -350,12 +350,17 @@ type I{{.Name}}Cli interface {
 }
 
 func Register{{$serviceName}}Cli (h I{{$serviceName}}Cli, c edgec.Client, rootCmd *cobra.Command) {
-	rootCmd.AddCommand(
+	subCommand := &cobra.Command{
+		Use: "{{$serviceName}}",
+	}
+	subCommand.AddCommand(
 	{{- range .Methods }}
 	{{- if not .TunnelOnly }}
 		gen{{$serviceName}}{{.Name}}Cmd(h ,c),
 	{{- end }}
 	{{- end }}
 	)
+
+	rootCmd.AddCommand(subCommand)
 }
 `

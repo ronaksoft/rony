@@ -127,7 +127,7 @@ func PromptCompleter(rootCmd *cobra.Command) func(d prompt.Document) []prompt.Su
 				if strings.HasPrefix(flag.Name, currWord[2:]) {
 					suggests = append(suggests, prompt.Suggest{
 						Text:        fmt.Sprintf("--%s", flag.Name),
-						Description: flag.Usage,
+						Description: flag.DefValue,
 					})
 				}
 			})
@@ -156,4 +156,9 @@ func PromptExecutor(rootCmd *cobra.Command) func(s string) {
 		rootCmd.SetArgs(strings.Fields(s))
 		_ = rootCmd.Execute()
 	}
+}
+
+// RunShell runs an interactive shell
+func RunShell(cmd *cobra.Command) {
+	prompt.New(PromptExecutor(cmd), PromptCompleter(cmd)).Run()
 }

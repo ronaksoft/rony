@@ -7,6 +7,7 @@ import (
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
+	"runtime"
 	"time"
 )
 
@@ -73,6 +74,9 @@ func WithTcpGateway(gatewayConfig TcpGatewayConfig) Option {
 		}
 		if gatewayConfig.Protocol == rony.Undefined {
 			gatewayConfig.Protocol = rony.TCP
+		}
+		if gatewayConfig.Concurrency == 0 {
+			gatewayConfig.Concurrency = runtime.NumCPU() * 100
 		}
 		gatewayTcp, err := tcpGateway.New(tcpGateway.Config{
 			Concurrency:   gatewayConfig.Concurrency,

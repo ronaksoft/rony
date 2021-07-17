@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/c-bata/go-prompt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
@@ -41,9 +40,8 @@ var ClientCmd = &cobra.Command{
 		service.RegisterSampleCli(&service.SampleCli{}, wsc, ShellCmd)
 
 		ShellCmd.AddCommand(ExitCmd)
+		tools.RunShell(ShellCmd)
 
-		p := prompt.New(tools.PromptExecutor(ShellCmd), tools.PromptCompleter(ShellCmd))
-		p.Run()
 		return nil
 	},
 }

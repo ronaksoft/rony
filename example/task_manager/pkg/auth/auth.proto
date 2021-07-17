@@ -1,10 +1,11 @@
 syntax = "proto3";
 package auth;
-import "github.com/ronaksoft/rony/options.proto";
+import "options.proto";
 option go_package = "github.com/ronaksoft/rony/example/task_manager/pkg/auth";
 
 
 message User {
+    option (rony_local_repo) = "store";
     option (rony_table) = {
         part_key: "Username"
     };
@@ -15,6 +16,7 @@ message User {
 }
 
 message Session {
+    option (rony_local_repo) = "store";
     option (rony_table) = {
         part_key: "ID"
     };
