@@ -603,7 +603,7 @@ const genIter = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -614,14 +614,14 @@ func (r *{{$repoName}}) IterWithTxn(
 	opt := store.DefaultIteratorOptions
 	opt.Reverse = ito.Backward()
 
-	switch pk := pk.(type) {
+	switch offset := offset.(type) {
 	case {{$modelName}}PK:
-		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKey .Table "pk."}})
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "offset."}})
+		seekKey = alloc.Gen({{DBKey .Table "offset."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
-		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKey . "pk."}})
+		opt.Prefix = alloc.Gen({{DBKeyPKs . "offset."}})
+		seekKey = alloc.Gen({{DBKey . "offset."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
@@ -678,7 +678,7 @@ const genList = `
 {{$repoName := print .Name "LocalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, pk {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -690,14 +690,14 @@ func (r *{{$repoName}}) ListWithTxn(
 	opt.Reverse = lo.Backward()
 	res := make([]*{{$modelName}}, 0, lo.Limit())
 	
-	switch pk := pk.(type) {
+	switch offset := offset.(type) {
 	case {{$modelName}}PK:
-		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
-		seekKey = alloc.Gen({{DBKey .Table "pk."}})
+		opt.Prefix = alloc.Gen({{DBKeyPKs .Table "offset."}})
+		seekKey = alloc.Gen({{DBKey .Table "offset."}})
 {{ range .Views }}
 	case {{MVName .}}PK:
-		opt.Prefix = alloc.Gen({{DBPrefix .}})
-		seekKey = alloc.Gen({{DBKey . "pk."}})
+		opt.Prefix = alloc.Gen({{DBKeyPKs . "offset."}})
+		seekKey = alloc.Gen({{DBKey . "offset."}})
 {{ end }}
 	default:
 		opt.Prefix = alloc.Gen({{DBPrefix .Table}})
