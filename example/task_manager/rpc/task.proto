@@ -1,0 +1,48 @@
+syntax = "proto3";
+package rpc ;
+import "github.com/ronaksoft/rony/options.proto";
+option go_package = "github.com/ronaksoft/rony/example/task_manager/rpc";
+
+
+// Task
+service Task {
+    option (rony_cobra_cmd) = true;
+    rpc Create(CreateRequest) returns (Task);
+    rpc Get(GetRequest) returns (Task);
+    rpc Delete(DeleteRequest) returns (Bool);
+    rpc List(ListRequest) returns (TaskMany);
+}
+
+message CreateRequest {
+    string Title = 1;
+    repeated string TODOs = 2;
+    int64 DueDate = 3;
+}
+
+message GetRequest {
+    int64 TaskID  = 1;
+}
+
+message DeleteRequest {
+    int64 TaskID  = 1;
+}
+
+message ListRequest {
+    int32 Offset = 1;
+    int32 Limit = 2;
+}
+
+message Task {
+    int64 ID=1;
+    string Title = 2;
+    repeated string TODOs = 3;
+    int64 DueDate = 4;
+}
+
+message TaskMany {
+    repeated Task Tasks = 1;
+}
+
+message Bool {
+    bool Result = 1;
+}

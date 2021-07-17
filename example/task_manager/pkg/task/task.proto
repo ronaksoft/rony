@@ -1,0 +1,26 @@
+syntax = "proto3";
+package task;
+import "github.com/ronaksoft/rony/options.proto";
+option go_package = "github.com/ronaksoft/rony/example/task_manager/pkg/task";
+
+
+message Task {
+    option (rony_table) = {
+        part_key: "ID"
+    };
+    int64 ID = 1;
+    string Title = 2;
+    repeated string TODOs = 3;
+    int64 DueDate = 4;
+    string Username = 5 [(rony_index) = true];
+}
+
+message Session {
+    option (rony_table) = {
+        part_key: "ID"
+    };
+    string ID = 1;
+    string Username = 2 [(rony_index) = true];
+}
+
+

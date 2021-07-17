@@ -1,0 +1,25 @@
+syntax = "proto3";
+package auth;
+import "github.com/ronaksoft/rony/options.proto";
+option go_package = "github.com/ronaksoft/rony/example/task_manager/pkg/auth";
+
+
+message User {
+    option (rony_table) = {
+        part_key: "Username"
+    };
+    string Username = 1;
+    string Password = 2;
+    string FirstName = 3;
+    string LastName = 4;
+}
+
+message Session {
+    option (rony_table) = {
+        part_key: "ID"
+    };
+    string ID = 1;
+    string Username = 2 [(rony_index) = true];
+}
+
+
