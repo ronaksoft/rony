@@ -17,6 +17,7 @@ import (
 	tools "github.com/ronaksoft/rony/tools"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
 	sync "sync"
 )
 
@@ -323,6 +324,7 @@ func (sw *sampleWrapper) infoWithClientRedirectRestServer(conn rony.RestConn, ct
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -367,6 +369,7 @@ func (sw *sampleWrapper) infoWithServerRedirectRestServer(conn rony.RestConn, ct
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }

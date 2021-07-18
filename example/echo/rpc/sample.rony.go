@@ -19,6 +19,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
 	sync "sync"
 )
 
@@ -265,6 +266,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }

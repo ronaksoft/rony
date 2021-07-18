@@ -46,7 +46,10 @@ func (g *Generator) Generate() {
 			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
 			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
+			if arg.HasRestProxy {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "net/http"})
+				g.g.P(g.Exec(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
+			}
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {

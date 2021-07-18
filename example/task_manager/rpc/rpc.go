@@ -31,9 +31,9 @@ type TaskManager struct {
 
 func NewTaskManager(s rony.Store) *TaskManager {
 	return &TaskManager{
-		userRepo: auth.NewUserLocalRepo(s),
+		userRepo:    auth.NewUserLocalRepo(s),
 		sessionRepo: auth.NewSessionLocalRepo(s),
-		taskRepo: task.NewTaskLocalRepo(s),
+		taskRepo:    task.NewTaskLocalRepo(s),
 	}
 }
 

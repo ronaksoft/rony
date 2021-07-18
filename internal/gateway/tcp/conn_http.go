@@ -17,7 +17,7 @@ import (
 */
 
 var (
-	strLocation         = []byte(fasthttp.HeaderLocation)
+	strLocation = []byte(fasthttp.HeaderLocation)
 )
 
 // httpConn

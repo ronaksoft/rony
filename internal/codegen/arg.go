@@ -240,12 +240,13 @@ func (fa *FieldArg) NameSC() string {
 
 // ServiceArg holds the data needed by the template engine to generate code based on the protogen.Service
 type ServiceArg struct {
-	desc    protoreflect.ServiceDescriptor
-	Name    string
-	NameCC  string // LowerCamelCase(Name)
-	NameKC  string // KebabCase(Name)
-	C       uint32
-	Methods []MethodArg
+	desc         protoreflect.ServiceDescriptor
+	Name         string
+	NameCC       string // LowerCamelCase(Name)
+	NameKC       string // KebabCase(Name)
+	C            uint32
+	Methods      []MethodArg
+	HasRestProxy bool
 }
 
 func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protogen.Service) ServiceArg {
@@ -257,7 +258,11 @@ func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protog
 	arg.NameKC = tools.ToKebab(arg.Name)
 	arg.C = crc32.ChecksumIEEE([]byte(arg.Name))
 	for _, m := range s.Methods {
-		arg.Methods = append(arg.Methods, GetMethodArg(file, gFile, m))
+		ma := GetMethodArg(file, gFile, m)
+		if ma.RestEnabled {
+			arg.HasRestProxy = true
+		}
+		arg.Methods = append(arg.Methods, ma)
 	}
 	return arg
 }

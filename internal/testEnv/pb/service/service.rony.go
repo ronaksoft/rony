@@ -19,6 +19,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
 	sync "sync"
 )
 
@@ -919,6 +920,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -965,6 +967,7 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1008,6 +1011,7 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1056,6 +1060,7 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1098,6 +1103,7 @@ func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.Di
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1140,6 +1146,7 @@ func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.Dispa
 		case rony.RedirectReason_ReplicaSetRequest:
 			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
 		}
+		return nil
 	}
 	return errors.ErrUnexpectedResponse
 }

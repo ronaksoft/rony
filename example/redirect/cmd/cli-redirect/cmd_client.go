@@ -35,7 +35,6 @@ var ClientCmd = &cobra.Command{
 			return errors.Wrap("websocket client:")(err)
 		}
 
-
 		ShellCmd.AddCommand(ExitCmd)
 		tools.RunShell(ShellCmd)
 
