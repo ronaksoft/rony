@@ -34,8 +34,9 @@ func init() {
 
 type Server struct {
 	// General
-	dataDir  string
-	serverID []byte
+	dataDir       string
+	serverID      []byte
+	inMemoryStore bool
 
 	// Handlers
 	preHandlers  []Handler
@@ -69,7 +70,14 @@ func NewServer(serverID string, opts ...Option) *Server {
 	}
 
 	if edgeServer.store == nil {
-		edgeServer.store, _ = store.New(store.DefaultConfig(edgeServer.dataDir))
+		cfg := store.DefaultConfig(edgeServer.dataDir)
+		if edgeServer.inMemoryStore {
+			cfg.InMemory = true
+			edgeServer.store, _ = store.New(cfg)
+		} else {
+			edgeServer.store, _ = store.New(cfg)
+		}
+
 	}
 
 	// register builtin rony handlers

@@ -139,3 +139,10 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		edge.tunnel = tunnelUDP
 	}
 }
+
+// WithInMemoryStore make the store in-memory and non-persistent.
+func WithInMemoryStore(b bool) Option {
+	return func(edge *Server) {
+		edge.inMemoryStore = b
+	}
+}

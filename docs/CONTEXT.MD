@@ -3,20 +3,22 @@
 Rony has three type contexts. They provide three layer of separation. `rony.Conn` `edge.DispatchCtx` and
 `edge.RequestCtx` are the layered contexts of Rony.
 ```
-|--- Conn ---------------------------------------|
-|   |--- DispatchCtx --------------------------|
-|   |   |--- RequestCtx -------------------|
-|   |   |--- RequestCtx -------------------|
-|   |   |   .                              |
-|   |   |   .                              |
-|   |--- DispatchCtx --------------------------|
-|   |   |--- RequestCtx -------------------|
-|   |   |--- RequestCtx -------------------|
-|   |   |   .                              |
-|   |   |   .                              |
-|   |   .                                      |
-|   |   .                                      |
-|------------------------------------------------|
+|--- Conn ----------------------------------------|
+|   |--- DispatchCtx --------------------------|  |
+|   |   |--- RequestCtx -------------------|   |  |
+|   |   |--- RequestCtx -------------------|   |  |
+|   |   |   .                              |   |  |
+|   |   |   .                              |   |  |
+|   |------------------------------------------|  |
+|                                                 |
+|   |--- DispatchCtx --------------------------|  |
+|   |   |--- RequestCtx -------------------|   |  |
+|   |   |--- RequestCtx -------------------|   |  |
+|   |------------------------------------------|  |
+|                                                 |
+|                      .                          |
+|                      .                          |
+|-------------------------------------------------|
 ```
 
 ## 1. Conn
@@ -32,4 +34,5 @@ it contains.
 
 ## 3. RequestCtx
 RequestCtx is the latest context which actually is accessed by the developer. Each RPC handler has a reference to its
-`RequestCtx`. 
+`RequestCtx`. You have access to other sub-components such as Cluster, Tunnel and Store through the `RequestCtx`.
+

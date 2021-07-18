@@ -15,14 +15,3 @@ message Task {
     int64 DueDate = 4;
     string Username = 5 [(rony_index) = true];
 }
-
-message Session {
-    option (rony_local_repo) = "store";
-    option (rony_table) = {
-        part_key: "ID"
-    };
-    string ID = 1;
-    string Username = 2 [(rony_index) = true];
-}
-
-

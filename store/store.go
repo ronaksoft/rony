@@ -44,6 +44,7 @@ func New(cfg Config) (*Store, error) {
 
 func newDB(config Config) (*badger.DB, error) {
 	opt := badger.DefaultOptions(filepath.Join(config.DirPath, "badger"))
+	opt.InMemory = config.InMemory
 	opt.Logger = nil
 
 	return badger.Open(opt)

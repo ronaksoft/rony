@@ -56,11 +56,33 @@ type AuthCLI struct {
 }
 
 func (a *AuthCLI) Register(cli *rpc.AuthClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &rpc.RegisterRequest{
+		Username:  config.GetString("username"),
+		FirstName: config.GetString("firstName"),
+		LastName:  config.GetString("lastName"),
+		Password:  config.GetString("password"),
+	}
+	res, err := cli.Register(req)
+	if err != nil {
+		cmd.Println("Error: ", err)
+		return err
+	}
+	cmd.Println("Response: ", res.String())
+	return nil
 }
 
 func (a *AuthCLI) Login(cli *rpc.AuthClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &rpc.LoginRequest{
+		Username:  config.GetString("username"),
+		Password:  config.GetString("password"),
+	}
+	res, err := cli.Login(req)
+	if err != nil {
+		cmd.Println("Error: ", err)
+		return err
+	}
+	cmd.Println("Response: ", res.String())
+	return nil
 }
 
 type TaskManagerCLI struct {}

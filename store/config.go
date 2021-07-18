@@ -26,6 +26,7 @@ type Config struct {
 	ConflictMaxInterval time.Duration
 	BatchWorkers        int
 	BatchSize           int
+	InMemory            bool
 }
 
 func DefaultConfig(dataPath string) Config {
@@ -35,5 +36,6 @@ func DefaultConfig(dataPath string) Config {
 		ConflictMaxInterval: time.Millisecond,
 		BatchSize:           defaultBatchSize,
 		BatchWorkers:        defaultBatchWorkers,
+		InMemory:            false,
 	}
 }

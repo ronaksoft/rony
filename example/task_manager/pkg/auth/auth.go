@@ -10,4 +10,5 @@ package auth
 */
 
 //go:generate protoc -I=. -I=../../../.. --go_out=paths=source_relative:. auth.proto
+//go:generate protoc -I=. -I=../../../.. --gorony_out=paths=source_relative:. auth.proto
 func init() {}
