@@ -73,9 +73,11 @@ func NewServer(serverID string, opts ...Option) *Server {
 		cfg := store.DefaultConfig(edgeServer.dataDir)
 		if edgeServer.inMemoryStore {
 			cfg.InMemory = true
-			edgeServer.store, _ = store.New(cfg)
-		} else {
-			edgeServer.store, _ = store.New(cfg)
+		}
+		var err error
+		edgeServer.store, err = store.New(cfg)
+		if err != nil {
+			log.Warn("Error On initializing store", zap.Error(err))
 		}
 
 	}

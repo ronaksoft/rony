@@ -1,0 +1,34 @@
+syntax = "proto3";
+package rpc;
+import "options.proto";
+option go_package = "github.com/ronaksoft/rony/example/redirect/rpc";
+
+// Sample
+service Sample {
+    rpc InfoWithClientRedirect (InfoRequest) returns (InfoResponse) {
+        option (rony_rest) = {
+            method: "get"
+            path: "/info/client-redirect/:ReplicaSet/:RandomText"
+            json_encode: true
+        };
+    }
+    rpc InfoWithServerRedirect (InfoRequest) returns (InfoResponse) {
+        option (rony_rest) = {
+            method: "get"
+            path: "/info/server-redirect/:ReplicaSet/:RandomText"
+            json_encode: true
+        };
+    }
+}
+
+// InfoRequest
+message InfoRequest {
+    uint64 ReplicaSet = 1;
+    string RandomText = 2;
+}
+
+// InfoResponse
+message InfoResponse {
+    string ServerID = 1;
+    string RandomText = 2;
+}

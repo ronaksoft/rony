@@ -16,6 +16,10 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+var (
+	strLocation         = []byte(fasthttp.HeaderLocation)
+)
+
 // httpConn
 type httpConn struct {
 	gateway    *Gateway
@@ -89,4 +93,13 @@ func (c *httpConn) Body() []byte {
 
 func (c *httpConn) Persistent() bool {
 	return false
+}
+
+func (c *httpConn) Redirect(statusCode int, newHostPort string) {
+	u := fasthttp.AcquireURI()
+	c.ctx.URI().CopyTo(u)
+	u.SetHost(newHostPort)
+	c.ctx.Response.Header.SetCanonical(strLocation, u.FullURI())
+	c.ctx.Response.SetStatusCode(statusCode)
+	fasthttp.ReleaseURI(u)
 }

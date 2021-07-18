@@ -37,6 +37,7 @@ type RestConn interface {
 	Method() string
 	Path() string
 	Body() []byte
+	Redirect(statusCode int, newHostPort string)
 }
 
 type LogLevel = log.Level

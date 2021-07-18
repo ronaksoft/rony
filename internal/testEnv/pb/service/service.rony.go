@@ -907,6 +907,18 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -941,6 +953,18 @@ func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -972,6 +996,18 @@ func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1008,6 +1044,18 @@ func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.Disp
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1038,6 +1086,18 @@ func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.Di
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }
@@ -1068,6 +1128,18 @@ func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.Dispa
 		x := &rony.Error{}
 		_ = x.Unmarshal(envelope.Message)
 		return errors.ErrInternalServer
+	case rony.C_Redirect:
+		x := &rony.Redirect{}
+		_ = x.Unmarshal(envelope.Message)
+		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+			break
+		}
+		switch x.Reason {
+		case rony.RedirectReason_ReplicaSetSession:
+			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+		case rony.RedirectReason_ReplicaSetRequest:
+			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+		}
 	}
 	return errors.ErrUnexpectedResponse
 }

@@ -301,6 +301,7 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 		ni := m.Proto(rony.PoolEdge.Get())
 		r.Edges = append(r.Edges, ni)
 	}
+
 	ctx.PushMessage(rony.C_Redirect, r)
 	rony.PoolRedirect.Put(r)
 }
