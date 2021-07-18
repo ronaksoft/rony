@@ -21,7 +21,7 @@ func main() {
 		config.StringFlag("server.id", tools.RandomID(12), ""),
 		config.StringFlag("gateway.listen", "0.0.0.0:80", ""),
 		config.StringSliceFlag("gateway.advertise.url", nil, ""),
-		config.StringFlag("tunnel.listen", "0.0.0.0:81", ""),
+		config.StringFlag("tunnel.listen", "", ""),
 		config.StringSliceFlag("tunnel.advertise.url", nil, ""),
 		config.DurationFlag("idle-time", time.Minute, ""),
 		config.IntFlag("raft.port", 7080, ""),
