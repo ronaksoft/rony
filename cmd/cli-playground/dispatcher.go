@@ -29,11 +29,7 @@ func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) 
 
 func (d dispatcher) Done(ctx *edge.DispatchCtx) {
 	log.Info("Done", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
-	for {
-		envelope := ctx.BufferPop()
-		if envelope == nil {
-			break
-		}
+	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
 		switch ctx.Kind() {
 		case edge.GatewayMessage, edge.TunnelMessage:
 			buf := pools.Buffer.FromProto(envelope)
@@ -43,5 +39,5 @@ func (d dispatcher) Done(ctx *edge.DispatchCtx) {
 			}
 			pools.Buffer.Put(buf)
 		}
-	}
+	})
 }

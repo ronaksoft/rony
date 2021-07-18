@@ -133,12 +133,12 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 					return nil
 				},
 				func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-					for me := ctx.BufferPop(); me != nil; me = ctx.BufferPop() {
+					ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
 						x := &service.EchoResponse{}
-						_ = x.Unmarshal(me.Message)
+						_ = x.Unmarshal(envelope.Message)
 						fmt.Println(x)
 						_ = conn.WriteBinary(ctx.StreamID(), tools.S2B(tools.Int64ToStr(x.Int)))
-					}
+					})
 					return nil
 				},
 			),

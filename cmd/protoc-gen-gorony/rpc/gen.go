@@ -104,44 +104,48 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	ctx.FillEnvelope(conn.ConnID(), C_{{$service.Name}}{{.Name}}, req)
 	return nil
 }
-func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-	envelope := ctx.BufferPop()
-	if envelope == nil {
-		return errors.ErrInternalServer
+func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case {{.Output.CName}}:
+			x := &{{.Output.Name}}{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			{{- if .Rest.Json }}
+			b, err = x.MarshalJSON()
+			{{- else }}
+			b, err = x.Marshal()
+			{{- end }}
+			if err != nil {
+				return 
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse			
+	}) {
+		err = errors.ErrInternalServer
 	}
-	
-	switch envelope.Constructor {
-	case {{.Output.CName}}:
-		x := &{{.Output.Name}}{}
-		_ = x.Unmarshal(envelope.Message)
-		{{- if .Rest.Json }}
-		b, err := x.MarshalJSON()
-		{{- else }}
-		b, err := x.Marshal()
-		{{- end }}
-		if err != nil {
-			return err
-		}
-		return conn.WriteBinary(ctx.StreamID(), b)
-	case rony.C_Error:
-		x := &rony.Error{}
-		_ = x.Unmarshal(envelope.Message)
-		return errors.ErrInternalServer
-	case rony.C_Redirect:
-		x := &rony.Redirect{}
-		_ = x.Unmarshal(envelope.Message)
-		if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
-			break
-		}
-		switch x.Reason {
-		case rony.RedirectReason_ReplicaSetSession:
-			conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
-		case rony.RedirectReason_ReplicaSetRequest:
-			conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
-		}
-		return nil
-	}
-	return errors.ErrUnexpectedResponse
+
+	return
 }
 {{ end }}
 `

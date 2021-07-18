@@ -69,29 +69,29 @@ var EchoRest = edge.NewRestProxy(
 		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 		return nil
 	},
-	func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-		envelope := ctx.BufferPop()
-		if envelope == nil {
-			return errors.ErrInternalServer
-		}
-		switch envelope.Constructor {
-		case C_EchoResponse:
-			x := &EchoResponse{}
-			_ = x.Unmarshal(envelope.Message)
-			b, err := x.MarshalJSON()
-			if err != nil {
-				return err
+	func(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+		if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+			switch envelope.Constructor {
+			case C_EchoResponse:
+				x := &EchoResponse{}
+				_ = x.Unmarshal(envelope.Message)
+				var b []byte
+				b, err = x.MarshalJSON()
+				if err != nil {
+					return
+				}
+				err = conn.WriteBinary(ctx.StreamID(), b)
+			case rony.C_Error:
+				x := &rony.Error{}
+				_ = x.Unmarshal(envelope.Message)
+				err = x
 			}
-			return conn.WriteBinary(ctx.StreamID(), b)
-		case rony.C_Error:
-			x := &rony.Error{}
-			_ = x.Unmarshal(envelope.Message)
-
-		default:
-			return errors.ErrUnexpectedResponse
-
+			err = errors.ErrUnexpectedResponse
+		}) {
+			err = errors.ErrInternalServer
 		}
-		return errors.ErrInternalServer
+
+		return
 	},
 )
 
@@ -103,28 +103,29 @@ var EchoRestBinding = edge.NewRestProxy(
 		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
 		return nil
 	},
-	func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
-		envelope := ctx.BufferPop()
-		if envelope == nil {
-			return errors.ErrInternalServer
-		}
-		switch envelope.Constructor {
-		case C_EchoResponse:
-			x := &EchoResponse{}
-			_ = x.Unmarshal(envelope.Message)
-			b, err := x.MarshalJSON()
-			if err != nil {
-				return err
+	func(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+		if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+			switch envelope.Constructor {
+			case C_EchoResponse:
+				x := &EchoResponse{}
+				_ = x.Unmarshal(envelope.Message)
+				var b []byte
+				b, err = x.MarshalJSON()
+				if err != nil {
+					return
+				}
+				err = conn.WriteBinary(ctx.StreamID(), b)
+				return
+			case rony.C_Error:
+				x := &rony.Error{}
+				_ = x.Unmarshal(envelope.Message)
+				err = x
 			}
-			return conn.WriteBinary(ctx.StreamID(), b)
-		case rony.C_Error:
-			x := &rony.Error{}
-			_ = x.Unmarshal(envelope.Message)
-
-		default:
-			return errors.ErrUnexpectedResponse
-
+			err = errors.ErrUnexpectedResponse
+		}) {
+			err = errors.ErrInternalServer
 		}
-		return errors.ErrInternalServer
+
+		return
 	},
 )

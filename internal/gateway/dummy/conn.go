@@ -2,6 +2,7 @@ package dummyGateway
 
 import (
 	"github.com/ronaksoft/rony/errors"
+	"github.com/ronaksoft/rony/tools"
 	"mime/multipart"
 	"sync"
 )
@@ -31,6 +32,14 @@ type Conn struct {
 	body    []byte
 }
 
+func NewConn(onMessage func(connID uint64, streamID int64, data []byte, hdr map[string]string)) *Conn {
+	return &Conn{
+		id:         tools.RandomUint64(0),
+		kv:         make(map[string]interface{}),
+		persistent: false,
+		onMessage:  onMessage,
+	}
+}
 func (c *Conn) WriteStatus(status int) {
 	c.status = status
 }

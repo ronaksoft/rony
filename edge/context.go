@@ -164,18 +164,17 @@ func (ctx *DispatchCtx) BufferPush(m *rony.MessageEnvelope) {
 	ctx.buf.Append(m)
 }
 
-func (ctx *DispatchCtx) BufferPop() *rony.MessageEnvelope {
-	v, _ := ctx.buf.PickHeadData().(*rony.MessageEnvelope)
-	return v
+func (ctx *DispatchCtx) BufferPop(f func(envelope *rony.MessageEnvelope)) bool {
+	me, _ := ctx.buf.PickHeadData().(*rony.MessageEnvelope)
+	if me == nil {
+		return false
+	}
+	f(me)
+	return true
 }
 
 func (ctx *DispatchCtx) BufferPopAll(f func(envelope *rony.MessageEnvelope)) {
-	for {
-		me := ctx.BufferPop()
-		if me == nil {
-			break
-		}
-		f(me)
+	for ctx.BufferPop(f) {
 	}
 }
 

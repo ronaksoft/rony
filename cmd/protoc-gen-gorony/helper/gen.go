@@ -92,6 +92,15 @@ func (p *pool{{.Name}}) Get() *{{.Name}} {
 	if !ok {
 		x = &{{.Name}}{}
 	}
+	{{ range .Fields }}
+	{{- if and (eq .Cardinality "optional") (eq .Kind "message") }}
+		{{- if ne .Pkg ""}}
+			{{.Pkg}}.Pool{{.Type}}.Get()
+		{{- else}}
+			Pool{{.Type}}.Get()
+		{{- end}}
+	{{- end }}
+	{{ end }}
 	return x
 }
 
@@ -100,7 +109,7 @@ func (p *pool{{.Name}}) Put(x *{{.Name}}) {
 		return
 	}
 	
-	{{ range .Fields}}
+	{{ range .Fields }}
 		{{- if eq .Cardinality "repeated" }}
 			{{- if eq .Kind "message" }}
 				for _, z := range x.{{.Name}} {

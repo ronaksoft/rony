@@ -353,14 +353,17 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 	case 1:
 		tm.SenderReplicaSet = edge.cluster.ReplicaSet()
 		tm.SenderID = edge.serverID
-		tm.Envelope = ctx.BufferPop()
+		ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+			envelope.DeepCopy(tm.Envelope)
+			buf := pools.Buffer.FromProto(tm)
+			_ = ctx.Conn().WriteBinary(ctx.streamID, *buf.Bytes())
+			pools.Buffer.Put(buf)
+		})
 	default:
 		// TODO:: implement it
 		panic("not implemented, handle multiple tunnel message")
 	}
-	buf := pools.Buffer.FromProto(tm)
-	_ = ctx.Conn().WriteBinary(ctx.streamID, *buf.Bytes())
-	pools.Buffer.Put(buf)
+
 }
 func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	envelope := rony.PoolMessageEnvelope.Get()

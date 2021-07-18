@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
@@ -155,9 +157,35 @@ func TestConcurrent(t *testing.T) {
 }
 
 func BenchmarkEdge(b *testing.B) {
+	e := testEnv.EdgeServer(tools.RandomID(0), 8080, 1000, edge.WithInMemoryStore(true))
+	service.RegisterSample(&service.Sample{}, e)
+	e.Start()
+	defer e.Shutdown()
+
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			req := service.PoolEchoRequest.Get()
+			req.Int = tools.RandomInt64(0)
+			me := rony.PoolMessageEnvelope.Get()
+			me.Fill(tools.RandomUint64(0), service.C_SampleEcho, req)
+			buf := pools.Buffer.FromProto(me)
+			e.OnGatewayMessage(dummyGateway.NewConn(func(connID uint64, streamID int64, data []byte, hdr map[string]string) {
+				me := rony.PoolMessageEnvelope.Get()
+				err := me.Unmarshal(data)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if me.Constructor != service.C_EchoResponse {
+					b.Fatal("invalid constructor")
+				}
+				rony.PoolMessageEnvelope.Put(me)
 
+			}), 0, *buf.Bytes())
+			pools.Buffer.Put(buf)
+			service.PoolEchoRequest.Put(req)
+			rony.PoolMessageEnvelope.Put(me)
+		}
 	})
 }
