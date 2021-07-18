@@ -12,6 +12,17 @@ import (
 	"os"
 )
 
+var (
+	_sessionID string
+)
+
+func getSessionID() *rony.KeyValue {
+	return &rony.KeyValue{
+		Key:   "SessionID",
+		Value: _sessionID,
+	}
+}
+
 var ClientCmd = &cobra.Command{
 	Use: "client",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -45,17 +56,15 @@ var ClientCmd = &cobra.Command{
 
 		var shellCmd = &cobra.Command{}
 		shellCmd.AddCommand(exitCmd)
-		rpc.RegisterAuthCli(&AuthCLI{}, wsc, shellCmd)
 		rpc.RegisterTaskManagerCli(&TaskManagerCLI{}, wsc, shellCmd)
 		tools.RunShell(shellCmd)
 		return nil
 	},
 }
 
-type AuthCLI struct {
-}
+type TaskManagerCLI struct{}
 
-func (a *AuthCLI) Register(cli *rpc.AuthClient, cmd *cobra.Command, args []string) error {
+func (t *TaskManagerCLI) Register(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
 	req := &rpc.RegisterRequest{
 		Username:  config.GetString("username"),
 		FirstName: config.GetString("firstName"),
@@ -64,42 +73,74 @@ func (a *AuthCLI) Register(cli *rpc.AuthClient, cmd *cobra.Command, args []strin
 	}
 	res, err := cli.Register(req)
 	if err != nil {
-		cmd.Println("Error: ", err)
 		return err
 	}
+	_sessionID = res.GetSessionID()
 	cmd.Println("Response: ", res.String())
 	return nil
 }
 
-func (a *AuthCLI) Login(cli *rpc.AuthClient, cmd *cobra.Command, args []string) error {
+func (t *TaskManagerCLI) Login(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
 	req := &rpc.LoginRequest{
-		Username:  config.GetString("username"),
-		Password:  config.GetString("password"),
+		Username: config.GetString("username"),
+		Password: config.GetString("password"),
 	}
 	res, err := cli.Login(req)
 	if err != nil {
-		cmd.Println("Error: ", err)
+		return err
+	}
+	_sessionID = res.GetSessionID()
+	cmd.Println("Response: ", res.String())
+	return nil
+}
+
+func (t *TaskManagerCLI) Create(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
+	req := &rpc.CreateRequest{
+		Title:   config.GetString("title"),
+		TODOs:   config.GetStringSlice("tODOs"),
+		DueDate: config.GetInt64("dueDate"),
+	}
+	res, err := cli.Create(req, getSessionID())
+	if err != nil {
 		return err
 	}
 	cmd.Println("Response: ", res.String())
 	return nil
 }
 
-type TaskManagerCLI struct {}
-
-func (t *TaskManagerCLI) Create(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
-}
-
 func (t *TaskManagerCLI) Get(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &rpc.GetRequest{
+		TaskID: config.GetInt64("TaskID"),
+	}
+	res, err := cli.Get(req, getSessionID())
+	if err != nil {
+		return err
+	}
+	cmd.Println("Response: ", res.String())
+	return nil
 }
 
 func (t *TaskManagerCLI) Delete(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &rpc.DeleteRequest{
+		TaskID: config.GetInt64("TaskID"),
+	}
+	res, err := cli.Delete(req, getSessionID())
+	if err != nil {
+		return err
+	}
+	cmd.Println("Response: ", res.String())
+	return nil
 }
 
 func (t *TaskManagerCLI) List(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	panic("implement me")
+	req := &rpc.ListRequest{
+		Offset: config.GetInt32("offset"),
+		Limit:  config.GetInt32("limit"),
+	}
+	res, err := cli.List(req, getSessionID())
+	if err != nil {
+		return err
+	}
+	cmd.Println("Response: ", res.String())
+	return nil
 }
-

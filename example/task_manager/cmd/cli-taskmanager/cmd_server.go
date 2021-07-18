@@ -41,10 +41,16 @@ var ServerCmd = &cobra.Command{
 		)
 
 		// Register the implemented service into the edge server
-		authService := rpc.NewAuth(edgeServer.Store())
-		rpc.RegisterAuth(authService, edgeServer)
+
 		taskService := rpc.NewTaskManager(edgeServer.Store())
-		rpc.RegisterTaskManager(taskService, edgeServer, authService.CheckSession, authService.MustAuthorized)
+		rpc.RegisterTaskManagerWithFunc(taskService, edgeServer, func(c int64) []edge.Handler {
+			switch c {
+			case rpc.C_TaskManagerLogin, rpc.C_TaskManagerRegister:
+			default:
+				return []edge.Handler{taskService.CheckSession, taskService.MustAuthorized}
+			}
+			return nil
+		})
 
 		// Start the edge server components
 		edgeServer.Start()

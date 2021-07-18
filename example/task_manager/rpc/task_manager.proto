@@ -7,10 +7,31 @@ option go_package = "github.com/ronaksoft/rony/example/task_manager/rpc";
 // TaskManager
 service TaskManager {
     option (rony_cobra_cmd) = true;
+    rpc Register(RegisterRequest) returns (Authorization);
+    rpc Login(LoginRequest) returns (Authorization);
     rpc Create(CreateRequest) returns (TaskView);
     rpc Get(GetRequest) returns (TaskView);
     rpc Delete(DeleteRequest) returns (Bool);
     rpc List(ListRequest) returns (TaskViewMany);
+}
+
+// RegisterRequest
+message RegisterRequest {
+    string Username = 1;
+    string FirstName = 2;
+    string LastName = 3;
+    string Password = 4;
+}
+
+// LoginRequest
+message LoginRequest {
+    string Username = 1;
+    string Password = 4;
+}
+
+// Authorization
+message Authorization {
+    string SessionID = 1;
 }
 
 message CreateRequest {
