@@ -395,7 +395,7 @@ func (p *poolMessage1) Get() *Message1 {
 		x = &Message1{}
 	}
 
-	PoolMessage2.Get()
+	x.M2 = PoolMessage2.Get()
 
 	return x
 }
@@ -478,7 +478,7 @@ func (p *poolMessage2) Get() *Message2 {
 		x = &Message2{}
 	}
 
-	PoolMessage1.Get()
+	x.M1 = PoolMessage1.Get()
 
 	return x
 }

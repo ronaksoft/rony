@@ -86,7 +86,7 @@ func (p *poolTunnelMessage) Get() *TunnelMessage {
 		x = &TunnelMessage{}
 	}
 
-	rony.PoolMessageEnvelope.Get()
+	x.Envelope = rony.PoolMessageEnvelope.Get()
 
 	return x
 }

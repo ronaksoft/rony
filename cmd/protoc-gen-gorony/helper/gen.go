@@ -95,9 +95,9 @@ func (p *pool{{.Name}}) Get() *{{.Name}} {
 	{{ range .Fields }}
 	{{- if and (eq .Cardinality "optional") (eq .Kind "message") }}
 		{{- if ne .Pkg ""}}
-			{{.Pkg}}.Pool{{.Type}}.Get()
+			x.{{.Name}} = {{.Pkg}}.Pool{{.Type}}.Get()
 		{{- else}}
-			Pool{{.Type}}.Get()
+			x.{{.Name}} = Pool{{.Type}}.Get()
 		{{- end}}
 	{{- end }}
 	{{ end }}
