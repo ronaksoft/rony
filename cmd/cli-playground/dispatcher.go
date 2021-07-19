@@ -21,6 +21,7 @@ func (d dispatcher) OnClose(conn rony.Conn) {
 
 func (d dispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
 	log.Info("OnMessage", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
+	pushToClient(ctx, envelope)
 }
 
 func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
@@ -30,14 +31,18 @@ func (d dispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) 
 func (d dispatcher) Done(ctx *edge.DispatchCtx) {
 	log.Info("Done", zap.String("ServerID", ctx.ServerID()), zap.String("Kind", ctx.Kind().String()))
 	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
-		switch ctx.Kind() {
-		case edge.GatewayMessage, edge.TunnelMessage:
-			buf := pools.Buffer.FromProto(envelope)
-			err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
-			if err != nil {
-				fmt.Println("Error On WriteBinary", err)
-			}
-			pools.Buffer.Put(buf)
-		}
+		pushToClient(ctx, envelope)
 	})
+}
+
+func pushToClient(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
+	switch ctx.Kind() {
+	case edge.GatewayMessage, edge.TunnelMessage:
+		buf := pools.Buffer.FromProto(envelope)
+		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
+		if err != nil {
+			fmt.Println("Error On WriteBinary", err)
+		}
+		pools.Buffer.Put(buf)
+	}
 }

@@ -44,7 +44,7 @@ func (s *Server) Start() {
 }
 
 func (s *Server) Shutdown() {
-	s.edge.Shutdown()
+	s.edge.Shutdown(true)
 }
 
 func (s *Server) RealEdge() *edge.Server {

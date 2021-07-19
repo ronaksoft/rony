@@ -27,6 +27,9 @@ var RootCmd = &cobra.Command{
 var ExitCmd = &cobra.Command{
 	Use: "exit",
 	Run: func(cmd *cobra.Command, args []string) {
+		for _, e := range Edges {
+			e.Shutdown(true)
+		}
 		os.Exit(0)
 	},
 }

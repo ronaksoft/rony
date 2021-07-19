@@ -15,6 +15,6 @@ import (
 
 const (
 	gossipUpdateTimeout     = time.Second * 5
-	gossipLeaveTimeout      = time.Second * 5
+	gossipLeaveTimeout      = time.Second * 30
 	clusterMessageRateLimit = 100
 )

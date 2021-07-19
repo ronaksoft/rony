@@ -46,7 +46,7 @@ var ServerCmd = &cobra.Command{
 		edgeServer.Start()
 
 		// Wait until a shutdown signal received.
-		edgeServer.ShutdownWithSignal(os.Kill, os.Interrupt)
+		edgeServer.ShutdownWithSignal(true, os.Kill, os.Interrupt)
 		return nil
 	},
 }

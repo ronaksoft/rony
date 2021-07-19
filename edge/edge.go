@@ -386,7 +386,11 @@ func (edge *Server) StartCluster() (err error) {
 		return errors.ErrClusterNotSet
 	}
 
-	edge.cluster.Start()
+	err = edge.cluster.Start()
+	if err != nil {
+		return
+	}
+
 	log.Info("Edge Server:: Cluster Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Cluster", edge.cluster.Addr()),
@@ -446,13 +450,19 @@ func (edge *Server) StartTunnel() error {
 // no error, then you must start each section separately. i.e. use StartGateway, StartCluster and StartTunnel
 // functions.
 func (edge *Server) Start() {
-	_ = edge.StartCluster()
-	_ = edge.StartGateway()
-	_ = edge.StartTunnel()
+	if err := edge.StartCluster(); err != nil && err != errors.ErrClusterNotSet {
+		panic(err)
+	}
+	if err := edge.StartGateway(); err != nil && err != errors.ErrGatewayNotSet {
+		panic(err)
+	}
+	if err := edge.StartTunnel(); err != nil && err != errors.ErrTunnelNotSet {
+		panic(err)
+	}
 }
 
 // Shutdown gracefully shutdown the services
-func (edge *Server) Shutdown() {
+func (edge *Server) Shutdown(leaveCluster bool) {
 	// First shutdown gateway to not accept any more request
 	if edge.gateway != nil {
 		edge.gateway.Shutdown()
@@ -460,7 +470,12 @@ func (edge *Server) Shutdown() {
 
 	// Shutdown the cluster
 	if edge.cluster != nil {
-		edge.cluster.Shutdown()
+		edge.cluster.Shutdown(leaveCluster)
+	}
+
+	// Shutdown the tunnel
+	if edge.tunnel != nil {
+		edge.tunnel.Shutdown()
 	}
 
 	// Shutdown the store
@@ -472,13 +487,13 @@ func (edge *Server) Shutdown() {
 }
 
 // ShutdownWithSignal blocks until any of the signals has been called
-func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
+func (edge *Server) ShutdownWithSignal(leaveCluster bool, signals ...os.Signal) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, signals...)
 
 	// Wait for signal
 	<-ch
-	edge.Shutdown()
+	edge.Shutdown(leaveCluster)
 }
 
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.

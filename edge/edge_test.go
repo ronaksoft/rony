@@ -160,7 +160,7 @@ func BenchmarkEdge(b *testing.B) {
 	e := testEnv.EdgeServer(tools.RandomID(0), 8080, 1000, edge.WithInMemoryStore(true))
 	service.RegisterSample(&service.Sample{}, e)
 	e.Start()
-	defer e.Shutdown()
+	defer e.Shutdown(true)
 
 	b.ResetTimer()
 	b.ReportAllocs()

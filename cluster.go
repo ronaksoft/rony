@@ -14,8 +14,8 @@ import (
 */
 
 type Cluster interface {
-	Start()
-	Shutdown()
+	Start() error
+	Shutdown(leave bool)
 	Join(addr ...string) (int, error)
 	Members() []ClusterMember
 	MembersByReplicaSet(replicaSets ...uint64) []ClusterMember

@@ -70,10 +70,13 @@ func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 		return
 	}
 
-	if d.c.subscriber != nil && n.State == memberlist.StateLeft {
+	if n.State == memberlist.StateLeft {
 		d.c.removeMember(en)
-		d.c.subscriber.OnLeave(en.Hash)
+		if d.c.subscriber != nil {
+			d.c.subscriber.OnLeave(en.Hash)
+		}
 	}
+
 }
 
 func (d *clusterDelegate) NodeMeta(limit int) []byte {

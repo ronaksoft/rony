@@ -35,7 +35,7 @@ var Edges map[string]*edge.Server
 func init() {
 	Edges = make(map[string]*edge.Server)
 	RootCmd.AddCommand(
-		DemoStartCmd, StartCmd, BenchCmd, ListCmd, Members,
+		DemoStartCmd, StartCmd, StopCmd, KillCmd, BenchCmd, ListCmd, Members,
 		EchoCmd, EchoTunnelCmd, SetCmd, GetCmd,
 		Trace, MemProf, LogLevel, ClusterCmd,
 	)
@@ -67,7 +67,7 @@ var DemoStartCmd = &cobra.Command{
 		}
 
 		a := 'A'
-		gossipPort := 400
+		gossipPort := 800
 		for i := 0; i < s; i++ {
 			replicaSet := uint64(i + 1)
 			for j := 0; j < n; j++ {
@@ -158,6 +158,42 @@ func startFunc(cmd *cobra.Command, serverID string, replicaSet uint64, port int,
 	}
 }
 
+var StopCmd = &cobra.Command{
+	Use: "stop",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+
+		stopFunc(cmd, serverID)
+	},
+}
+
+func stopFunc(cmd *cobra.Command, serverID string) {
+	edgeServer, ok := Edges[serverID]
+	if !ok {
+		return
+	}
+	edgeServer.Shutdown(true)
+	delete(Edges, serverID)
+}
+
+var KillCmd = &cobra.Command{
+	Use: "kill",
+	Run: func(cmd *cobra.Command, args []string) {
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+
+		killFunc(cmd, serverID)
+	},
+}
+
+func killFunc(cmd *cobra.Command, serverID string) {
+	edgeServer, ok := Edges[serverID]
+	if !ok {
+		return
+	}
+	edgeServer.Shutdown(false)
+	delete(Edges, serverID)
+}
+
 var ListCmd = &cobra.Command{
 	Use: "list",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -168,8 +204,8 @@ var ListCmd = &cobra.Command{
 func listFunc(cmd *cobra.Command) {
 	var rows []string
 	rows = append(rows,
-		"ServerID | ReplicaSet | Raft Members | Raft State |  Members | Tunnel | Gateway ",
-		"------- | ----------- | ------ | ------ | -------- | ------- | ------",
+		"ServerID | ReplicaSet |   Members | Tunnel | Gateway ",
+		"------- | ----------- |  -------- | ------- | ------",
 	)
 
 	ea := make([]*edge.Server, 0, len(Edges))
@@ -552,12 +588,12 @@ var BenchCmd = &cobra.Command{
 var Members = &cobra.Command{
 	Use: "members",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			cmd.Println("Needs ServerID, e.g. echo First.01")
-
+		serverID, _ := cmd.Flags().GetString(FlagServerID)
+		if len(serverID) == 0 {
+			cmd.Println("Needs ServerID, e.g. echo --serverID First.01")
 			return
 		}
-		e1 := Edges[args[0]]
+		e1 := Edges[serverID]
 		if e1 == nil {
 			cmd.Println("Invalid Args")
 
@@ -566,8 +602,8 @@ var Members = &cobra.Command{
 
 		var rows []string
 		rows = append(rows,
-			"ServerID | ReplicaSet   | Raft State |  Raft Port | Gateway ",
-			"------- | ----------- | ------ |  -------- | ------- ",
+			"ServerID | ReplicaSet  | Gateway ",
+			"------- | ----------- | ------- ",
 		)
 
 		for _, m := range e1.Cluster().Members() {

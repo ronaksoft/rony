@@ -15,6 +15,9 @@ import (
 
 func Wrap(txt string) func(err error) error {
 	return func(err error) error {
+		if err == nil {
+			return nil
+		}
 		return fmt.Errorf("[[ %s :: %v ]]", txt, err)
 	}
 }

@@ -118,24 +118,24 @@ func (c *Cluster) removeMember(en *msg.EdgeNode) {
 	}
 }
 
-func (c *Cluster) Start() {
-	err := c.startGossip()
-	if err != nil {
-		return
-	}
+func (c *Cluster) Start() error {
+	return c.startGossip()
 }
 
 func (c *Cluster) Join(addr ...string) (int, error) {
 	return c.gossip.Join(addr)
 }
 
-func (c *Cluster) Shutdown() {
+func (c *Cluster) Shutdown(leave bool) {
 	// Shutdown gossip
-	err := c.gossip.Leave(gossipLeaveTimeout)
-	if err != nil {
-		log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
+	if leave {
+		err := c.gossip.Leave(gossipLeaveTimeout)
+		if err != nil {
+			log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
+		}
 	}
-	err = c.gossip.Shutdown()
+
+	err := c.gossip.Shutdown()
 	if err != nil {
 		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
 	}
