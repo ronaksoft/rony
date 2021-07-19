@@ -127,7 +127,8 @@ func (c *Cluster) Join(addr ...string) (int, error) {
 }
 
 func (c *Cluster) Shutdown(leave bool) {
-	// Shutdown gossip
+	log.Info("Cluster Shutdown", zap.Bool("Leave", leave))
+
 	if leave {
 		err := c.gossip.Leave(gossipLeaveTimeout)
 		if err != nil {
@@ -135,6 +136,7 @@ func (c *Cluster) Shutdown(leave bool) {
 		}
 	}
 
+	// Shutdown gossip
 	err := c.gossip.Shutdown()
 	if err != nil {
 		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))

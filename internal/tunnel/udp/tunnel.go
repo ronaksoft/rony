@@ -105,6 +105,7 @@ func (t *Tunnel) Run() {
 		gnet.WithReusePort(true),
 		gnet.WithMulticore(true),
 		gnet.WithLockOSThread(true),
+		gnet.WithLogLevel(log.WarnLevel),
 	)
 
 	if err != nil {
@@ -116,7 +117,9 @@ func (t *Tunnel) Shutdown() {
 	atomic.StoreInt32(&t.shutdown, 1)
 	ctx, cf := context.WithTimeout(context.TODO(), time.Second * 30)
 	defer cf()
-	_ = gnet.Stop(ctx, fmt.Sprintf("udp://%s", t.cfg.ListenAddress))
+	if err := gnet.Stop(ctx, fmt.Sprintf("udp://%s", t.cfg.ListenAddress)); err != nil {
+		log.Warn("Error On Stopping Tunnel", zap.Error(err))
+	}
 }
 
 func (t *Tunnel) Addr() []string {
@@ -140,7 +143,7 @@ func (t *Tunnel) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 }
 
 func (t *Tunnel) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
-	log.Info("Tunnel connection closed")
+	log.Info("Tunnel connection closed", zap.Error(err))
 	return gnet.None
 }
 

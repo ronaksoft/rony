@@ -71,6 +71,7 @@ func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 	}
 
 	if n.State == memberlist.StateLeft {
+		log.Info("Node left", zap.String("Name", n.Name))
 		d.c.removeMember(en)
 		if d.c.subscriber != nil {
 			d.c.subscriber.OnLeave(en.Hash)
