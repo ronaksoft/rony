@@ -106,6 +106,7 @@ func (t *Tunnel) Run() {
 		gnet.WithMulticore(true),
 		gnet.WithLockOSThread(true),
 		gnet.WithLogLevel(log.WarnLevel),
+		gnet.WithLogger(log.DefaultLogger.Logger.Sugar()),
 	)
 
 	if err != nil {
@@ -115,7 +116,7 @@ func (t *Tunnel) Run() {
 
 func (t *Tunnel) Shutdown() {
 	atomic.StoreInt32(&t.shutdown, 1)
-	ctx, cf := context.WithTimeout(context.TODO(), time.Second * 30)
+	ctx, cf := context.WithTimeout(context.TODO(), time.Second*30)
 	defer cf()
 	if err := gnet.Stop(ctx, fmt.Sprintf("udp://%s", t.cfg.ListenAddress)); err != nil {
 		log.Warn("Error On Stopping Tunnel", zap.Error(err))

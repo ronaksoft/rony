@@ -6,7 +6,6 @@ require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/allegro/bigcache/v2 v2.2.5
-	github.com/armon/go-metrics v0.3.2 // indirect
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -18,8 +17,6 @@ require (
 	github.com/gobwas/ws v1.0.3
 	github.com/gocql/gocql v0.0.0-20200131111108-92af2e088537
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/hashicorp/memberlist v0.2.4
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/markbates/pkger v0.17.1
@@ -27,6 +24,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
 	github.com/prometheus/client_golang v1.11.0
+	github.com/ronaksoft/memberlist v0.2.6
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/scylladb/gocqlx/v2 v2.4.0
 	github.com/sergi/go-diff v1.1.0 // indirect

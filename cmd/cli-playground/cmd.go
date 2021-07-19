@@ -59,6 +59,7 @@ var DemoStartCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		n, _ := cmd.Flags().GetInt(FlagDemoReplicaFactor)
 		s, _ := cmd.Flags().GetInt(FlagDemoReplica)
+		gossipPort, _ := cmd.Flags().GetInt(FlagGossipPort)
 		if s < 1 {
 			s = 1
 		}
@@ -67,7 +68,6 @@ var DemoStartCmd = &cobra.Command{
 		}
 
 		a := 'A'
-		gossipPort := 1200
 		for i := 0; i < s; i++ {
 			replicaSet := uint64(i + 1)
 			for j := 0; j < n; j++ {

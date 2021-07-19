@@ -925,7 +925,7 @@
       "path": "github.com/ronaksoft/rony/internal/cluster/gossip",
       "imported": [
         "github.com/ronaksoft/rony/internal/log",
-        "github.com/hashicorp/memberlist",
+        "github.com/ronaksoft/memberlist",
         "sync",
         "github.com/ronaksoft/rony/internal/msg",
         "github.com/ronaksoft/rony/tools",
