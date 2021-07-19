@@ -70,8 +70,8 @@ func (d *clusterDelegate) NotifyLeave(n *memberlist.Node) {
 		return
 	}
 
-	d.c.removeMember(en)
 	if d.c.subscriber != nil && n.State == memberlist.StateLeft {
+		d.c.removeMember(en)
 		d.c.subscriber.OnLeave(en.Hash)
 	}
 }

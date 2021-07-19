@@ -1,6 +1,6 @@
 # Redirect Example
 
-Rony is capable of handling redirection internal (server side) or (client side). This example demonstrates
+Rony is capable of handling redirection server side or client side. This example demonstrates
 this feature.
 
 To bring up 3 instance of the server you can use `goreman`[https://github.com/mattn/goreman].

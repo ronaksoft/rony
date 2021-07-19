@@ -23,7 +23,7 @@ func init() {}
 type Sample struct{}
 
 func (s *Sample) InfoWithClientRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) {
-	ctx.Log().Warn("Received (Client)", zap.Uint64("ReqRS", req.GetReplicaSet()), zap.Uint64("ServerRS", ctx.ReplicaSet()))
+	ctx.Log().Warn("Received", zap.Uint64("ReqRS", req.GetReplicaSet()), zap.Uint64("ServerRS", ctx.ReplicaSet()))
 	if req.GetReplicaSet() != ctx.ReplicaSet() {
 		ctx.PushRedirectRequest(req.GetReplicaSet())
 		return
