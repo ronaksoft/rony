@@ -45,7 +45,8 @@ type GossipClusterConfig struct {
 // no need to a central key-value store or any other 3rd party service to run the cluster
 func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 	return func(edge *Server) {
-		edge.cluster = gossipCluster.New(edge.dataDir,
+		edge.cluster = gossipCluster.New(
+			edge.dataDir,
 			gossipCluster.Config{
 				ServerID:   edge.serverID,
 				Bootstrap:  clusterConfig.Bootstrap,

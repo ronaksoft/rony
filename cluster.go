@@ -22,7 +22,7 @@ type Cluster interface {
 	MemberByID(string) ClusterMember
 	MemberByHash(uint64) ClusterMember
 	ReplicaSet() uint64
-	ServerID() []byte
+	ServerID() string
 	TotalReplicas() int
 	Addr() string
 	SetGatewayAddrs(hostPorts []string) error

@@ -60,6 +60,7 @@ func New(dataPath string, cfg Config) *Cluster {
 		membersByID:      make(map[string]*Member, 4096),
 		membersByReplica: make(map[uint64]map[string]*Member, 1024),
 		membersByHash:    make(map[uint64]*Member, 4096),
+		eventChan:        make(chan memberlist.NodeEvent, 1024),
 	}
 
 	return c
@@ -137,8 +138,30 @@ func (c *Cluster) removeMember(n *memberlist.Node) {
 }
 
 func (c *Cluster) Start() error {
+	if err := c.startGossip(); err != nil {
+		return err
+	}
 	go func() {
 		for e := range c.eventChan {
+			switch e.Event {
+			case memberlist.NodeJoin:
+				log.Info(fmt.Sprintf("[%s] Node Joined", c.ServerID()),
+					zap.String("N", e.Node.Name),
+					zap.Any("S", e.Node.State),
+				)
+			case memberlist.NodeUpdate:
+				log.Info(fmt.Sprintf("[%s] Node Updated", c.ServerID()),
+					zap.String("N", e.Node.Name),
+					zap.Any("S", e.Node.State),
+				)
+			case memberlist.NodeLeave:
+				log.Info(fmt.Sprintf("[%s] Node Leave", c.ServerID()),
+					zap.String("N", e.Node.Name),
+					zap.Any("S", e.Node.State),
+				)
+
+			}
+
 			n := c.gossip.Member(e.Node.Name)
 			switch n.State {
 			case memberlist.StateLeft:
@@ -149,7 +172,7 @@ func (c *Cluster) Start() error {
 			}
 		}
 	}()
-	return c.startGossip()
+	return nil
 }
 
 func (c *Cluster) Join(addr ...string) (int, error) {
@@ -173,8 +196,8 @@ func (c *Cluster) Shutdown(leave bool) {
 	}
 }
 
-func (c *Cluster) ServerID() []byte {
-	return c.localServerID
+func (c *Cluster) ServerID() string {
+	return tools.B2S(c.localServerID)
 }
 
 func (c *Cluster) Members() []rony.ClusterMember {

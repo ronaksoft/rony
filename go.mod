@@ -24,7 +24,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
 	github.com/prometheus/client_golang v1.11.0
-	github.com/ronaksoft/memberlist v0.2.6
+	github.com/ronaksoft/memberlist v0.2.7
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/scylladb/gocqlx/v2 v2.4.0
 	github.com/sergi/go-diff v1.1.0 // indirect
