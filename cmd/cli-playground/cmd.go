@@ -67,7 +67,7 @@ var DemoStartCmd = &cobra.Command{
 		}
 
 		a := 'A'
-		gossipPort := 800
+		gossipPort := 400
 		for i := 0; i < s; i++ {
 			replicaSet := uint64(i + 1)
 			for j := 0; j < n; j++ {

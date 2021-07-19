@@ -1,6 +1,7 @@
 package udpTunnel
 
 import (
+	"context"
 	"fmt"
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony/internal/log"
@@ -99,6 +100,7 @@ func (t *Tunnel) Start() {
 }
 
 func (t *Tunnel) Run() {
+
 	err := gnet.Serve(t, fmt.Sprintf("udp://%s", t.cfg.ListenAddress),
 		gnet.WithReusePort(true),
 		gnet.WithMulticore(true),
@@ -112,6 +114,9 @@ func (t *Tunnel) Run() {
 
 func (t *Tunnel) Shutdown() {
 	atomic.StoreInt32(&t.shutdown, 1)
+	ctx, cf := context.WithTimeout(context.TODO(), time.Second * 30)
+	defer cf()
+	_ = gnet.Stop(ctx, fmt.Sprintf("udp://%s", t.cfg.ListenAddress))
 }
 
 func (t *Tunnel) Addr() []string {
