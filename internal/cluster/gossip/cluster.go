@@ -143,25 +143,6 @@ func (c *Cluster) Start() error {
 	}
 	go func() {
 		for e := range c.eventChan {
-			switch e.Event {
-			case memberlist.NodeJoin:
-				log.Info(fmt.Sprintf("[%s] Node Joined", c.ServerID()),
-					zap.String("N", e.Node.Name),
-					zap.Any("S", e.Node.State),
-				)
-			case memberlist.NodeUpdate:
-				log.Info(fmt.Sprintf("[%s] Node Updated", c.ServerID()),
-					zap.String("N", e.Node.Name),
-					zap.Any("S", e.Node.State),
-				)
-			case memberlist.NodeLeave:
-				log.Info(fmt.Sprintf("[%s] Node Leave", c.ServerID()),
-					zap.String("N", e.Node.Name),
-					zap.Any("S", e.Node.State),
-				)
-
-			}
-
 			n := c.gossip.Member(e.Node.Name)
 			switch n.State {
 			case memberlist.StateLeft:
