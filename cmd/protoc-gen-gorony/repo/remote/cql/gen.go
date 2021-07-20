@@ -301,16 +301,16 @@ func (r *{{$repoName}}) {{MVAlias . "MV"}}() *table.Table {
 const genPartKey = `
 {{$modelName := .Name}}
 type {{$modelName}}PartitionKey interface {
-	makeItPrivate()
+	makeIt{{$modelName}}Private()
 }
 
 type {{$modelName}}PartKey struct {
-{{- range .Table.Keys }}
+{{- range .Table.PKs }}
 {{.Name}}  {{.GoType}}
 {{- end }}
 }
 
-func ({{$modelName}}PartKey) makeItPrivate() {}
+func ({{$modelName}}PartKey) makeIt{{$modelName}}Private() {}
 
 {{- range .Views }}
 
@@ -320,7 +320,7 @@ type {{MVName .}}PartKey struct {
 {{- end }}
 }
 
-func ({{MVName .}}PartKey) makeItPrivate() {}
+func ({{MVName .}}PartKey) makeIt{{$modelName}}Private() {}
 {{ end }}
 `
 
@@ -418,11 +418,11 @@ func (r *{{$repoName}}) List(pk {{$modelName}}PartitionKey, limit uint) ([]*{{$m
 	)
 
 	switch pk := pk.(type) {
-	case {{$modelName}}PK:
+	case {{$modelName}}PartKey:
 		q = r.t.SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind({{ColumnsValuePKs .Table "pk." ""}})
 {{ range .Views }}
-	case {{MVName .}}PK:
+	case {{MVName .}}PartKey:
 		q = r.v["{{MVAlias . ""}}"].SelectBuilder("sdata").Limit(limit).Query(r.s)
 		q.Bind({{ColumnsValuePKs . "pk." ""}})
 {{ end }}

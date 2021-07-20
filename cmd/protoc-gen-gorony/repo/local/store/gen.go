@@ -575,7 +575,7 @@ func (r *{{$repoName}})  Delete({{FuncArgs .Table ""}}) error {
 const genPrimaryKey = `
 {{$modelName := .Name}}
 type {{$modelName}}PrimaryKey interface {
-	makeItPrivate()
+	makeIt{{$modelName}}Private()
 }
 
 type {{$modelName}}PK struct {
@@ -584,7 +584,7 @@ type {{$modelName}}PK struct {
 {{- end }}
 }
 
-func ({{$modelName}}PK) makeItPrivate() {}
+func ({{$modelName}}PK) makeIt{{$modelName}}Private() {}
 
 {{- range .Views }}
 
@@ -594,7 +594,7 @@ type {{MVName .}}PK struct {
 {{- end }}
 }
 
-func ({{MVName .}}PK) makeItPrivate() {}
+func ({{MVName .}}PK) makeIt{{$modelName}}Private() {}
 {{ end }}
 `
 
