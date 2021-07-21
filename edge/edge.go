@@ -462,7 +462,7 @@ func (edge *Server) Start() {
 }
 
 // Shutdown gracefully shutdown the services
-func (edge *Server) Shutdown(leaveCluster bool) {
+func (edge *Server) Shutdown() {
 	// First shutdown gateway to not accept any more request
 	if edge.gateway != nil {
 		edge.gateway.Shutdown()
@@ -470,7 +470,7 @@ func (edge *Server) Shutdown(leaveCluster bool) {
 
 	// Shutdown the cluster
 	if edge.cluster != nil {
-		edge.cluster.Shutdown(leaveCluster)
+		edge.cluster.Shutdown()
 	}
 
 	// Shutdown the tunnel
@@ -487,13 +487,17 @@ func (edge *Server) Shutdown(leaveCluster bool) {
 }
 
 // ShutdownWithSignal blocks until any of the signals has been called
-func (edge *Server) ShutdownWithSignal(leaveCluster bool, signals ...os.Signal) {
+func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
+	edge.WaitForSignal(signals...)
+	edge.Shutdown()
+}
+
+func (edge *Server) WaitForSignal(signals ...os.Signal) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, signals...)
 
 	// Wait for signal
 	<-ch
-	edge.Shutdown(leaveCluster)
 }
 
 // GetGatewayConn return the gateway connection identified by connID or returns nil if not found.

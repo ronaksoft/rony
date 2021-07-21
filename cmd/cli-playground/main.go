@@ -28,7 +28,8 @@ var ExitCmd = &cobra.Command{
 	Use: "exit",
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, e := range Edges {
-			e.Shutdown(true)
+			_ = e.Cluster().Leave()
+			e.Shutdown()
 		}
 		os.Exit(0)
 	},

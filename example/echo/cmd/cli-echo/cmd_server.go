@@ -32,15 +32,6 @@ var ServerCmd = &cobra.Command{
 				Protocol:      rony.TCP,
 				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
 			}),
-			edge.WithGossipCluster(edge.GossipClusterConfig{
-				Bootstrap:  config.GetBool("bootstrap"),
-				ReplicaSet: config.GetUint64("replica-set"),
-				GossipPort: config.GetInt("gossip.port"),
-			}),
-			edge.WithUdpTunnel(edge.UdpTunnelConfig{
-				ListenAddress: config.GetString("tunnel.listen"),
-				ExternalAddrs: config.GetStringSlice("tunnel.advertise.url"),
-			}),
 		)
 
 		// Register the implemented service into the edge server
@@ -50,7 +41,8 @@ var ServerCmd = &cobra.Command{
 		edgeServer.Start()
 
 		// Wait until a shutdown signal received.
-		edgeServer.ShutdownWithSignal(true, os.Kill, os.Interrupt)
+		edgeServer.WaitForSignal(os.Kill, os.Interrupt)
+		edgeServer.Shutdown()
 		return nil
 	},
 }

@@ -172,7 +172,8 @@ func stopFunc(cmd *cobra.Command, serverID string) {
 	if !ok {
 		return
 	}
-	edgeServer.Shutdown(true)
+	_ = edgeServer.Cluster().Leave()
+	edgeServer.Shutdown()
 	delete(Edges, serverID)
 }
 
@@ -190,7 +191,7 @@ func killFunc(cmd *cobra.Command, serverID string) {
 	if !ok {
 		return
 	}
-	edgeServer.Shutdown(false)
+	edgeServer.Shutdown()
 	delete(Edges, serverID)
 }
 

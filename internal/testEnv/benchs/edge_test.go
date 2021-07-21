@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 
 	flag.Parse()
 	code := m.Run()
-	edgeServer.Shutdown(true)
+	edgeServer.Shutdown()
 	os.Exit(code)
 }
 

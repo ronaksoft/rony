@@ -149,7 +149,6 @@ func (c *Cluster) Start() error {
 				c.removeMember(n)
 			default:
 				c.addMember(n)
-
 			}
 		}
 	}()
@@ -160,16 +159,11 @@ func (c *Cluster) Join(addr ...string) (int, error) {
 	return c.gossip.Join(addr)
 }
 
-func (c *Cluster) Shutdown(leave bool) {
-	log.Info("Cluster Shutdown", zap.Bool("Leave", leave))
+func (c *Cluster) Leave() error {
+	return c.gossip.Leave(gossipLeaveTimeout)
+}
 
-	if leave {
-		err := c.gossip.Leave(gossipLeaveTimeout)
-		if err != nil {
-			log.Warn("Error On Leaving Cluster, but we shutdown anyway", zap.Error(err))
-		}
-	}
-
+func (c *Cluster) Shutdown() {
 	// Shutdown gossip
 	err := c.gossip.Shutdown()
 	if err != nil {
