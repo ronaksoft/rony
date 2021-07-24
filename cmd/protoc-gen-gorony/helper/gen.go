@@ -149,6 +149,88 @@ func (p *pool{{.Name}}) Put(x *{{.Name}}) {
 var Pool{{.Name}} = pool{{.Name}}{}
 `
 
+const genPool2 = `
+const C_{{.Name}} int64 = {{.C}}
+type pool{{.Name}} struct {
+	pool sync.Pool
+}
+
+func (p *pool{{.Name}}) Get() *{{.Name}} {
+	x, ok := p.pool.Get().(*{{.Name}})
+	if !ok {
+		x = &{{.Name}}{}
+	}
+	{{ range .Fields }}
+	{{- if and (eq .Cardinality "optional") (eq .Kind "message") }}
+		{{- if ne .Pkg ""}}
+			x.{{.Name}} = {{.Pkg}}.Pool{{.Type}}.Get()
+		{{- else}}
+			x.{{.Name}} = Pool{{.Type}}.Get()
+		{{- end}}
+	{{- end }}
+	{{ end }}
+	return x
+}
+
+func (p *pool{{.Name}}) Put(x *{{.Name}}) {
+	if x == nil {
+		return
+	}
+	
+	{{ range .Fields }}
+		{{- if eq .Cardinality "repeated" }}
+			{{- if eq .Kind "message" }}
+				for _, z := range x.{{.Name}} {
+					{{- if ne .Pkg ""}}
+						{{.Pkg}}.Pool{{.Type}}.Put(z)
+					{{- else}}
+						Pool{{.Type}}.Put(z)
+					{{- end}}
+				}
+				_x{{.Name}} := x.{{.Name}}[:0]
+			{{- else if eq .Kind "bytes" }}
+				for _, z := range x.{{.Name}} {
+					pools.Bytes.Put(z)
+				}
+				_x{{.Name}} := x.{{.Name}}[:0]
+			{{- else }}
+				_x{{.Name}} := x.{{.Name}}[:0]
+			{{- end }}
+		{{- else }}
+			{{- if eq .Kind "bytes" }}
+				_x{{.Name}} := x.{{.Name}}[:0]
+			{{- else if eq .Kind "message" }}
+				{{- if ne .Pkg ""}}
+					{{.Pkg}}.Pool{{.Type}}.Put(x.{{.Name}})
+				{{- else}}
+					Pool{{.Type}}.Put(x.{{.Name}})
+				{{- end}}
+			{{- end }}
+		{{- end }}
+	{{- end }}
+	
+	x.Reset()
+
+	{{ range .Fields }}
+		{{- if eq .Cardinality "repeated" }}
+			{{- if eq .Kind "message" }}
+				x.{{.Name}} = _x{{.Name}}
+			{{- else }}
+				x.{{.Name}} = _x{{.Name}}
+			{{- end }}
+		{{- else }}
+			{{- if eq .Kind "bytes" }}
+				x.{{.Name}} = _x{{.Name}}
+			{{- end }}
+		{{- end }}
+	{{- end }}
+	
+	p.pool.Put(x)
+}
+
+var Pool{{.Name}} = pool{{.Name}}{}
+`
+
 const genDeepCopy = `
 func (x *{{.Name}}) DeepCopy(z *{{.Name}}) {
 	{{- range .Fields -}}
@@ -227,7 +309,7 @@ const genPushToContext = `
 
 const genSerializers = `
 	func (x *{{.Name}}) Unmarshal(b []byte) error {
-		return proto.UnmarshalOptions{}.Unmarshal(b, x)
+		return proto.UnmarshalOptions{Merge: true}.Unmarshal(b, x)
 	}
 
 	func (x *{{.Name}}) Marshal() ([]byte, error)  {
