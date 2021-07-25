@@ -249,7 +249,7 @@ func (x *Model1) HasP2(xx string) bool {
 }
 
 type Model1PrimaryKey interface {
-	makeItModel1Private()
+	makeModel1Private()
 }
 
 type Model1PK struct {
@@ -258,7 +258,7 @@ type Model1PK struct {
 	Enum     Enum
 }
 
-func (Model1PK) makeItModel1Private() {}
+func (Model1PK) makeModel1Private() {}
 
 type Model1CustomerSortPK struct {
 	Enum     Enum
@@ -266,7 +266,7 @@ type Model1CustomerSortPK struct {
 	ID       int32
 }
 
-func (Model1CustomerSortPK) makeItModel1Private() {}
+func (Model1CustomerSortPK) makeModel1Private() {}
 
 type Model1LocalRepo struct {
 	s rony.Store
@@ -731,20 +731,20 @@ func (r *Model1LocalRepo) ListByP2(p2 string, lo *store.ListOption, cond func(*M
 }
 
 type Model1PartitionKey interface {
-	makeItModel1Private()
+	makeModel1Private()
 }
 
 type Model1PartKey struct {
 	ID int32
 }
 
-func (Model1PartKey) makeItModel1Private() {}
+func (Model1PartKey) makeModel1Private() {}
 
 type Model1CustomerSortPartKey struct {
 	Enum Enum
 }
 
-func (Model1CustomerSortPartKey) makeItModel1Private() {}
+func (Model1CustomerSortPartKey) makeModel1Private() {}
 
 type Model1RemoteRepo struct {
 	qp map[string]*pools.QueryPool
@@ -925,7 +925,7 @@ func (x *Model2) HasP2(xx string) bool {
 }
 
 type Model2PrimaryKey interface {
-	makeItModel2Private()
+	makeModel2Private()
 }
 
 type Model2PK struct {
@@ -934,7 +934,7 @@ type Model2PK struct {
 	P1       string
 }
 
-func (Model2PK) makeItModel2Private() {}
+func (Model2PK) makeModel2Private() {}
 
 type Model2P1ShardKeyIDPK struct {
 	P1       string
@@ -942,7 +942,7 @@ type Model2P1ShardKeyIDPK struct {
 	ID       int64
 }
 
-func (Model2P1ShardKeyIDPK) makeItModel2Private() {}
+func (Model2P1ShardKeyIDPK) makeModel2Private() {}
 
 type Model2LocalRepo struct {
 	s rony.Store
@@ -1279,7 +1279,7 @@ func (r *Model2LocalRepo) Iter(
 }
 
 type Model2PartitionKey interface {
-	makeItModel2Private()
+	makeModel2Private()
 }
 
 type Model2PartKey struct {
@@ -1287,13 +1287,13 @@ type Model2PartKey struct {
 	ShardKey int32
 }
 
-func (Model2PartKey) makeItModel2Private() {}
+func (Model2PartKey) makeModel2Private() {}
 
 type Model2P1ShardKeyIDPartKey struct {
 	P1 string
 }
 
-func (Model2P1ShardKeyIDPartKey) makeItModel2Private() {}
+func (Model2P1ShardKeyIDPartKey) makeModel2Private() {}
 
 type Model2RemoteRepo struct {
 	qp map[string]*pools.QueryPool
@@ -1483,7 +1483,7 @@ func (x *Model3) HasP5(xx []byte) bool {
 }
 
 type Model3PrimaryKey interface {
-	makeItModel3Private()
+	makeModel3Private()
 }
 
 type Model3PK struct {
@@ -1492,7 +1492,7 @@ type Model3PK struct {
 	P1       []byte
 }
 
-func (Model3PK) makeItModel3Private() {}
+func (Model3PK) makeModel3Private() {}
 
 type Model3P1ShardKeyIDPK struct {
 	P1       []byte
@@ -1500,7 +1500,7 @@ type Model3P1ShardKeyIDPK struct {
 	ID       int64
 }
 
-func (Model3P1ShardKeyIDPK) makeItModel3Private() {}
+func (Model3P1ShardKeyIDPK) makeModel3Private() {}
 
 type Model3P1IDShardKeyPK struct {
 	P1       []byte
@@ -1508,7 +1508,7 @@ type Model3P1IDShardKeyPK struct {
 	ShardKey int32
 }
 
-func (Model3P1IDShardKeyPK) makeItModel3Private() {}
+func (Model3P1IDShardKeyPK) makeModel3Private() {}
 
 type Model3LocalRepo struct {
 	s rony.Store
@@ -1959,7 +1959,7 @@ func (r *Model3LocalRepo) ListByP5(p5 []byte, lo *store.ListOption, cond func(*M
 }
 
 type Model3PartitionKey interface {
-	makeItModel3Private()
+	makeModel3Private()
 }
 
 type Model3PartKey struct {
@@ -1967,19 +1967,19 @@ type Model3PartKey struct {
 	ShardKey int32
 }
 
-func (Model3PartKey) makeItModel3Private() {}
+func (Model3PartKey) makeModel3Private() {}
 
 type Model3P1ShardKeyIDPartKey struct {
 	P1 []byte
 }
 
-func (Model3P1ShardKeyIDPartKey) makeItModel3Private() {}
+func (Model3P1ShardKeyIDPartKey) makeModel3Private() {}
 
 type Model3P1IDShardKeyPartKey struct {
 	P1 []byte
 }
 
-func (Model3P1IDShardKeyPartKey) makeItModel3Private() {}
+func (Model3P1IDShardKeyPartKey) makeModel3Private() {}
 
 type Model3RemoteRepo struct {
 	qp map[string]*pools.QueryPool

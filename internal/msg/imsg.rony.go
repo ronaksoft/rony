@@ -279,21 +279,21 @@ func init() {
 var _ = bytes.MinRead
 
 type PagePrimaryKey interface {
-	makeItPagePrivate()
+	makePagePrivate()
 }
 
 type PagePK struct {
 	ID uint32
 }
 
-func (PagePK) makeItPagePrivate() {}
+func (PagePK) makePagePrivate() {}
 
 type PageReplicaSetIDPK struct {
 	ReplicaSet uint64
 	ID         uint32
 }
 
-func (PageReplicaSetIDPK) makeItPagePrivate() {}
+func (PageReplicaSetIDPK) makePagePrivate() {}
 
 type PageLocalRepo struct {
 	s rony.Store

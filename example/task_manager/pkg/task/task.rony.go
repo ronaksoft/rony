@@ -101,14 +101,14 @@ func (x *Task) HasTODO(xx string) bool {
 }
 
 type TaskPrimaryKey interface {
-	makeItTaskPrivate()
+	makeTaskPrivate()
 }
 
 type TaskPK struct {
 	ID int64
 }
 
-func (TaskPK) makeItTaskPrivate() {}
+func (TaskPK) makeTaskPrivate() {}
 
 type TaskLocalRepo struct {
 	s rony.Store

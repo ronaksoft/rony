@@ -150,14 +150,14 @@ func init() {
 var _ = bytes.MinRead
 
 type UserPrimaryKey interface {
-	makeItUserPrivate()
+	makeUserPrivate()
 }
 
 type UserPK struct {
 	Username string
 }
 
-func (UserPK) makeItUserPrivate() {}
+func (UserPK) makeUserPrivate() {}
 
 type UserLocalRepo struct {
 	s rony.Store
@@ -439,14 +439,14 @@ func (r *UserLocalRepo) Iter(
 }
 
 type SessionPrimaryKey interface {
-	makeItSessionPrivate()
+	makeSessionPrivate()
 }
 
 type SessionPK struct {
 	ID string
 }
 
-func (SessionPK) makeItSessionPrivate() {}
+func (SessionPK) makeSessionPrivate() {}
 
 type SessionLocalRepo struct {
 	s rony.Store

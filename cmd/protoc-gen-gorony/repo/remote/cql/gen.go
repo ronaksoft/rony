@@ -281,7 +281,7 @@ func (r *{{$repoName}}) {{MVAlias . "MV"}}() *table.Table {
 const genPartKey = `
 {{$modelName := .Name}}
 type {{$modelName}}PartitionKey interface {
-	makeIt{{$modelName}}Private()
+	make{{$modelName}}Private()
 }
 
 type {{$modelName}}PartKey struct {
@@ -290,7 +290,7 @@ type {{$modelName}}PartKey struct {
 {{- end }}
 }
 
-func ({{$modelName}}PartKey) makeIt{{$modelName}}Private() {}
+func ({{$modelName}}PartKey) make{{$modelName}}Private() {}
 
 {{- range .Views }}
 
@@ -300,7 +300,7 @@ type {{MVName .}}PartKey struct {
 {{- end }}
 }
 
-func ({{MVName .}}PartKey) makeIt{{$modelName}}Private() {}
+func ({{MVName .}}PartKey) make{{$modelName}}Private() {}
 {{ end }}
 `
 
