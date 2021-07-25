@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
+	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/pools"
@@ -157,6 +158,7 @@ func TestConcurrent(t *testing.T) {
 }
 
 func BenchmarkEdge(b *testing.B) {
+	rony.SetLogLevel(log.WarnLevel)
 	e := testEnv.EdgeServer(tools.RandomID(0), 8080, 1000, edge.WithInMemoryStore(true))
 	service.RegisterSample(&service.Sample{}, e)
 	e.Start()

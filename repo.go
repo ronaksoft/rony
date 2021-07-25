@@ -24,7 +24,3 @@ type Store interface {
 	LocalDB() *LocalDB
 	Shutdown()
 }
-
-type MountKey interface {
-	private()
-}

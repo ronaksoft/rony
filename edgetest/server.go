@@ -30,6 +30,7 @@ func NewServer(serverID string, d edge.Dispatcher) *Server {
 	s := &Server{}
 	s.edge = edge.NewServer(serverID,
 		edge.WithDispatcher(d),
+		edge.WithInMemoryStore(true),
 		edge.WithTestGateway(edge.DummyGatewayConfig{
 			Exposer: func(gw *dummyGateway.Gateway) {
 				s.gw = gw
