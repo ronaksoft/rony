@@ -31,7 +31,9 @@ func WithDataDir(path string) Option {
 // WithDispatcher enables custom dispatcher to write your specific event handlers.
 func WithDispatcher(d Dispatcher) Option {
 	return func(edge *Server) {
-		edge.dispatcher = d
+		if d != nil {
+			edge.dispatcher = d
+		}
 	}
 }
 

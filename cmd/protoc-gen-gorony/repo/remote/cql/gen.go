@@ -36,16 +36,16 @@ func GenerateGo(g *Generator, arg codegen.MessageArg) {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
-		g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(goFuncs).Parse(genPartKey)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(goFuncs).Parse(genRemoteRepo)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(goFuncs).Parse(genCRUD)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(goFuncs).Parse(genListByPK)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(helperFuncs).Parse(genPartKey)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(helperFuncs).Parse(genRemoteRepo)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(helperFuncs).Parse(genCRUD)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(helperFuncs).Parse(genListByPK)), arg))
 	}
 }
 
 func GenerateCQL(g *Generator, arg codegen.MessageArg) {
 	if arg.IsAggregate {
-		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(cqlFuncs).Parse(genCQL)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(helperFuncs).Parse(genCQL)), arg))
 	}
 }
 
@@ -58,7 +58,7 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-var goFuncs = map[string]interface{}{
+var helperFuncs = map[string]interface{}{
 	"Singular": func(x string) string {
 		return inflection.Singular(x)
 	},
@@ -138,15 +138,6 @@ var goFuncs = map[string]interface{}{
 		}
 		return m.NameTypes(codegen.PropFilterALL, prefix, textCase, codegen.LangGo)
 	},
-}
-
-var cqlFuncs = map[string]interface{}{
-	"Singular": func(x string) string {
-		return inflection.Singular(x)
-	},
-	"Plural": func(x string) string {
-		return inflection.Plural(x)
-	},
 	"PrimaryKey": func(m codegen.ModelKey) string {
 		sb := strings.Builder{}
 		sb.WriteString("((")
@@ -178,17 +169,6 @@ var cqlFuncs = map[string]interface{}{
 			}
 		}
 		sb.WriteString(")")
-		return sb.String()
-	},
-	"MVNameSC": func(m codegen.ModelKey) string {
-		alias := m.Alias()
-		if alias == "" {
-			alias = m.Names(codegen.PropFilterALL, "", "", "", codegen.None)
-		}
-		sb := strings.Builder{}
-		sb.WriteString(tools.ToSnake(m.Name()))
-		sb.WriteString("_")
-		sb.WriteString(tools.ToSnake(alias))
 		return sb.String()
 	},
 	"MVWhere": func(m codegen.ModelKey) string {
