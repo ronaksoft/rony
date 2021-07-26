@@ -94,6 +94,10 @@ func (ctx *DispatchCtx) StreamID() int64 {
 }
 
 func (ctx *DispatchCtx) CopyEnvelope(e *rony.MessageEnvelope) {
+	if ctx.reqFilled {
+		panic("BUG!!! request has been already filled")
+	}
+	ctx.reqFilled = true
 	e.DeepCopy(ctx.req)
 }
 

@@ -153,7 +153,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, 
 const genServer = `
 type I{{.Name}} interface {
 {{- range .Methods }}
-	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Name}}, res *{{.Output.Name}})
+	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Fullname}}, res *{{.Output.Fullname}})
 {{- end }}
 }
 
@@ -187,15 +187,15 @@ func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in
 		req := Pool{{.Input.Name}}.Get()
 		defer Pool{{.Input.Name}}.Put(req)
 	{{- else }}
-		req := {{.Input.Pkg}}Pool{{.Input.Name}}.Get()
-		defer {{.Input.Pkg}}Pool{{.Input.Name}}.Put(req)
+		req := {{.Input.Pkg}}.Pool{{.Input.Name}}.Get()
+		defer {{.Input.Pkg}}.Pool{{.Input.Name}}.Put(req)
 	{{- end }}
 	{{- if eq .Output.Pkg "" }}
 		res := Pool{{.Output.Name}}.Get()
 		defer Pool{{.Output.Name}}.Put(res)
 	{{- else }}
-		res := {{.Output.Pkg}}Pool{{.Output.Name}}.Get()
-		defer {{.Output.Pkg}}Pool{{.Output.Name}}.Put(res)
+		res := {{.Output.Pkg}}.Pool{{.Output.Name}}.Get()
+		defer {{.Output.Pkg}}.Pool{{.Output.Name}}.Put(res)
 	{{- end }}
 
 	err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)
@@ -254,7 +254,7 @@ func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 {{- if not .TunnelOnly }}
-func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Name}}, kvs ...*rony.KeyValue) (*{{.Output.Name}}, error) {
+func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Fullname}}, kvs ...*rony.KeyValue) (*{{.Output.Fullname}}, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -288,7 +288,7 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Name}}, kvs ...*rony.K
 const genTunnelCommand = `
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
-func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Name}}, res *{{.Output.Name}}, kvs ...*rony.KeyValue) error {
+func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
