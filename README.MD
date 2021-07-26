@@ -9,58 +9,9 @@
 ![](https://github.com/ronaksoft/rony/actions/workflows/codacy-analysis.yml/badge.svg?color=379c9c&style=flat-square)
 
 ## About
-**Rony** lets you create a clustered aware service easily. Basically when your write a service with
-**Rony** framework, you develop two interfaces one is for the client side which clients of your service connect and communicate. We call it 'Gateway'. The other interface
-communicates with other instances in the cluster which we call it 'Tunnel'.
-Basically when you are building your service with **Rony** you spin up an 'Edge' server. Each edge server has three components which you can enable them if you need to. '
-Gateway', 'Tunnel' and 'Cluster'. You cannot enable 'Tunnel' without enabling 'Cluster'.
-Each **Edge** server could be member of a replica set if cluster enabled. 
-Each **Edge** server could have its 'Tunnel' component enabled. This is how the edge servers could communicate with each other. For example, imagine you have a request from a
-client connecting to an edge with replica set to '1' but to return the response we need to execute a command on replica set '2'. This could be easily done by using 
-the '
-Tunnel' features in **Rony**.
+**Rony** lets you create a clustered aware service easily. Checkout [Wiki](https://rony.ronaksoft.com) 
 
-When we want to write a service to support sharding and replication, developers need to write a lot of code to manage their communication and how to write the code to handle these
-interactions between services and clients. **Rony** makes it easy.   
-However, to develop your service using **Rony** framework, there are more works to initialize your code comparing to other RESTful frameworks. To help you set up the skeleton even
-faster there is an executable to makes the life easier for you.
 
-### Overview Diagram
-![](docs/rony_overview.png?raw=true)
-### Installation
-
-Use go get to install the Go client-and-server generator:
-
-```
-GO111MODULE=on go get -u github.com/ronaksoft/rony/...
-```
-
-You will also need:
-
-* protoc, the protobuf compiler. You need version 3+.
-* github.com/golang/protobuf/protoc-gen-go, the Go protobuf generator plugin. Get this with `go get`
-
-### Getting Started
-
-After we have installed two executable files `protoc-gen-rony` and `rony` you are ready to create your project.
-
-```shell script
-1. mkdir sample-project
-2. cd ./sample-project
-3. rony create-project --project.name github.com/ronaksoft/sample --project.name sample-project
-```
-
-After running the 'create-project' command, you should go to the `service` directory and open `service.proto`
-file and write the appropriate protobuf file. We edit the protobuf then we run the following command 
-from the root of our project.
-
-```shell script
-rony gen-proto
-```
-
-The above command generates the boiler plate codes for our service.
-
----
 
 ### Performance
 
@@ -124,21 +75,6 @@ func main() {
 
 **This code does not run, please check example directory for working examples**
 
-### Redirect Handling
-
-### Code Generators
-
-You must install the following protoc plugins which generate the appropriate codes
-> 1. protoc-gen-gorony
-
-```
-go get -u github.com/ronaksoft/rony/cmd/protoc-gen-gorony
-
-This is a protoc pluging which could generate codes based on the protobuf. In addition to
-protobuffer syntax there are directive commands available which let the user generate more
-customized code. 
-
-```
 
 ---
 

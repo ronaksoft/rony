@@ -24,7 +24,7 @@ find good resources. Some useful references provided here:
 We also need to install protoc golang plugin from [here](https://github.com/golang/protobuf)
 
 # Install Rony
-To install Rony just run: `go get -u github.com/ronaksoft/rony/...` or in Go 1.16 and above use: `go install github.com/ronaksoft/rony/...`
+To install Rony just run: `GO111MODULE=on go get -u github.com/ronaksoft/rony/...` or in Go 1.16 and above use: `go install github.com/ronaksoft/rony/...`
 
 Rony has its own protoc plugin which is required to generate codes based on your `proto` files. Make sure `/cmd/protoc-gen-gorony` is installed
 on your path. **Usually `go install` takes care of this.**
