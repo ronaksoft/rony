@@ -43,6 +43,6 @@ func (s *Sample) InfoWithServerRedirect(ctx *edge.RequestCtx, req *InfoRequest, 
 		}
 		return
 	}
-	res.ServerID = ctx.ServerID()
+	res.ServerID = ctx.Cluster().ServerID()
 	res.RandomText = req.GetRandomText()
 }

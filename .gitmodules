@@ -1,3 +1,6 @@
 [submodule "wiki/wiki/themes/even"]
 	path = wiki/wiki/themes/even
 	url = https://github.com/olOwOlo/hugo-theme-even
+[submodule "wiki/themes/hello-friend-ng"]
+	path = wiki/themes/hello-friend-ng
+	url = https://github.com/rhazdon/hugo-theme-hello-friend-ng.git

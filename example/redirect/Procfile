@@ -1,3 +1,3 @@
 node1: cli-redirect server --server.id SERVER.1 --replica-set 1 --gateway.listen :80  --tunnel.listen 0.0.0.0:800 --gossip.port 700
-node2: cli-redirect server --server.id SERVER.2 --replica-set 2 --gateway.listen :81  --tunnel.listen 0.0.0.0:801 --gossip.port 701 --seed 172.20.10.4:700
-node3: cli-redirect server --server.id SERVER.3 --replica-set 3 --gateway.listen :82  --tunnel.listen 0.0.0.0:802 --gossip.port 702 --seed 172.20.10.4:700
+node2: cli-redirect server --server.id SERVER.2 --replica-set 2 --gateway.listen :81  --tunnel.listen 0.0.0.0:801 --gossip.port 701 --seed 172.18.1.176:700
+node3: cli-redirect server --server.id SERVER.3 --replica-set 3 --gateway.listen :82  --tunnel.listen 0.0.0.0:802 --gossip.port 702 --seed 172.18.1.176:700
