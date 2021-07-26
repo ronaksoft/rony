@@ -1,0 +1,138 @@
+<!doctype html><html lang=en>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="ie=edge">
+<meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<meta name=author content="Ehsan N. Moosa ">
+<meta name=description content="Prepare To install Rony we need to have protoc compiler installed in our system. With a quick search we can find good resources. Some useful references provided here:
+ https://grpc.io/docs/protoc-installation/ http://google.github.io/proto-lens/installing-protoc.html  We also need to install protoc golang plugin from here
+Install Rony To install Rony just run: go get -u github.com/ronaksoft/rony/... or in Go 1.16 and above use: go install github.com/ronaksoft/rony/...
+Rony has its own protoc plugin which is required to generate codes based on your proto files.">
+<meta name=keywords content=",wiki,install,guide">
+<meta name=robots content="noodp">
+<meta name=theme-color content>
+<link rel=canonical href=https://example.com/getting-started/>
+<title>
+Getting Started :: Rony's Wiki — Hello Friend NG Theme
+</title>
+<link href=https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css rel=stylesheet type=text/css>
+<link rel=stylesheet href=https://example.com/main.031a8efc33f94f55a4071bf4e91596478a5809fc8c148fab113801189cfd2152.css>
+<link rel=apple-touch-icon sizes=180x180 href=https://example.com/apple-touch-icon.png>
+<link rel=icon type=image/png sizes=32x32 href=https://example.com/favicon-32x32.png>
+<link rel=icon type=image/png sizes=16x16 href=https://example.com/favicon-16x16.png>
+<link rel=manifest href=https://example.com/site.webmanifest>
+<link rel=mask-icon href=https://example.com/safari-pinned-tab.svg color=#1b1c1d>
+<link rel="shortcut icon" href=https://example.com/favicon.ico>
+<meta name=msapplication-TileColor content="#1b1c1d">
+<meta name=theme-color content="#1b1c1d">
+<meta itemprop=name content="Getting Started">
+<meta itemprop=description content="Prepare To install Rony we need to have protoc compiler installed in our system. With a quick search we can find good resources. Some useful references provided here:
+ https://grpc.io/docs/protoc-installation/ http://google.github.io/proto-lens/installing-protoc.html  We also need to install protoc golang plugin from here
+Install Rony To install Rony just run: go get -u github.com/ronaksoft/rony/... or in Go 1.16 and above use: go install github.com/ronaksoft/rony/...
+Rony has its own protoc plugin which is required to generate codes based on your proto files."><meta itemprop=datePublished content="2021-07-26T14:33:20+04:30">
+<meta itemprop=dateModified content="2021-07-26T14:33:20+04:30">
+<meta itemprop=wordCount content="148"><meta itemprop=image content="https://example.com">
+<meta itemprop=keywords content="wiki,install,guide,">
+<meta name=twitter:card content="summary_large_image">
+<meta name=twitter:image content="https://example.com">
+<meta name=twitter:title content="Getting Started">
+<meta name=twitter:description content="Prepare To install Rony we need to have protoc compiler installed in our system. With a quick search we can find good resources. Some useful references provided here:
+ https://grpc.io/docs/protoc-installation/ http://google.github.io/proto-lens/installing-protoc.html  We also need to install protoc golang plugin from here
+Install Rony To install Rony just run: go get -u github.com/ronaksoft/rony/... or in Go 1.16 and above use: go install github.com/ronaksoft/rony/...
+Rony has its own protoc plugin which is required to generate codes based on your proto files.">
+<meta property="og:title" content="Getting Started">
+<meta property="og:description" content="Prepare To install Rony we need to have protoc compiler installed in our system. With a quick search we can find good resources. Some useful references provided here:
+ https://grpc.io/docs/protoc-installation/ http://google.github.io/proto-lens/installing-protoc.html  We also need to install protoc golang plugin from here
+Install Rony To install Rony just run: go get -u github.com/ronaksoft/rony/... or in Go 1.16 and above use: go install github.com/ronaksoft/rony/...
+Rony has its own protoc plugin which is required to generate codes based on your proto files.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://example.com/getting-started/"><meta property="og:image" content="https://example.com"><meta property="article:section" content>
+<meta property="article:published_time" content="2021-07-26T14:33:20+04:30">
+<meta property="article:modified_time" content="2021-07-26T14:33:20+04:30">
+<meta property="article:section" content="wiki">
+<meta property="article:published_time" content="2021-07-26 14:33:20 +0430 +0430">
+</head>
+<body>
+<div class=container>
+<header class=header>
+<span class=header__inner>
+<a href=https://example.com/ style=text-decoration:none>
+<div class=logo>
+<span class=logo__mark>></span>
+<span class=logo__text>$ cd /home/</span>
+<span class=logo__cursor>
+</span>
+</div>
+</a>
+<span class=header__right>
+<nav class=menu>
+<ul class=menu__inner><li><a href=https://example.com/introduction/>Introduction</a></li><li><a href=https://example.com/getting-started/>Getting Started</a></li><li><a href=https://example.com/architect/>Architect</a></li>
+</ul>
+</nav>
+<span class=menu-trigger><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+</span>
+<span class="theme-toggle not-selectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 41c10.4934.0 19-8.5066 19-19C41 11.5066 32.4934 3 22 3 11.5066 3 3 11.5066 3 22s8.5066 19 19 19zM7 22C7 13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22z"/></svg></span>
+</span>
+</span>
+</header>
+<div class=content>
+<main class=post>
+<div class=post-info>
+</p>
+</div>
+<article>
+<h2 class=post-title><a href=https://example.com/getting-started/>Getting Started</a></h2>
+<div class=post-content>
+<h1 id=prepare>Prepare</h1>
+<p>To install Rony we need to have protoc compiler installed in our system. With a quick search we can
+find good resources. Some useful references provided here:</p>
+<ul>
+<li><a href=https://grpc.io/docs/protoc-installation/>https://grpc.io/docs/protoc-installation/</a></li>
+<li><a href=http://google.github.io/proto-lens/installing-protoc.html>http://google.github.io/proto-lens/installing-protoc.html</a></li>
+</ul>
+<p>We also need to install protoc golang plugin from <a href=https://github.com/golang/protobuf>here</a></p>
+<h1 id=install-rony>Install Rony</h1>
+<p>To install Rony just run: <code>go get -u github.com/ronaksoft/rony/...</code> or in Go 1.16 and above use: <code>go install github.com/ronaksoft/rony/...</code></p>
+<p>Rony has its own protoc plugin which is required to generate codes based on your <code>proto</code> files. Make sure <code>/cmd/protoc-gen-gorony</code> is installed
+on your path. <strong>Usually <code>go install</code> takes care of this.</strong></p>
+<h1 id=first-project>First Project</h1>
+<p>To crate your first project, we need to use <code>rony</code> executable which is installed in previous section. We could
+find out about the flags by calling <code>rony -h</code>. To create our new project skeleton run :</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>mkdir sample-project
+cd ./sample-project
+rony create-project --project.name github.com/ronaksoft/sample --project.name sample-project
+</code></pre></div><p>There are some examples in <code>./example</code> directory.</p>
+</div>
+</article>
+<hr>
+<div class=post-info>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7" y2="7"/></svg>
+<span class=tag><a href=https://example.com/tags/wiki/>wiki</a></span>
+<span class=tag><a href=https://example.com/tags/install/>install</a></span>
+<span class=tag><a href=https://example.com/tags/guide/>guide</a></span>
+</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-folder meta-icon"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+<span class=tag><a href=https://example.com/categories/wiki/>wiki</a></span>
+</p>
+</div>
+</main>
+</div>
+<footer class=footer>
+<div class=footer__inner>
+<div class=footer__content>
+<span>&copy; 2021</span>
+<span><a href=https://example.com>Ehsan N. Moosa</a></span>
+<span><a href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank rel=noopener>CC BY-NC 4.0</a></span>
+<span><a href=https://example.com/posts/index.xml target=_blank title=rss><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 019 9"/><path d="M4 4a16 16 0 0116 16"/><circle cx="5" cy="19" r="1"/></svg></a></span>
+</div>
+</div>
+<div class=footer__inner>
+<div class=footer__content>
+<span>Powered by <a href=http://gohugo.io>Hugo</a></span>
+</div>
+</div>
+</footer>
+</div>
+<script type=text/javascript src=https://example.com/bundle.min.599099f1f14b78b657d524b28e10e0c5098e7cd46e9c7aed73d577068a276c3ff1bb234cbf29cb313333e83cf411727b43157c91ce5b809e2ffc81664614608e.js integrity="sha512-WZCZ8fFLeLZX1SSyjhDgxQmOfNRunHrtc9V3BoonbD/xuyNMvynLMTMz6Dz0EXJ7QxV8kc5bgJ4v/IFmRhRgjg=="></script>
+</body>
+</html>
