@@ -7,7 +7,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/allegro/bigcache/v2 v2.2.5
 	github.com/c-bata/go-prompt v0.2.5
-	github.com/dgraph-io/badger/v3 v3.2103.0
+	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/genny/v2 v2.0.6
