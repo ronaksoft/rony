@@ -4,8 +4,7 @@
 <meta http-equiv=x-ua-compatible content="ie=edge">
 <meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
 <meta name=author content="Ehsan N. Moosa ">
-<meta name=description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. It also supports REST apis using generated codes.
-Why choose Rony? The first question comes to our mind that why not use other web-server frameworks. They are quite good at what they are intended to do. They all scale well, but they are more or less well suited in the three tier architectures. We use Rony when our api-servers (i.">
+<meta name=description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. Imagine a platform which we define our RPC/API using protobuf (i.e., similar to GRPC) and it provides the server, client and cli. Moreover, we define our models (i.e., aggregates) in protobuf, and it produces the repository for us. Also, with a few lines of codes we have our service cluster aware. By cluster-aware It means we have ability in our service to know how many other instances of this service connected and pass messages between these instances.">
 <meta name=keywords content=",wiki">
 <meta name=robots content="noodp">
 <meta name=theme-color content>
@@ -24,19 +23,16 @@ Introduction :: Rony's Wiki — Hello Friend NG Theme
 <meta name=msapplication-TileColor content="#1b1c1d">
 <meta name=theme-color content="#1b1c1d">
 <meta itemprop=name content="Introduction">
-<meta itemprop=description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. It also supports REST apis using generated codes.
-Why choose Rony? The first question comes to our mind that why not use other web-server frameworks. They are quite good at what they are intended to do. They all scale well, but they are more or less well suited in the three tier architectures. We use Rony when our api-servers (i."><meta itemprop=datePublished content="2021-07-26T14:33:20+04:30">
+<meta itemprop=description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. Imagine a platform which we define our RPC/API using protobuf (i.e., similar to GRPC) and it provides the server, client and cli. Moreover, we define our models (i.e., aggregates) in protobuf, and it produces the repository for us. Also, with a few lines of codes we have our service cluster aware. By cluster-aware It means we have ability in our service to know how many other instances of this service connected and pass messages between these instances."><meta itemprop=datePublished content="2021-07-26T14:33:20+04:30">
 <meta itemprop=dateModified content="2021-07-26T14:33:20+04:30">
-<meta itemprop=wordCount content="346"><meta itemprop=image content="https://rony.ronaksoft.com">
+<meta itemprop=wordCount content="415"><meta itemprop=image content="https://rony.ronaksoft.com">
 <meta itemprop=keywords content="wiki,">
 <meta name=twitter:card content="summary_large_image">
 <meta name=twitter:image content="https://rony.ronaksoft.com">
 <meta name=twitter:title content="Introduction">
-<meta name=twitter:description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. It also supports REST apis using generated codes.
-Why choose Rony? The first question comes to our mind that why not use other web-server frameworks. They are quite good at what they are intended to do. They all scale well, but they are more or less well suited in the three tier architectures. We use Rony when our api-servers (i.">
+<meta name=twitter:description content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. Imagine a platform which we define our RPC/API using protobuf (i.e., similar to GRPC) and it provides the server, client and cli. Moreover, we define our models (i.e., aggregates) in protobuf, and it produces the repository for us. Also, with a few lines of codes we have our service cluster aware. By cluster-aware It means we have ability in our service to know how many other instances of this service connected and pass messages between these instances.">
 <meta property="og:title" content="Introduction">
-<meta property="og:description" content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. It also supports REST apis using generated codes.
-Why choose Rony? The first question comes to our mind that why not use other web-server frameworks. They are quite good at what they are intended to do. They all scale well, but they are more or less well suited in the three tier architectures. We use Rony when our api-servers (i.">
+<meta property="og:description" content="What is Rony ? Rony is a scalable and cluster-aware RPC framework. Imagine a platform which we define our RPC/API using protobuf (i.e., similar to GRPC) and it provides the server, client and cli. Moreover, we define our models (i.e., aggregates) in protobuf, and it produces the repository for us. Also, with a few lines of codes we have our service cluster aware. By cluster-aware It means we have ability in our service to know how many other instances of this service connected and pass messages between these instances.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://rony.ronaksoft.com/introduction/"><meta property="og:image" content="https://rony.ronaksoft.com"><meta property="article:section" content>
 <meta property="article:published_time" content="2021-07-26T14:33:20+04:30">
@@ -76,7 +72,11 @@ Why choose Rony? The first question comes to our mind that why not use other web
 <h2 class=post-title><a href=https://rony.ronaksoft.com/introduction/>Introduction</a></h2>
 <div class=post-content>
 <h3 id=what-is-rony->What is Rony ?</h3>
-<p>Rony is a scalable and cluster-aware RPC framework. It also supports REST apis using generated codes.</p>
+<p>Rony is a scalable and cluster-aware RPC framework. Imagine a platform which we define our RPC/API using
+protobuf (i.e., similar to GRPC) and it provides the server, client and cli. Moreover, we define our models (i.e., aggregates)
+in protobuf, and it produces the repository for us. Also, with a few lines of codes we have our service cluster aware. By
+cluster-aware It means we have ability in our service to know how many other instances of this service connected and pass
+messages between these instances.</p>
 <h3 id=why-choose-rony>Why choose Rony?</h3>
 <p>The first question comes to our mind that why not use other web-server frameworks. They are
 quite good at what they are intended to do. They all scale well, but they are more or less well suited
@@ -84,7 +84,7 @@ in the three tier architectures. We use Rony when our api-servers (i.e., we call
 to communicate with each other directly, and they need to somehow sync with each other. Or pass their
 clients messages to other clients connected to other Edge servers. This architecture shines when the
 number of apis are limited per each service. That reminds me microservice architectures. Yes in
-micro-service architecture one challenge is how to scale up the microservice itself. Sync Rony provide
+micro-service architecture one challenge is how to scale up the microservice itself. Since Rony provide
 us cluster and end-to-end communication in the cluster out of the box, it is the best choice for such scenarios.
 Rony builds its cluster using a gossip protocol hence we don&rsquo;t need to add another 3rd party service to our
 infrastructure.</p>
