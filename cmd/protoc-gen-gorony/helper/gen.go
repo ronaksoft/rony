@@ -48,6 +48,11 @@ func (g *Generator) Generate() {
 	initFunc.WriteString("func init() {\n")
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(m).With(g.f)
+		for _, f := range arg.Fields {
+			if f.Pkg() != "" {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
+			}
+		}
 		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name()))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
@@ -59,6 +64,15 @@ func (g *Generator) Generate() {
 		}
 	}
 	for _, st := range g.f.Services {
+		arg := codegen.GetServiceArg(st).With(g.f)
+		for _, m := range arg.Methods {
+			if m.Output.Pkg() != "" {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Output.ImportPath})
+			}
+			if m.Input.Pkg() != "" {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
+			}
+		}
 		for _, m := range st.Methods {
 			methodName := fmt.Sprintf("%s%s", st.Desc.Name(), m.Desc.Name())
 			constructor := crc32.ChecksumIEEE([]byte(methodName))

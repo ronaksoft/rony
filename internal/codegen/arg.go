@@ -23,12 +23,13 @@ import (
 
 // MessageArg holds the data needed by the template engine to generate code based on the protogen.Message
 type MessageArg struct {
-	file   *protogen.File
-	desc   *protogen.Message
-	name   string
-	pkg    string
-	Fields []FieldArg
-	C      uint32
+	file       *protogen.File
+	desc       *protogen.Message
+	name       string
+	pkg        string
+	Fields     []FieldArg
+	C          uint32
+	ImportPath protogen.GoImportPath
 
 	// If message is representing a model then following parameters are filled
 	IsAggregate bool
@@ -45,6 +46,7 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 	arg.name = string(m.Desc.Name())
 	arg.pkg = string(m.Desc.ParentFile().Package())
 	arg.C = crc32.ChecksumIEEE([]byte(m.Desc.Name()))
+	arg.ImportPath = m.GoIdent.GoImportPath
 	for _, f := range m.Fields {
 		arg.Fields = append(arg.Fields, GetFieldArg(f))
 	}
@@ -229,6 +231,7 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 type FieldArg struct {
 	file        *protogen.File
 	desc        protoreflect.FieldDescriptor
+	ImportPath  protogen.GoImportPath
 	name        string
 	pkg         string
 	ZeroValue   string
@@ -246,6 +249,7 @@ func GetFieldArg(f *protogen.Field) FieldArg {
 	arg.name = string(f.Desc.Name())
 	if f.Message != nil {
 		arg.pkg = string(f.Message.Desc.ParentFile().Package())
+		arg.ImportPath = f.Message.GoIdent.GoImportPath
 	} else {
 		arg.pkg = string(f.Desc.ParentFile().Package())
 	}
