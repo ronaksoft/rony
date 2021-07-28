@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
-	"hash/crc32"
 	"strings"
 	"text/template"
 )
@@ -72,12 +71,8 @@ func (g *Generator) Generate() {
 			if m.Input.Pkg() != "" {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 			}
-		}
-		for _, m := range st.Methods {
-			methodName := fmt.Sprintf("%s%s", st.Desc.Name(), m.Desc.Name())
-			constructor := crc32.ChecksumIEEE([]byte(methodName))
-			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", constructor, methodName))
-			g.g.P("const C_", methodName, " int64 = ", fmt.Sprintf("%d", constructor))
+			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", m.C, m.Fullname()))
+			g.g.P("const C_", m.Fullname(), " int64 = ", fmt.Sprintf("%d", m.C))
 		}
 	}
 	initFunc.WriteString("}")

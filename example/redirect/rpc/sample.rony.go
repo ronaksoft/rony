@@ -239,7 +239,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	)
 }
 
-func TunnelRequestSampleInfoWithClientRedirect(ctx *edge.RequestCtx, replicaSet uint64, req *InfoRequest, res *InfoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestInfoWithClientRedirect(ctx *edge.RequestCtx, replicaSet uint64, req *InfoRequest, res *InfoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -262,7 +262,7 @@ func TunnelRequestSampleInfoWithClientRedirect(ctx *edge.RequestCtx, replicaSet 
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleInfoWithServerRedirect(ctx *edge.RequestCtx, replicaSet uint64, req *InfoRequest, res *InfoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestInfoWithServerRedirect(ctx *edge.RequestCtx, replicaSet uint64, req *InfoRequest, res *InfoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

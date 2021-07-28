@@ -822,7 +822,7 @@ func (sw *taskManagerWrapper) Register(e *edge.Server, handlerFunc func(c int64)
 	)
 }
 
-func TunnelRequestTaskManagerRegister(ctx *edge.RequestCtx, replicaSet uint64, req *RegisterRequest, res *Authorization, kvs ...*rony.KeyValue) error {
+func TunnelRequestRegister(ctx *edge.RequestCtx, replicaSet uint64, req *RegisterRequest, res *Authorization, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -845,7 +845,7 @@ func TunnelRequestTaskManagerRegister(ctx *edge.RequestCtx, replicaSet uint64, r
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerLogin(ctx *edge.RequestCtx, replicaSet uint64, req *LoginRequest, res *Authorization, kvs ...*rony.KeyValue) error {
+func TunnelRequestLogin(ctx *edge.RequestCtx, replicaSet uint64, req *LoginRequest, res *Authorization, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -868,7 +868,7 @@ func TunnelRequestTaskManagerLogin(ctx *edge.RequestCtx, replicaSet uint64, req 
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerCreate(ctx *edge.RequestCtx, replicaSet uint64, req *CreateRequest, res *TaskView, kvs ...*rony.KeyValue) error {
+func TunnelRequestCreate(ctx *edge.RequestCtx, replicaSet uint64, req *CreateRequest, res *TaskView, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -891,7 +891,7 @@ func TunnelRequestTaskManagerCreate(ctx *edge.RequestCtx, replicaSet uint64, req
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *TaskView, kvs ...*rony.KeyValue) error {
+func TunnelRequestGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *TaskView, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -914,7 +914,7 @@ func TunnelRequestTaskManagerGet(ctx *edge.RequestCtx, replicaSet uint64, req *G
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerDelete(ctx *edge.RequestCtx, replicaSet uint64, req *DeleteRequest, res *Bool, kvs ...*rony.KeyValue) error {
+func TunnelRequestDelete(ctx *edge.RequestCtx, replicaSet uint64, req *DeleteRequest, res *Bool, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -937,7 +937,7 @@ func TunnelRequestTaskManagerDelete(ctx *edge.RequestCtx, replicaSet uint64, req
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerList(ctx *edge.RequestCtx, replicaSet uint64, req *ListRequest, res *TaskViewMany, kvs ...*rony.KeyValue) error {
+func TunnelRequestList(ctx *edge.RequestCtx, replicaSet uint64, req *ListRequest, res *TaskViewMany, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1119,7 +1119,7 @@ func prepareTaskManagerCommand(cmd *cobra.Command, c edgec.Client) (*TaskManager
 	return NewTaskManagerClient(c), nil
 }
 
-var genTaskManagerRegisterCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genRegisterCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "register",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1138,7 +1138,7 @@ var genTaskManagerRegisterCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.C
 	)
 	return cmd
 }
-var genTaskManagerLoginCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genLoginCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "login",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1155,7 +1155,7 @@ var genTaskManagerLoginCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Comm
 	)
 	return cmd
 }
-var genTaskManagerCreateCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genCreateCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "create",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1173,7 +1173,7 @@ var genTaskManagerCreateCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Com
 	)
 	return cmd
 }
-var genTaskManagerGetCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genGetCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "get",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1189,7 +1189,7 @@ var genTaskManagerGetCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Comman
 	)
 	return cmd
 }
-var genTaskManagerDeleteCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genDeleteCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1205,7 +1205,7 @@ var genTaskManagerDeleteCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Com
 	)
 	return cmd
 }
-var genTaskManagerListCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
+var genListCmd = func(h ITaskManagerCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1237,12 +1237,12 @@ func RegisterTaskManagerCli(h ITaskManagerCli, c edgec.Client, rootCmd *cobra.Co
 		Use: "TaskManager",
 	}
 	subCommand.AddCommand(
-		genTaskManagerRegisterCmd(h, c),
-		genTaskManagerLoginCmd(h, c),
-		genTaskManagerCreateCmd(h, c),
-		genTaskManagerGetCmd(h, c),
-		genTaskManagerDeleteCmd(h, c),
-		genTaskManagerListCmd(h, c),
+		genRegisterCmd(h, c),
+		genLoginCmd(h, c),
+		genCreateCmd(h, c),
+		genGetCmd(h, c),
+		genDeleteCmd(h, c),
+		genListCmd(h, c),
 	)
 
 	rootCmd.AddCommand(subCommand)

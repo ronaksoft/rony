@@ -231,9 +231,9 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 type FieldArg struct {
 	file        *protogen.File
 	desc        protoreflect.FieldDescriptor
-	ImportPath  protogen.GoImportPath
 	name        string
 	pkg         string
+	ImportPath  protogen.GoImportPath
 	ZeroValue   string
 	Kind        string
 	GoKind      string
@@ -357,7 +357,7 @@ func GetServiceArg(s *protogen.Service) ServiceArg {
 	arg.name = s.GoName
 	arg.C = crc32.ChecksumIEEE([]byte(arg.name))
 	for _, m := range s.Methods {
-		ma := GetMethodArg(m)
+		ma := getMethodArg(s, m)
 		if ma.RestEnabled {
 			arg.HasRestProxy = true
 		}
@@ -371,6 +371,8 @@ type MethodArg struct {
 	desc        protoreflect.MethodDescriptor
 	file        *protogen.File
 	name        string
+	fullname    string
+	C           uint32
 	Input       MessageArg
 	Output      MessageArg
 	RestEnabled bool
@@ -384,6 +386,10 @@ type RestArg struct {
 	Json      bool
 	Unmarshal bool
 	ExtraCode []string
+}
+
+func (ma MethodArg) Fullname() string {
+	return ma.fullname
 }
 
 func (ma MethodArg) Name() string {
@@ -409,11 +415,13 @@ func (ma MethodArg) With(f *protogen.File) MethodArg {
 	return ma
 }
 
-func GetMethodArg(m *protogen.Method) MethodArg {
+func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 	arg := MethodArg{
 		desc: m.Desc,
 	}
-	arg.name = m.GoName
+	arg.fullname = fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
+	arg.name = string(m.Desc.Name())
+	arg.C = crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())))
 	arg.Input = GetMessageArg(m.Input)
 	arg.Output = GetMessageArg(m.Output)
 	if arg.Input.IsSingleton || arg.Input.IsAggregate {

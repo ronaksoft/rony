@@ -73,7 +73,7 @@ func (h *SampleServer) EchoTunnel(ctx *edge.RequestCtx, req *service.EchoRequest
 
 	switch ctx.Kind() {
 	case edge.GatewayMessage:
-		err := service.TunnelRequestSampleEchoTunnel(ctx, req.ReplicaSet, req, res)
+		err := service.TunnelRequestEchoTunnel(ctx, req.ReplicaSet, req, res)
 		if err != nil {
 			ctx.PushError(errors.GenInternalErr(err.Error(), nil))
 			return

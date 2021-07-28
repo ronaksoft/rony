@@ -104,7 +104,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	{{.}}
 	{{- end }}
 
-	ctx.FillEnvelope(conn.ConnID(), C_{{$service.Name}}{{.Name}}, req)
+	ctx.FillEnvelope(conn.ConnID(), C_{{.Fullname}}, req)
 	return nil
 }
 func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
@@ -228,8 +228,8 @@ func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c int64
 	
 	{{- range .Methods }}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_{{$serviceName}}{{.Name}}).
-		SetHandler(handlerFunc(C_{{$serviceName}}{{.Name}})...).
+		edge.NewHandlerOptions().SetConstructor(C_{{.Fullname}}).
+		SetHandler(handlerFunc(C_{{.Fullname}})...).
         Append(sw.{{.NameCC}}Wrapper)
 		{{- if .TunnelOnly }}.TunnelOnly(){{- end }},
 	)
@@ -262,7 +262,7 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Fullname}}, kvs ...*ro
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(c.c.GetRequestID(), C_{{$serviceName}}{{.Name}}, req, kvs ...)
+	out.Fill(c.c.GetRequestID(), C_{{.Fullname}}, req, kvs ...)
 	err := c.c.Send(out, in)
 	if err != nil {
 		return nil, err
@@ -291,12 +291,12 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Fullname}}, kvs ...*ro
 const genTunnelCommand = `
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
-func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
+func TunnelRequest{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
-	out.Fill(ctx.ReqID(), C_{{$serviceName}}{{.Name}}, req, kvs...)
+	out.Fill(ctx.ReqID(), C_{{.Fullname}}, req, kvs...)
 	err := ctx.TunnelRequest(replicaSet, out, in)
 	if err != nil {
 		return err
@@ -331,7 +331,7 @@ func prepare{{.Name}}Command(cmd *cobra.Command, c edgec.Client) (*{{.Name}}Clie
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 	{{- if not .TunnelOnly }}
-		var gen{{$serviceName}}{{.Name}}Cmd = func(h I{{$serviceName}}Cli, c edgec.Client) *cobra.Command {
+		var gen{{.Name}}Cmd = func(h I{{$serviceName}}Cli, c edgec.Client) *cobra.Command {
 			cmd := &cobra.Command {
 				Use: "{{.NameKC}}",
 				RunE: func(cmd *cobra.Command, args []string) error {
@@ -379,7 +379,7 @@ func Register{{$serviceName}}Cli (h I{{$serviceName}}Cli, c edgec.Client, rootCm
 	subCommand.AddCommand(
 	{{- range .Methods }}
 	{{- if not .TunnelOnly }}
-		gen{{$serviceName}}{{.Name}}Cmd(h ,c),
+		gen{{.Name}}Cmd(h ,c),
 	{{- end }}
 	{{- end }}
 	)

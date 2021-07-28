@@ -35,7 +35,7 @@ func (s *Sample) InfoWithClientRedirect(ctx *edge.RequestCtx, req *InfoRequest, 
 func (s *Sample) InfoWithServerRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) {
 	ctx.Log().Warn("Received", zap.Uint64("ReplicaSet", req.GetReplicaSet()))
 	if req.GetReplicaSet() != ctx.ReplicaSet() {
-		err := TunnelRequestSampleInfoWithServerRedirect(ctx, req.GetReplicaSet(), req, res)
+		err := TunnelRequestInfoWithServerRedirect(ctx, req.GetReplicaSet(), req, res)
 		if err != nil {
 			ctx.Log().Warn("Got Error", zap.Error(err))
 			ctx.PushError(errors.ErrInternalServer)

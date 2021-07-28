@@ -204,7 +204,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	)
 }
 
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -320,7 +320,7 @@ func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, er
 	return NewSampleClient(c), nil
 }
 
-var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -347,7 +347,7 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 		Use: "Sample",
 	}
 	subCommand.AddCommand(
-		genSampleEchoCmd(h, c),
+		genEchoCmd(h, c),
 	)
 
 	rootCmd.AddCommand(subCommand)

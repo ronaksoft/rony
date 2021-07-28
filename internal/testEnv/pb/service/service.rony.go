@@ -751,7 +751,7 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []ed
 	)
 }
 
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -774,7 +774,7 @@ func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -797,7 +797,7 @@ func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetReq
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -820,7 +820,7 @@ func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetReq
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -843,7 +843,7 @@ func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -866,7 +866,7 @@ func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, re
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1322,7 +1322,7 @@ func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, er
 	return NewSampleClient(c), nil
 }
 
-var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1340,7 +1340,7 @@ var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-var genSampleSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "set",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1357,7 +1357,7 @@ var genSampleSetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-var genSampleGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "get",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1373,7 +1373,7 @@ var genSampleGetCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-tunnel",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1391,7 +1391,7 @@ var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	)
 	return cmd
 }
-var genSampleEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
+var genEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "echo-delay",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1423,11 +1423,11 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 		Use: "Sample",
 	}
 	subCommand.AddCommand(
-		genSampleEchoCmd(h, c),
-		genSampleSetCmd(h, c),
-		genSampleGetCmd(h, c),
-		genSampleEchoTunnelCmd(h, c),
-		genSampleEchoDelayCmd(h, c),
+		genEchoCmd(h, c),
+		genSetCmd(h, c),
+		genGetCmd(h, c),
+		genEchoTunnelCmd(h, c),
+		genEchoDelayCmd(h, c),
 	)
 
 	rootCmd.AddCommand(subCommand)
