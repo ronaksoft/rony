@@ -10,9 +10,9 @@ import (
 	"strings"
 )
 
-func main() {
-	plugins := make(map[string]struct{})
-	pgo := protogen.Options{
+var (
+	plugins = make(map[string]struct{})
+	pgo     = protogen.Options{
 		ParamFunc: func(name, value string) error {
 			switch name {
 			case "option":
@@ -32,7 +32,9 @@ func main() {
 			return path
 		},
 	}
+)
 
+func main() {
 	pgo.Run(func(plugin *protogen.Plugin) error {
 		protocVer := plugin.Request.GetCompilerVersion()
 		for _, protoFile := range plugin.Files {

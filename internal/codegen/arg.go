@@ -23,13 +23,12 @@ import (
 
 // MessageArg holds the data needed by the template engine to generate code based on the protogen.Message
 type MessageArg struct {
-	desc     protoreflect.MessageDescriptor
-	Fullname string
-	Name     string
-	CName    string // [Pkg.]C_Name
-	Pkg      string
-	C        uint32
-	Fields   []FieldArg
+	file   *protogen.File
+	desc   *protogen.Message
+	name   string
+	pkg    string
+	Fields []FieldArg
+	C      uint32
 
 	// If message is representing a model then following parameters are filled
 	IsAggregate bool
@@ -41,21 +40,13 @@ type MessageArg struct {
 	Views       []*ModelKey
 }
 
-func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) MessageArg {
-	arg := MessageArg{
-		desc: m.Desc,
-	}
-	arg.Pkg, arg.Name = DescParts(file, gFile, m.Desc)
+func GetMessageArg(m *protogen.Message) MessageArg {
+	arg := MessageArg{}
+	arg.name = string(m.Desc.Name())
+	arg.pkg = string(m.Desc.ParentFile().Package())
 	arg.C = crc32.ChecksumIEEE([]byte(m.Desc.Name()))
-	if arg.Pkg == "" {
-		arg.CName = fmt.Sprintf("C_%s", arg.Name)
-		arg.Fullname = arg.Name
-	} else {
-		arg.CName = fmt.Sprintf("%s.C_%s", arg.Pkg, arg.Name)
-		arg.Fullname = fmt.Sprintf("%s.%s", arg.Pkg, arg.Name)
-	}
 	for _, f := range m.Fields {
-		arg.Fields = append(arg.Fields, GetFieldArg(file, gFile, f))
+		arg.Fields = append(arg.Fields, GetFieldArg(f))
 	}
 
 	// Generate the aggregate description from proto options
@@ -74,12 +65,12 @@ func GetMessageArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protog
 	}
 
 	arg.IsAggregate = true
-	arg.parsePrimaryKeyOpt(file, gFile, m)
+	arg.parsePrimaryKeyOpt(m)
 
 	return arg
 }
 
-func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Message) {
+func (ma *MessageArg) parsePrimaryKeyOpt(m *protogen.Message) {
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
 	tablePK := proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt)
 	viewPKs := proto.GetExtension(opt, rony.E_RonyView).([]*rony.PrimaryKeyOpt)
@@ -93,7 +84,7 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 	for _, f := range m.Fields {
 		protoTypes[f.GoName] = f.Desc.Kind().String()
 		cqlTypes[f.GoName] = CqlKind(f.Desc)
-		goTypes[f.GoName] = GoKind(file, gFile, f.Desc)
+		goTypes[f.GoName] = GoKind(f.Desc)
 	}
 
 	// Fill Table's ModelKey
@@ -174,16 +165,35 @@ func (ma *MessageArg) parsePrimaryKeyOpt(file *protogen.File, gFile *protogen.Ge
 	}
 }
 
+func (ma *MessageArg) currentPkg() string {
+	var pkg string
+	if ma.file != nil {
+		pkg = string(ma.file.GoPackageName)
+	}
+	return pkg
+}
+
+func (ma MessageArg) Name() string {
+	return ma.name
+}
+
 func (ma MessageArg) NameCC() string {
-	return tools.ToLowerCamel(ma.Name)
+	return tools.ToLowerCamel(ma.name)
 }
 
 func (ma MessageArg) NameKC() string {
-	return tools.ToKebab(ma.Name)
+	return tools.ToKebab(ma.name)
 }
 
 func (ma MessageArg) NameSC() string {
-	return tools.ToSnake(ma.Name)
+	return tools.ToSnake(ma.name)
+}
+
+func (ma MessageArg) Pkg() string {
+	if ma.currentPkg() == ma.pkg {
+		return ""
+	}
+	return ma.pkg
 }
 
 func (ma MessageArg) ViewsByPK() map[string][]*ModelKey {
@@ -195,12 +205,32 @@ func (ma MessageArg) ViewsByPK() map[string][]*ModelKey {
 	return res
 }
 
+func (ma MessageArg) Fullname() string {
+	if ma.pkg == ma.currentPkg() {
+		return ma.name
+	} else {
+		return fmt.Sprintf("%s.%s", ma.pkg, ma.name)
+	}
+}
+
+func (ma MessageArg) CName() string {
+	return fmt.Sprintf("C_%s", ma.name)
+}
+
+func (ma MessageArg) With(f *protogen.File) MessageArg {
+	ma.file = f
+	for idx := range ma.Fields {
+		ma.Fields[idx] = ma.Fields[idx].With(f)
+	}
+	return ma
+}
+
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
+	file        *protogen.File
 	desc        protoreflect.FieldDescriptor
-	Name        string // Name of the field
-	Pkg         string
-	Type        string
+	name        string
+	pkg         string
 	ZeroValue   string
 	Kind        string
 	GoKind      string
@@ -209,14 +239,19 @@ type FieldArg struct {
 	HasIndex    bool
 }
 
-func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen.Field) FieldArg {
+func GetFieldArg(f *protogen.Field) FieldArg {
 	arg := FieldArg{
 		desc: f.Desc,
 	}
-	arg.Name = f.GoName
-	arg.Pkg, arg.Type = DescParts(file, gFile, f.Desc.Message())
+	arg.name = string(f.Desc.Name())
+	if f.Message != nil {
+		arg.pkg = string(f.Message.Desc.ParentFile().Package())
+	} else {
+		arg.pkg = string(f.Desc.ParentFile().Package())
+	}
+
 	arg.Kind = f.Desc.Kind().String()
-	arg.GoKind = GoKind(file, gFile, f.Desc)
+	arg.GoKind = GoKind(f.Desc)
 	arg.CqlKind = CqlKind(f.Desc)
 	arg.Cardinality = f.Desc.Cardinality().String()
 	arg.ZeroValue = ZeroValue(f.Desc)
@@ -226,39 +261,99 @@ func GetFieldArg(file *protogen.File, gFile *protogen.GeneratedFile, f *protogen
 	return arg
 }
 
-func (fa *FieldArg) NameCC() string {
-	return tools.ToLowerCamel(fa.Name)
+func (fa FieldArg) currentPkg() string {
+	var pkg string
+	if fa.file != nil {
+		pkg = string(fa.file.GoPackageName)
+	}
+	return pkg
 }
 
-func (fa *FieldArg) NameKC() string {
-	return tools.ToKebab(fa.Name)
+func (fa FieldArg) Name() string {
+	return fa.name
 }
 
-func (fa *FieldArg) NameSC() string {
-	return tools.ToSnake(fa.Name)
+func (fa FieldArg) NameCC() string {
+	return tools.ToLowerCamel(fa.name)
+}
+
+func (fa FieldArg) NameKC() string {
+	return tools.ToKebab(fa.name)
+}
+
+func (fa FieldArg) NameSC() string {
+	return tools.ToSnake(fa.name)
+}
+
+func (fa FieldArg) Type() string {
+	if fa.desc.Message() != nil {
+		return string(fa.desc.Message().Name())
+	}
+	return fa.GoKind
+}
+
+func (fa FieldArg) Pkg() string {
+	if fa.currentPkg() == fa.pkg {
+		return ""
+	}
+	return fa.pkg
+}
+
+func (fa FieldArg) With(f *protogen.File) FieldArg {
+	fa.file = f
+	return fa
 }
 
 // ServiceArg holds the data needed by the template engine to generate code based on the protogen.Service
 type ServiceArg struct {
+	file         *protogen.File
 	desc         protoreflect.ServiceDescriptor
-	Name         string
-	NameCC       string // LowerCamelCase(Name)
-	NameKC       string // KebabCase(Name)
+	name         string
 	C            uint32
 	Methods      []MethodArg
 	HasRestProxy bool
 }
 
-func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protogen.Service) ServiceArg {
+func (sa ServiceArg) currentPkg() string {
+	var pkg string
+	if sa.file != nil {
+		pkg = string(sa.file.GoPackageName)
+	}
+	return pkg
+}
+
+func (sa ServiceArg) Name() string {
+	return sa.name
+}
+
+func (sa ServiceArg) NameCC() string {
+	return tools.ToLowerCamel(sa.name)
+}
+
+func (sa ServiceArg) NameKC() string {
+	return tools.ToKebab(sa.name)
+}
+
+func (sa ServiceArg) NameSC() string {
+	return tools.ToSnake(sa.name)
+}
+
+func (sa ServiceArg) With(f *protogen.File) ServiceArg {
+	sa.file = f
+	for idx := range sa.Methods {
+		sa.Methods[idx] = sa.Methods[idx].With(sa.file)
+	}
+	return sa
+}
+
+func GetServiceArg(s *protogen.Service) ServiceArg {
 	arg := ServiceArg{
 		desc: s.Desc,
 	}
-	arg.Name = s.GoName
-	arg.NameCC = tools.ToLowerCamel(arg.Name)
-	arg.NameKC = tools.ToKebab(arg.Name)
-	arg.C = crc32.ChecksumIEEE([]byte(arg.Name))
+	arg.name = s.GoName
+	arg.C = crc32.ChecksumIEEE([]byte(arg.name))
 	for _, m := range s.Methods {
-		ma := GetMethodArg(file, gFile, m)
+		ma := GetMethodArg(m)
 		if ma.RestEnabled {
 			arg.HasRestProxy = true
 		}
@@ -270,24 +365,13 @@ func GetServiceArg(file *protogen.File, gFile *protogen.GeneratedFile, s *protog
 // MethodArg holds the data needed by the template engine to generate code based on the protogen.Method
 type MethodArg struct {
 	desc        protoreflect.MethodDescriptor
-	Name        string
+	file        *protogen.File
+	name        string
 	Input       MessageArg
 	Output      MessageArg
 	RestEnabled bool
 	TunnelOnly  bool
 	Rest        RestArg
-}
-
-func (ma MethodArg) NameCC() string {
-	return tools.ToLowerCamel(ma.Name)
-}
-
-func (ma MethodArg) NameKC() string {
-	return tools.ToKebab(ma.Name)
-}
-
-func (ma MethodArg) NameSC() string {
-	return tools.ToSnake(ma.Name)
 }
 
 type RestArg struct {
@@ -298,13 +382,42 @@ type RestArg struct {
 	ExtraCode []string
 }
 
-func GetMethodArg(file *protogen.File, gFile *protogen.GeneratedFile, m *protogen.Method) MethodArg {
+func (ma MethodArg) Name() string {
+	return ma.name
+}
+
+func (ma MethodArg) NameCC() string {
+	return tools.ToLowerCamel(ma.name)
+}
+
+func (ma MethodArg) NameKC() string {
+	return tools.ToKebab(ma.name)
+}
+
+func (ma MethodArg) NameSC() string {
+	return tools.ToSnake(ma.name)
+}
+
+func (ma MethodArg) With(f *protogen.File) MethodArg {
+	ma.file = f
+	ma.Input = ma.Input.With(f)
+	ma.Output = ma.Output.With(f)
+	return ma
+}
+
+func GetMethodArg(m *protogen.Method) MethodArg {
 	arg := MethodArg{
 		desc: m.Desc,
 	}
-	arg.Name = m.GoName
-	arg.Input = GetMessageArg(file, gFile, m.Input)
-	arg.Output = GetMessageArg(file, gFile, m.Output)
+	arg.name = m.GoName
+	arg.Input = GetMessageArg(m.Input)
+	arg.Output = GetMessageArg(m.Output)
+	if arg.Input.IsSingleton || arg.Input.IsAggregate {
+		panic("method input cannot be aggregate or singleton")
+	}
+	if arg.Output.IsSingleton || arg.Output.IsAggregate {
+		panic("method output cannot be aggregate or singleton")
+	}
 	opt, _ := m.Desc.Options().(*descriptorpb.MethodOptions)
 	restOpt := proto.GetExtension(opt, rony.E_RonyRest).(*rony.RestOpt)
 	rest := RestArg{Method: "", Path: "", Json: false}
@@ -384,7 +497,7 @@ type ModelKey struct {
 }
 
 func (m *ModelKey) Name() string {
-	return m.Arg.Name
+	return m.Arg.name
 }
 
 func (m *ModelKey) Alias() string {
@@ -572,3 +685,33 @@ const (
 	LangCQL   Language = "CQL"
 	LangProto Language = "PROTO"
 )
+
+type ModuleArg struct {
+	Service    *ServiceArg
+	Aggregates []MessageArg
+	Singletons []MessageArg
+}
+
+func GetModuleArg(plugin *protogen.Plugin) ModuleArg {
+	arg := ModuleArg{}
+	for _, f := range plugin.Files {
+		if len(f.Services) == 0 {
+			continue
+		}
+		if len(f.Services) != 1 || arg.Service != nil {
+			panic("only one service must be defined in each module")
+		}
+		// arg.Service = GetServiceArg(f, gFile, file.Services[0])
+	}
+
+	// arg.Service =
+	// for _, m := range file.Messages {
+	// 	ma := GetMessageArg(file, gFile, m)
+	// 	if ma.IsAggregate {
+	// 		arg.Aggregates = append(arg.Aggregates, ma)
+	// 	} else if ma.IsSingleton {
+	// 		arg.Singletons = append(arg.Singletons, ma)
+	// 	}
+	// }
+	return arg
+}

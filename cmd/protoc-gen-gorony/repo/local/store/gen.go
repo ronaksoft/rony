@@ -36,7 +36,7 @@ func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
 var singletonFuncs = map[string]interface{}{
 	"DBKey": func(arg codegen.MessageArg) string {
 		return fmt.Sprintf("'S', C_%s",
-			arg.Name,
+			arg.Name(),
 		)
 	},
 }
@@ -130,14 +130,14 @@ var aggregateFuncs = map[string]interface{}{
 			nc = codegen.LowerCamelCase
 		}
 		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
-			m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
-			prefix, f.Name, postfix,
+			m.Name(), crc64.Checksum([]byte(f.Name()), codegen.CrcTab),
+			prefix, f.Name(), postfix,
 			m.Table.Names(codegen.PropFilterALL, prefix, "", ",", nc),
 		)
 	},
 	"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
 		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
-			m.Name, crc64.Checksum([]byte(f.Name), codegen.CrcTab),
+			m.Name(), crc64.Checksum([]byte(f.Name()), codegen.CrcTab),
 			prefix, inflection.Singular(f.NameCC()), postfix,
 		)
 	},

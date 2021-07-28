@@ -1,10 +1,7 @@
 package codegen
 
 import (
-	"fmt"
-	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 	"hash/crc64"
 )
 
@@ -20,54 +17,6 @@ import (
 var (
 	CrcTab = crc64.MakeTable(crc64.ISO)
 )
-
-func Constructor(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := DescParts(file, g, desc)
-	if p == "" {
-		return fmt.Sprintf("C_%s", t)
-	} else {
-		return fmt.Sprintf("%s.C_%s", p, t)
-	}
-}
-
-func Name(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	p, t := DescParts(file, g, desc)
-	if p == "" {
-		return t
-	} else {
-		return fmt.Sprintf("%s.%s", p, t)
-	}
-}
-
-func PackageName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	pkg, _ := DescParts(file, g, desc)
-	return pkg
-}
-
-// DescParts returns the package and identifier name
-func DescParts(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) (string, string) {
-	if desc == nil {
-		return "", ""
-	}
-	if string(desc.FullName().Parent()) == string(file.GoPackageName) {
-		return "", string(desc.Name())
-	} else {
-		fd, ok := desc.ParentFile().Options().(*descriptorpb.FileOptions)
-		if ok {
-			g.QualifiedGoIdent(protogen.GoImportPath(fd.GetGoPackage()).Ident(string(desc.Name())))
-		}
-		return string(desc.ParentFile().Package()), string(desc.Name())
-	}
-}
-
-// DescName return the fullname of the descriptor. i.e. package.identifier
-func DescName(file *protogen.File, g *protogen.GeneratedFile, desc protoreflect.MessageDescriptor) string {
-	pkg, name := DescParts(file, g, desc)
-	if pkg == "" {
-		return name
-	}
-	return fmt.Sprintf("%s.%s", pkg, name)
-}
 
 // ZeroValue returns the equal zero value based on the input type
 func ZeroValue(f protoreflect.FieldDescriptor) string {
@@ -85,8 +34,7 @@ func ZeroValue(f protoreflect.FieldDescriptor) string {
 	}
 }
 
-func GoKind(file *protogen.File, g *protogen.GeneratedFile, d protoreflect.FieldDescriptor) string {
-	pkg := PackageName(file, g, d.Message())
+func GoKind(d protoreflect.FieldDescriptor) string {
 	switch d.Kind() {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		return "int32"
@@ -107,11 +55,7 @@ func GoKind(file *protogen.File, g *protogen.GeneratedFile, d protoreflect.Field
 	case protoreflect.BoolKind:
 		return "bool"
 	case protoreflect.EnumKind:
-		if pkg == "" {
-			return string(d.Enum().Name())
-		} else {
-			return fmt.Sprintf("%s.%s", pkg, d.Enum().Name())
-		}
+		return string(d.Enum().Name())
 	}
 	return "unsupported"
 }

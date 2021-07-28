@@ -6,7 +6,6 @@ weight: 50
 menu: "main"
 tags: ["wiki", "install", "guide"]
 categories: ["wiki"]
-
 weight: 20
 contentCopyright: MIT
 mathjax: true
