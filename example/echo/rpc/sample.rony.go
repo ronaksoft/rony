@@ -80,6 +80,10 @@ func (x *EchoRequest) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
+func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoRequest, x)
+}
+
 const C_EchoResponse int64 = 4192619139
 
 type poolEchoResponse struct {
@@ -133,6 +137,10 @@ func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 
 func (x *EchoResponse) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
+}
+
+func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
+	ctx.PushMessage(C_EchoResponse, x)
 }
 
 const C_SampleEcho int64 = 3852587671

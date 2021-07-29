@@ -78,5 +78,4 @@ func CqlKind(d protoreflect.FieldDescriptor) string {
 		return "int"
 	}
 	return "unsupported"
-	// panic(fmt.Sprintf("unsupported kindCql: %v", k.String()))
 }

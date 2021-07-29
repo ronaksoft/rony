@@ -18,16 +18,16 @@ import (
 */
 
 type Generator struct {
-	f       *protogen.File
-	g       *protogen.GeneratedFile
-	plugins map[string]struct{}
+	f   *protogen.File
+	g   *protogen.GeneratedFile
+	opt *codegen.PluginOptions
 }
 
-func New(f *protogen.File, g *protogen.GeneratedFile, plugins map[string]struct{}) *Generator {
+func New(f *protogen.File, g *protogen.GeneratedFile, options *codegen.PluginOptions) *Generator {
 	return &Generator{
-		f:       f,
-		g:       g,
-		plugins: plugins,
+		f:   f,
+		g:   g,
+		opt: options,
 	}
 }
 
@@ -38,7 +38,7 @@ func (g *Generator) Generate() {
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/encoding/protojson"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-	if _, ok := g.plugins["no_edge_dep"]; !ok {
+	if !g.opt.NoEdgeDependency {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 	}
 
@@ -58,7 +58,7 @@ func (g *Generator) Generate() {
 		g.g.P(g.Exec(template.Must(template.New("genClone").Parse(genClone)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
 
-		if _, ok := g.plugins["no_edge_dep"]; !ok {
+		if !g.opt.NoEdgeDependency {
 			g.g.P(g.Exec(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 		}
 	}

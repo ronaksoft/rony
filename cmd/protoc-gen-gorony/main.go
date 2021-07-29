@@ -7,21 +7,12 @@ import (
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
-	"strings"
 )
 
 var (
-	plugins = make(map[string]struct{})
-	pgo     = protogen.Options{
-		ParamFunc: func(name, value string) error {
-			switch name {
-			case "option":
-				for _, p := range strings.Split(value, "|") {
-					plugins[p] = struct{}{}
-				}
-			}
-			return nil
-		},
+	pluginOpt = &codegen.PluginOptions{}
+	pgo       = protogen.Options{
+		ParamFunc: pluginOpt.ParamFunc,
 		ImportRewriteFunc: func(path protogen.GoImportPath) protogen.GoImportPath {
 			// TODO:: this is a hack for bug in Golang/Protobuf which does not support go module versions
 			switch path {
@@ -51,7 +42,7 @@ func main() {
 			generatedFile.P()
 
 			// Generate all the helper functions
-			g1 := helper.New(protoFile, generatedFile, plugins)
+			g1 := helper.New(protoFile, generatedFile, pluginOpt)
 			g1.Generate()
 
 			// Generate rpc helper functions (Server, Client and CLI)

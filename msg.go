@@ -16,7 +16,7 @@ import (
 */
 
 //go:generate protoc -I=. --go_out=paths=source_relative:. msg.proto options.proto
-//go:generate protoc -I=. --gorony_out=paths=source_relative,option=no_edge_dep:. msg.proto
+//go:generate protoc -I=. --gorony_out=paths=source_relative,rony_opt=no_edge_dep:. msg.proto
 func init() {}
 
 /*
