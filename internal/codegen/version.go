@@ -2,6 +2,6 @@
 package codegen
 
 var (
-	Commit  = "a06b53fb2ac1ae1d5d9823921abebae56eb66135"
+	Commit  = "22852836c09c2da796cdda147d47e713149ea5ca"
 	Version = "v0.12.19"
 )

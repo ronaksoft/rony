@@ -5,7 +5,8 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
-	"github.com/ronaksoft/rony/example/task_manager/rpc"
+	"github.com/ronaksoft/rony/example/task_manager/modules/auth"
+	"github.com/ronaksoft/rony/example/task_manager/modules/task"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
@@ -56,7 +57,7 @@ var ClientCmd = &cobra.Command{
 
 		var shellCmd = &cobra.Command{}
 		shellCmd.AddCommand(exitCmd)
-		rpc.RegisterTaskManagerCli(&TaskManagerCLI{}, wsc, shellCmd)
+		task.RegisterTaskManagerCli(&TaskManagerCLI{}, wsc, shellCmd)
 		tools.RunShell(shellCmd)
 		return nil
 	},
@@ -64,8 +65,8 @@ var ClientCmd = &cobra.Command{
 
 type TaskManagerCLI struct{}
 
-func (t *TaskManagerCLI) Register(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.RegisterRequest{
+func (t *TaskManagerCLI) Register(cli *auth.AuthClient, cmd *cobra.Command, args []string) error {
+	req := &auth.RegisterRequest{
 		Username:  config.GetString("username"),
 		FirstName: config.GetString("firstName"),
 		LastName:  config.GetString("lastName"),
@@ -80,8 +81,8 @@ func (t *TaskManagerCLI) Register(cli *rpc.TaskManagerClient, cmd *cobra.Command
 	return nil
 }
 
-func (t *TaskManagerCLI) Login(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.LoginRequest{
+func (t *TaskManagerCLI) Login(cli *auth.AuthClient, cmd *cobra.Command, args []string) error {
+	req := &auth.LoginRequest{
 		Username: config.GetString("username"),
 		Password: config.GetString("password"),
 	}
@@ -94,8 +95,8 @@ func (t *TaskManagerCLI) Login(cli *rpc.TaskManagerClient, cmd *cobra.Command, a
 	return nil
 }
 
-func (t *TaskManagerCLI) Create(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.CreateRequest{
+func (t *TaskManagerCLI) Create(cli *task.TaskManagerClient, cmd *cobra.Command, args []string) error {
+	req := &task.CreateRequest{
 		Title:   config.GetString("title"),
 		TODOs:   config.GetStringSlice("tODOs"),
 		DueDate: config.GetInt64("dueDate"),
@@ -108,8 +109,8 @@ func (t *TaskManagerCLI) Create(cli *rpc.TaskManagerClient, cmd *cobra.Command, 
 	return nil
 }
 
-func (t *TaskManagerCLI) Get(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.GetRequest{
+func (t *TaskManagerCLI) Get(cli *task.TaskManagerClient, cmd *cobra.Command, args []string) error {
+	req := &task.GetRequest{
 		TaskID: config.GetInt64("TaskID"),
 	}
 	res, err := cli.Get(req, getSessionID())
@@ -120,8 +121,8 @@ func (t *TaskManagerCLI) Get(cli *rpc.TaskManagerClient, cmd *cobra.Command, arg
 	return nil
 }
 
-func (t *TaskManagerCLI) Delete(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.DeleteRequest{
+func (t *TaskManagerCLI) Delete(cli *task.TaskManagerClient, cmd *cobra.Command, args []string) error {
+	req := &task.DeleteRequest{
 		TaskID: config.GetInt64("TaskID"),
 	}
 	res, err := cli.Delete(req, getSessionID())
@@ -132,8 +133,8 @@ func (t *TaskManagerCLI) Delete(cli *rpc.TaskManagerClient, cmd *cobra.Command, 
 	return nil
 }
 
-func (t *TaskManagerCLI) List(cli *rpc.TaskManagerClient, cmd *cobra.Command, args []string) error {
-	req := &rpc.ListRequest{
+func (t *TaskManagerCLI) List(cli *task.TaskManagerClient, cmd *cobra.Command, args []string) error {
+	req := &task.ListRequest{
 		Offset: config.GetInt32("offset"),
 		Limit:  config.GetInt32("limit"),
 	}

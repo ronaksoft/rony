@@ -372,7 +372,7 @@ func GetServiceArg(s *protogen.Service) ServiceArg {
 	arg := ServiceArg{
 		desc: s.Desc,
 	}
-	arg.name = s.GoName
+	arg.name = string(s.Desc.Name())
 	arg.C = crc32.ChecksumIEEE([]byte(arg.name))
 	for _, m := range s.Methods {
 		ma := getMethodArg(s, m)
@@ -519,32 +519,67 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 }
 
 type ModuleArg struct {
-	Service    ServiceArg
-	Aggregates []MessageArg
-	Singletons []MessageArg
+	ImportPath  protogen.GoImportPath
+	PackageName protogen.GoPackageName
+	Service     ServiceArg
+	LocalRepos  []string
+	RemoteRepos []string
+	Aggregates  []MessageArg
+	Singletons  []MessageArg
 }
 
 func GetModuleArg(plugin *protogen.Plugin) ModuleArg {
 	arg := ModuleArg{}
 	for _, f := range plugin.Files {
-		if !f.Generate {
+		if !f.Generate || f.Proto.GetPackage() == "google.protobuf" {
 			continue
 		}
+		if arg.ImportPath != "" && arg.ImportPath != f.GoImportPath {
+			panic("all files in module must have same import path")
+		}
+		if arg.PackageName != "" && arg.PackageName != f.GoPackageName {
+			panic("all files in module must have same go package name")
+		}
+		arg.ImportPath = f.GoImportPath
+		arg.PackageName = f.GoPackageName
+
 		if len(f.Services) > 0 {
 			arg.Service = GetServiceArg(f.Services[0]).With(f)
 		}
 
 		for _, m := range f.Messages {
 			ma := GetMessageArg(m).With(f)
+			if ma.RemoteRepo != "" {
+				arg.addRemoteRepo(ma.RemoteRepo)
+			}
+			if ma.LocalRepo != "" {
+				arg.addLocalRepo(ma.LocalRepo)
+			}
 			if ma.IsSingleton {
 				arg.Singletons = append(arg.Singletons, ma)
 			} else if ma.IsAggregate {
 				arg.Aggregates = append(arg.Aggregates, ma)
 			}
 		}
-
-		break
 	}
 
 	return arg
+}
+
+func (ma *ModuleArg) addLocalRepo(repo string) {
+	for _, r := range ma.LocalRepos {
+		if r == repo {
+			return
+		}
+	}
+	ma.LocalRepos = append(ma.LocalRepos, repo)
+}
+
+func (ma *ModuleArg) addRemoteRepo(repo string) {
+	for _, r := range ma.RemoteRepos {
+		if r == repo {
+			return
+		}
+	}
+	ma.RemoteRepos = append(ma.RemoteRepos, repo)
 }

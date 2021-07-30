@@ -26,3 +26,7 @@ func RegisterConstructor(c int64, n string) {
 func ConstructorName(c int64) string {
 	return constructors[c]
 }
+
+func C(c int64) string {
+	return constructors[c]
+}

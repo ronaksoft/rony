@@ -4,6 +4,8 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/example/task_manager/modules/auth"
+	"github.com/ronaksoft/rony/example/task_manager/modules/task"
 	"github.com/ronaksoft/rony/example/task_manager/rpc"
 	"github.com/spf13/cobra"
 	"os"
@@ -32,16 +34,15 @@ var ServerCmd = &cobra.Command{
 		)
 
 		// Register the implemented service into the edge server
+		taskService := &rpc.TaskManager{
+			ModuleBase: task.New(edgeServer.Store()),
+		}
+		authService := &rpc.Auth{
+			ModuleBase: auth.New(edgeServer.Store()),
+		}
 
-		taskService := rpc.NewTaskManager(edgeServer.Store())
-		rpc.RegisterTaskManagerWithFunc(taskService, edgeServer, func(c int64) []edge.Handler {
-			switch c {
-			case rpc.C_TaskManagerLogin, rpc.C_TaskManagerRegister:
-			default:
-				return []edge.Handler{taskService.CheckSession, taskService.MustAuthorized}
-			}
-			return nil
-		})
+		auth.RegisterAuth(authService, edgeServer)
+		task.RegisterTaskManager(taskService, edgeServer, authService.CheckSession, authService.MustAuthorized)
 
 		// Start the edge server components
 		edgeServer.Start()
