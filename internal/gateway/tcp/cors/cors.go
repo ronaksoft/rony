@@ -35,18 +35,18 @@ func New(config Config) *CORS {
 		c.origins = strings.Join(config.AllowedOrigins, ",")
 	}
 	if len(config.AllowedHeaders) == 0 {
-		c.origins = "*"
+		c.headers = "*"
 	} else {
-		c.origins = strings.Join(config.AllowedHeaders, ",")
+		c.headers = strings.Join(config.AllowedHeaders, ",")
 	}
 	if len(config.AllowedMethods) == 0 {
-		c.origins = strings.Join([]string{
+		c.methods = strings.Join([]string{
 			fasthttp.MethodGet, fasthttp.MethodHead, fasthttp.MethodPost,
 			fasthttp.MethodPatch, fasthttp.MethodConnect, fasthttp.MethodDelete,
 			fasthttp.MethodTrace, fasthttp.MethodOptions,
 		}, ",")
 	} else {
-		c.origins = strings.Join(config.AllowedMethods, ",")
+		c.methods = strings.Join(config.AllowedMethods, ",")
 	}
 	return c
 }
