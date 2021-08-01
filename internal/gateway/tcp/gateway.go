@@ -7,6 +7,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway"
+	"github.com/ronaksoft/rony/internal/gateway/tcp/cors"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -42,6 +43,10 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
+	// CORS
+	AllowedHeaders []string // Default Allow All
+	AllowedOrigins []string // Default Allow All
+	AllowedMethods []string // Default Allow All
 }
 
 // Gateway is one of the main components of the Rony framework. Basically Gateway is the component
@@ -69,6 +74,7 @@ type Gateway struct {
 	waitGroupWriters   *sync.WaitGroup
 	cntReads           uint64
 	cntWrites          uint64
+	cors               *cors.CORS
 
 	// Websocket Internals
 	upgradeHandler ws.Upgrader
@@ -95,6 +101,11 @@ func New(config Config) (*Gateway, error) {
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      rony.TCP,
 		extAddrs:           config.ExternalAddrs,
+		cors: cors.New(cors.Config{
+			AllowedHeaders: config.AllowedHeaders,
+			AllowedMethods: config.AllowedMethods,
+			AllowedOrigins: config.AllowedOrigins,
+		}),
 	}
 
 	g.listener, err = newWrapListener(g.listenOn)
@@ -321,13 +332,7 @@ func (g *Gateway) Protocol() rony.GatewayProtocol {
 }
 
 func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
-	// ByPass CORS (Cross Origin Resource Sharing) check
-	reqCtx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	reqCtx.Response.Header.Set("Access-Control-Request-Method", "*")
-	reqCtx.Response.Header.Set("Access-Control-Allow-Headers", "*")
-	if reqCtx.Request.Header.IsOptions() {
-		reqCtx.SetStatusCode(http.StatusOK)
-		reqCtx.SetConnectionClose()
+	if g.cors.Handle(reqCtx) {
 		return
 	}
 
