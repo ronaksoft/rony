@@ -27,10 +27,13 @@ var (
 )
 
 type Config struct {
-	ServerID   []byte
-	Bootstrap  bool
-	ReplicaSet uint64
-	GossipPort int
+	ServerID       []byte
+	Bootstrap      bool
+	ReplicaSet     uint64
+	GossipIP       string
+	GossipPort     int
+	AdvertisedIP   string
+	AdvertisedPort int
 }
 
 type Cluster struct {
@@ -82,7 +85,10 @@ func (c *Cluster) startGossip() error {
 	conf.Delegate = cd
 	conf.LogOutput = ioutil.Discard
 	conf.Logger = nil
+	conf.BindAddr = c.cfg.GossipIP
 	conf.BindPort = c.cfg.GossipPort
+	conf.AdvertiseAddr = c.cfg.AdvertisedIP
+	conf.AdvertisePort = c.cfg.AdvertisedPort
 	if s, err := memberlist.Create(conf); err != nil {
 		log.Warn("Error On Creating MemberList", zap.Error(err))
 
