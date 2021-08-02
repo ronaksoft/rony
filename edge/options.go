@@ -38,9 +38,12 @@ func WithDispatcher(d Dispatcher) Option {
 }
 
 type GossipClusterConfig struct {
-	Bootstrap  bool
-	ReplicaSet uint64
-	GossipPort int
+	Bootstrap      bool
+	ReplicaSet     uint64
+	GossipIP       string
+	GossipPort     int
+	AdvertisedIP   string
+	AdvertisedPort int
 }
 
 // WithGossipCluster enables the cluster in gossip mode. This mod is eventually consistent mode but there is
@@ -50,10 +53,13 @@ func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 		edge.cluster = gossipCluster.New(
 			edge.dataDir,
 			gossipCluster.Config{
-				ServerID:   edge.serverID,
-				Bootstrap:  clusterConfig.Bootstrap,
-				ReplicaSet: clusterConfig.ReplicaSet,
-				GossipPort: clusterConfig.GossipPort,
+				ServerID:       edge.serverID,
+				Bootstrap:      clusterConfig.Bootstrap,
+				ReplicaSet:     clusterConfig.ReplicaSet,
+				GossipPort:     clusterConfig.GossipPort,
+				GossipIP:       clusterConfig.GossipIP,
+				AdvertisedIP:   clusterConfig.AdvertisedIP,
+				AdvertisedPort: clusterConfig.AdvertisedPort,
 			},
 		)
 	}
