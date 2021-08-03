@@ -333,6 +333,11 @@ func (g *Gateway) Protocol() rony.GatewayProtocol {
 
 func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	if g.cors.Handle(reqCtx) {
+		fmt.Println("OPTIONS --")
+		reqCtx.Request.Header.VisitAll(func(key, value []byte) {
+			fmt.Println(string(key), ": ", string(value))
+		})
+		fmt.Println("---- OPTION ")
 		return
 	}
 

@@ -32,10 +32,10 @@ func New(config Config) *CORS {
 	if len(config.AllowedOrigins) == 0 {
 		c.origins = "*"
 	} else {
-		c.origins = strings.Join(config.AllowedOrigins, ",")
+		c.origins = strings.Join(config.AllowedOrigins, ", ")
 	}
 	if len(config.AllowedHeaders) == 0 {
-		config.AllowedHeaders = []string{"Origin", "Accept", "Content-Type", "X-Requested-With"}
+		config.AllowedHeaders = []string{"Origin", "Accept", "Content-Type", "X-Requested-With", "X-Auth-Tokens", "Authorization"}
 	}
 	c.headers = strings.Join(config.AllowedHeaders, ",")
 	if len(config.AllowedMethods) == 0 {
@@ -43,9 +43,9 @@ func New(config Config) *CORS {
 			fasthttp.MethodGet, fasthttp.MethodHead, fasthttp.MethodPost,
 			fasthttp.MethodPatch, fasthttp.MethodConnect, fasthttp.MethodDelete,
 			fasthttp.MethodTrace, fasthttp.MethodOptions,
-		}, ",")
+		}, ", ")
 	} else {
-		c.methods = strings.Join(config.AllowedMethods, ",")
+		c.methods = strings.Join(config.AllowedMethods, ", ")
 	}
 	return c
 }
@@ -59,7 +59,6 @@ func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 	}
 
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlRequestMethod, c.methods)
-	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 	reqCtx.Response.Header.Add("Vary", fasthttp.HeaderOrigin)
 
 	if reqCtx.Request.Header.IsOptions() {
