@@ -60,14 +60,18 @@ func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlRequestMethod, c.methods)
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
-	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowHeaders, c.headers)
 	reqCtx.Response.Header.Add("Vary", fasthttp.HeaderOrigin)
 
 	if reqCtx.Request.Header.IsOptions() {
 		reqCtx.Response.Header.Add("Vary", fasthttp.HeaderAccessControlRequestMethod)
 		reqCtx.Response.Header.Add("Vary", fasthttp.HeaderAccessControlRequestHeaders)
+		reqHeaders := reqCtx.Request.Header.Peek(fasthttp.HeaderAccessControlRequestHeaders)
+		if len(reqHeaders) > 0 {
+			reqCtx.Response.Header.SetBytesV(fasthttp.HeaderAccessControlAllowHeaders, reqHeaders)
+		} else {
+			reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowHeaders, c.headers)
+		}
 
-		reqCtx.Response.Header.SetBytesV(fasthttp.HeaderAccessControlAllowHeaders, reqCtx.Request.Header.Peek(fasthttp.HeaderAccessControlRequestHeaders))
 		reqCtx.SetStatusCode(http.StatusNoContent)
 		reqCtx.SetConnectionClose()
 		return true
