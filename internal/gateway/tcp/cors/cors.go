@@ -67,6 +67,7 @@ func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 
 
 	if reqCtx.Request.Header.IsOptions() {
+		reqCtx.Response.Header.SetBytesV(fasthttp.HeaderAccessControlAllowHeaders, reqCtx.Request.Header.Peek(fasthttp.HeaderAccessControlRequestHeaders))
 		reqCtx.SetStatusCode(http.StatusNoContent)
 		reqCtx.SetConnectionClose()
 		return true
