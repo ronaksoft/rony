@@ -35,10 +35,9 @@ func New(config Config) *CORS {
 		c.origins = strings.Join(config.AllowedOrigins, ",")
 	}
 	if len(config.AllowedHeaders) == 0 {
-		c.headers = "*"
-	} else {
-		c.headers = strings.Join(config.AllowedHeaders, ",")
+		config.AllowedHeaders = []string{"Origin", "Accept", "Content-Type", "X-Requested-With"}
 	}
+	c.headers = strings.Join(config.AllowedHeaders, ",")
 	if len(config.AllowedMethods) == 0 {
 		c.methods = strings.Join([]string{
 			fasthttp.MethodGet, fasthttp.MethodHead, fasthttp.MethodPost,
@@ -62,9 +61,13 @@ func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlRequestMethod, c.methods)
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowCredentials, "true")
 	reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowHeaders, c.headers)
+	reqCtx.Response.Header.Add("Vary", "Origin")
+	reqCtx.Response.Header.Add("Vary", "Access-Control-Request-Method")
+	reqCtx.Response.Header.Add("Vary", "Access-Control-Request-Headers")
+
 
 	if reqCtx.Request.Header.IsOptions() {
-		reqCtx.SetStatusCode(http.StatusOK)
+		reqCtx.SetStatusCode(http.StatusNoContent)
 		reqCtx.SetConnectionClose()
 		return true
 	}
