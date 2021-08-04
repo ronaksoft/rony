@@ -55,6 +55,12 @@ func New(dataPath string, cfg Config) *Cluster {
 	if cfg.GossipPort == 0 {
 		cfg.GossipPort = 7946
 	}
+	if cfg.AdvertisedPort == 0 {
+		cfg.AdvertisedPort = cfg.GossipPort
+	}
+	if cfg.GossipIP == "" {
+		cfg.GossipIP = "0.0.0.0"
+	}
 
 	c := &Cluster{
 		dataPath:         dataPath,
