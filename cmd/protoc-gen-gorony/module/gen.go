@@ -35,12 +35,12 @@ func (g *Generator) Generate() error {
 	if len(arg.LocalRepos) > 0 {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 	}
-	if len(arg.RemoteRepos) > 0 {
+	if len(arg.GlobalRepos) > 0 {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 	}
 	g.g.P(g.Exec(template.Must(template.New("genModuleBase").Funcs(funcs).Parse(genModuleBase)), arg))
 	g.g.P(g.Exec(template.Must(template.New("genLocalRepos").Funcs(funcs).Parse(genLocalRepos)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genRemoteRepos").Funcs(funcs).Parse(genRemoteRepos)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genGlobalRepos").Funcs(funcs).Parse(genGlobalRepos)), arg))
 
 	return nil
 }
@@ -68,7 +68,7 @@ var funcs = map[string]interface{}{
 			}
 			cnt++
 		}
-		for _, r := range m.RemoteRepos {
+		for _, r := range m.GlobalRepos {
 			if cnt > 0 {
 				sb.WriteString(", ")
 			}
@@ -116,31 +116,31 @@ const genLocalRepos = `
 
 `
 
-const genRemoteRepos = `
-{{- if gt (len .RemoteRepos) 0 }}
-	type RemoteRepos struct {
+const genGlobalRepos = `
+{{- if gt (len .GlobalRepos) 0 }}
+	type GlobalRepos struct {
 	{{ range .Aggregates -}}
-	{{ if ne .RemoteRepo "" -}}
-		{{.Name}} {{.Name}}RemoteRepo 
+	{{ if ne .GlobalRepo "" -}}
+		{{.Name}} {{.Name}}GlobalRepo 
 	{{- end -}}
 	{{- end -}}
 	{{- range .Singletons -}}
-	{{ if ne .RemoteRepo "" -}}
-		{{.Name}} {{.Name}}RemoteRepo 
+	{{ if ne .GlobalRepo "" -}}
+		{{.Name}} {{.Name}}GlobalRepo 
 	{{ end -}}
 	{{- end -}}
 	}
 	
-	func newRemoteRepos(s gocqlx.Session) RemoteRepos {
-		return RemoteRepos {
+	func newGlobalRepos(s gocqlx.Session) GlobalRepos {
+		return GlobalRepos {
 	{{- range .Aggregates -}}
-	{{- if ne .RemoteRepo "" -}}
-		{{.Name}}: New{{.Name}}RemoteRepo(s), 
+	{{- if ne .GlobalRepo "" -}}
+		{{.Name}}: New{{.Name}}GlobalRepo(s), 
 	{{- end -}}
 	{{- end -}}
 	{{- range .Singletons -}}
-	{{- if ne .RemoteRepo "" -}}
-		{{.Name}}: New{{.Name}}RemoteRepo(s),
+	{{- if ne .GlobalRepo "" -}}
+		{{.Name}}: New{{.Name}}GlobalRepo(s),
 	{{- end -}}
 	{{- end -}}
 		}
@@ -153,8 +153,8 @@ type ModuleBase struct {
 {{- if gt (len .LocalRepos) 0 }}
 	local LocalRepos
 {{- end }}
-{{- if gt (len .RemoteRepos) 0 }}
-	remote RemoteRepos
+{{- if gt (len .GlobalRepos) 0 }}
+	remote GlobalRepos
 {{- end }}
 }
 
@@ -163,8 +163,8 @@ func New({{InitArgs .}}) ModuleBase {
 {{- if gt (len .LocalRepos) 0 }}
 		local: newLocalRepos(store),
 {{- end }}
-{{- if gt (len .RemoteRepos) 0 }}
-		remote: newRemoteRepos(session)
+{{- if gt (len .GlobalRepos) 0 }}
+		remote: newGlobalRepos(session)
 {{- end }}
 	}
 	return m
@@ -179,12 +179,12 @@ func New({{InitArgs .}}) ModuleBase {
 	}
 {{- end }}
 
-{{ if gt (len .RemoteRepos) 0 }}
-	func (m ModuleBase) Remote() RemoteRepos {
+{{ if gt (len .GlobalRepos) 0 }}
+	func (m ModuleBase) Remote() GlobalRepos {
 		return m.remote
 	}
 	
-	func (m ModuleBase) R() RemoteRepos {
+	func (m ModuleBase) R() GlobalRepos {
 		return m.remote
 	}
 {{- end }}

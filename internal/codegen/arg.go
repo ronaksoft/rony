@@ -52,7 +52,7 @@ type MessageArg struct {
 	// If message is representing a model then following parameters are filled
 	IsAggregate bool
 	IsSingleton bool
-	RemoteRepo  string
+	GlobalRepo  string
 	LocalRepo   string
 	Table       *ModelKey
 	TableExtra  []Prop
@@ -71,7 +71,7 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 
 	// Generate the aggregate description from proto options
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	arg.RemoteRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyRemoteRepo).(string))
+	arg.GlobalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyGlobalRepo).(string))
 	arg.LocalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyLocalRepo).(string))
 	arg.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
 	if arg.IsSingleton {
@@ -524,7 +524,7 @@ type ModuleArg struct {
 	PackageName protogen.GoPackageName
 	Service     ServiceArg
 	LocalRepos  []string
-	RemoteRepos []string
+	GlobalRepos []string
 	Aggregates  []MessageArg
 	Singletons  []MessageArg
 }
@@ -550,8 +550,8 @@ func GetModuleArg(plugin *protogen.Plugin) ModuleArg {
 
 		for _, m := range f.Messages {
 			ma := GetMessageArg(m).With(f)
-			if ma.RemoteRepo != "" {
-				arg.addRemoteRepo(ma.RemoteRepo)
+			if ma.GlobalRepo != "" {
+				arg.addGlobalRepo(ma.GlobalRepo)
 			}
 			if ma.LocalRepo != "" {
 				arg.addLocalRepo(ma.LocalRepo)
@@ -576,11 +576,11 @@ func (ma *ModuleArg) addLocalRepo(repo string) {
 	ma.LocalRepos = append(ma.LocalRepos, repo)
 }
 
-func (ma *ModuleArg) addRemoteRepo(repo string) {
-	for _, r := range ma.RemoteRepos {
+func (ma *ModuleArg) addGlobalRepo(repo string) {
+	for _, r := range ma.GlobalRepos {
 		if r == repo {
 			return
 		}
 	}
-	ma.RemoteRepos = append(ma.RemoteRepos, repo)
+	ma.GlobalRepos = append(ma.GlobalRepos, repo)
 }

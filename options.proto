@@ -48,11 +48,11 @@ extend google.protobuf.MethodOptions {
 
 extend google.protobuf.MessageOptions {
     // rony_local_repo generates the code for local repository
-    // POSSIBLE VALUES: store
+    // POSSIBLE VALUES: store, cql, sql
     optional string rony_local_repo = 50001;
-    // rony_remote_repo generates the code for remote repository
-    // POSSIBLE VALUES: cql
-    optional string rony_remote_repo = 50002;
+    // rony_global_repo generates the code for remote repository
+    // POSSIBLE VALUES: store, cql, sql
+    optional string rony_global_repo = 50002;
     // rony_singleton marks this message as a singleton.
     // NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
     // cause unpredictable results.

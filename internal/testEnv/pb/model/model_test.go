@@ -203,10 +203,11 @@ func TestModelLocalRepo(t *testing.T) {
 	})
 }
 
-func TestModelRemoteRepo(t *testing.T) {
-	Convey("Model - RemoteRepo Auto-Generated Code Tests", t, func(c C) {
+func TestModelGlobalRepo(t *testing.T) {
+	Convey("Model - GlobalRepo Auto-Generated Code Tests", t, func(c C) {
 		Convey("Create/Read/Update/Read", func(c C) {
-			repo := model.NewModel1RemoteRepo(scyllaDB)
+
+			repo := model.NewModel1GlobalRepo(scyllaDB)
 			m1 := &model.Model1{
 				ID:       int32(tools.FastRand()),
 				ShardKey: int32(tools.FastRand()),
@@ -245,7 +246,7 @@ func TestModelRemoteRepo(t *testing.T) {
 			c.So(err, ShouldNotBeNil)
 		})
 		Convey("List/Iter", func(c C) {
-			repo := model.NewModel3RemoteRepo(scyllaDB)
+			repo := model.NewModel3GlobalRepo(scyllaDB)
 			total := int32(100)
 			start := int32(10)
 			for i := int32(0); i < total; i++ {

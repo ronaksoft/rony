@@ -2,8 +2,8 @@ package repo
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/local/store"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/remote/cql"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/cql"
+	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/store"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
 )
@@ -41,19 +41,19 @@ func (g *Generator) Generate() {
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(m).With(g.f)
 		if arg.IsAggregate || arg.IsSingleton {
-			switch arg.LocalRepo {
-			case "store":
-				store.Generate(store.New(g.f, g.g), arg)
-			default:
-			}
-			switch arg.RemoteRepo {
-			case "cql":
-				if cqlGen == nil {
-					cqlGen = g.p.NewGeneratedFile(fmt.Sprintf("%s.cql", g.f.GeneratedFilenamePrefix), g.f.GoImportPath)
+
+			for _, repo := range []string{arg.LocalRepo, arg.GlobalRepo} {
+				switch repo {
+				case "store":
+					store.Generate(store.New(g.f, g.g), arg)
+				case "cql":
+					if cqlGen == nil {
+						cqlGen = g.p.NewGeneratedFile(fmt.Sprintf("%s.cql", g.f.GeneratedFilenamePrefix), g.f.GoImportPath)
+					}
+					cql.GenerateCQL(cql.New(g.f, cqlGen), arg)
+					cql.GenerateGo(cql.New(g.f, g.g), arg)
+				default:
 				}
-				cql.GenerateCQL(cql.New(g.f, cqlGen), arg)
-				cql.GenerateGo(cql.New(g.f, g.g), arg)
-			default:
 			}
 		}
 	}

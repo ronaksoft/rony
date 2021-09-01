@@ -37,7 +37,7 @@ func GenerateGo(g *Generator, arg codegen.MessageArg) {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
 		g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(helperFuncs).Parse(genPartKey)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genRemoteRepo").Funcs(helperFuncs).Parse(genRemoteRepo)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genGlobalRepo").Funcs(helperFuncs).Parse(genGlobalRepo)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(helperFuncs).Parse(genCRUD)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(helperFuncs).Parse(genListByPK)), arg))
 	}
@@ -207,8 +207,8 @@ PRIMARY KEY {{PrimaryKey .}}
 {{ end }}
 `
 
-const genRemoteRepo = `
-{{$repoName := print .Name "RemoteRepo"}}
+const genGlobalRepo = `
+{{$repoName := print .Name "GlobalRepo"}}
 type {{$repoName}} struct {
 	qp map[string]*pools.QueryPool
 	t *table.Table
@@ -305,7 +305,7 @@ func ({{MVName .}}PartKey) make{{$modelName}}Private() {}
 `
 
 const genCRUD = `
-{{$repoName := print .Name "RemoteRepo"}}
+{{$repoName := print .Name "GlobalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) Insert(m *{{$modelName}}, replace bool) error {
 	buf := pools.Buffer.FromProto(m)
@@ -388,7 +388,7 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 `
 
 const genListByPK = `
-{{$repoName := print .Name "RemoteRepo"}}
+{{$repoName := print .Name "GlobalRepo"}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) List(pk {{$modelName}}PartitionKey, limit uint) ([]*{{$modelName}}, error) {
 	var (
