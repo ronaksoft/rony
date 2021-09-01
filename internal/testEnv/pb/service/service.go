@@ -88,8 +88,9 @@ var EchoRest = edge.NewRestProxy(
 				x := &rony.Error{}
 				_ = x.Unmarshal(envelope.Message)
 				err = x
+			default:
+				err = errors.ErrUnexpectedResponse
 			}
-			err = errors.ErrUnexpectedResponse
 		}) {
 			err = errors.ErrInternalServer
 		}

@@ -39,6 +39,7 @@ var DefaultConfig = Config{
 	SentryLevel: WarnLevel,
 	Release:     "",
 	Environment: "",
+	SkipCaller:  2,
 }
 
 // ronyLogger is a wrapper around zap.Logger and adds a good few features to it.
@@ -73,7 +74,7 @@ func New(cfg Config) *ronyLogger {
 	})
 
 	cores := append([]zapcore.Core{}[:0],
-		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), atomicLevel),
+		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), l.lvl),
 	)
 
 	logFile := filepath.Join(cfg.DirPath, cfg.Filename)

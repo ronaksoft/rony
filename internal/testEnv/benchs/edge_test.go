@@ -7,6 +7,7 @@ import (
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
+	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/proto"
@@ -31,7 +32,7 @@ var (
 
 func TestMain(m *testing.M) {
 	edgeServer = testEnv.EdgeServer("Adam", 8080, 100000)
-	rony.SetLogLevel(0)
+	rony.SetLogLevel(log.WarnLevel)
 	service.RegisterSample(
 		&service.Sample{
 			ServerID: edgeServer.GetServerID(),

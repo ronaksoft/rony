@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
+	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
@@ -30,7 +31,7 @@ func init() {
 
 func TestMain(m *testing.M) {
 	edgeServer := testEnv.EdgeServer("Adam", 8081, 1000)
-	rony.SetLogLevel(0)
+	rony.SetLogLevel(log.WarnLevel)
 	service.RegisterSample(
 		&service.Sample{
 			ServerID: edgeServer.GetServerID(),

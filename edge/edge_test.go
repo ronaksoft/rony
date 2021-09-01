@@ -151,12 +151,6 @@ func TestRestProxy(t *testing.T) {
 	})
 }
 
-func TestConcurrent(t *testing.T) {
-	Convey("Concurrent", t, func(c C) {
-
-	})
-}
-
 func BenchmarkEdge(b *testing.B) {
 	rony.SetLogLevel(log.WarnLevel)
 	e := testEnv.EdgeServer(tools.RandomID(0), 8080, 1000, edge.WithInMemoryStore(true))

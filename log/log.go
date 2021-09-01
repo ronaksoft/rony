@@ -1,7 +1,6 @@
 package log
 
 import (
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -15,7 +14,6 @@ import (
 */
 
 var (
-	atomicLevel   zap.AtomicLevel
 	DefaultLogger *ronyLogger
 )
 
@@ -82,5 +80,5 @@ func Check(level Level, msg string) *CheckedEntry {
 }
 
 func SetLevel(level Level) {
-	atomicLevel.SetLevel(level)
+	DefaultLogger.SetLevel(level)
 }

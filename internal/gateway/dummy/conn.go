@@ -32,6 +32,10 @@ type Conn struct {
 	body    []byte
 }
 
+func (c *Conn) Redirect(statusCode int, newHostPort string) {
+	// TODO:: implement it
+}
+
 func NewConn(onMessage func(connID uint64, streamID int64, data []byte, hdr map[string]string)) *Conn {
 	return &Conn{
 		id:         tools.RandomUint64(0),
@@ -40,6 +44,7 @@ func NewConn(onMessage func(connID uint64, streamID int64, data []byte, hdr map[
 		onMessage:  onMessage,
 	}
 }
+
 func (c *Conn) WriteStatus(status int) {
 	c.status = status
 }
