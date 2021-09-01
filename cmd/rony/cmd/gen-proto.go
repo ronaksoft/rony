@@ -46,9 +46,6 @@ var GenProtoCmd = &cobra.Command{
 	},
 }
 
-func checkInProjectRoot(g *genny.Generator) {
-	// g.ErrorFn
-}
 func compileProto(g *genny.Generator) {
 	// Compile proto files
 	folders := []string{"rpc", "model"}
