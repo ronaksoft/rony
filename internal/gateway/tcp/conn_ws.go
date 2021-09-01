@@ -1,3 +1,4 @@
+//go:build !windows && !appengine
 // +build !windows,!appengine
 
 package tcpGateway
@@ -8,8 +9,8 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"

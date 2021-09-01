@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Embed Assets into the binary
-# pkger -o ./cmd/rony/cmd
-
 # Generate codes
 go generate ./... || exit
 

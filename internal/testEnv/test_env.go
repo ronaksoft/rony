@@ -1,7 +1,7 @@
 package testEnv
 
 import (
-	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/log"
 	"os"
 )
 

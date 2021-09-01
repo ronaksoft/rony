@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
@@ -23,10 +24,11 @@ func init() {}
 // Sample implements auto-generated service.ISample interface
 type Sample struct{}
 
-func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
 	ctx.Log().Warn("Received", zap.Int64("ID", req.ID))
 	res.ReqID = req.ID
 	res.RandomText = req.RandomText
+	return nil
 }
 
 // SampleCli implements service.ISampleCli auto-generated interface

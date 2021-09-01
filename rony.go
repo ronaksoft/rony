@@ -2,8 +2,8 @@ package rony
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
+	"github.com/ronaksoft/rony/log"
 	"mime/multipart"
 )
 

@@ -264,7 +264,8 @@ func GetFieldArg(f *protogen.Field) FieldArg {
 	arg := FieldArg{
 		desc: f.Desc,
 	}
-	arg.name = string(f.Desc.Name())
+
+	arg.name = f.GoName
 	if f.Message != nil {
 		arg.pkg = string(f.Message.Desc.ParentFile().Package())
 		arg.ImportPath = f.Message.GoIdent.GoImportPath

@@ -156,7 +156,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, 
 const genServer = `
 type I{{.Name}} interface {
 {{- range .Methods }}
-	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Fullname}}, res *{{.Output.Fullname}})
+	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}) *rony.Error
 {{- end }}
 }
 
@@ -207,7 +207,11 @@ func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in
 		return
 	}
 
-	sw.h.{{.Name}} (ctx, req, res)
+	rErr := sw.h.{{.Name}} (ctx, req, res)
+	if rErr != nil {
+		ctx.PushError(rErr)
+		return
+	}
 	if !ctx.Stopped() {
 	{{- if eq .Output.Pkg "" }}
 		ctx.PushMessage(C_{{.Output.Name}}, res)
@@ -291,7 +295,7 @@ func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Fullname}}, kvs ...*ro
 const genTunnelCommand = `
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
-func TunnelRequest{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
+func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -331,7 +335,7 @@ func prepare{{.Name}}Command(cmd *cobra.Command, c edgec.Client) (*{{.Name}}Clie
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 	{{- if not .TunnelOnly }}
-		var gen{{.Name}}Cmd = func(h I{{$serviceName}}Cli, c edgec.Client) *cobra.Command {
+		var gen{{$serviceName}}{{.Name}}Cmd = func(h I{{$serviceName}}Cli, c edgec.Client) *cobra.Command {
 			cmd := &cobra.Command {
 				Use: "{{.NameKC}}",
 				RunE: func(cmd *cobra.Command, args []string) error {
@@ -379,7 +383,7 @@ func Register{{$serviceName}}Cli (h I{{$serviceName}}Cli, c edgec.Client, rootCm
 	subCommand.AddCommand(
 	{{- range .Methods }}
 	{{- if not .TunnelOnly }}
-		gen{{.Name}}Cmd(h ,c),
+		gen{{$serviceName}}{{.Name}}Cmd(h ,c),
 	{{- end }}
 	{{- end }}
 	)

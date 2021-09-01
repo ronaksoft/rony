@@ -1,8 +1,8 @@
 package gossipCluster
 
 import (
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/msg"
+	"github.com/ronaksoft/rony/log"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"hash/crc64"

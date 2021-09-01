@@ -8,7 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/log"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"math/big"

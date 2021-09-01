@@ -21,12 +21,11 @@ type Auth struct {
 	auth.ModuleBase
 }
 
-func (s *Auth) Register(ctx *edge.RequestCtx, req *auth.RegisterRequest, res *auth.Authorization) {
+func (s *Auth) Register(ctx *edge.RequestCtx, req *auth.RegisterRequest, res *auth.Authorization) *rony.Error {
 	// check if username already exists
 	_, err := s.Local().User.Read(req.GetUsername(), nil)
 	if err == nil {
-		ctx.PushError(errors.GenAlreadyExistsErr("USER", nil))
-		return
+		return errors.GenAlreadyExistsErr("USER", nil)
 	}
 
 	err = s.Local().User.Create(&auth.User{
@@ -36,8 +35,7 @@ func (s *Auth) Register(ctx *edge.RequestCtx, req *auth.RegisterRequest, res *au
 		LastName:  req.GetLastName(),
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternalServer)
-		return
+		return errors.ErrInternalServer
 	}
 
 	sessionID := tools.RandomID(32)
@@ -46,19 +44,18 @@ func (s *Auth) Register(ctx *edge.RequestCtx, req *auth.RegisterRequest, res *au
 		Username: req.GetUsername(),
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternalServer)
-		return
+		return errors.ErrInternalServer
 	}
 
 	res.SessionID = sessionID
+	return nil
 }
 
-func (s *Auth) Login(ctx *edge.RequestCtx, req *auth.LoginRequest, res *auth.Authorization) {
+func (s *Auth) Login(ctx *edge.RequestCtx, req *auth.LoginRequest, res *auth.Authorization) *rony.Error {
 	// check if username already exists
 	_, err := s.Local().User.Read(req.GetUsername(), nil)
 	if err != nil {
-		ctx.PushError(errors.GenUnavailableErr("USER", nil))
-		return
+		return errors.GenUnavailableErr("USER", nil)
 	}
 
 	sessionID := tools.RandomID(32)
@@ -67,11 +64,11 @@ func (s *Auth) Login(ctx *edge.RequestCtx, req *auth.LoginRequest, res *auth.Aut
 		Username: req.GetUsername(),
 	})
 	if err != nil {
-		ctx.PushError(errors.ErrInternalServer)
-		return
+		return errors.ErrInternalServer
 	}
 
 	res.SessionID = sessionID
+	return nil
 }
 
 // CheckSession is a middleware try to load the user info from the session id.
@@ -92,4 +89,5 @@ func (s *Auth) MustAuthorized(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	if username == "" {
 		ctx.PushError(errors.GenAccessErr("SESSION", nil))
 	}
+	return
 }

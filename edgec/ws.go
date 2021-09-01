@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/internal/log"
+	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"

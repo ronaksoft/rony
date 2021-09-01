@@ -25,38 +25,41 @@ type Sample struct {
 	ServerID string
 }
 
-func (h *Sample) Set(ctx *edge.RequestCtx, req *SetRequest, res *SetResponse) {
-
+func (h *Sample) Set(ctx *edge.RequestCtx, req *SetRequest, res *SetResponse) *rony.Error {
+	return nil
 }
 
-func (h *Sample) Get(ctx *edge.RequestCtx, req *GetRequest, res *GetResponse) {
-
+func (h *Sample) Get(ctx *edge.RequestCtx, req *GetRequest, res *GetResponse) *rony.Error {
+	return nil
 }
 
-func (h *Sample) EchoInternal(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+func (h *Sample) EchoInternal(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
 	panic("implement me")
 }
 
-func (h *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+func (h *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+	return nil
 }
 
-func (h *Sample) EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+func (h *Sample) EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
 	time.Sleep(time.Second * 1)
+	return nil
 }
 
-func (h *Sample) EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) {
+func (h *Sample) EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
 	res.ServerID = h.ServerID
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+	return nil
 }
 
 var EchoRest = edge.NewRestProxy(

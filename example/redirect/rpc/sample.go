@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/errors"
 	"go.uber.org/zap"
@@ -22,27 +23,28 @@ func init() {}
 // Sample implements auto-generated service.ISample interface
 type Sample struct{}
 
-func (s *Sample) InfoWithClientRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) {
+func (s *Sample) InfoWithClientRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) *rony.Error {
 	ctx.Log().Warn("Received", zap.Uint64("ReqRS", req.GetReplicaSet()), zap.Uint64("ServerRS", ctx.ReplicaSet()))
 	if req.GetReplicaSet() != ctx.ReplicaSet() {
 		ctx.PushRedirectRequest(req.GetReplicaSet())
-		return
+		return nil
 	}
 	res.ServerID = ctx.ServerID()
 	res.RandomText = req.GetRandomText()
+	return nil
 }
 
-func (s *Sample) InfoWithServerRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) {
+func (s *Sample) InfoWithServerRedirect(ctx *edge.RequestCtx, req *InfoRequest, res *InfoResponse) *rony.Error {
 	ctx.Log().Warn("Received", zap.Uint64("ReplicaSet", req.GetReplicaSet()))
 	if req.GetReplicaSet() != ctx.ReplicaSet() {
-		err := TunnelRequestInfoWithServerRedirect(ctx, req.GetReplicaSet(), req, res)
+		err := TunnelRequestSampleInfoWithServerRedirect(ctx, req.GetReplicaSet(), req, res)
 		if err != nil {
 			ctx.Log().Warn("Got Error", zap.Error(err))
-			ctx.PushError(errors.ErrInternalServer)
-			return
+			return errors.ErrInternalServer
 		}
-		return
+		return nil
 	}
 	res.ServerID = ctx.Cluster().ServerID()
 	res.RandomText = req.GetRandomText()
+	return nil
 }

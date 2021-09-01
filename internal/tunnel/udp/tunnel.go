@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/panjf2000/gnet"
-	"github.com/ronaksoft/rony/internal/log"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/tunnel"
+	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
@@ -106,7 +106,7 @@ func (t *Tunnel) Run() {
 		gnet.WithMulticore(true),
 		gnet.WithLockOSThread(true),
 		gnet.WithLogLevel(log.WarnLevel),
-		gnet.WithLogger(log.DefaultLogger.Logger.Sugar()),
+		gnet.WithLogger(log.DefaultLogger.Sugared()),
 	)
 
 	if err != nil {

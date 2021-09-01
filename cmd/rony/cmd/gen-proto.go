@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gobuffalo/genny/v2"
 	"github.com/ronaksoft/rony/config"
+	"github.com/ronaksoft/rony/log"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -27,6 +28,7 @@ var GenProtoCmd = &cobra.Command{
 		if config.GetBool("dry-run") {
 			r = genny.DryRunner(context.Background())
 		}
+		r.Logger = log.DefaultLogger.Sugared()
 
 		g := genny.New()
 		compileProto(g)
@@ -44,18 +46,21 @@ var GenProtoCmd = &cobra.Command{
 	},
 }
 
+func checkInProjectRoot(g *genny.Generator) {
+	// g.ErrorFn
+}
 func compileProto(g *genny.Generator) {
-	projectPath := config.GetString("project.dir")
 	// Compile proto files
 	folders := []string{"rpc", "model"}
 	for _, f := range folders {
-		_ = filepath.Walk(filepath.Join(projectPath, f), func(path string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(filepath.Join(".", f), func(path string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
 				return nil
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
-				projectPathAbs, _ := filepath.Abs(projectPath)
+				projectPathAbs, _ := filepath.Abs(".")
 				folderPathAbs, _ := filepath.Abs(filepath.Dir(path))
+				// call protoc-gen-go
 				cmd1 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
@@ -68,6 +73,7 @@ func compileProto(g *genny.Generator) {
 				cmd1.Dir = filepath.Dir(projectPathAbs)
 				g.Command(cmd1)
 
+				// generate protoc-gen-gorony
 				cmd2 := exec.Command(
 					"protoc",
 					fmt.Sprintf("-I=%s", projectPathAbs),
