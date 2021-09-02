@@ -6,8 +6,6 @@ import (
 	"github.com/ronaksoft/rony/internal/codegen"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/compiler/protogen"
-	"hash/crc32"
-	"hash/crc64"
 	"strings"
 	"text/template"
 )
@@ -101,9 +99,9 @@ var helperFunctions = map[string]interface{}{
 		if prefix == "" {
 			nc = codegen.LowerCamelCase
 		}
-		return fmt.Sprintf("'M', C_%s, %d, %s",
+		return fmt.Sprintf("'M', C_%s, uint64(%d), %s",
 			m.Name(),
-			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+			codegen.CrcHash(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
 			m.Names(codegen.PropFilterALL, prefix, "", ",", nc),
 		)
 	},
@@ -112,16 +110,16 @@ var helperFunctions = map[string]interface{}{
 		if prefix == "" {
 			nc = codegen.LowerCamelCase
 		}
-		return fmt.Sprintf("'M', C_%s, %d, %s",
+		return fmt.Sprintf("'M', C_%s, uint64(%d), %s",
 			m.Name(),
-			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+			codegen.CrcHash(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
 			m.Names(codegen.PropFilterPKs, prefix, "", ",", nc),
 		)
 	},
 	"DBPrefix": func(m codegen.ModelKey) string {
-		return fmt.Sprintf("'M', C_%s, %d",
+		return fmt.Sprintf("'M', C_%s, uint64(%d)",
 			m.Name(),
-			crc32.ChecksumIEEE(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
+			codegen.CrcHash(tools.StrToByte(m.Names(codegen.PropFilterALL, "", "", ",", codegen.None))),
 		)
 	},
 	"IndexDBKey": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
@@ -130,14 +128,14 @@ var helperFunctions = map[string]interface{}{
 			nc = codegen.LowerCamelCase
 		}
 		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s, %s",
-			m.Name(), crc64.Checksum([]byte(f.Name()), codegen.CrcTab),
+			m.Name(), codegen.CrcHash([]byte(f.Name())),
 			prefix, f.Name(), postfix,
 			m.Table.Names(codegen.PropFilterALL, prefix, "", ",", nc),
 		)
 	},
 	"IndexDBPrefix": func(m codegen.MessageArg, f codegen.FieldArg, prefix, postfix string) string {
 		return fmt.Sprintf("'I', C_%s, uint64(%d), %s%s%s",
-			m.Name(), crc64.Checksum([]byte(f.Name()), codegen.CrcTab),
+			m.Name(), codegen.CrcHash([]byte(f.Name())),
 			prefix, inflection.Singular(f.NameCC()), postfix,
 		)
 	},

@@ -29,6 +29,9 @@ var (
 func main() {
 	pgo.Run(
 		func(plugin *protogen.Plugin) error {
+			if pluginOpt.CRC32 {
+				codegen.CrcBits = 32
+			}
 			err := normalMode(plugin)
 			if err != nil {
 				return err

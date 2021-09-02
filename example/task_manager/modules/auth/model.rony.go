@@ -21,7 +21,7 @@ import (
 
 var _ = pools.Imported
 
-const C_User int64 = 765557111
+const C_User uint64 = 3297422589340680192
 
 type poolUser struct {
 	pool sync.Pool
@@ -84,7 +84,7 @@ func (x *User) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_User, x)
 }
 
-const C_Session int64 = 536472648
+const C_Session uint64 = 4434983008330775104
 
 type poolSession struct {
 	pool sync.Pool
@@ -145,8 +145,8 @@ func (x *Session) PushToContext(ctx *edge.RequestCtx) {
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(765557111, "User")
-	registry.RegisterConstructor(536472648, "Session")
+	registry.RegisterConstructor(3297422589340680192, "User")
+	registry.RegisterConstructor(4434983008330775104, "Session")
 
 }
 
@@ -177,7 +177,7 @@ func (r *UserLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	key := alloc.Gen('M', C_User, 19424289, m.Username)
+	key := alloc.Gen('M', C_User, uint64(12744997956659367007), m.Username)
 	if store.ExistsByKey(txn, alloc, key) {
 		return store.ErrAlreadyExists
 	}
@@ -230,7 +230,7 @@ func (r *UserLocalRepo) Update(username string, m *User) error {
 }
 
 func (r *UserLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *User) (err error) {
-	if store.Exists(txn, alloc, 'M', C_User, 19424289, m.Username) {
+	if store.Exists(txn, alloc, 'M', C_User, uint64(12744997956659367007), m.Username) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
 		return r.CreateWithTxn(txn, alloc, m)
@@ -252,7 +252,7 @@ func (r *UserLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, 
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_User, 19424289, username)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_User, uint64(12744997956659367007), username)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (r *UserLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Delete(txn, alloc, 'M', C_User, 19424289, username)
+	err := store.Delete(txn, alloc, 'M', C_User, uint64(12744997956659367007), username)
 	if err != nil {
 		return err
 	}
@@ -312,11 +312,11 @@ func (r *UserLocalRepo) ListWithTxn(
 
 	switch offset := offset.(type) {
 	case UserPK:
-		opt.Prefix = alloc.Gen('M', C_User, 19424289, offset.Username)
-		seekKey = alloc.Gen('M', C_User, 19424289, offset.Username)
+		opt.Prefix = alloc.Gen('M', C_User, uint64(12744997956659367007), offset.Username)
+		seekKey = alloc.Gen('M', C_User, uint64(12744997956659367007), offset.Username)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_User, 19424289)
+		opt.Prefix = alloc.Gen('M', C_User, uint64(12744997956659367007))
 		seekKey = opt.Prefix
 	}
 
@@ -390,11 +390,11 @@ func (r *UserLocalRepo) IterWithTxn(
 
 	switch offset := offset.(type) {
 	case UserPK:
-		opt.Prefix = alloc.Gen('M', C_User, 19424289, offset.Username)
-		seekKey = alloc.Gen('M', C_User, 19424289, offset.Username)
+		opt.Prefix = alloc.Gen('M', C_User, uint64(12744997956659367007), offset.Username)
+		seekKey = alloc.Gen('M', C_User, uint64(12744997956659367007), offset.Username)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_User, 19424289)
+		opt.Prefix = alloc.Gen('M', C_User, uint64(12744997956659367007))
 		seekKey = opt.Prefix
 	}
 
@@ -466,7 +466,7 @@ func (r *SessionLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Alloca
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	key := alloc.Gen('M', C_Session, 299066170, m.ID)
+	key := alloc.Gen('M', C_Session, uint64(387204014837596160), m.ID)
 	if store.ExistsByKey(txn, alloc, key) {
 		return store.ErrAlreadyExists
 	}
@@ -478,7 +478,7 @@ func (r *SessionLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Alloca
 		return
 	}
 
-	// key := alloc.Gen('M', C_Session, 299066170, m.ID)
+	// key := alloc.Gen('M', C_Session, uint64(387204014837596160), m.ID)
 	// update field index by saving new value: Username
 	err = store.Set(txn, alloc, key, 'I', C_Session, uint64(12744997956659367007), m.Username, m.ID)
 	if err != nil {
@@ -526,7 +526,7 @@ func (r *SessionLocalRepo) Update(id string, m *Session) error {
 }
 
 func (r *SessionLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Session) (err error) {
-	if store.Exists(txn, alloc, 'M', C_Session, 299066170, m.ID) {
+	if store.Exists(txn, alloc, 'M', C_Session, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
 		return r.CreateWithTxn(txn, alloc, m)
@@ -548,7 +548,7 @@ func (r *SessionLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocato
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Session, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Session, uint64(387204014837596160), id)
 	if err != nil {
 		return nil, err
 	}
@@ -577,11 +577,11 @@ func (r *SessionLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Alloca
 	}
 
 	m := &Session{}
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Session, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Session, uint64(387204014837596160), id)
 	if err != nil {
 		return err
 	}
-	err = store.Delete(txn, alloc, 'M', C_Session, 299066170, m.ID)
+	err = store.Delete(txn, alloc, 'M', C_Session, uint64(387204014837596160), m.ID)
 	if err != nil {
 		return err
 	}
@@ -619,11 +619,11 @@ func (r *SessionLocalRepo) ListWithTxn(
 
 	switch offset := offset.(type) {
 	case SessionPK:
-		opt.Prefix = alloc.Gen('M', C_Session, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Session, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Session, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Session, uint64(387204014837596160), offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Session, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Session, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 
@@ -697,11 +697,11 @@ func (r *SessionLocalRepo) IterWithTxn(
 
 	switch offset := offset.(type) {
 	case SessionPK:
-		opt.Prefix = alloc.Gen('M', C_Session, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Session, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Session, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Session, uint64(387204014837596160), offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Session, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Session, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 

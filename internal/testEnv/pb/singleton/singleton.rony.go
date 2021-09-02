@@ -17,7 +17,7 @@ import (
 
 var _ = pools.Imported
 
-const C_Single1 int64 = 683727308
+const C_Single1 uint64 = 4833170411250891328
 
 type poolSingle1 struct {
 	pool sync.Pool
@@ -84,7 +84,7 @@ func (x *Single1) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Single1, x)
 }
 
-const C_Single2 int64 = 2982774902
+const C_Single2 uint64 = 4738594819076110912
 
 type poolSingle2 struct {
 	pool sync.Pool
@@ -151,8 +151,8 @@ func (x *Single2) PushToContext(ctx *edge.RequestCtx) {
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(683727308, "Single1")
-	registry.RegisterConstructor(2982774902, "Single2")
+	registry.RegisterConstructor(4833170411250891328, "Single1")
+	registry.RegisterConstructor(4738594819076110912, "Single2")
 
 }
 

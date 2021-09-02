@@ -40,7 +40,7 @@ type Server struct {
 
 	// Handlers
 	preHandlers  []Handler
-	handlers     map[int64]*HandlerOption
+	handlers     map[uint64]*HandlerOption
 	postHandlers []Handler
 
 	// Edge components
@@ -60,7 +60,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	edgeServer := &Server{
 		dataDir:    "./_hdd",
-		handlers:   make(map[int64]*HandlerOption),
+		handlers:   make(map[uint64]*HandlerOption),
 		serverID:   []byte(serverID),
 		dispatcher: &defaultDispatcher{},
 	}
@@ -119,7 +119,7 @@ func (edge *Server) SetHandler(ho *HandlerOption) {
 }
 
 // GetHandler returns the handlers of the constructor
-func (edge *Server) GetHandler(constructor int64) *HandlerOption {
+func (edge *Server) GetHandler(constructor uint64) *HandlerOption {
 	return edge.handlers[constructor]
 }
 

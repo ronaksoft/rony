@@ -25,7 +25,7 @@ import (
 
 var _ = pools.Imported
 
-const C_GetRequest int64 = 3359917651
+const C_GetRequest uint64 = 8186060648624618456
 
 type poolGetRequest struct {
 	pool sync.Pool
@@ -82,7 +82,7 @@ func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_GetRequest, x)
 }
 
-const C_GetResponse int64 = 2891601577
+const C_GetResponse uint64 = 10382375233116730107
 
 type poolGetResponse struct {
 	pool sync.Pool
@@ -141,7 +141,7 @@ func (x *GetResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_GetResponse, x)
 }
 
-const C_SetRequest int64 = 3858851777
+const C_SetRequest uint64 = 8181913290764647384
 
 type poolSetRequest struct {
 	pool sync.Pool
@@ -200,7 +200,7 @@ func (x *SetRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_SetRequest, x)
 }
 
-const C_SetResponse int64 = 2994069984
+const C_SetResponse uint64 = 10382356249361281787
 
 type poolSetResponse struct {
 	pool sync.Pool
@@ -257,7 +257,7 @@ func (x *SetResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_SetResponse, x)
 }
 
-const C_EchoRequest int64 = 1904100324
+const C_EchoRequest uint64 = 634453994073422796
 
 type poolEchoRequest struct {
 	pool sync.Pool
@@ -318,7 +318,7 @@ func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_EchoRequest, x)
 }
 
-const C_EchoResponse int64 = 4192619139
+const C_EchoResponse uint64 = 10208763112635265787
 
 type poolEchoResponse struct {
 	pool sync.Pool
@@ -383,7 +383,7 @@ func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_EchoResponse, x)
 }
 
-const C_Message1 int64 = 3131464828
+const C_Message1 uint64 = 1806736971761742569
 
 type poolMessage1 struct {
 	pool sync.Pool
@@ -466,7 +466,7 @@ func (x *Message1) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Message1, x)
 }
 
-const C_Message2 int64 = 598674886
+const C_Message2 uint64 = 2000391755738673897
 
 type poolMessage2 struct {
 	pool sync.Pool
@@ -539,29 +539,29 @@ func (x *Message2) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Message2, x)
 }
 
-const C_SampleEcho int64 = 3852587671
-const C_SampleSet int64 = 569822863
-const C_SampleGet int64 = 987350307
-const C_SampleEchoTunnel int64 = 2071541407
-const C_SampleEchoInternal int64 = 3655883317
-const C_SampleEchoDelay int64 = 1737692531
+const C_SampleEcho uint64 = 5610266072904040111
+const C_SampleSet uint64 = 859899950148792148
+const C_SampleGet uint64 = 859879334305771348
+const C_SampleEchoTunnel uint64 = 16129836997487988187
+const C_SampleEchoInternal uint64 = 8481593834425277560
+const C_SampleEchoDelay uint64 = 5258191516040289195
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(3359917651, "GetRequest")
-	registry.RegisterConstructor(2891601577, "GetResponse")
-	registry.RegisterConstructor(3858851777, "SetRequest")
-	registry.RegisterConstructor(2994069984, "SetResponse")
-	registry.RegisterConstructor(1904100324, "EchoRequest")
-	registry.RegisterConstructor(4192619139, "EchoResponse")
-	registry.RegisterConstructor(3131464828, "Message1")
-	registry.RegisterConstructor(598674886, "Message2")
-	registry.RegisterConstructor(3852587671, "SampleEcho")
-	registry.RegisterConstructor(569822863, "SampleSet")
-	registry.RegisterConstructor(987350307, "SampleGet")
-	registry.RegisterConstructor(2071541407, "SampleEchoTunnel")
-	registry.RegisterConstructor(3655883317, "SampleEchoInternal")
-	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
+	registry.RegisterConstructor(8186060648624618456, "GetRequest")
+	registry.RegisterConstructor(10382375233116730107, "GetResponse")
+	registry.RegisterConstructor(8181913290764647384, "SetRequest")
+	registry.RegisterConstructor(10382356249361281787, "SetResponse")
+	registry.RegisterConstructor(634453994073422796, "EchoRequest")
+	registry.RegisterConstructor(10208763112635265787, "EchoResponse")
+	registry.RegisterConstructor(1806736971761742569, "Message1")
+	registry.RegisterConstructor(2000391755738673897, "Message2")
+	registry.RegisterConstructor(5610266072904040111, "SampleEcho")
+	registry.RegisterConstructor(859899950148792148, "SampleSet")
+	registry.RegisterConstructor(859879334305771348, "SampleGet")
+	registry.RegisterConstructor(16129836997487988187, "SampleEchoTunnel")
+	registry.RegisterConstructor(8481593834425277560, "SampleEchoInternal")
+	registry.RegisterConstructor(5258191516040289195, "SampleEchoDelay")
 
 }
 
@@ -580,12 +580,12 @@ func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
@@ -723,9 +723,9 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}

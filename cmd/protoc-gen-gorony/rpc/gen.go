@@ -164,12 +164,12 @@ func Register{{.Name}} (h I{{.Name}}, e *edge.Server, preHandlers ...edge.Handle
 	w := {{.NameCC}}Wrapper {
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func Register{{.Name}}WithFunc(h I{{.Name}}, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func Register{{.Name}}WithFunc(h I{{.Name}}, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := {{.NameCC}}Wrapper {
 		h: h,
 	}
@@ -222,9 +222,9 @@ func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in
 }
 {{- end }}
 
-func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}

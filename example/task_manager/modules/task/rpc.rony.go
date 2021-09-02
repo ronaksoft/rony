@@ -24,7 +24,7 @@ import (
 
 var _ = pools.Imported
 
-const C_CreateRequest int64 = 2229707971
+const C_CreateRequest uint64 = 10493574150349585346
 
 type poolCreateRequest struct {
 	pool sync.Pool
@@ -85,7 +85,7 @@ func (x *CreateRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_CreateRequest, x)
 }
 
-const C_GetRequest int64 = 3359917651
+const C_GetRequest uint64 = 8186060648624618456
 
 type poolGetRequest struct {
 	pool sync.Pool
@@ -142,7 +142,7 @@ func (x *GetRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_GetRequest, x)
 }
 
-const C_DeleteRequest int64 = 4088608791
+const C_DeleteRequest uint64 = 10494993965644118978
 
 type poolDeleteRequest struct {
 	pool sync.Pool
@@ -199,7 +199,7 @@ func (x *DeleteRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_DeleteRequest, x)
 }
 
-const C_ListRequest int64 = 307567737
+const C_ListRequest uint64 = 7093628900773919704
 
 type poolListRequest struct {
 	pool sync.Pool
@@ -258,7 +258,7 @@ func (x *ListRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_ListRequest, x)
 }
 
-const C_TaskView int64 = 2236647323
+const C_TaskView uint64 = 6751698197337109566
 
 type poolTaskView struct {
 	pool sync.Pool
@@ -321,7 +321,7 @@ func (x *TaskView) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_TaskView, x)
 }
 
-const C_TaskViewMany int64 = 2061119489
+const C_TaskViewMany uint64 = 3239358944681056701
 
 type poolTaskViewMany struct {
 	pool sync.Pool
@@ -388,7 +388,7 @@ func (x *TaskViewMany) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_TaskViewMany, x)
 }
 
-const C_Bool int64 = 4122188204
+const C_Bool uint64 = 4534064899579445248
 
 type poolBool struct {
 	pool sync.Pool
@@ -445,24 +445,24 @@ func (x *Bool) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Bool, x)
 }
 
-const C_TaskManagerCreate int64 = 613086944
-const C_TaskManagerGet int64 = 1803980423
-const C_TaskManagerDelete int64 = 2437835420
-const C_TaskManagerList int64 = 1736909319
+const C_TaskManagerCreate uint64 = 1839902125832275141
+const C_TaskManagerGet uint64 = 17769144489935692573
+const C_TaskManagerDelete uint64 = 1839900699382256837
+const C_TaskManagerList uint64 = 4130508813138998499
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(2229707971, "CreateRequest")
-	registry.RegisterConstructor(3359917651, "GetRequest")
-	registry.RegisterConstructor(4088608791, "DeleteRequest")
-	registry.RegisterConstructor(307567737, "ListRequest")
-	registry.RegisterConstructor(2236647323, "TaskView")
-	registry.RegisterConstructor(2061119489, "TaskViewMany")
-	registry.RegisterConstructor(4122188204, "Bool")
-	registry.RegisterConstructor(613086944, "TaskManagerCreate")
-	registry.RegisterConstructor(1803980423, "TaskManagerGet")
-	registry.RegisterConstructor(2437835420, "TaskManagerDelete")
-	registry.RegisterConstructor(1736909319, "TaskManagerList")
+	registry.RegisterConstructor(10493574150349585346, "CreateRequest")
+	registry.RegisterConstructor(8186060648624618456, "GetRequest")
+	registry.RegisterConstructor(10494993965644118978, "DeleteRequest")
+	registry.RegisterConstructor(7093628900773919704, "ListRequest")
+	registry.RegisterConstructor(6751698197337109566, "TaskView")
+	registry.RegisterConstructor(3239358944681056701, "TaskViewMany")
+	registry.RegisterConstructor(4534064899579445248, "Bool")
+	registry.RegisterConstructor(1839902125832275141, "TaskManagerCreate")
+	registry.RegisterConstructor(17769144489935692573, "TaskManagerGet")
+	registry.RegisterConstructor(1839900699382256837, "TaskManagerDelete")
+	registry.RegisterConstructor(4130508813138998499, "TaskManagerList")
 
 }
 
@@ -479,12 +479,12 @@ func RegisterTaskManager(h ITaskManager, e *edge.Server, preHandlers ...edge.Han
 	w := taskManagerWrapper{
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func RegisterTaskManagerWithFunc(h ITaskManager, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func RegisterTaskManagerWithFunc(h ITaskManager, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := taskManagerWrapper{
 		h: h,
 	}
@@ -580,9 +580,9 @@ func (sw *taskManagerWrapper) listWrapper(ctx *edge.RequestCtx, in *rony.Message
 	}
 }
 
-func (sw *taskManagerWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *taskManagerWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}

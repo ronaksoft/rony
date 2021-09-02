@@ -101,7 +101,7 @@ func (ctx *DispatchCtx) CopyEnvelope(e *rony.MessageEnvelope) {
 	e.DeepCopy(ctx.req)
 }
 
-func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor int64, p proto.Message, kv ...*rony.KeyValue) {
+func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor uint64, p proto.Message, kv ...*rony.KeyValue) {
 	if ctx.reqFilled {
 		panic("BUG!!! request has been already filled")
 	}
@@ -321,11 +321,11 @@ func (ctx *RequestCtx) PushRedirectRequest(replicaSet uint64) {
 	ctx.pushRedirect(rony.RedirectReason_ReplicaSetRequest, replicaSet)
 }
 
-func (ctx *RequestCtx) PushMessage(constructor int64, proto proto.Message) {
+func (ctx *RequestCtx) PushMessage(constructor uint64, proto proto.Message) {
 	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor int64, message proto.Message, kvs ...*rony.KeyValue) {
+func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor uint64, message proto.Message, kvs ...*rony.KeyValue) {
 	envelope := rony.PoolMessageEnvelope.Get()
 	envelope.Fill(requestID, constructor, message, kvs...)
 

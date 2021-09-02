@@ -23,7 +23,7 @@ func init() {}
 	Extra methods for MessageEnvelope
 */
 
-func (x *MessageEnvelope) Fill(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
+func (x *MessageEnvelope) Fill(reqID uint64, constructor uint64, p proto.Message, kvs ...*KeyValue) {
 	x.RequestID = reqID
 	x.Constructor = constructor
 
@@ -63,7 +63,7 @@ func (x *MessageEnvelope) Set(KVs ...*KeyValue) {
 /*
 	Extra methods for MessageContainer
 */
-func (x *MessageContainer) Add(reqID uint64, constructor int64, p proto.Message, kvs ...*KeyValue) {
+func (x *MessageContainer) Add(reqID uint64, constructor uint64, p proto.Message, kvs ...*KeyValue) {
 	me := PoolMessageEnvelope.Get()
 	me.Fill(reqID, constructor, p, kvs...)
 	x.Envelopes = append(x.Envelopes, me)
@@ -86,5 +86,5 @@ func (x *Error) Expand() (string, string) {
 }
 
 func (x *Error) ToEnvelope(me *MessageEnvelope) {
-	me.Fill(me.RequestID, C_Error, x)
+	// me.Fill(me.RequestID, C_Error, x)
 }

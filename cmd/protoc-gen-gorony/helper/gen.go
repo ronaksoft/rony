@@ -73,7 +73,7 @@ func (g *Generator) Generate() {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 			}
 			g.appendToInit(fmt.Sprintf("registry.RegisterConstructor(%d, %q)", m.C, m.Fullname()))
-			g.g.P("const C_", m.Fullname(), " int64 = ", fmt.Sprintf("%d", m.C))
+			g.g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
 		}
 	}
 
@@ -100,7 +100,7 @@ func (g *Generator) appendToInit(x string) {
 }
 
 const genPool = `
-const C_{{.Name}} int64 = {{.C}}
+const C_{{.Name}} uint64 = {{.C}}
 type pool{{.Name}} struct {
 	pool sync.Pool
 }

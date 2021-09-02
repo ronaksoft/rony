@@ -17,11 +17,13 @@ const (
 	optKeyRony    = "rony_opt"
 	optValModule  = "module"
 	optValEdgeDep = "no_edge_dep"
+	optValCrc32   = "crc32"
 )
 
 type PluginOptions struct {
 	NoEdgeDependency bool
 	Module           bool
+	CRC32            bool
 }
 
 func (op *PluginOptions) ParamFunc(key, value string) error {
@@ -33,6 +35,8 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 				op.Module = true
 			case optValEdgeDep:
 				op.NoEdgeDependency = true
+			case optValCrc32:
+				op.CRC32 = true
 			}
 		}
 	}

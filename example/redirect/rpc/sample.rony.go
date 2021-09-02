@@ -23,7 +23,7 @@ import (
 
 var _ = pools.Imported
 
-const C_InfoRequest int64 = 1180205313
+const C_InfoRequest uint64 = 393641345359739852
 
 type poolInfoRequest struct {
 	pool sync.Pool
@@ -82,7 +82,7 @@ func (x *InfoRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_InfoRequest, x)
 }
 
-const C_InfoResponse int64 = 699497142
+const C_InfoResponse uint64 = 10205569623592301307
 
 type poolInfoResponse struct {
 	pool sync.Pool
@@ -141,15 +141,15 @@ func (x *InfoResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_InfoResponse, x)
 }
 
-const C_SampleInfoWithClientRedirect int64 = 1298563006
-const C_SampleInfoWithServerRedirect int64 = 1831149695
+const C_SampleInfoWithClientRedirect uint64 = 11847639677132253675
+const C_SampleInfoWithServerRedirect uint64 = 11816518540128942571
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(1180205313, "InfoRequest")
-	registry.RegisterConstructor(699497142, "InfoResponse")
-	registry.RegisterConstructor(1298563006, "SampleInfoWithClientRedirect")
-	registry.RegisterConstructor(1831149695, "SampleInfoWithServerRedirect")
+	registry.RegisterConstructor(393641345359739852, "InfoRequest")
+	registry.RegisterConstructor(10205569623592301307, "InfoResponse")
+	registry.RegisterConstructor(11847639677132253675, "SampleInfoWithClientRedirect")
+	registry.RegisterConstructor(11816518540128942571, "SampleInfoWithServerRedirect")
 
 }
 
@@ -164,12 +164,12 @@ func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
@@ -223,9 +223,9 @@ func (sw *sampleWrapper) infoWithServerRedirectWrapper(ctx *edge.RequestCtx, in 
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}

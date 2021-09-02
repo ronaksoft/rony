@@ -22,13 +22,13 @@ import (
 type rpcCtx struct {
 	mtx        sync.Mutex
 	id         uint64
-	reqC       int64
+	reqC       uint64
 	reqID      uint64
 	req        []byte
-	expect     map[int64]CheckFunc
+	expect     map[uint64]CheckFunc
 	gw         *dummyGateway.Gateway
 	err        error
-	errH       func(constructor int64, e *rony.Error)
+	errH       func(constructor uint64, e *rony.Error)
 	doneCh     chan struct{}
 	kvs        []*rony.KeyValue
 	persistent bool
@@ -37,7 +37,7 @@ type rpcCtx struct {
 func newRPCContext(gw *dummyGateway.Gateway) *rpcCtx {
 	c := &rpcCtx{
 		id:     atomic.AddUint64(&connID, 1),
-		expect: make(map[int64]CheckFunc),
+		expect: make(map[uint64]CheckFunc),
 		gw:     gw,
 		doneCh: make(chan struct{}, 1),
 	}
@@ -51,7 +51,7 @@ func (c *rpcCtx) Persistent() *rpcCtx {
 }
 
 // Request set the request you wish to send to the server
-func (c *rpcCtx) Request(constructor int64, p proto.Message, kv ...*rony.KeyValue) *rpcCtx {
+func (c *rpcCtx) Request(constructor uint64, p proto.Message, kv ...*rony.KeyValue) *rpcCtx {
 	data, _ := proto.Marshal(p)
 	c.reqID = tools.RandomUint64(0)
 	e := &rony.MessageEnvelope{
@@ -68,12 +68,12 @@ func (c *rpcCtx) Request(constructor int64, p proto.Message, kv ...*rony.KeyValu
 
 // Expect let you set what you expect to receive. If cf is set, then you can do more checks on the response and return error
 // if the response was not fully acceptable
-func (c *rpcCtx) Expect(constructor int64, cf CheckFunc) *rpcCtx {
+func (c *rpcCtx) Expect(constructor uint64, cf CheckFunc) *rpcCtx {
 	c.expect[constructor] = cf
 	return c
 }
 
-func (c *rpcCtx) ExpectConstructor(constructor int64) *rpcCtx {
+func (c *rpcCtx) ExpectConstructor(constructor uint64) *rpcCtx {
 	return c.Expect(constructor, nil)
 }
 
@@ -104,7 +104,7 @@ func (c *rpcCtx) expectCount() int {
 	return n
 }
 
-func (c *rpcCtx) ErrorHandler(f func(constructor int64, e *rony.Error)) *rpcCtx {
+func (c *rpcCtx) ErrorHandler(f func(constructor uint64, e *rony.Error)) *rpcCtx {
 	c.errH = f
 	return c
 }

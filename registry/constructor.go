@@ -13,9 +13,9 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var constructors = map[int64]string{}
+var constructors = map[uint64]string{}
 
-func RegisterConstructor(c int64, n string) {
+func RegisterConstructor(c uint64, n string) {
 	if old, ok := constructors[c]; ok {
 		panic(fmt.Sprintf("constructor already exists %s:%s", old, n))
 	} else {
@@ -23,10 +23,10 @@ func RegisterConstructor(c int64, n string) {
 	}
 }
 
-func ConstructorName(c int64) string {
+func ConstructorName(c uint64) string {
 	return constructors[c]
 }
 
-func C(c int64) string {
+func C(c uint64) string {
 	return constructors[c]
 }

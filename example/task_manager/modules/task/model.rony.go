@@ -21,7 +21,7 @@ import (
 
 var _ = pools.Imported
 
-const C_Task int64 = 4065096731
+const C_Task uint64 = 4245896359682506752
 
 type poolTask struct {
 	pool sync.Pool
@@ -88,7 +88,7 @@ func (x *Task) PushToContext(ctx *edge.RequestCtx) {
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(4065096731, "Task")
+	registry.RegisterConstructor(4245896359682506752, "Task")
 
 }
 
@@ -128,7 +128,7 @@ func (r *TaskLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	key := alloc.Gen('M', C_Task, 299066170, m.ID)
+	key := alloc.Gen('M', C_Task, uint64(387204014837596160), m.ID)
 	if store.ExistsByKey(txn, alloc, key) {
 		return store.ErrAlreadyExists
 	}
@@ -140,7 +140,7 @@ func (r *TaskLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 		return
 	}
 
-	// key := alloc.Gen('M', C_Task, 299066170, m.ID)
+	// key := alloc.Gen('M', C_Task, uint64(387204014837596160), m.ID)
 	// update field index by saving new value: Username
 	err = store.Set(txn, alloc, key, 'I', C_Task, uint64(12744997956659367007), m.Username, m.ID)
 	if err != nil {
@@ -188,7 +188,7 @@ func (r *TaskLocalRepo) Update(id int64, m *Task) error {
 }
 
 func (r *TaskLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Task) (err error) {
-	if store.Exists(txn, alloc, 'M', C_Task, 299066170, m.ID) {
+	if store.Exists(txn, alloc, 'M', C_Task, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
 		return r.CreateWithTxn(txn, alloc, m)
@@ -210,7 +210,7 @@ func (r *TaskLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, 
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Task, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Task, uint64(387204014837596160), id)
 	if err != nil {
 		return nil, err
 	}
@@ -239,11 +239,11 @@ func (r *TaskLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	}
 
 	m := &Task{}
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Task, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Task, uint64(387204014837596160), id)
 	if err != nil {
 		return err
 	}
-	err = store.Delete(txn, alloc, 'M', C_Task, 299066170, m.ID)
+	err = store.Delete(txn, alloc, 'M', C_Task, uint64(387204014837596160), m.ID)
 	if err != nil {
 		return err
 	}
@@ -281,11 +281,11 @@ func (r *TaskLocalRepo) ListWithTxn(
 
 	switch offset := offset.(type) {
 	case TaskPK:
-		opt.Prefix = alloc.Gen('M', C_Task, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Task, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Task, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Task, uint64(387204014837596160), offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Task, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Task, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 
@@ -359,11 +359,11 @@ func (r *TaskLocalRepo) IterWithTxn(
 
 	switch offset := offset.(type) {
 	case TaskPK:
-		opt.Prefix = alloc.Gen('M', C_Task, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Task, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Task, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Task, uint64(387204014837596160), offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Task, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Task, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 

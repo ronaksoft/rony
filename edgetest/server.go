@@ -56,7 +56,7 @@ func (s *Server) SetGlobalPreHandlers(h ...edge.Handler) {
 	s.edge.SetGlobalPreHandlers(h...)
 }
 
-func (s *Server) SetHandlers(constructor int64, h ...edge.Handler) {
+func (s *Server) SetHandlers(constructor uint64, h ...edge.Handler) {
 	s.edge.SetHandler(edge.NewHandlerOptions().SetConstructor(constructor).SetHandler(h...))
 }
 

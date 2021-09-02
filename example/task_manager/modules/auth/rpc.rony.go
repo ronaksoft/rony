@@ -24,7 +24,7 @@ import (
 
 var _ = pools.Imported
 
-const C_RegisterRequest int64 = 913053684
+const C_RegisterRequest uint64 = 11503803976169819412
 
 type poolRegisterRequest struct {
 	pool sync.Pool
@@ -87,7 +87,7 @@ func (x *RegisterRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_RegisterRequest, x)
 }
 
-const C_LoginRequest int64 = 3796676066
+const C_LoginRequest uint64 = 18198549685643443149
 
 type poolLoginRequest struct {
 	pool sync.Pool
@@ -146,7 +146,7 @@ func (x *LoginRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_LoginRequest, x)
 }
 
-const C_Authorization int64 = 3373514778
+const C_Authorization uint64 = 9434083844645341581
 
 type poolAuthorization struct {
 	pool sync.Pool
@@ -203,16 +203,16 @@ func (x *Authorization) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Authorization, x)
 }
 
-const C_AuthRegister int64 = 2228369460
-const C_AuthLogin int64 = 2587620888
+const C_AuthRegister uint64 = 10692114844155491067
+const C_AuthLogin uint64 = 13609756835726243961
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(913053684, "RegisterRequest")
-	registry.RegisterConstructor(3796676066, "LoginRequest")
-	registry.RegisterConstructor(3373514778, "Authorization")
-	registry.RegisterConstructor(2228369460, "AuthRegister")
-	registry.RegisterConstructor(2587620888, "AuthLogin")
+	registry.RegisterConstructor(11503803976169819412, "RegisterRequest")
+	registry.RegisterConstructor(18198549685643443149, "LoginRequest")
+	registry.RegisterConstructor(9434083844645341581, "Authorization")
+	registry.RegisterConstructor(10692114844155491067, "AuthRegister")
+	registry.RegisterConstructor(13609756835726243961, "AuthLogin")
 
 }
 
@@ -227,12 +227,12 @@ func RegisterAuth(h IAuth, e *edge.Server, preHandlers ...edge.Handler) {
 	w := authWrapper{
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func RegisterAuthWithFunc(h IAuth, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func RegisterAuthWithFunc(h IAuth, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := authWrapper{
 		h: h,
 	}
@@ -286,9 +286,9 @@ func (sw *authWrapper) loginWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	}
 }
 
-func (sw *authWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *authWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}

@@ -22,7 +22,7 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 	Convey("Clone (MessageEnvelope)", t, func(c C) {
 		src := &rony.MessageEnvelope{
 			RequestID:   tools.RandomUint64(0),
-			Constructor: tools.RandomInt64(0),
+			Constructor: tools.RandomUint64(0),
 			Header: []*rony.KeyValue{
 				{
 					Key:   "Key1",
@@ -49,7 +49,7 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 
 		src = &rony.MessageEnvelope{
 			RequestID:   tools.RandomUint64(0),
-			Constructor: tools.RandomInt64(0),
+			Constructor: tools.RandomUint64(0),
 			Auth:        tools.StrToByte(tools.RandomID(10)),
 		}
 
@@ -68,7 +68,7 @@ func TestMessageEnvelope_Clone(t *testing.T) {
 func TestMessageEnvelope_Get(t *testing.T) {
 	Convey("Get (MessageEnvelope)", t, func(c C) {
 		s := &rony.MessageEnvelope{
-			Constructor: tools.RandomInt64(0),
+			Constructor: tools.RandomUint64(0),
 			RequestID:   tools.RandomUint64(0),
 			Message:     tools.S2B(tools.RandomID(1024)),
 			Auth:        nil,
@@ -94,7 +94,7 @@ func TestMessageEnvelope_Get(t *testing.T) {
 }
 func BenchmarkMessageEnvelope_GetWithPool(b *testing.B) {
 	s := &rony.MessageEnvelope{
-		Constructor: tools.RandomInt64(0),
+		Constructor: tools.RandomUint64(0),
 		RequestID:   tools.RandomUint64(0),
 		Message:     tools.S2B(tools.RandomID(1024)),
 		Auth:        nil,
@@ -117,7 +117,7 @@ func BenchmarkMessageEnvelope_GetWithPool(b *testing.B) {
 
 func BenchmarkMessageEnvelope_Get(b *testing.B) {
 	s := &rony.MessageEnvelope{
-		Constructor: tools.RandomInt64(0),
+		Constructor: tools.RandomUint64(0),
 		RequestID:   tools.RandomUint64(0),
 		Message:     tools.S2B(tools.RandomID(1024)),
 		Auth:        nil,

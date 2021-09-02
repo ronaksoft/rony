@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"hash/crc32"
 	"hash/crc64"
 )
 
@@ -15,7 +16,8 @@ import (
 */
 
 var (
-	CrcTab = crc64.MakeTable(crc64.ISO)
+	CrcBits = 64
+	CrcTab  = crc64.MakeTable(crc64.ISO)
 )
 
 // ZeroValue returns the equal zero value based on the input type
@@ -78,4 +80,12 @@ func CqlKind(d protoreflect.FieldDescriptor) string {
 		return "int"
 	}
 	return "unsupported"
+}
+
+func CrcHash(data []byte) uint64 {
+	if CrcBits == 64 {
+		return crc64.Checksum(data, CrcTab)
+	} else {
+		return uint64(crc32.Checksum(data, crc32.IEEETable))
+	}
 }

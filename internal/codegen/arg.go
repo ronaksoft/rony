@@ -8,7 +8,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"hash/crc32"
 	"strings"
 )
 
@@ -46,7 +45,7 @@ type MessageArg struct {
 	name       string
 	pkg        string
 	Fields     []FieldArg
-	C          uint32
+	C          uint64
 	ImportPath protogen.GoImportPath
 
 	// If message is representing a model then following parameters are filled
@@ -63,7 +62,7 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 	arg := MessageArg{}
 	arg.name = string(m.Desc.Name())
 	arg.pkg = string(m.Desc.ParentFile().Package())
-	arg.C = crc32.ChecksumIEEE([]byte(m.Desc.Name()))
+	arg.C = CrcHash([]byte(m.Desc.Name()))
 	arg.ImportPath = m.GoIdent.GoImportPath
 	for _, f := range m.Fields {
 		arg.Fields = append(arg.Fields, GetFieldArg(f))
@@ -332,7 +331,7 @@ type ServiceArg struct {
 	file         *protogen.File
 	desc         protoreflect.ServiceDescriptor
 	name         string
-	C            uint32
+	C            uint64
 	Methods      []MethodArg
 	HasRestProxy bool
 }
@@ -374,7 +373,7 @@ func GetServiceArg(s *protogen.Service) ServiceArg {
 		desc: s.Desc,
 	}
 	arg.name = string(s.Desc.Name())
-	arg.C = crc32.ChecksumIEEE([]byte(arg.name))
+	arg.C = CrcHash([]byte(arg.name))
 	for _, m := range s.Methods {
 		ma := getMethodArg(s, m)
 		if ma.RestEnabled {
@@ -391,7 +390,7 @@ type MethodArg struct {
 	file        *protogen.File
 	name        string
 	fullname    string
-	C           uint32
+	C           uint64
 	Input       MessageArg
 	Output      MessageArg
 	RestEnabled bool
@@ -440,7 +439,7 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 	}
 	arg.fullname = fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
 	arg.name = string(m.Desc.Name())
-	arg.C = crc32.ChecksumIEEE([]byte(fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())))
+	arg.C = CrcHash([]byte(fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())))
 	arg.Input = GetMessageArg(m.Input)
 	arg.Output = GetMessageArg(m.Output)
 	if arg.Input.IsSingleton || arg.Input.IsAggregate {

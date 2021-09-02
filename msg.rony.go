@@ -16,7 +16,7 @@ import (
 
 var _ = pools.Imported
 
-const C_MessageEnvelope int64 = 535232465
+const C_MessageEnvelope uint64 = 11385363697628734430
 
 type poolMessageEnvelope struct {
 	pool sync.Pool
@@ -87,7 +87,7 @@ func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_KeyValue int64 = 4276272820
+const C_KeyValue uint64 = 9712539143259722476
 
 type poolKeyValue struct {
 	pool sync.Pool
@@ -142,7 +142,7 @@ func (x *KeyValue) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_MessageContainer int64 = 1972016308
+const C_MessageContainer uint64 = 8705479839606992738
 
 type poolMessageContainer struct {
 	pool sync.Pool
@@ -207,7 +207,7 @@ func (x *MessageContainer) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_Error int64 = 2619118453
+const C_Error uint64 = 3300063058275074048
 
 type poolError struct {
 	pool sync.Pool
@@ -264,7 +264,7 @@ func (x *Error) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_Redirect int64 = 981138557
+const C_Redirect uint64 = 12783312295490183931
 
 type poolRedirect struct {
 	pool sync.Pool
@@ -331,7 +331,7 @@ func (x *Redirect) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_Edge int64 = 3576986712
+const C_Edge uint64 = 3661905149145645056
 
 type poolEdge struct {
 	pool sync.Pool
@@ -388,7 +388,7 @@ func (x *Edge) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_Edges int64 = 2120950449
+const C_Edges uint64 = 3202852853167161344
 
 type poolEdges struct {
 	pool sync.Pool
@@ -451,7 +451,7 @@ func (x *Edges) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_GetNodes int64 = 362407405
+const C_GetNodes uint64 = 17614373553603896039
 
 type poolGetNodes struct {
 	pool sync.Pool
@@ -504,7 +504,7 @@ func (x *GetNodes) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_GetAllNodes int64 = 3267106379
+const C_GetAllNodes uint64 = 2426091802953969362
 
 type poolGetAllNodes struct {
 	pool sync.Pool
@@ -554,7 +554,7 @@ func (x *GetAllNodes) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_HttpBody int64 = 3032622721
+const C_HttpBody uint64 = 4148778432730789982
 
 type poolHttpBody struct {
 	pool sync.Pool
@@ -623,16 +623,16 @@ func (x *HttpBody) MarshalJSON() ([]byte, error) {
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(535232465, "MessageEnvelope")
-	registry.RegisterConstructor(4276272820, "KeyValue")
-	registry.RegisterConstructor(1972016308, "MessageContainer")
-	registry.RegisterConstructor(2619118453, "Error")
-	registry.RegisterConstructor(981138557, "Redirect")
-	registry.RegisterConstructor(3576986712, "Edge")
-	registry.RegisterConstructor(2120950449, "Edges")
-	registry.RegisterConstructor(362407405, "GetNodes")
-	registry.RegisterConstructor(3267106379, "GetAllNodes")
-	registry.RegisterConstructor(3032622721, "HttpBody")
+	registry.RegisterConstructor(11385363697628734430, "MessageEnvelope")
+	registry.RegisterConstructor(9712539143259722476, "KeyValue")
+	registry.RegisterConstructor(8705479839606992738, "MessageContainer")
+	registry.RegisterConstructor(3300063058275074048, "Error")
+	registry.RegisterConstructor(12783312295490183931, "Redirect")
+	registry.RegisterConstructor(3661905149145645056, "Edge")
+	registry.RegisterConstructor(3202852853167161344, "Edges")
+	registry.RegisterConstructor(17614373553603896039, "GetNodes")
+	registry.RegisterConstructor(2426091802953969362, "GetAllNodes")
+	registry.RegisterConstructor(4148778432730789982, "HttpBody")
 
 }
 

@@ -20,7 +20,7 @@ import (
 
 var _ = pools.Imported
 
-const C_GetPage int64 = 3721890413
+const C_GetPage uint64 = 3661906127733581696
 
 type poolGetPage struct {
 	pool sync.Pool
@@ -75,7 +75,7 @@ func (x *GetPage) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_TunnelMessage int64 = 3271476222
+const C_TunnelMessage uint64 = 12904103981552626014
 
 type poolTunnelMessage struct {
 	pool sync.Pool
@@ -154,7 +154,7 @@ func (x *TunnelMessage) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_EdgeNode int64 = 999040174
+const C_EdgeNode uint64 = 12741646567456486228
 
 type poolEdgeNode struct {
 	pool sync.Pool
@@ -215,7 +215,7 @@ func (x *EdgeNode) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
-const C_Page int64 = 3023575326
+const C_Page uint64 = 3661906127056011264
 
 type poolPage struct {
 	pool sync.Pool
@@ -272,10 +272,10 @@ func (x *Page) MarshalJSON() ([]byte, error) {
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(3721890413, "GetPage")
-	registry.RegisterConstructor(3271476222, "TunnelMessage")
-	registry.RegisterConstructor(999040174, "EdgeNode")
-	registry.RegisterConstructor(3023575326, "Page")
+	registry.RegisterConstructor(3661906127733581696, "GetPage")
+	registry.RegisterConstructor(12904103981552626014, "TunnelMessage")
+	registry.RegisterConstructor(12741646567456486228, "EdgeNode")
+	registry.RegisterConstructor(3661906127056011264, "Page")
 
 }
 
@@ -313,7 +313,7 @@ func (r *PageLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
 	}
-	key := alloc.Gen('M', C_Page, 299066170, m.ID)
+	key := alloc.Gen('M', C_Page, uint64(387204014837596160), m.ID)
 	if store.ExistsByKey(txn, alloc, key) {
 		return store.ErrAlreadyExists
 	}
@@ -326,7 +326,7 @@ func (r *PageLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	}
 
 	// save view entry
-	err = store.Set(txn, alloc, val, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
+	err = store.Set(txn, alloc, val, 'M', C_Page, uint64(5234382564310086679), m.ReplicaSet, m.ID)
 	if err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (r *PageLocalRepo) Update(id uint32, m *Page) error {
 }
 
 func (r *PageLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
-	if store.Exists(txn, alloc, 'M', C_Page, 299066170, m.ID) {
+	if store.Exists(txn, alloc, 'M', C_Page, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
 		return r.CreateWithTxn(txn, alloc, m)
@@ -394,7 +394,7 @@ func (r *PageLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, 
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, uint64(387204014837596160), id)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +425,7 @@ func (r *PageLocalRepo) ReadByReplicaSetIDWithTxn(
 		defer alloc.ReleaseAll()
 	}
 
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 1040696757, replicaSet, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, uint64(5234382564310086679), replicaSet, id)
 	if err != nil {
 		return nil, err
 	}
@@ -454,16 +454,16 @@ func (r *PageLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	}
 
 	m := &Page{}
-	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, 299066170, id)
+	err := store.Unmarshal(txn, alloc, m, 'M', C_Page, uint64(387204014837596160), id)
 	if err != nil {
 		return err
 	}
-	err = store.Delete(txn, alloc, 'M', C_Page, 299066170, m.ID)
+	err = store.Delete(txn, alloc, 'M', C_Page, uint64(387204014837596160), m.ID)
 	if err != nil {
 		return err
 	}
 
-	err = store.Delete(txn, alloc, 'M', C_Page, 1040696757, m.ReplicaSet, m.ID)
+	err = store.Delete(txn, alloc, 'M', C_Page, uint64(5234382564310086679), m.ReplicaSet, m.ID)
 	if err != nil {
 		return err
 	}
@@ -495,15 +495,15 @@ func (r *PageLocalRepo) ListWithTxn(
 
 	switch offset := offset.(type) {
 	case PagePK:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Page, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Page, uint64(387204014837596160), offset.ID)
 
 	case PageReplicaSetIDPK:
-		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, offset.ReplicaSet)
-		seekKey = alloc.Gen('M', C_Page, 1040696757, offset.ReplicaSet, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(5234382564310086679), offset.ReplicaSet)
+		seekKey = alloc.Gen('M', C_Page, uint64(5234382564310086679), offset.ReplicaSet, offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 
@@ -577,15 +577,15 @@ func (r *PageLocalRepo) IterWithTxn(
 
 	switch offset := offset.(type) {
 	case PagePK:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170, offset.ID)
-		seekKey = alloc.Gen('M', C_Page, 299066170, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(387204014837596160), offset.ID)
+		seekKey = alloc.Gen('M', C_Page, uint64(387204014837596160), offset.ID)
 
 	case PageReplicaSetIDPK:
-		opt.Prefix = alloc.Gen('M', C_Page, 1040696757, offset.ReplicaSet)
-		seekKey = alloc.Gen('M', C_Page, 1040696757, offset.ReplicaSet, offset.ID)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(5234382564310086679), offset.ReplicaSet)
+		seekKey = alloc.Gen('M', C_Page, uint64(5234382564310086679), offset.ReplicaSet, offset.ID)
 
 	default:
-		opt.Prefix = alloc.Gen('M', C_Page, 299066170)
+		opt.Prefix = alloc.Gen('M', C_Page, uint64(387204014837596160))
 		seekKey = opt.Prefix
 	}
 

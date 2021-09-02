@@ -25,7 +25,7 @@ import (
 
 var _ = pools.Imported
 
-const C_EchoRequest int64 = 1904100324
+const C_EchoRequest uint64 = 634453994073422796
 
 type poolEchoRequest struct {
 	pool sync.Pool
@@ -84,7 +84,7 @@ func (x *EchoRequest) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_EchoRequest, x)
 }
 
-const C_EchoResponse int64 = 4192619139
+const C_EchoResponse uint64 = 10208763112635265787
 
 type poolEchoResponse struct {
 	pool sync.Pool
@@ -143,13 +143,13 @@ func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_EchoResponse, x)
 }
 
-const C_SampleEcho int64 = 3852587671
+const C_SampleEcho uint64 = 5610266072904040111
 
 // register constructors of the messages to the registry package
 func init() {
-	registry.RegisterConstructor(1904100324, "EchoRequest")
-	registry.RegisterConstructor(4192619139, "EchoResponse")
-	registry.RegisterConstructor(3852587671, "SampleEcho")
+	registry.RegisterConstructor(634453994073422796, "EchoRequest")
+	registry.RegisterConstructor(10208763112635265787, "EchoResponse")
+	registry.RegisterConstructor(5610266072904040111, "SampleEcho")
 
 }
 
@@ -163,12 +163,12 @@ func RegisterSample(h ISample, e *edge.Server, preHandlers ...edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
-	w.Register(e, func(c int64) []edge.Handler {
+	w.Register(e, func(c uint64) []edge.Handler {
 		return preHandlers
 	})
 }
 
-func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func RegisterSampleWithFunc(h ISample, e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	w := sampleWrapper{
 		h: h,
 	}
@@ -201,9 +201,9 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	}
 }
 
-func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c int64) []edge.Handler) {
+func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edge.Handler) {
 	if handlerFunc == nil {
-		handlerFunc = func(c int64) []edge.Handler {
+		handlerFunc = func(c uint64) []edge.Handler {
 			return nil
 		}
 	}
