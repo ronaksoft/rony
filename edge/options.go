@@ -61,7 +61,7 @@ func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 				GossipIP:       clusterConfig.GossipIP,
 				AdvertisedIP:   clusterConfig.AdvertisedIP,
 				AdvertisedPort: clusterConfig.AdvertisedPort,
-				Logger: log.DefaultLogger.With("GossipCluster"),
+				Logger:         log.DefaultLogger.With("GossipCluster"),
 			},
 		)
 	}

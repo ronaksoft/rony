@@ -2,7 +2,6 @@ package gossipCluster
 
 import (
 	"github.com/ronaksoft/rony/internal/msg"
-	"github.com/ronaksoft/rony/log"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"hash/crc64"
@@ -36,7 +35,7 @@ func (d *clusterDelegate) nodeData() []byte {
 func (d *clusterDelegate) NodeMeta(limit int) []byte {
 	b := d.nodeData()
 	if len(b) > limit {
-		c.cfg.Logger.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
+		d.c.cfg.Logger.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
 		return nil
 	}
 	return b
