@@ -3,6 +3,7 @@ package edge
 import (
 	"bufio"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
@@ -80,6 +81,9 @@ func NewServer(serverID string, opts ...Option) *Server {
 			log.Warn("Error On initializing store", zap.Error(err))
 		}
 	}
+
+	// inject the edge store
+	di.MustProvide(edgeServer.Store)
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer)

@@ -3,7 +3,6 @@ package store
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
@@ -26,21 +25,6 @@ var (
 
 type Store struct {
 	db *badger.DB
-}
-
-var (
-	defaultStore *Store
-)
-
-func init() {
-	// since dig package does not support singleton providers yet, we write
-	// this custom function to handle singleton store provider
-	di.MustProvide(func(cfg Config) (*Store, error) {
-		if defaultStore != nil {
-			return defaultStore, nil
-		}
-		return New(cfg)
-	})
 }
 
 func New(cfg Config) (*Store, error) {
