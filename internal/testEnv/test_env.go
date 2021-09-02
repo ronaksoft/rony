@@ -27,12 +27,7 @@ func Init() {
 
 	log.Init(log.Config{
 		Level:       log.WarnLevel,
-		DirPath:     "",
-		Filename:    "",
-		SentryDSN:   "",
 		SentryLevel: log.WarnLevel,
-		Release:     "",
-		Environment: "",
 	})
 
 	_ = os.RemoveAll("./_hdd")

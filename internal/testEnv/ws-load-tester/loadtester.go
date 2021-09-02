@@ -35,7 +35,6 @@ var (
 
 func main() {
 	fmt.Println("RUN...")
-	log.Init(log.DefaultConfig)
 	log.SetLevel(log.InfoLevel)
 
 	var n, m, port int64

@@ -50,6 +50,10 @@ type SugaredLogger interface {
 	Panic(args ...interface{})
 }
 
+func init() {
+	DefaultLogger = New(DefaultConfig)
+}
+
 func Init(config Config) Logger {
 	DefaultLogger = New(config)
 	return DefaultLogger

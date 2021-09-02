@@ -42,6 +42,10 @@ type Tunnel struct {
 }
 
 func New(config Config) (*Tunnel, error) {
+	if config.Logger == nil {
+		config.Logger = log.DefaultLogger
+	}
+
 	t := &Tunnel{
 		cfg: config,
 	}

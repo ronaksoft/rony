@@ -29,10 +29,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func init() {
-	log.Init(log.DefaultConfig)
-}
-
 type Server struct {
 	// General
 	dataDir       string
