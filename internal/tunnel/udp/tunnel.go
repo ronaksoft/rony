@@ -30,9 +30,9 @@ type Config struct {
 	ListenAddress string
 	MaxBodySize   int
 	ExternalAddrs []string
+	Logger        log.Logger
 }
 
-// Tunnel
 type Tunnel struct {
 	tunnel.MessageHandler
 	cfg      Config
@@ -105,7 +105,7 @@ func (t *Tunnel) Run() {
 		gnet.WithMulticore(true),
 		gnet.WithLockOSThread(true),
 		gnet.WithLogLevel(log.WarnLevel),
-		gnet.WithLogger(log.DefaultLogger.Sugared()),
+		gnet.WithLogger(t.cfg.Logger.Sugared()),
 	)
 
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
+	"github.com/ronaksoft/rony/log"
 	"runtime"
 	"time"
 )
@@ -60,6 +61,7 @@ func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 				GossipIP:       clusterConfig.GossipIP,
 				AdvertisedIP:   clusterConfig.AdvertisedIP,
 				AdvertisedPort: clusterConfig.AdvertisedPort,
+				Logger: log.DefaultLogger.With("GossipCluster"),
 			},
 		)
 	}
@@ -94,6 +96,7 @@ func WithTcpGateway(gatewayConfig TcpGatewayConfig) Option {
 			MaxIdleTime:   gatewayConfig.MaxIdleTime,
 			Protocol:      gatewayConfig.Protocol,
 			ExternalAddrs: gatewayConfig.ExternalAddrs,
+			Logger:        log.DefaultLogger.With("TCPGateway"),
 		})
 		if err != nil {
 			panic(err)
@@ -140,6 +143,7 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 			ListenAddress: config.ListenAddress,
 			MaxBodySize:   config.MaxBodySize,
 			ExternalAddrs: config.ExternalAddrs,
+			Logger:        log.DefaultLogger.With("Tunnel"),
 		})
 		if err != nil {
 			panic(err)

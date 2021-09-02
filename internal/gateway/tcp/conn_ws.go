@@ -74,7 +74,7 @@ func newWebsocketConn(g *Gateway, conn net.Conn, clientIP []byte) (*websocketCon
 	g.connsMtx.Lock()
 	g.conns[connID] = wsConn
 	g.connsMtx.Unlock()
-	if ce := log.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
+	if ce := g.cfg.Logger.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", connID),
 			zap.String("IP", wsConn.ClientIP()),
@@ -111,7 +111,7 @@ func (wc *websocketConn) release(reason int) {
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
 
 	// fmt.Println("Conn(", wc.connID, "): LifeTime:", time.Duration(tools.CPUTicks()-atomic.LoadInt64(&wc.startTime)))
-	if ce := log.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
+	if ce := g.cfg.Logger.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", wc.connID),
 			zap.Int32("Total", totalConns),
@@ -163,7 +163,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 			wc.gateway.waitGroupReaders.Done()
 		})
 		if err != nil {
-			log.Warn("Error On StartEvent (Pool)", zap.Error(err))
+			wc.gateway.cfg.Logger.Warn("Error On StartEvent (Pool)", zap.Error(err))
 		}
 	}
 }

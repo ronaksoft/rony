@@ -36,7 +36,7 @@ func (d *clusterDelegate) nodeData() []byte {
 func (d *clusterDelegate) NodeMeta(limit int) []byte {
 	b := d.nodeData()
 	if len(b) > limit {
-		log.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
+		c.cfg.Logger.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
 		return nil
 	}
 	return b

@@ -43,6 +43,7 @@ type Config struct {
 	MaxIdleTime   time.Duration
 	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
+	Logger        log.Logger
 	// CORS
 	AllowedHeaders []string // Default Allow All
 	AllowedOrigins []string // Default Allow All
@@ -59,14 +60,11 @@ type Gateway struct {
 	gateway.CloseHandler
 
 	// Internals
+	cfg                Config
 	transportMode      rony.GatewayProtocol
-	listenOn           string
 	listener           *wrapListener
 	addrsMtx           sync.RWMutex
 	addrs              []string
-	extAddrs           []string
-	concurrency        int
-	maxBodySize        int
 	poller             netpoll.Poller
 	stop               int32
 	waitGroupAcceptors *sync.WaitGroup
@@ -87,20 +85,20 @@ type Gateway struct {
 }
 
 func New(config Config) (*Gateway, error) {
-	var (
-		err error
-	)
+	var err error
+
+	if config.Logger == nil {
+		config.Logger = log.DefaultLogger
+	}
+
 	g := &Gateway{
-		listenOn:           config.ListenAddress,
-		concurrency:        config.Concurrency,
-		maxBodySize:        config.MaxBodySize,
+		cfg:                config,
 		maxIdleTime:        int64(defaultConnIdleTime),
 		waitGroupReaders:   &sync.WaitGroup{},
 		waitGroupWriters:   &sync.WaitGroup{},
 		waitGroupAcceptors: &sync.WaitGroup{},
 		conns:              make(map[uint64]*websocketConn, 100000),
 		transportMode:      rony.TCP,
-		extAddrs:           config.ExternalAddrs,
 		cors: cors.New(cors.Config{
 			AllowedHeaders: config.AllowedHeaders,
 			AllowedMethods: config.AllowedMethods,
@@ -108,7 +106,7 @@ func New(config Config) (*Gateway, error) {
 		}),
 	}
 
-	g.listener, err = newWrapListener(g.listenOn)
+	g.listener, err = newWrapListener(g.cfg.ListenAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +136,7 @@ func New(config Config) (*Gateway, error) {
 	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
-			log.Warn("Error On NetPoller Wait",
+			g.cfg.Logger.Warn("Error On NetPoller Wait",
 				zap.Error(e),
 			)
 		},
@@ -151,11 +149,11 @@ func New(config Config) (*Gateway, error) {
 	// try to detect the ip address of the listener
 	err = g.detectAddrs()
 	if err != nil {
-		log.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+		g.cfg.Logger.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
 		return nil, err
 	}
 
-	goPoolB, err = ants.NewPool(g.concurrency,
+	goPoolB, err = ants.NewPool(g.cfg.Concurrency,
 		ants.WithNonblocking(false),
 		ants.WithPreAlloc(true),
 	)
@@ -163,7 +161,7 @@ func New(config Config) (*Gateway, error) {
 		return nil, err
 	}
 
-	goPoolNB, err = ants.NewPool(g.concurrency,
+	goPoolNB, err = ants.NewPool(g.cfg.Concurrency,
 		ants.WithNonblocking(true),
 		ants.WithPreAlloc(true),
 	)
@@ -190,7 +188,7 @@ func (g *Gateway) watchdog() {
 		metrics.SetGauge(metrics.GaugeActiveWebsocketConnections, float64(g.TotalConnections()))
 		err := g.detectAddrs()
 		if err != nil {
-			log.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+			g.cfg.Logger.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
 		}
 		time.Sleep(time.Second * 15)
 	}
@@ -246,9 +244,9 @@ func (g *Gateway) Run() {
 	server := fasthttp.Server{
 		Name:               "Rony TCP-Gateway",
 		Handler:            g.requestHandler,
-		Concurrency:        g.concurrency,
+		Concurrency:        g.cfg.Concurrency,
 		KeepHijackedConns:  true,
-		MaxRequestBodySize: g.maxBodySize,
+		MaxRequestBodySize: g.cfg.MaxBodySize,
 		DisableKeepalive:   true,
 		CloseOnShutdown:    true,
 	}
@@ -256,7 +254,7 @@ func (g *Gateway) Run() {
 	// start serving in blocking mode
 	err := server.Serve(g.listener)
 	if err != nil {
-		log.Warn("Error On Serve", zap.Error(err))
+		g.cfg.Logger.Warn("Error On Serve", zap.Error(err))
 	}
 }
 
@@ -264,30 +262,30 @@ func (g *Gateway) Run() {
 // will be served before server shutdown.
 func (g *Gateway) Shutdown() {
 	// 1. Stop Accepting New Connections, i.e. Stop ConnectionAcceptor routines
-	log.Info("Connection Acceptors are closing...")
+	g.cfg.Logger.Info("Connection Acceptors are closing...")
 	atomic.StoreInt32(&g.stop, 1)
 	_ = g.listener.Close()
 	g.waitGroupAcceptors.Wait()
-	log.Info("Connection Acceptors all closed")
+	g.cfg.Logger.Info("Connection Acceptors all closed")
 
 	// 2. Close all readPumps
-	log.Info("Read Pumpers are closing")
+	g.cfg.Logger.Info("Read Pumpers are closing")
 	g.waitGroupReaders.Wait()
-	log.Info("Read Pumpers all closed")
+	g.cfg.Logger.Info("Read Pumpers all closed")
 
 	// 3. Close all writePumps
-	log.Info("Write Pumpers are closing")
+	g.cfg.Logger.Info("Write Pumpers are closing")
 	g.waitGroupWriters.Wait()
-	log.Info("Write Pumpers all closed")
+	g.cfg.Logger.Info("Write Pumpers all closed")
 
-	log.Info("Stats",
+	g.cfg.Logger.Info("Stats",
 		zap.Uint64("Reads", g.cntReads),
 		zap.Uint64("Writes", g.cntWrites),
 	)
 
 	g.connsMtx.Lock()
 	for id, c := range g.conns {
-		log.Info("Conn Stalled",
+		g.cfg.Logger.Info("Conn Stalled",
 			zap.Uint64("ID", id),
 			zap.Duration("SinceStart", time.Duration(tools.CPUTicks()-atomic.LoadInt64(&c.startTime))),
 			zap.Duration("SinceLastActivity", time.Duration(tools.CPUTicks()-(atomic.LoadInt64(&c.lastActivity)))),
@@ -298,8 +296,8 @@ func (g *Gateway) Shutdown() {
 
 // Addr return the address which gateway is listen on
 func (g *Gateway) Addr() []string {
-	if len(g.extAddrs) > 0 {
-		return g.extAddrs
+	if len(g.cfg.ExternalAddrs) > 0 {
+		return g.cfg.ExternalAddrs
 	}
 	g.addrsMtx.RLock()
 	addrs := g.addrs
@@ -390,7 +388,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 		return
 	}
 	if _, err := g.upgradeHandler.Upgrade(c); err != nil {
-		if ce := log.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
+		if ce := g.cfg.Logger.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
 			ce.Write(
 				zap.String("IP", tools.B2S(meta.clientIP)),
 				zap.String("ClientType", tools.B2S(meta.clientType)),
@@ -407,7 +405,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 
 	wsConn, err := newWebsocketConn(g, c, meta.clientIP)
 	if err != nil {
-		log.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
+		g.cfg.Logger.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
 		return
 	}
 
@@ -415,7 +413,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 
 	err = wsConn.registerDesc()
 	if err != nil {
-		log.Warn("Error On RegisterDesc", zap.Error(err))
+		g.cfg.Logger.Warn("Error On RegisterDesc", zap.Error(err))
 	}
 }
 
@@ -423,7 +421,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 	ms = ms[:0]
 	ms, err = wc.read(ms)
 	if err != nil {
-		if ce := log.Check(log.DebugLevel, "Error in websocketReadPump"); ce != nil {
+		if ce := g.cfg.Logger.Check(log.DebugLevel, "Error in websocketReadPump"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),
@@ -440,7 +438,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 		case ws.OpPing:
 			err = wc.write(ws.OpPong, ms[idx].Payload)
 			if err != nil {
-				log.Warn("Error On Write OpPing", zap.Error(err))
+				g.cfg.Logger.Warn("Error On Write OpPing", zap.Error(err))
 			}
 		case ws.OpBinary:
 			wg.Add(1)
@@ -454,7 +452,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			// remove the connection from the list
 			err = ErrOpCloseReceived
 		default:
-			log.Warn("Unknown OpCode")
+			g.cfg.Logger.Warn("Unknown OpCode")
 		}
 	}
 
@@ -468,7 +466,7 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 	case ws.OpBinary, ws.OpText:
 		err = wr.wc.write(wr.opCode, wr.payload)
 		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error in websocketWritePump"); ce != nil {
+			if ce := g.cfg.Logger.Check(log.DebugLevel, "Error in websocketWritePump"); ce != nil {
 				ce.Write(zap.Error(err), zap.Uint64("ConnID", wr.wc.connID))
 			}
 		} else {

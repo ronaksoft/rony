@@ -34,6 +34,7 @@ type Config struct {
 	GossipPort     int
 	AdvertisedIP   string
 	AdvertisedPort int
+	Logger         log.Logger
 }
 
 type Cluster struct {
@@ -52,6 +53,9 @@ type Cluster struct {
 }
 
 func New(dataPath string, cfg Config) *Cluster {
+	if cfg.Logger == nil {
+		cfg.Logger = log.DefaultLogger
+	}
 	if cfg.GossipPort == 0 {
 		cfg.GossipPort = 7946
 	}
@@ -96,7 +100,7 @@ func (c *Cluster) startGossip() error {
 	conf.AdvertiseAddr = c.cfg.AdvertisedIP
 	conf.AdvertisePort = c.cfg.AdvertisedPort
 	if s, err := memberlist.Create(conf); err != nil {
-		log.Warn("Error On Creating MemberList", zap.Error(err))
+		c.cfg.Logger.Warn("Error On Creating MemberList", zap.Error(err))
 
 		return err
 	} else {
@@ -109,7 +113,7 @@ func (c *Cluster) startGossip() error {
 func (c *Cluster) addMember(n *memberlist.Node) {
 	cm, err := newMember(n)
 	if err != nil {
-		log.Warn("Error On Cluster Node Add", zap.Error(err))
+		c.cfg.Logger.Warn("Error On Cluster Node Add", zap.Error(err))
 
 		return
 	}
@@ -133,7 +137,7 @@ func (c *Cluster) removeMember(n *memberlist.Node) {
 	en := msg.PoolEdgeNode.Get()
 	defer msg.PoolEdgeNode.Put(en)
 	if err := extractNode(n, en); err != nil {
-		log.Warn("Error On Cluster Node Update", zap.Error(err))
+		c.cfg.Logger.Warn("Error On Cluster Node Update", zap.Error(err))
 
 		return
 	}
@@ -181,7 +185,7 @@ func (c *Cluster) Leave() error {
 func (c *Cluster) Shutdown() {
 	// Shutdown gossip
 	if err := c.gossip.Shutdown(); err != nil {
-		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
+		c.cfg.Logger.Warn("Error On Shutdown (Gossip)", zap.Error(err))
 	}
 }
 
