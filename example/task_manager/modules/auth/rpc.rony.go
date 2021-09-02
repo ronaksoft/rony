@@ -470,3 +470,7 @@ func RegisterAuthCli(h IAuthCli, c edgec.Client, rootCmd *cobra.Command) {
 }
 
 var _ = bytes.MinRead
+
+func init() {
+
+}

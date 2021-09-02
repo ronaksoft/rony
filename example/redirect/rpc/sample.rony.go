@@ -449,3 +449,7 @@ func (c *SampleClient) InfoWithServerRedirect(req *InfoRequest, kvs ...*rony.Key
 }
 
 var _ = bytes.MinRead
+
+func init() {
+
+}

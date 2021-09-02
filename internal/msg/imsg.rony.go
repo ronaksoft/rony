@@ -8,6 +8,7 @@ package msg
 import (
 	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
+	di "github.com/ronaksoft/rony/di"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -627,4 +628,9 @@ func (r *PageLocalRepo) Iter(
 	return r.s.View(func(txn *rony.StoreTxn) error {
 		return r.IterWithTxn(txn, alloc, pk, ito, cb)
 	})
+}
+
+func init() {
+	di.MustProvide(NewPageLocalRepo)
+
 }

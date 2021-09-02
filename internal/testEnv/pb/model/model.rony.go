@@ -8,6 +8,7 @@ package model
 import (
 	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
+	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
@@ -2184,4 +2185,19 @@ func (r *Model3GlobalRepo) List(pk Model3PartitionKey, limit uint) ([]*Model3, e
 	err = iter.Close()
 
 	return res, err
+}
+
+func init() {
+	di.MustProvide(NewModel1LocalRepo)
+
+	di.MustProvide(NewModel1GlobalRepo)
+
+	di.MustProvide(NewModel2LocalRepo)
+
+	di.MustProvide(NewModel2GlobalRepo)
+
+	di.MustProvide(NewModel3LocalRepo)
+
+	di.MustProvide(NewModel3GlobalRepo)
+
 }

@@ -8,6 +8,7 @@ package task
 import (
 	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
+	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
@@ -455,4 +456,9 @@ func (r *TaskLocalRepo) ListByUsername(username string, lo *store.ListOption, co
 	}
 
 	return res, nil
+}
+
+func init() {
+	di.MustProvide(NewTaskLocalRepo)
+
 }

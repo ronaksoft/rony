@@ -24,18 +24,18 @@ const (
 )
 
 type Generator struct {
-	p         *protogen.Plugin
-	f         *protogen.File
-	g         *protogen.GeneratedFile
-	initBlock *strings.Builder
+	p             *protogen.Plugin
+	f             *protogen.File
+	g             *protogen.GeneratedFile
+	initFuncBlock *strings.Builder
 }
 
 func New(p *protogen.Plugin, f *protogen.File, g *protogen.GeneratedFile) *Generator {
 	return &Generator{
-		p:         p,
-		f:         f,
-		g:         g,
-		initBlock: &strings.Builder{},
+		p:             p,
+		f:             f,
+		g:             g,
+		initFuncBlock: &strings.Builder{},
 	}
 }
 
@@ -49,6 +49,8 @@ func (g *Generator) Generate() {
 		if !arg.IsAggregate && !arg.IsSingleton {
 			continue
 		}
+		validLocalRepo := true
+		validGlobalRepo := true
 
 		switch arg.LocalRepo {
 		case "store":
@@ -60,6 +62,7 @@ func (g *Generator) Generate() {
 			cql.GenerateCQL(cql.New(g.f, cqlGen, localRepoPrefix), arg)
 			cql.GenerateGo(cql.New(g.f, g.g, localRepoPrefix), arg)
 		default:
+			validLocalRepo = false
 		}
 
 		switch arg.GlobalRepo {
@@ -69,7 +72,35 @@ func (g *Generator) Generate() {
 			}
 			cql.GenerateCQL(cql.New(g.f, cqlGen, GlobalRepoPrefix), arg)
 			cql.GenerateGo(cql.New(g.f, g.g, GlobalRepoPrefix), arg)
+
 		default:
+			validGlobalRepo = false
 		}
+		if validLocalRepo {
+			if arg.IsAggregate || arg.IsSingleton {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/di"})
+				g.appendToInit(fmt.Sprintf("di.MustProvide(New%sLocalRepo)\n", arg.Name()))
+			}
+		}
+		if validGlobalRepo {
+			if arg.IsAggregate {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/di"})
+				g.appendToInit(fmt.Sprintf("di.MustProvide(New%sGlobalRepo)\n", arg.Name()))
+			}
+		}
+
 	}
+
+	if g.initFuncBlock.Len() > 0 {
+		g.g.P("// register provider constructors for dependency injection")
+		g.g.P("func init() {")
+		g.g.P(g.initFuncBlock.String())
+		g.g.P("}")
+	}
+
+}
+
+func (g *Generator) appendToInit(x string) {
+	g.initFuncBlock.WriteString(x)
+	g.initFuncBlock.WriteRune('\n')
 }

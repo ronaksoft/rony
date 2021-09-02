@@ -901,3 +901,7 @@ func RegisterTaskManagerCli(h ITaskManagerCli, c edgec.Client, rootCmd *cobra.Co
 }
 
 var _ = bytes.MinRead
+
+func init() {
+
+}

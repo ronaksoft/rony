@@ -8,6 +8,7 @@ package auth
 import (
 	bytes "bytes"
 	rony "github.com/ronaksoft/rony"
+	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
@@ -793,4 +794,11 @@ func (r *SessionLocalRepo) ListByUsername(username string, lo *store.ListOption,
 	}
 
 	return res, nil
+}
+
+func init() {
+	di.MustProvide(NewUserLocalRepo)
+
+	di.MustProvide(NewSessionLocalRepo)
+
 }

@@ -21,6 +21,7 @@ type Generator struct {
 	f   *protogen.File
 	g   *protogen.GeneratedFile
 	opt *codegen.PluginOptions
+	initFuncBlock *strings.Builder
 }
 
 func New(f *protogen.File, g *protogen.GeneratedFile, options *codegen.PluginOptions) *Generator {
@@ -28,6 +29,7 @@ func New(f *protogen.File, g *protogen.GeneratedFile, options *codegen.PluginOpt
 		f:   f,
 		g:   g,
 		opt: options,
+		initFuncBlock: &strings.Builder{},
 	}
 }
 
@@ -43,8 +45,8 @@ func (g *Generator) Generate() {
 	}
 
 	g.g.P("var _ = pools.Imported")
-	initFunc := &strings.Builder{}
-	initFunc.WriteString("func init() {\n")
+
+
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(m).With(g.f)
 		for _, f := range arg.Fields {
@@ -52,7 +54,7 @@ func (g *Generator) Generate() {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
 			}
 		}
-		initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", arg.C, arg.Name()))
+		g.appendToInit(fmt.Sprintf("registry.RegisterConstructor(%d, %q)", arg.C, arg.Name()))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genClone").Parse(genClone)), arg))
@@ -71,14 +73,17 @@ func (g *Generator) Generate() {
 			if m.Input.Pkg() != "" {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 			}
-			initFunc.WriteString(fmt.Sprintf("registry.RegisterConstructor(%d, %q)\n", m.C, m.Fullname()))
+			g.appendToInit(fmt.Sprintf("registry.RegisterConstructor(%d, %q)", m.C, m.Fullname()))
 			g.g.P("const C_", m.Fullname(), " int64 = ", fmt.Sprintf("%d", m.C))
 		}
 	}
-	initFunc.WriteString("}")
-	g.g.P("")
-	g.g.P(initFunc.String())
-	g.g.P()
+
+	if g.initFuncBlock.Len() > 0 {
+		g.g.P("// register constructors of the messages to the registry package")
+		g.g.P("func init() {")
+		g.g.P(g.initFuncBlock.String())
+		g.g.P("}")
+	}
 }
 
 func (g *Generator) Exec(t *template.Template, v interface{}) string {
@@ -88,6 +93,11 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	}
 
 	return sb.String()
+}
+
+func (g *Generator) appendToInit(x string) {
+	g.initFuncBlock.WriteString(x)
+	g.initFuncBlock.WriteRune('\n')
 }
 
 const genPool = `

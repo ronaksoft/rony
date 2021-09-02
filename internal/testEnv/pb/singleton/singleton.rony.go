@@ -155,3 +155,7 @@ func init() {
 }
 
 var _ = bytes.MinRead
+
+func init() {
+
+}

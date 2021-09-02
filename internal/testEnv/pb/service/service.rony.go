@@ -1458,3 +1458,7 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 }
 
 var _ = bytes.MinRead
+
+func init() {
+
+}
