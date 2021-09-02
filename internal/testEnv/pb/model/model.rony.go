@@ -232,10 +232,12 @@ func (x *Model3) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Model3, x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(2074613123, "Model1")
 	registry.RegisterConstructor(3802219577, "Model2")
 	registry.RegisterConstructor(2510714031, "Model3")
+
 }
 
 var _ = bytes.MinRead
@@ -2187,6 +2189,7 @@ func (r *Model3GlobalRepo) List(pk Model3PartitionKey, limit uint) ([]*Model3, e
 	return res, err
 }
 
+// register provider constructors for dependency injection
 func init() {
 	di.MustProvide(NewModel1LocalRepo)
 

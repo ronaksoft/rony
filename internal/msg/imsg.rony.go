@@ -270,11 +270,13 @@ func (x *Page) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(3721890413, "GetPage")
 	registry.RegisterConstructor(3271476222, "TunnelMessage")
 	registry.RegisterConstructor(999040174, "EdgeNode")
 	registry.RegisterConstructor(3023575326, "Page")
+
 }
 
 var _ = bytes.MinRead
@@ -630,6 +632,7 @@ func (r *PageLocalRepo) Iter(
 	})
 }
 
+// register provider constructors for dependency injection
 func init() {
 	di.MustProvide(NewPageLocalRepo)
 

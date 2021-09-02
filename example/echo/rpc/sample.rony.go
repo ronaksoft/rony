@@ -145,10 +145,12 @@ func (x *EchoResponse) PushToContext(ctx *edge.RequestCtx) {
 
 const C_SampleEcho int64 = 3852587671
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(1904100324, "EchoRequest")
 	registry.RegisterConstructor(4192619139, "EchoResponse")
 	registry.RegisterConstructor(3852587671, "SampleEcho")
+
 }
 
 var _ = tools.TimeUnix()
@@ -366,7 +368,3 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

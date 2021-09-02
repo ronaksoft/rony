@@ -621,6 +621,7 @@ func (x *HttpBody) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(535232465, "MessageEnvelope")
 	registry.RegisterConstructor(4276272820, "KeyValue")
@@ -632,10 +633,7 @@ func init() {
 	registry.RegisterConstructor(362407405, "GetNodes")
 	registry.RegisterConstructor(3267106379, "GetAllNodes")
 	registry.RegisterConstructor(3032622721, "HttpBody")
+
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

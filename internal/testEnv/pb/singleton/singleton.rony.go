@@ -149,13 +149,11 @@ func (x *Single2) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Single2, x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(683727308, "Single1")
 	registry.RegisterConstructor(2982774902, "Single2")
+
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

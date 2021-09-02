@@ -144,11 +144,13 @@ func (x *InfoResponse) PushToContext(ctx *edge.RequestCtx) {
 const C_SampleInfoWithClientRedirect int64 = 1298563006
 const C_SampleInfoWithServerRedirect int64 = 1831149695
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(1180205313, "InfoRequest")
 	registry.RegisterConstructor(699497142, "InfoResponse")
 	registry.RegisterConstructor(1298563006, "SampleInfoWithClientRedirect")
 	registry.RegisterConstructor(1831149695, "SampleInfoWithServerRedirect")
+
 }
 
 var _ = tools.TimeUnix()
@@ -449,7 +451,3 @@ func (c *SampleClient) InfoWithServerRedirect(req *InfoRequest, kvs ...*rony.Key
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

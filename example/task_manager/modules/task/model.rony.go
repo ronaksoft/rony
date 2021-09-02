@@ -86,8 +86,10 @@ func (x *Task) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Task, x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(4065096731, "Task")
+
 }
 
 var _ = bytes.MinRead
@@ -458,6 +460,7 @@ func (r *TaskLocalRepo) ListByUsername(username string, lo *store.ListOption, co
 	return res, nil
 }
 
+// register provider constructors for dependency injection
 func init() {
 	di.MustProvide(NewTaskLocalRepo)
 

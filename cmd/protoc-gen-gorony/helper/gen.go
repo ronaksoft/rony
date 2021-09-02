@@ -18,17 +18,17 @@ import (
 */
 
 type Generator struct {
-	f   *protogen.File
-	g   *protogen.GeneratedFile
-	opt *codegen.PluginOptions
+	f             *protogen.File
+	g             *protogen.GeneratedFile
+	opt           *codegen.PluginOptions
 	initFuncBlock *strings.Builder
 }
 
 func New(f *protogen.File, g *protogen.GeneratedFile, options *codegen.PluginOptions) *Generator {
 	return &Generator{
-		f:   f,
-		g:   g,
-		opt: options,
+		f:             f,
+		g:             g,
+		opt:           options,
 		initFuncBlock: &strings.Builder{},
 	}
 }
@@ -45,7 +45,6 @@ func (g *Generator) Generate() {
 	}
 
 	g.g.P("var _ = pools.Imported")
-
 
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(m).With(g.f)

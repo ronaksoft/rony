@@ -450,6 +450,7 @@ const C_TaskManagerGet int64 = 1803980423
 const C_TaskManagerDelete int64 = 2437835420
 const C_TaskManagerList int64 = 1736909319
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(2229707971, "CreateRequest")
 	registry.RegisterConstructor(3359917651, "GetRequest")
@@ -462,6 +463,7 @@ func init() {
 	registry.RegisterConstructor(1803980423, "TaskManagerGet")
 	registry.RegisterConstructor(2437835420, "TaskManagerDelete")
 	registry.RegisterConstructor(1736909319, "TaskManagerList")
+
 }
 
 var _ = tools.TimeUnix()
@@ -901,7 +903,3 @@ func RegisterTaskManagerCli(h ITaskManagerCli, c edgec.Client, rootCmd *cobra.Co
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

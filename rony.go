@@ -101,7 +101,6 @@ const (
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
 
-
 // Tunnel provides the communication channel between edge servers. Tunnel is similar to gateway.Gateway in functionalities.
 // However, Tunnel is optimized for inter-communication between edge servers, and Gateway is optimized for client-server communications.
 type Tunnel interface {
@@ -110,7 +109,6 @@ type Tunnel interface {
 	Shutdown()
 	Addr() []string
 }
-
 
 type (
 	LocalDB  = badger.DB
@@ -123,7 +121,6 @@ type Store interface {
 	LocalDB() *LocalDB
 	Shutdown()
 }
-
 
 // Conn defines the Connection interface
 type Conn interface {
@@ -159,4 +156,3 @@ func SetLogLevel(l LogLevel) {
 func RegisterPrometheus(registerer prometheus.Registerer) {
 	metrics.Register(registerer)
 }
-

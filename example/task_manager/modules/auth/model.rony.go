@@ -143,9 +143,11 @@ func (x *Session) PushToContext(ctx *edge.RequestCtx) {
 	ctx.PushMessage(C_Session, x)
 }
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(765557111, "User")
 	registry.RegisterConstructor(536472648, "Session")
+
 }
 
 var _ = bytes.MinRead
@@ -796,6 +798,7 @@ func (r *SessionLocalRepo) ListByUsername(username string, lo *store.ListOption,
 	return res, nil
 }
 
+// register provider constructors for dependency injection
 func init() {
 	di.MustProvide(NewUserLocalRepo)
 

@@ -5,6 +5,7 @@
       <w>cors</w>
       <w>ehsan</w>
       <w>fasthttp</w>
+      <w>gobwas</w>
       <w>grpc</w>
       <w>moosa</w>
       <w>nats</w>
@@ -13,6 +14,7 @@
       <w>ronak</w>
       <w>ronaksoft</w>
       <w>rony</w>
+      <w>valyala</w>
       <w>websocket</w>
     </words>
   </dictionary>

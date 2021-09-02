@@ -546,6 +546,7 @@ const C_SampleEchoTunnel int64 = 2071541407
 const C_SampleEchoInternal int64 = 3655883317
 const C_SampleEchoDelay int64 = 1737692531
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(3359917651, "GetRequest")
 	registry.RegisterConstructor(2891601577, "GetResponse")
@@ -561,6 +562,7 @@ func init() {
 	registry.RegisterConstructor(2071541407, "SampleEchoTunnel")
 	registry.RegisterConstructor(3655883317, "SampleEchoInternal")
 	registry.RegisterConstructor(1737692531, "SampleEchoDelay")
+
 }
 
 var _ = tools.TimeUnix()
@@ -1458,7 +1460,3 @@ func RegisterSampleCli(h ISampleCli, c edgec.Client, rootCmd *cobra.Command) {
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}

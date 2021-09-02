@@ -206,12 +206,14 @@ func (x *Authorization) PushToContext(ctx *edge.RequestCtx) {
 const C_AuthRegister int64 = 2228369460
 const C_AuthLogin int64 = 2587620888
 
+// register constructors of the messages to the registry package
 func init() {
 	registry.RegisterConstructor(913053684, "RegisterRequest")
 	registry.RegisterConstructor(3796676066, "LoginRequest")
 	registry.RegisterConstructor(3373514778, "Authorization")
 	registry.RegisterConstructor(2228369460, "AuthRegister")
 	registry.RegisterConstructor(2587620888, "AuthLogin")
+
 }
 
 var _ = tools.TimeUnix()
@@ -470,7 +472,3 @@ func RegisterAuthCli(h IAuthCli, c edgec.Client, rootCmd *cobra.Command) {
 }
 
 var _ = bytes.MinRead
-
-func init() {
-
-}
