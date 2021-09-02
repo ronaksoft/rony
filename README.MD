@@ -103,3 +103,6 @@ scenarios and will be cited.
 - [ ] Auto-generate test units
 - [ ] Implement scenario tests using `edgetest` framework
 - [ ] Write Examples and Tutorials
+- [ ] Helper functions for dependency injection
+- [ ] Move store package to internal and provide required interfaces and helper through rony package
+- [ ] Update the code generator templates to handle new structure.
