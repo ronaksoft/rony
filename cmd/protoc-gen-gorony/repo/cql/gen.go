@@ -1,6 +1,7 @@
 package cql
 
 import (
+	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"github.com/ronaksoft/rony/tools"
@@ -19,33 +20,40 @@ import (
 */
 
 type Generator struct {
-	f *protogen.File
-	g *protogen.GeneratedFile
+	f          *protogen.File
+	g          *protogen.GeneratedFile
+	repoPrefix string
 }
 
-func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
+func New(f *protogen.File, g *protogen.GeneratedFile, repoPrefix string) *Generator {
 	return &Generator{
-		f: f,
-		g: g,
+		f:          f,
+		g:          g,
+		repoPrefix: repoPrefix,
 	}
 }
 
 func GenerateGo(g *Generator, arg codegen.MessageArg) {
-	if arg.IsAggregate {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
-
-		g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(helperFuncs).Parse(genPartKey)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genGlobalRepo").Funcs(helperFuncs).Parse(genGlobalRepo)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(helperFuncs).Parse(genCRUD)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(helperFuncs).Parse(genListByPK)), arg))
+	if !arg.IsAggregate {
+		return
 	}
+	helperFunctions["RepoName"] = func(name string) string {
+		return fmt.Sprintf("%s%sRepo", name, tools.ToCamel(g.repoPrefix))
+	}
+
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
+
+	g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(helperFunctions).Parse(genPartKey)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(helperFunctions).Parse(genCRUD)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(helperFunctions).Parse(genListByPK)), arg))
 }
 
 func GenerateCQL(g *Generator, arg codegen.MessageArg) {
 	if arg.IsAggregate {
-		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(helperFuncs).Parse(genCQL)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(helperFunctions).Parse(genCQL)), arg))
 	}
 }
 
@@ -58,7 +66,7 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-var helperFuncs = map[string]interface{}{
+var helperFunctions = map[string]interface{}{
 	"Singular": func(x string) string {
 		return inflection.Singular(x)
 	},
@@ -207,8 +215,8 @@ PRIMARY KEY {{PrimaryKey .}}
 {{ end }}
 `
 
-const genGlobalRepo = `
-{{$repoName := print .Name "GlobalRepo"}}
+const genRepo = `
+{{$repoName := RepoName .Name}}
 type {{$repoName}} struct {
 	qp map[string]*pools.QueryPool
 	t *table.Table
@@ -305,7 +313,7 @@ func ({{MVName .}}PartKey) make{{$modelName}}Private() {}
 `
 
 const genCRUD = `
-{{$repoName := print .Name "GlobalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) Insert(m *{{$modelName}}, replace bool) error {
 	buf := pools.Buffer.FromProto(m)
@@ -388,7 +396,7 @@ func (r *{{$repoName}}) GetBy{{MVAlias . ""}} ({{FuncArgs . ""}}, m *{{$modelNam
 `
 
 const genListByPK = `
-{{$repoName := print .Name "GlobalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) List(pk {{$modelName}}PartitionKey, limit uint) ([]*{{$modelName}}, error) {
 	var (

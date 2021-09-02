@@ -22,25 +22,20 @@ import (
 */
 
 type Generator struct {
-	f *protogen.File
-	g *protogen.GeneratedFile
+	f          *protogen.File
+	g          *protogen.GeneratedFile
+	repoPrefix string
 }
 
-func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
+func New(f *protogen.File, g *protogen.GeneratedFile, repoPrefix string) *Generator {
 	return &Generator{
-		f: f,
-		g: g,
+		f:          f,
+		g:          g,
+		repoPrefix: repoPrefix,
 	}
 }
 
-var singletonFuncs = map[string]interface{}{
-	"DBKey": func(arg codegen.MessageArg) string {
-		return fmt.Sprintf("'S', C_%s",
-			arg.Name(),
-		)
-	},
-}
-var aggregateFuncs = map[string]interface{}{
+var helperFunctions = map[string]interface{}{
 	"Singular": func(x string) string {
 		return inflection.Singular(x)
 	},
@@ -95,6 +90,11 @@ var aggregateFuncs = map[string]interface{}{
 			nc = codegen.LowerCamelCase
 		}
 		return m.NameTypes(codegen.PropFilterCKs, prefix, nc, codegen.LangGo)
+	},
+	"SingletonDBKey": func(arg codegen.MessageArg) string {
+		return fmt.Sprintf("'S', C_%s",
+			arg.Name(),
+		)
 	},
 	"DBKey": func(m codegen.ModelKey, prefix string) string {
 		nc := codegen.None
@@ -175,26 +175,34 @@ var aggregateFuncs = map[string]interface{}{
 }
 
 func Generate(g *Generator, arg codegen.MessageArg) {
+	if !arg.IsSingleton && !arg.IsAggregate {
+		return
+	}
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+
+	helperFunctions["RepoName"] = func(name string) string {
+		return fmt.Sprintf("%s%sRepo", name, tools.ToCamel(g.repoPrefix))
+	}
+	helperFunctions["SingletonName"] = func(name string) string {
+		return fmt.Sprintf("%s%sSingleton", name, tools.ToCamel(g.repoPrefix))
+	}
+
 	if arg.IsSingleton {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-		g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(singletonFuncs).Parse(genSingleton)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(helperFunctions).Parse(genSingleton)), arg))
 	} else if arg.IsAggregate {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-		g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(aggregateFuncs).Parse(genHelpers)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(aggregateFuncs).Parse(genPrimaryKey)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genLocalRepo").Funcs(aggregateFuncs).Parse(genLocalRepo)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(aggregateFuncs).Parse(genCreate)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(aggregateFuncs).Parse(genUpdate)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(aggregateFuncs).Parse(genSave)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(aggregateFuncs).Parse(genRead)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(aggregateFuncs).Parse(genDelete)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genList").Funcs(aggregateFuncs).Parse(genList)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(aggregateFuncs).Parse(genIter)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(aggregateFuncs).Parse(genListByIndex)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(helperFunctions).Parse(genHelpers)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(helperFunctions).Parse(genPrimaryKey)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(helperFunctions).Parse(genCreate)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(helperFunctions).Parse(genUpdate)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(helperFunctions).Parse(genSave)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(helperFunctions).Parse(genRead)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(helperFunctions).Parse(genDelete)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genList").Funcs(helperFunctions).Parse(genList)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(helperFunctions).Parse(genIter)), arg))
+		g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(helperFunctions).Parse(genListByIndex)), arg))
 	}
 }
 
@@ -208,7 +216,7 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 
 const genSingleton = `
 {{$model := .}}
-{{$repoName := print .Name "LocalSingleton"}}
+{{$repoName := SingletonName .Name}}
 {{$modelName := .Name}}
 type {{$repoName}} struct {
     s rony.Store
@@ -226,7 +234,7 @@ func (r *{{$repoName}}) SaveWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator,
 		defer alloc.ReleaseAll()
 	}
 	
-	err = store.Marshal(txn, alloc, m, {{ DBKey . }})
+	err = store.Marshal(txn, alloc, m, {{ SingletonDBKey . }})
 	if err != nil {
 		return 
 	}
@@ -248,7 +256,7 @@ func (r *{{$repoName}}) ReadWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator,
 		defer alloc.ReleaseAll()
 	}
 	
-	err := store.Unmarshal(txn, alloc, m, {{ DBKey . }})
+	err := store.Unmarshal(txn, alloc, m, {{ SingletonDBKey . }})
 	if err != nil {
 		return nil, err 
 	}
@@ -274,7 +282,7 @@ func (r *{{$repoName}}) Read (m *{{$modelName}}) (*{{$modelName}}, error) {
 
 const genHelpers = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 {{- range .Fields }}
 	{{- if eq .Cardinality "repeated" }}
@@ -315,8 +323,8 @@ const genHelpers = `
 {{ end }}
 `
 
-const genLocalRepo = `
-{{$repoName := print .Name "LocalRepo"}}
+const genRepo = `
+{{$repoName := RepoName .Name}}
 type {{$repoName}} struct {
     s rony.Store
 }
@@ -331,7 +339,7 @@ func New{{$repoName}}(s rony.Store) *{{$repoName}} {
 
 const genCreate = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if alloc == nil {
@@ -392,7 +400,7 @@ func (r *{{$repoName}}) Create(m *{{$modelName}}) error {
 
 const genUpdate = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) UpdateWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) error {
 	if alloc == nil {
@@ -426,7 +434,7 @@ func (r *{{$repoName}}) Update ({{FuncArgs .Table ""}}, m *{{$modelName}}) error
 
 const genSave = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) SaveWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
 	if store.Exists(txn, alloc, {{DBKey .Table "m."}}) {
@@ -448,7 +456,7 @@ func (r *{{$repoName}}) Save (m *{{$modelName}}) error {
 
 const genRead = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
 	if alloc == nil {
@@ -513,7 +521,7 @@ func (r *{{$repoName}}) ReadBy{{MVAlias . ""}}({{FuncArgs . ""}}, m *{{$modelNam
 
 const genDelete = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}) error {
 	if alloc == nil {
@@ -600,7 +608,7 @@ func ({{MVName .}}PK) make{{$modelName}}Private() {}
 
 const genIter = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) IterWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
@@ -675,7 +683,7 @@ func (r *{{$repoName}}) Iter(
 
 const genList = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ListWithTxn(
 	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
@@ -763,7 +771,7 @@ func (r *{{$repoName}}) List(
 
 const genListByIndex = `
 {{$model := .}}
-{{$repoName := print .Name "LocalRepo"}}
+{{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 {{ range .Fields }}
 {{ if .HasIndex }}

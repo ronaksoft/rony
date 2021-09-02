@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
@@ -25,6 +26,10 @@ var (
 
 type Store struct {
 	db *badger.DB
+}
+
+func init() {
+	di.MustProvide(New)
 }
 
 func New(cfg Config) (*Store, error) {

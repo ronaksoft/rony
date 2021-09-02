@@ -6,6 +6,7 @@ import (
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/store"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
+	"strings"
 )
 
 /*
@@ -17,19 +18,24 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+const (
+	localRepoPrefix  = "Local"
+	GlobalRepoPrefix = "Global"
+)
+
 type Generator struct {
-	p      *protogen.Plugin
-	f      *protogen.File
-	g      *protogen.GeneratedFile
-	remote string
-	local  string
+	p         *protogen.Plugin
+	f         *protogen.File
+	g         *protogen.GeneratedFile
+	initBlock *strings.Builder
 }
 
 func New(p *protogen.Plugin, f *protogen.File, g *protogen.GeneratedFile) *Generator {
 	return &Generator{
-		p: p,
-		f: f,
-		g: g,
+		p:         p,
+		f:         f,
+		g:         g,
+		initBlock: &strings.Builder{},
 	}
 }
 
@@ -40,21 +46,30 @@ func (g *Generator) Generate() {
 	var cqlGen *protogen.GeneratedFile
 	for _, m := range g.f.Messages {
 		arg := codegen.GetMessageArg(m).With(g.f)
-		if arg.IsAggregate || arg.IsSingleton {
+		if !arg.IsAggregate && !arg.IsSingleton {
+			continue
+		}
 
-			for _, repo := range []string{arg.LocalRepo, arg.GlobalRepo} {
-				switch repo {
-				case "store":
-					store.Generate(store.New(g.f, g.g), arg)
-				case "cql":
-					if cqlGen == nil {
-						cqlGen = g.p.NewGeneratedFile(fmt.Sprintf("%s.cql", g.f.GeneratedFilenamePrefix), g.f.GoImportPath)
-					}
-					cql.GenerateCQL(cql.New(g.f, cqlGen), arg)
-					cql.GenerateGo(cql.New(g.f, g.g), arg)
-				default:
-				}
+		switch arg.LocalRepo {
+		case "store":
+			store.Generate(store.New(g.f, g.g, localRepoPrefix), arg)
+		case "cql":
+			if cqlGen == nil {
+				cqlGen = g.p.NewGeneratedFile(fmt.Sprintf("%s.cql", g.f.GeneratedFilenamePrefix), g.f.GoImportPath)
 			}
+			cql.GenerateCQL(cql.New(g.f, cqlGen, localRepoPrefix), arg)
+			cql.GenerateGo(cql.New(g.f, g.g, localRepoPrefix), arg)
+		default:
+		}
+
+		switch arg.GlobalRepo {
+		case "cql":
+			if cqlGen == nil {
+				cqlGen = g.p.NewGeneratedFile(fmt.Sprintf("%s.cql", g.f.GeneratedFilenamePrefix), g.f.GoImportPath)
+			}
+			cql.GenerateCQL(cql.New(g.f, cqlGen, GlobalRepoPrefix), arg)
+			cql.GenerateGo(cql.New(g.f, g.g, GlobalRepoPrefix), arg)
+		default:
 		}
 	}
 }
