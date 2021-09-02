@@ -28,8 +28,19 @@ type Store struct {
 	db *badger.DB
 }
 
+var (
+	defaultStore *Store
+)
+
 func init() {
-	di.MustProvide(New)
+	// since dig package does not support singleton providers yet, we write
+	// this custom function to handle singleton store provider
+	di.MustProvide(func(cfg Config) (*Store, error) {
+		if defaultStore != nil {
+			return defaultStore, nil
+		}
+		return New(cfg)
+	})
 }
 
 func New(cfg Config) (*Store, error) {
