@@ -11,7 +11,7 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/genny/v2 v2.0.6
 	github.com/gobuffalo/here v0.6.2 // indirect
-	github.com/gobuffalo/plush/v4 v4.1.5
+	github.com/gobuffalo/plush/v4 v4.1.6
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.0.3
 	github.com/gocql/gocql v0.0.0-20200131111108-92af2e088537
@@ -108,12 +108,10 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/text v0.3.6 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect

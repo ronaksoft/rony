@@ -1,10 +1,12 @@
 package rony
 
 import (
+	"github.com/dgraph-io/badger/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/log"
 	"mime/multipart"
+	"net"
 )
 
 /*
@@ -15,6 +17,113 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+type Cluster interface {
+	Start() error
+	Shutdown()
+	Join(addr ...string) (int, error)
+	Leave() error
+	Members() []ClusterMember
+	MembersByReplicaSet(replicaSets ...uint64) []ClusterMember
+	MemberByID(string) ClusterMember
+	MemberByHash(uint64) ClusterMember
+	ReplicaSet() uint64
+	ServerID() string
+	TotalReplicas() int
+	Addr() string
+	SetGatewayAddrs(hostPorts []string) error
+	SetTunnelAddrs(hostPorts []string) error
+	Subscribe(d ClusterDelegate)
+}
+
+type ClusterMember interface {
+	Proto(info *Edge) *Edge
+	ServerID() string
+	ReplicaSet() uint64
+	GatewayAddr() []string
+	TunnelAddr() []string
+	Dial() (net.Conn, error)
+}
+
+type ClusterDelegate interface {
+	OnJoin(hash uint64)
+	OnLeave(hash uint64)
+}
+
+// Gateway defines the gateway interface where clients could connect
+// and communicate with the edge server
+type Gateway interface {
+	Start()
+	Run()
+	Shutdown()
+	GetConn(connID uint64) Conn
+	Addr() []string
+	Protocol() GatewayProtocol
+}
+
+type GatewayProtocol int32
+
+const (
+	Undefined GatewayProtocol = 0
+	Dummy     GatewayProtocol = 1 << iota
+	Http
+	Websocket
+	Quic
+	Grpc
+	TCP = Http | Websocket // Http & Websocket
+)
+
+var protocolNames = map[GatewayProtocol]string{
+	Undefined: "Undefined",
+	Dummy:     "Dummy",
+	Http:      "Http",
+	Websocket: "Websocket",
+	Quic:      "Quic",
+	Grpc:      "Grpc",
+	TCP:       "TCP",
+}
+
+func (p GatewayProtocol) String() string {
+	return protocolNames[p]
+}
+
+// HTTP methods were copied from net/http.
+const (
+	MethodWild    = "*"
+	MethodGet     = "GET"     // RFC 7231, 4.3.1
+	MethodHead    = "HEAD"    // RFC 7231, 4.3.2
+	MethodPost    = "POST"    // RFC 7231, 4.3.3
+	MethodPut     = "PUT"     // RFC 7231, 4.3.4
+	MethodPatch   = "PATCH"   // RFC 5789
+	MethodDelete  = "DELETE"  // RFC 7231, 4.3.5
+	MethodConnect = "CONNECT" // RFC 7231, 4.3.6
+	MethodOptions = "OPTIONS" // RFC 7231, 4.3.7
+	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
+)
+
+
+// Tunnel provides the communication channel between edge servers. Tunnel is similar to gateway.Gateway in functionalities.
+// However, Tunnel is optimized for inter-communication between edge servers, and Gateway is optimized for client-server communications.
+type Tunnel interface {
+	Start()
+	Run()
+	Shutdown()
+	Addr() []string
+}
+
+
+type (
+	LocalDB  = badger.DB
+	StoreTxn = badger.Txn
+)
+
+type Store interface {
+	View(fn func(*StoreTxn) error) error
+	Update(fn func(*StoreTxn) error) error
+	LocalDB() *LocalDB
+	Shutdown()
+}
+
 
 // Conn defines the Connection interface
 type Conn interface {
@@ -50,3 +159,4 @@ func SetLogLevel(l LogLevel) {
 func RegisterPrometheus(registerer prometheus.Registerer) {
 	metrics.Register(registerer)
 }
+
