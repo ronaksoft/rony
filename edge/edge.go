@@ -46,7 +46,7 @@ type Server struct {
 	// Edge components
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
-	store      rony.Store
+	store      *store.Store
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 	restMux    *restMux
@@ -138,7 +138,7 @@ func (edge *Server) Cluster() rony.Cluster {
 }
 
 // Store returns the store component of the Edge server.
-func (edge *Server) Store() rony.Store {
+func (edge *Server) Store() *store.Store {
 	return edge.store
 }
 

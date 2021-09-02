@@ -5,6 +5,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/msg"
+	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,7 +24,7 @@ type Builtin struct {
 	pageRepo *msg.PageLocalRepo
 	cluster  rony.Cluster
 	gateway  rony.Gateway
-	store    rony.Store
+	store    *store.Store
 	serverID string
 }
 

@@ -1,18 +1,17 @@
 package auth
 
 import (
-	"github.com/ronaksoft/rony"
+	store "github.com/ronaksoft/rony/store"
 )
 
 type ModuleBase struct {
 	local LocalRepos
 }
 
-func New(store rony.Store) ModuleBase {
+func New(store *store.Store) ModuleBase {
 	m := ModuleBase{
 		local: newLocalRepos(store),
 	}
-
 	return m
 }
 
@@ -29,7 +28,7 @@ type LocalRepos struct {
 	Session *SessionLocalRepo
 }
 
-func newLocalRepos(s rony.Store) LocalRepos {
+func newLocalRepos(s *store.Store) LocalRepos {
 	return LocalRepos{
 		User:    NewUserLocalRepo(s),
 		Session: NewSessionLocalRepo(s),

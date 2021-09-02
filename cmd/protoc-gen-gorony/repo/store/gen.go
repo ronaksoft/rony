@@ -223,10 +223,10 @@ const genSingleton = `
 {{$repoName := SingletonName .Name}}
 {{$modelName := .Name}}
 type {{$repoName}} struct {
-    s rony.Store
+    s *store.Store
 }
 
-func New{{$repoName}}(s rony.Store) *{{$repoName}} {
+func New{{$repoName}}(s *store.Store) *{{$repoName}} {
 	return &{{$repoName}}{
 		s: s,
 	}
@@ -330,10 +330,10 @@ const genHelpers = `
 const genRepo = `
 {{$repoName := RepoName .Name}}
 type {{$repoName}} struct {
-    s rony.Store
+    s *store.Store
 }
 
-func New{{$repoName}}(s rony.Store) *{{$repoName}} {
+func New{{$repoName}}(s *store.Store) *{{$repoName}} {
 	return &{{$repoName}}{
 		s: s,
 	}

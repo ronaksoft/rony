@@ -33,14 +33,14 @@ func (g *Generator) Generate() error {
 	g.g.P("package ", arg.PackageName)
 
 	if len(arg.LocalRepos) > 0 {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/store"})
 	}
 	if len(arg.GlobalRepos) > 0 {
 		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 	}
-	g.g.P(g.Exec(template.Must(template.New("genModuleBase").Funcs(funcs).Parse(genModuleBase)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genLocalRepos").Funcs(funcs).Parse(genLocalRepos)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genGlobalRepos").Funcs(funcs).Parse(genGlobalRepos)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genModuleBase").Funcs(helperFunctions).Parse(genModuleBase)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genLocalRepos").Funcs(helperFunctions).Parse(genLocalRepos)), arg))
+	g.g.P(g.Exec(template.Must(template.New("genGlobalRepos").Funcs(helperFunctions).Parse(genGlobalRepos)), arg))
 
 	return nil
 }
@@ -54,7 +54,7 @@ func (g *Generator) Exec(t *template.Template, v interface{}) string {
 	return sb.String()
 }
 
-var funcs = map[string]interface{}{
+var helperFunctions = map[string]interface{}{
 	"InitArgs": func(m codegen.ModuleArg) string {
 		sb := strings.Builder{}
 		cnt := 0
@@ -64,7 +64,7 @@ var funcs = map[string]interface{}{
 			}
 			switch r {
 			case "store":
-				sb.WriteString("store rony.Store")
+				sb.WriteString("store *store.Store")
 			}
 			cnt++
 		}
@@ -98,7 +98,7 @@ const genLocalRepos = `
 	{{- end -}}
 	}
 	
-	func newLocalRepos(s rony.Store) LocalRepos {
+	func newLocalRepos(s *store.Store) LocalRepos {
 		return LocalRepos {
 	{{ range .Aggregates -}}
 	{{ if ne .LocalRepo "" -}}

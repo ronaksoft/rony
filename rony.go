@@ -115,13 +115,6 @@ type (
 	StoreTxn = badger.Txn
 )
 
-type Store interface {
-	View(fn func(*StoreTxn) error) error
-	Update(fn func(*StoreTxn) error) error
-	LocalDB() *LocalDB
-	Shutdown()
-}
-
 // Conn defines the Connection interface
 type Conn interface {
 	ConnID() uint64

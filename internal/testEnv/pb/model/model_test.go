@@ -3,7 +3,6 @@ package model_test
 import (
 	"context"
 	"github.com/gocql/gocql"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/model"
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
@@ -26,7 +25,7 @@ import (
 */
 
 var (
-	sampleStore rony.Store
+	sampleStore *store.Store
 	scyllaDB    gocqlx.Session
 )
 
