@@ -39,6 +39,7 @@ func main() {
 			if pluginOpt.Module {
 				return moduleMode(plugin)
 			}
+
 			return nil
 		},
 	)
@@ -70,7 +71,6 @@ func normalMode(plugin *protogen.Plugin) error {
 		// Generate Repository functionalities
 		g3 := repo.New(plugin, protoFile, generatedFile)
 		g3.Generate()
-
 	}
 
 	return nil
@@ -78,5 +78,6 @@ func normalMode(plugin *protogen.Plugin) error {
 
 func moduleMode(plugin *protogen.Plugin) error {
 	g := module.New(plugin)
+
 	return g.Generate()
 }

@@ -31,4 +31,6 @@ var (
 	ErrNoTunnelAddrs             = fmt.Errorf("tunnel address does not found")
 	ErrRetriesExceeded           = Wrap("maximum retries exceeded")
 	ErrConnectionNotExists       = fmt.Errorf("connection does not exists")
+	ErrAlreadyExists             = fmt.Errorf("already exists")
+	ErrEmptyObject               = fmt.Errorf("empty object")
 )

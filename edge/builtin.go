@@ -35,6 +35,7 @@ func newBuiltin(edgeServer *Server) *Builtin {
 		serverID: edgeServer.GetServerID(),
 		pageRepo: msg.NewPageLocalRepo(edgeServer.Store()),
 	}
+
 	return b
 }
 
@@ -46,6 +47,7 @@ func (pm *Builtin) getNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	err := req.Unmarshal(in.Message)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
+
 		return
 	}
 
@@ -78,6 +80,7 @@ func (pm *Builtin) getAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	err := req.Unmarshal(in.Message)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
+
 		return
 	}
 

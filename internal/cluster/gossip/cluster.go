@@ -110,6 +110,7 @@ func (c *Cluster) addMember(n *memberlist.Node) {
 	cm, err := newMember(n)
 	if err != nil {
 		log.Warn("Error On Cluster Node Add", zap.Error(err))
+
 		return
 	}
 
@@ -133,6 +134,7 @@ func (c *Cluster) removeMember(n *memberlist.Node) {
 	defer msg.PoolEdgeNode.Put(en)
 	if err := extractNode(n, en); err != nil {
 		log.Warn("Error On Cluster Node Update", zap.Error(err))
+
 		return
 	}
 
@@ -164,6 +166,7 @@ func (c *Cluster) Start() error {
 			}
 		}
 	}()
+
 	return nil
 }
 
@@ -177,8 +180,7 @@ func (c *Cluster) Leave() error {
 
 func (c *Cluster) Shutdown() {
 	// Shutdown gossip
-	err := c.gossip.Shutdown()
-	if err != nil {
+	if err := c.gossip.Shutdown(); err != nil {
 		log.Warn("Error On Shutdown (Gossip)", zap.Error(err))
 	}
 }

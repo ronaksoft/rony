@@ -42,6 +42,7 @@ func (h *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+
 	return nil
 }
 
@@ -51,6 +52,7 @@ func (h *Sample) EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResp
 	res.Int = req.Int
 	res.Responder = h.ServerID
 	time.Sleep(time.Second * 1)
+
 	return nil
 }
 
@@ -59,6 +61,7 @@ func (h *Sample) EchoTunnel(ctx *edge.RequestCtx, req *EchoRequest, res *EchoRes
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+
 	return nil
 }
 
@@ -70,6 +73,7 @@ var EchoRest = edge.NewRestProxy(
 			return err
 		}
 		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+
 		return nil
 	},
 	func(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
@@ -105,6 +109,7 @@ var EchoRestBinding = edge.NewRestProxy(
 		req.Int = tools.StrToInt64(tools.GetString(conn.Get("value"), "0"))
 		req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("ts"), "0"))
 		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+
 		return nil
 	},
 	func(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
@@ -119,6 +124,7 @@ var EchoRestBinding = edge.NewRestProxy(
 					return
 				}
 				err = conn.WriteBinary(ctx.StreamID(), b)
+
 				return
 			case rony.C_Error:
 				x := &rony.Error{}

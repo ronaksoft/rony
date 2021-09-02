@@ -32,8 +32,10 @@ func (qp *QueryPool) GetQuery() *gocqlx.Queryx {
 	q, ok := qp.pool.Get().(*gocqlx.Queryx)
 	if !ok {
 		q = qp.gen()
+
 		return q
 	}
+
 	return q
 }
 

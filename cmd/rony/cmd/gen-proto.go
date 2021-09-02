@@ -41,6 +41,7 @@ var GenProtoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		return r.Run()
 	},
 }

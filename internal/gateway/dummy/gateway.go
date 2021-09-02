@@ -40,6 +40,7 @@ func New(config Config) (*Gateway, error) {
 	if config.Exposer != nil {
 		config.Exposer(g)
 	}
+
 	return g, nil
 }
 
@@ -77,10 +78,11 @@ func (g *Gateway) CloseConn(connID uint64) {
 	c := g.conns[connID]
 	delete(g.conns, connID)
 	g.connsMtx.Unlock()
-	if c != nil {
-		g.CloseHandler(c)
-		atomic.AddInt32(&g.connsTotal, -1)
+	if c == nil {
+		return
 	}
+	g.CloseHandler(c)
+	atomic.AddInt32(&g.connsTotal, -1)
 }
 
 // RPC emulates sending an RPC command to the connection. It opens a non-persistent connection if connID
@@ -94,6 +96,7 @@ func (g *Gateway) RPC(connID uint64, streamID int64, data []byte) error {
 	}
 
 	go g.MessageHandler(conn, streamID, data)
+
 	return nil
 }
 
@@ -113,6 +116,7 @@ func (g *Gateway) REST(connID uint64, method, path string, body []byte, kvs ...*
 	defer g.CloseConn(connID)
 
 	g.MessageHandler(conn, 0, nil)
+
 	return
 }
 
@@ -135,6 +139,7 @@ func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	if conn == nil {
 		return nil
 	}
+
 	return conn
 }
 

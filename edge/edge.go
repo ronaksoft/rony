@@ -79,7 +79,6 @@ func NewServer(serverID string, opts ...Option) *Server {
 		if err != nil {
 			log.Warn("Error On initializing store", zap.Error(err))
 		}
-
 	}
 
 	// register builtin rony handlers
@@ -363,7 +362,6 @@ func (edge *Server) onTunnelDone(ctx *DispatchCtx) {
 		// TODO:: implement it
 		panic("not implemented, handle multiple tunnel message")
 	}
-
 }
 func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	envelope := rony.PoolMessageEnvelope.Get()

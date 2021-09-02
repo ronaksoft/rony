@@ -108,6 +108,7 @@ var helperFunctions = map[string]interface{}{
 		sb := strings.Builder{}
 		sb.WriteString(m.Names(codegen.PropFilterALL, "\"", "\"", ", ", codegen.SnakeCase))
 		sb.WriteString(", \"sdata\"")
+
 		return sb.String()
 	},
 	"ColumnsValue": func(m codegen.ModelKey, prefix, postfix string) string {
@@ -117,6 +118,7 @@ var helperFunctions = map[string]interface{}{
 		}
 		sb := strings.Builder{}
 		sb.WriteString(m.Names(codegen.PropFilterALL, prefix, postfix, ", ", textCase))
+
 		return sb.String()
 	},
 	"ColumnsValuePKs": func(m codegen.ModelKey, prefix, postfix string) string {
@@ -126,11 +128,13 @@ var helperFunctions = map[string]interface{}{
 		}
 		sb := strings.Builder{}
 		sb.WriteString(m.Names(codegen.PropFilterPKs, prefix, postfix, ", ", textCase))
+
 		return sb.String()
 	},
 	"Where": func(m codegen.ModelKey) string {
 		sb := strings.Builder{}
 		sb.WriteString(m.Names(codegen.PropFilterALL, "qb.Eq(\"", "\")", ", ", codegen.SnakeCase))
+
 		return sb.String()
 	},
 	"PartKeys": func(m codegen.ModelKey) string {
@@ -144,6 +148,7 @@ var helperFunctions = map[string]interface{}{
 		if prefix != "" {
 			textCase = codegen.None
 		}
+
 		return m.NameTypes(codegen.PropFilterALL, prefix, textCase, codegen.LangGo)
 	},
 	"PrimaryKey": func(m codegen.ModelKey) string {
@@ -156,6 +161,7 @@ var helperFunctions = map[string]interface{}{
 			sb.WriteString(m.Names(codegen.PropFilterCKs, "", "", ", ", codegen.SnakeCase))
 		}
 		sb.WriteString(")")
+
 		return sb.String()
 	},
 	"WithClusteringKey": func(m codegen.ModelKey) string {
@@ -177,6 +183,7 @@ var helperFunctions = map[string]interface{}{
 			}
 		}
 		sb.WriteString(")")
+
 		return sb.String()
 	},
 	"MVWhere": func(m codegen.ModelKey) string {
@@ -191,6 +198,7 @@ var helperFunctions = map[string]interface{}{
 			sb.WriteString(tools.ToSnake(k.Name))
 			sb.WriteString(" IS NOT null")
 		}
+
 		return sb.String()
 	},
 }

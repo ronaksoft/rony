@@ -42,6 +42,7 @@ func (wc *wrapConn) Write(b []byte) (n int, err error) {
 func (wc *wrapConn) Close() error {
 	err := wc.c.Close()
 	releaseWrapConn(wc)
+
 	return err
 }
 
@@ -71,6 +72,7 @@ func newWrapConn(c net.Conn) *wrapConn {
 		buf: bytes.NewBuffer(make([]byte, 0, 128)),
 	}
 	wc.r = io.TeeReader(wc.c, wc.buf)
+
 	return wc
 }
 
@@ -81,6 +83,7 @@ func acquireWrapConn(c net.Conn) *wrapConn {
 	}
 	wc.c = c
 	wc.r = io.TeeReader(wc.c, wc.buf)
+
 	return wc
 }
 
@@ -102,6 +105,7 @@ func (wc *wrapConn) File() (*os.File, error) {
 	if !ok {
 		return nil, netpoll.ErrNotFiler
 	}
+
 	return x.File()
 }
 

@@ -123,6 +123,7 @@ func (l *ronyLogger) With(name string) *ronyLogger {
 		fz:     l.fz,
 		lvl:    l.lvl,
 	}
+
 	return childLogger
 }
 
@@ -130,6 +131,7 @@ func (l *ronyLogger) addPrefix(m string) string {
 	if l.prefix != "" {
 		return fmt.Sprintf("%s %s", l.prefix, m)
 	}
+
 	return m
 }
 
@@ -155,7 +157,6 @@ func (l *ronyLogger) ErrorOnErr(guideTxt string, err error, fields ...Field) {
 
 func (l *ronyLogger) Debug(msg string, fields ...Field) {
 	l.log(zap.DebugLevel, msg, fields...)
-
 }
 
 func (l *ronyLogger) Warn(msg string, fields ...Field) {

@@ -39,6 +39,7 @@ func (m *TaskManager) Create(ctx *edge.RequestCtx, req *task.CreateRequest, res 
 	res.Title = newTask.GetTitle()
 	res.ID = newTask.GetID()
 	res.DueDate = newTask.GetDueDate()
+
 	return nil
 }
 
@@ -51,6 +52,7 @@ func (m *TaskManager) Get(ctx *edge.RequestCtx, req *task.GetRequest, res *task.
 	res.ID = t.GetID()
 	res.DueDate = t.GetDueDate()
 	res.TODOs = t.GetTODOs()
+
 	return nil
 }
 
@@ -60,6 +62,7 @@ func (m *TaskManager) Delete(ctx *edge.RequestCtx, req *task.DeleteRequest, res 
 		return errors.GenUnavailableErr("TASK", err)
 	}
 	res.Result = true
+
 	return nil
 }
 
@@ -77,5 +80,6 @@ func (m *TaskManager) List(ctx *edge.RequestCtx, req *task.ListRequest, res *tas
 			DueDate: t.GetDueDate(),
 		})
 	}
+
 	return nil
 }

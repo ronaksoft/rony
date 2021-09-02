@@ -48,6 +48,7 @@ func (s *Auth) Register(ctx *edge.RequestCtx, req *auth.RegisterRequest, res *au
 	}
 
 	res.SessionID = sessionID
+
 	return nil
 }
 
@@ -68,6 +69,7 @@ func (s *Auth) Login(ctx *edge.RequestCtx, req *auth.LoginRequest, res *auth.Aut
 	}
 
 	res.SessionID = sessionID
+
 	return nil
 }
 

@@ -10,6 +10,7 @@ import (
 	rony "github.com/ronaksoft/rony"
 	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
+	errors "github.com/ronaksoft/rony/errors"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -288,7 +289,7 @@ func (r *Model1LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 	key := alloc.Gen('M', C_Model1, uint64(17145941975615822562), m.ID, m.ShardKey, m.Enum)
 	if store.ExistsByKey(txn, alloc, key) {
-		return store.ErrAlreadyExists
+		return errors.ErrAlreadyExists
 	}
 
 	// save table entry
@@ -348,7 +349,7 @@ func (r *Model1LocalRepo) Update(id int32, shardKey int32, enum Enum, m *Model1)
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		return store.ErrEmptyObject
+		return errors.ErrEmptyObject
 	}
 
 	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {
@@ -964,7 +965,7 @@ func (r *Model2LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 	key := alloc.Gen('M', C_Model2, uint64(17432954814955949437), m.ID, m.ShardKey, m.P1)
 	if store.ExistsByKey(txn, alloc, key) {
-		return store.ErrAlreadyExists
+		return errors.ErrAlreadyExists
 	}
 
 	// save table entry
@@ -1010,7 +1011,7 @@ func (r *Model2LocalRepo) Update(id int64, shardKey int32, p1 string, m *Model2)
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		return store.ErrEmptyObject
+		return errors.ErrEmptyObject
 	}
 
 	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {
@@ -1530,7 +1531,7 @@ func (r *Model3LocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocat
 	}
 	key := alloc.Gen('M', C_Model3, uint64(17432954814955949437), m.ID, m.ShardKey, m.P1)
 	if store.ExistsByKey(txn, alloc, key) {
-		return store.ErrAlreadyExists
+		return errors.ErrAlreadyExists
 	}
 
 	// save table entry
@@ -1590,7 +1591,7 @@ func (r *Model3LocalRepo) Update(id int64, shardKey int32, p1 []byte, m *Model3)
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		return store.ErrEmptyObject
+		return errors.ErrEmptyObject
 	}
 
 	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {

@@ -1,7 +1,7 @@
 package task
 
 import (
-	rony "github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony"
 )
 
 type ModuleBase struct {
@@ -12,6 +12,7 @@ func New(store rony.Store) ModuleBase {
 	m := ModuleBase{
 		local: newLocalRepos(store),
 	}
+
 	return m
 }
 

@@ -33,6 +33,7 @@ func (m *ModelKey) Alias() string {
 func (m *ModelKey) PartitionKeys() []Prop {
 	var all []Prop
 	all = append(all, m.pks...)
+
 	return all
 }
 
@@ -43,6 +44,7 @@ func (m *ModelKey) PKs() []Prop {
 func (m *ModelKey) ClusteringKeys() []Prop {
 	var all []Prop
 	all = append(all, m.cks...)
+
 	return all
 }
 
@@ -54,6 +56,7 @@ func (m *ModelKey) Keys() []Prop {
 	var all []Prop
 	all = append(all, m.pks...)
 	all = append(all, m.cks...)
+
 	return all
 }
 
@@ -67,6 +70,7 @@ func (m *ModelKey) IsSubset(n *ModelKey) bool {
 		for _, mp := range m.Keys() {
 			if mp.Name == np.Name {
 				found = true
+
 				break
 			}
 		}
@@ -74,6 +78,7 @@ func (m *ModelKey) IsSubset(n *ModelKey) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -83,6 +88,7 @@ func (m *ModelKey) HasProp(name string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -128,6 +134,7 @@ func (m *ModelKey) NameTypes(filter PropFilter, namePrefix string, nameCase Text
 			sb.WriteString(p.ProtoType)
 		}
 	}
+
 	return sb.String()
 }
 
@@ -164,6 +171,7 @@ func (m *ModelKey) Names(filter PropFilter, prefix, postfix string, sep string, 
 		}
 		sb.WriteString(postfix)
 	}
+
 	return sb.String()
 }
 

@@ -40,5 +40,6 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 			}
 		}
 	}
+
 	return nil
 }

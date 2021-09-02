@@ -78,8 +78,8 @@ var funcs = map[string]interface{}{
 			}
 			cnt++
 		}
-		return sb.String()
 
+		return sb.String()
 	},
 }
 

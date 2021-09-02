@@ -50,6 +50,7 @@ func (c *cmdPipe) Start() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -64,5 +65,6 @@ func (c *cmdPipe) Wait() error {
 			}
 		}
 	}
+
 	return nil
 }

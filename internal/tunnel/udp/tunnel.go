@@ -100,7 +100,6 @@ func (t *Tunnel) Start() {
 }
 
 func (t *Tunnel) Run() {
-
 	err := gnet.Serve(t, fmt.Sprintf("udp://%s", t.cfg.ListenAddress),
 		gnet.WithReusePort(true),
 		gnet.WithMulticore(true),
@@ -127,6 +126,7 @@ func (t *Tunnel) Addr() []string {
 	if len(t.cfg.ExternalAddrs) > 0 {
 		return t.cfg.ExternalAddrs
 	}
+
 	return t.addrs
 }
 
@@ -140,11 +140,13 @@ func (t *Tunnel) OnShutdown(server gnet.Server) {
 
 func (t *Tunnel) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 	log.Info("Tunnel connection opened")
+
 	return nil, gnet.None
 }
 
 func (t *Tunnel) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	log.Info("Tunnel connection closed", zap.Error(err))
+
 	return gnet.None
 }
 

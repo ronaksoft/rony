@@ -88,7 +88,6 @@ func (g *Generator) Generate() {
 				g.appendToInit(fmt.Sprintf("di.MustProvide(New%sGlobalRepo)\n", arg.Name()))
 			}
 		}
-
 	}
 
 	if g.initFuncBlock.Len() > 0 {
@@ -97,7 +96,6 @@ func (g *Generator) Generate() {
 		g.g.P(g.initFuncBlock.String())
 		g.g.P("}")
 	}
-
 }
 
 func (g *Generator) appendToInit(x string) {

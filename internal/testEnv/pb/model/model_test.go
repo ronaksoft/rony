@@ -206,7 +206,6 @@ func TestModelLocalRepo(t *testing.T) {
 func TestModelGlobalRepo(t *testing.T) {
 	Convey("Model - GlobalRepo Auto-Generated Code Tests", t, func(c C) {
 		Convey("Create/Read/Update/Read", func(c C) {
-
 			repo := model.NewModel1GlobalRepo(scyllaDB)
 			m1 := &model.Model1{
 				ID:       int32(tools.FastRand()),
@@ -274,5 +273,4 @@ func TestModelGlobalRepo(t *testing.T) {
 			}
 		})
 	})
-
 }

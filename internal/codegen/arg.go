@@ -189,6 +189,7 @@ func (ma *MessageArg) currentPkg() string {
 	if ma.file != nil {
 		pkg = string(ma.file.GoPackageName)
 	}
+
 	return pkg
 }
 
@@ -212,6 +213,7 @@ func (ma MessageArg) Pkg() string {
 	if ma.currentPkg() == ma.pkg {
 		return ""
 	}
+
 	return ma.pkg
 }
 
@@ -221,6 +223,7 @@ func (ma MessageArg) ViewsByPK() map[string][]*ModelKey {
 		k := v.Names(PropFilterPKs, "", "", "", None)
 		res[k] = append(res[k], v)
 	}
+
 	return res
 }
 
@@ -241,6 +244,7 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 	for idx := range ma.Fields {
 		ma.Fields[idx] = ma.Fields[idx].With(f)
 	}
+
 	return ma
 }
 
@@ -280,6 +284,7 @@ func GetFieldArg(f *protogen.Field) FieldArg {
 
 	opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 	arg.HasIndex = proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+
 	return arg
 }
 
@@ -288,6 +293,7 @@ func (fa FieldArg) currentPkg() string {
 	if fa.file != nil {
 		pkg = string(fa.file.GoPackageName)
 	}
+
 	return pkg
 }
 
@@ -311,6 +317,7 @@ func (fa FieldArg) Type() string {
 	if fa.desc.Message() != nil {
 		return string(fa.desc.Message().Name())
 	}
+
 	return fa.GoKind
 }
 
@@ -318,11 +325,13 @@ func (fa FieldArg) Pkg() string {
 	if fa.currentPkg() == fa.pkg {
 		return ""
 	}
+
 	return fa.pkg
 }
 
 func (fa FieldArg) With(f *protogen.File) FieldArg {
 	fa.file = f
+
 	return fa
 }
 
@@ -341,6 +350,7 @@ func (sa ServiceArg) currentPkg() string {
 	if sa.file != nil {
 		pkg = string(sa.file.GoPackageName)
 	}
+
 	return pkg
 }
 
@@ -365,6 +375,7 @@ func (sa ServiceArg) With(f *protogen.File) ServiceArg {
 	for idx := range sa.Methods {
 		sa.Methods[idx] = sa.Methods[idx].With(sa.file)
 	}
+
 	return sa
 }
 
@@ -381,6 +392,7 @@ func GetServiceArg(s *protogen.Service) ServiceArg {
 		}
 		arg.Methods = append(arg.Methods, ma)
 	}
+
 	return arg
 }
 
@@ -430,6 +442,7 @@ func (ma MethodArg) With(f *protogen.File) MethodArg {
 	ma.file = f
 	ma.Input = ma.Input.With(f)
 	ma.Output = ma.Output.With(f)
+
 	return ma
 }
 

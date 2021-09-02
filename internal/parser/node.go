@@ -82,6 +82,7 @@ func (l *ListNode) tree() *Tree {
 func (l *ListNode) String() string {
 	var sb strings.Builder
 	l.writeTo(&sb)
+
 	return sb.String()
 }
 
@@ -99,6 +100,7 @@ func (l *ListNode) CopyList() *ListNode {
 	for _, elem := range l.Nodes {
 		n.append(elem.Copy())
 	}
+
 	return n
 }
 

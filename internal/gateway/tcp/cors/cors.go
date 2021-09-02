@@ -47,6 +47,7 @@ func New(config Config) *CORS {
 	} else {
 		c.methods = strings.Join(config.AllowedMethods, ", ")
 	}
+
 	return c
 }
 
@@ -73,7 +74,9 @@ func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 
 		reqCtx.SetStatusCode(http.StatusNoContent)
 		reqCtx.SetConnectionClose()
+
 		return true
 	}
+
 	return false
 }

@@ -160,6 +160,7 @@ func NewWriterSize(dest io.Writer, state ws.State, op ws.OpCode, n int) *Writer 
 	if n > 0 {
 		n += headerSize(state, n)
 	}
+
 	return NewWriterBufferSize(dest, state, op, n)
 }
 
@@ -174,6 +175,7 @@ func NewWriterBufferSize(dest io.Writer, state ws.State, op ws.OpCode, n int) *W
 	if n <= ws.MinHeaderSize {
 		n = DefaultWriteBuffer
 	}
+
 	return NewWriterBuffer(dest, state, op, make([]byte, n))
 }
 
@@ -354,6 +356,7 @@ func (w *Writer) ReadFrom(src io.Reader) (n int64, err error) {
 		err = nil
 		w.dirty = true
 	}
+
 	return n, err
 }
 

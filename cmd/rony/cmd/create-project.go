@@ -95,7 +95,6 @@ func goModuleInit(g *genny.Generator) {
 	g.Command(cmd)
 }
 func goModuleTidy(g *genny.Generator) {
-
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Env = os.Environ()
 	cmd.Dir = config.GetString("project.dir")

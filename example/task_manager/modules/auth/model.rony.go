@@ -10,6 +10,7 @@ import (
 	rony "github.com/ronaksoft/rony"
 	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
+	errors "github.com/ronaksoft/rony/errors"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	store "github.com/ronaksoft/rony/store"
@@ -179,7 +180,7 @@ func (r *UserLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator
 	}
 	key := alloc.Gen('M', C_User, uint64(12744997956659367007), m.Username)
 	if store.ExistsByKey(txn, alloc, key) {
-		return store.ErrAlreadyExists
+		return errors.ErrAlreadyExists
 	}
 
 	// save table entry
@@ -219,7 +220,7 @@ func (r *UserLocalRepo) Update(username string, m *User) error {
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		return store.ErrEmptyObject
+		return errors.ErrEmptyObject
 	}
 
 	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {
@@ -468,7 +469,7 @@ func (r *SessionLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Alloca
 	}
 	key := alloc.Gen('M', C_Session, uint64(387204014837596160), m.ID)
 	if store.ExistsByKey(txn, alloc, key) {
-		return store.ErrAlreadyExists
+		return errors.ErrAlreadyExists
 	}
 
 	// save table entry
@@ -515,7 +516,7 @@ func (r *SessionLocalRepo) Update(id string, m *Session) error {
 	defer alloc.ReleaseAll()
 
 	if m == nil {
-		return store.ErrEmptyObject
+		return errors.ErrEmptyObject
 	}
 
 	err := r.s.Update(func(txn *rony.StoreTxn) (err error) {

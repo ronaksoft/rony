@@ -177,7 +177,6 @@ func BenchmarkEdge(b *testing.B) {
 					b.Fatal("invalid constructor")
 				}
 				rony.PoolMessageEnvelope.Put(me)
-
 			}), 0, *buf.Bytes())
 			pools.Buffer.Put(buf)
 			service.PoolEchoRequest.Put(req)

@@ -101,6 +101,7 @@ func (wc *websocketConn) release(reason int) {
 	_, ok := g.conns[wc.connID]
 	if !ok {
 		g.connsMtx.Unlock()
+
 		return
 	}
 	delete(g.conns, wc.connID)
@@ -217,7 +218,7 @@ func (wc *websocketConn) SetClientIP(ip []byte) {
 	wc.clientIP = append(wc.clientIP[:0], ip...)
 }
 
-// SendBinary
+// WriteBinary
 // Make sure you don't use payload after calling this function, because its underlying
 // array will be put back into the pool to be reused.
 func (wc *websocketConn) WriteBinary(streamID int64, payload []byte) error {

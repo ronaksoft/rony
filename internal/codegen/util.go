@@ -59,6 +59,7 @@ func GoKind(d protoreflect.FieldDescriptor) string {
 	case protoreflect.EnumKind:
 		return string(d.Enum().Name())
 	}
+
 	return "unsupported"
 }
 
@@ -79,6 +80,7 @@ func CqlKind(d protoreflect.FieldDescriptor) string {
 	case protoreflect.EnumKind:
 		return "int"
 	}
+
 	return "unsupported"
 }
 

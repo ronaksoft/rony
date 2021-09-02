@@ -13,8 +13,7 @@ func Provide(constructor interface{}) error {
 }
 
 func MustProvide(constructor interface{}) {
-	err := di.Provide(constructor)
-	if err != nil {
+	if err := di.Provide(constructor); err != nil {
 		panic(err)
 	}
 }
@@ -24,8 +23,7 @@ func Invoke(function interface{}) error {
 }
 
 func MustInvoke(function interface{}) {
-	err := di.Invoke(function)
-	if err != nil {
+	if err := di.Invoke(function); err != nil {
 		panic(err)
 	}
 }

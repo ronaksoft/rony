@@ -30,6 +30,7 @@ func (t *Tree) Copy() *Tree {
 	if t == nil {
 		return nil
 	}
+
 	return &Tree{
 		Name:      t.Name,
 		ParseName: t.ParseName,
@@ -46,6 +47,7 @@ func Parse(name, text string) (*Tree, error) {
 	t := New(name)
 	t.text = text
 	_, err := t.Parse(text)
+
 	return t, err
 }
 
@@ -56,6 +58,7 @@ func (t *Tree) next() tokenItem {
 	} else {
 		t.token[0] = t.lex.nextItem()
 	}
+
 	return t.token[t.peekCount]
 }
 
@@ -71,6 +74,7 @@ func (t *Tree) peek() tokenItem {
 	}
 	t.peekCount = 1
 	t.token[0] = t.lex.nextItem()
+
 	return t.token[0]
 }
 
@@ -82,6 +86,7 @@ func (t *Tree) nextNonSpace() (token tokenItem) {
 			break
 		}
 	}
+
 	return token
 }
 
@@ -141,6 +146,7 @@ func (t *Tree) Parse(text string) (tree *Tree, err error) {
 	t.text = text
 	t.parse()
 	t.stopParse()
+
 	return t, nil
 }
 
@@ -181,6 +187,7 @@ func (t *Tree) action() (n Node) {
 	if item := t.nextNonSpace(); item.tok != R_DELIM {
 		t.unexpected(item, "action right delmic")
 	}
+
 	return
 }
 
@@ -210,6 +217,7 @@ Loop:
 			t.unexpected(item, "idents")
 		}
 	}
+
 	return args
 }
 
@@ -242,6 +250,7 @@ func (t *Tree) table(pos Pos) (n Node) {
 			cks = append(cks, ks[1:]...)
 		}
 	}
+
 	return t.newTable(pos, pks, cks)
 }
 
@@ -274,6 +283,7 @@ func (t *Tree) view(pos Pos) (n Node) {
 			cks = append(cks, ks[1:]...)
 		}
 	}
+
 	return t.newView(pos, pks, cks)
 }
 

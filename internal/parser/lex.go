@@ -114,6 +114,7 @@ func (l *lexer) ignore() {
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 	l.items <- tokenItem{ERROR, l.start, fmt.Sprintf(format, args...), l.startLine}
+
 	return nil
 }
 
@@ -233,6 +234,7 @@ func lexInsideAction(l *lexer) stateFn {
 		if l.parenDepth == 0 {
 			return lexRightDelim
 		}
+
 		return l.errorf("unclosed left paren")
 	}
 	switch r := l.next(); {
@@ -262,8 +264,10 @@ func lexInsideAction(l *lexer) stateFn {
 			return l.errorf("unexpected right paren %#U", r)
 		}
 	default:
+
 		return l.errorf("unrecognized character in action: %#U", r)
 	}
+
 	return lexInsideAction
 }
 
@@ -279,6 +283,7 @@ func lexSpace(l *lexer) stateFn {
 		l.next()
 	}
 	l.emit(SPACE)
+
 	return lexInsideAction
 }
 

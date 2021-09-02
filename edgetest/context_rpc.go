@@ -41,12 +41,14 @@ func newRPCContext(gw *dummyGateway.Gateway) *rpcCtx {
 		gw:     gw,
 		doneCh: make(chan struct{}, 1),
 	}
+
 	return c
 }
 
 // Persistent makes the rpcCtx simulate persistent connection e.g. websocket
 func (c *rpcCtx) Persistent() *rpcCtx {
 	c.persistent = true
+
 	return c
 }
 
@@ -63,6 +65,7 @@ func (c *rpcCtx) Request(constructor uint64, p proto.Message, kv ...*rony.KeyVal
 	}
 	c.reqC = constructor
 	c.req, c.err = proto.Marshal(e)
+
 	return c
 }
 
@@ -70,6 +73,7 @@ func (c *rpcCtx) Request(constructor uint64, p proto.Message, kv ...*rony.KeyVal
 // if the response was not fully acceptable
 func (c *rpcCtx) Expect(constructor uint64, cf CheckFunc) *rpcCtx {
 	c.expect[constructor] = cf
+
 	return c
 }
 
@@ -87,6 +91,7 @@ func (c *rpcCtx) check(e *rony.MessageEnvelope) {
 		if c.errH != nil {
 			c.errH(c.reqC, err)
 		}
+
 		return
 	}
 	if f != nil {
@@ -106,11 +111,13 @@ func (c *rpcCtx) expectCount() int {
 
 func (c *rpcCtx) ErrorHandler(f func(constructor uint64, e *rony.Error)) *rpcCtx {
 	c.errH = f
+
 	return c
 }
 
 func (c *rpcCtx) SetRunParameters(kvs ...*rony.KeyValue) *rpcCtx {
 	c.kvs = kvs
+
 	return c
 }
 
