@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
+	"github.com/ronaksoft/rony/edgetest"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
@@ -26,13 +27,21 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+var (
+	s *edgetest.Server
+)
+
+func TestMain(m *testing.M) {
+	s = testEnv.TestServer("TestServer")
+	service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
+	s.Start()
+	defer s.Shutdown()
+
+	m.Run()
+}
+
 func TestWithTestGateway(t *testing.T) {
 	Convey("EdgeTest Gateway", t, func(c C) {
-		s := testEnv.TestServer("TestServer")
-		service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
-		s.Start()
-		defer s.Shutdown()
-
 		err := s.RPC().
 			Request(service.C_SampleEcho, &service.EchoRequest{
 				Int:       100,
@@ -57,7 +66,6 @@ func TestWithTestGateway(t *testing.T) {
 func TestRestProxy(t *testing.T) {
 	Convey("Edge With RestProxy", t, func(c C) {
 		Convey("Manual", func(c C) {
-			s := testEnv.TestServer("TestServer")
 			s.RealEdge().SetRestProxy(
 				rony.MethodGet, "/x/:value",
 				edge.NewRestProxy(
@@ -96,11 +104,8 @@ func TestRestProxy(t *testing.T) {
 			c.So(err, ShouldBeNil)
 		})
 		Convey("JSON", func(c C) {
-			s := testEnv.TestServer("TestServer")
 			s.RealEdge().SetRestProxy(rony.MethodPost, "/echo", service.EchoRest)
 			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
-			s.Start()
-			defer s.Shutdown()
 
 			req := &service.EchoRequest{
 				Int:        tools.RandomInt64(0),
@@ -125,11 +130,8 @@ func TestRestProxy(t *testing.T) {
 			c.So(err, ShouldBeNil)
 		})
 		Convey("JSON and Binding", func(c C) {
-			s := testEnv.TestServer("TestServer")
 			s.RealEdge().SetRestProxy(rony.MethodGet, "/echo/:value/:ts", service.EchoRestBinding)
 			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
-			s.Start()
-			defer s.Shutdown()
 
 			value := tools.RandomInt64(0)
 			ts := tools.NanoTime()

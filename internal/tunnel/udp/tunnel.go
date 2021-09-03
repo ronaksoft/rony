@@ -122,7 +122,7 @@ func (t *Tunnel) Shutdown() {
 	ctx, cf := context.WithTimeout(context.TODO(), time.Second*30)
 	defer cf()
 	if err := gnet.Stop(ctx, fmt.Sprintf("udp://%s", t.cfg.ListenAddress)); err != nil {
-		log.Warn("Error On Stopping Tunnel", zap.Error(err))
+		t.cfg.Logger.Warn("Error On Stopping Tunnel", zap.Error(err))
 	}
 }
 
@@ -139,17 +139,17 @@ func (t *Tunnel) OnInitComplete(server gnet.Server) (action gnet.Action) {
 }
 
 func (t *Tunnel) OnShutdown(server gnet.Server) {
-	log.Info("Tunnel shutdown")
+	t.cfg.Logger.Info("Tunnel shutdown")
 }
 
 func (t *Tunnel) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
-	log.Info("Tunnel connection opened")
+	t.cfg.Logger.Info("Tunnel connection opened")
 
 	return nil, gnet.None
 }
 
 func (t *Tunnel) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
-	log.Info("Tunnel connection closed", zap.Error(err))
+	t.cfg.Logger.Info("Tunnel connection closed", zap.Error(err))
 
 	return gnet.None
 }
@@ -164,7 +164,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 
 	req := msg.PoolTunnelMessage.Get()
 	if err := req.Unmarshal(frame); err != nil {
-		log.Warn("Error On Tunnel's data received", zap.Error(err))
+		t.cfg.Logger.Warn("Error On Tunnel's data received", zap.Error(err))
 		return nil, gnet.Close
 	}
 

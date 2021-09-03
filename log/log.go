@@ -54,9 +54,8 @@ func init() {
 	DefaultLogger = New(DefaultConfig)
 }
 
-func Init(config Config) Logger {
+func Init(config Config) {
 	DefaultLogger = New(config)
-	return DefaultLogger
 }
 
 func Debug(msg string, fields ...Field) {

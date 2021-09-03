@@ -93,7 +93,12 @@ func New(cfg Config) *ronyLogger {
 		zap.AddStacktrace(ErrorLevel),
 		zap.AddCallerSkip(cfg.SkipCaller),
 	)
-	l.sz = l.z.Sugar()
+	l.sz = zap.New(
+		zapcore.NewTee(cores...),
+		zap.AddCaller(),
+		zap.AddStacktrace(ErrorLevel),
+		zap.AddCallerSkip(cfg.SkipCaller-1),
+	).Sugar()
 
 	return l
 }
