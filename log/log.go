@@ -18,10 +18,14 @@ var (
 )
 
 type (
-	Level        = zapcore.Level
-	Field        = zapcore.Field
-	FieldType    = zapcore.FieldType
-	CheckedEntry = zapcore.CheckedEntry
+	Level           = zapcore.Level
+	Field           = zapcore.Field
+	FieldType       = zapcore.FieldType
+	CheckedEntry    = zapcore.CheckedEntry
+	DurationEncoder = zapcore.DurationEncoder
+	CallerEncode    = zapcore.CallerEncoder
+	LevelEncoder    = zapcore.LevelEncoder
+	TimeEncoder     = zapcore.TimeEncoder
 )
 
 type Logger interface {

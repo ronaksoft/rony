@@ -5,7 +5,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 )
 
@@ -19,27 +18,31 @@ import (
 */
 
 type Config struct {
-	Level       Level
-	DirPath     string
-	Filename    string
-	FileLevel   Level
-	SentryDSN   string
-	SentryLevel Level
-	Release     string
-	Environment string
-	SkipCaller  int
+	Level           Level
+	DirPath         string
+	SentryDSN       string
+	SentryLevel     Level
+	Release         string
+	Environment     string
+	SkipCaller      int
+	TimeEncoder     TimeEncoder
+	LevelEncoder    LevelEncoder
+	DurationEncoder DurationEncoder
+	CallerEncoder   CallerEncode
 }
 
 var DefaultConfig = Config{
-	Level:       InfoLevel,
-	DirPath:     ".",
-	Filename:    "",
-	FileLevel:   WarnLevel,
-	SentryDSN:   "",
-	SentryLevel: WarnLevel,
-	Release:     "",
-	Environment: "",
-	SkipCaller:  2,
+	Level:           InfoLevel,
+	DirPath:         ".",
+	SentryDSN:       "",
+	SentryLevel:     WarnLevel,
+	Release:         "",
+	Environment:     "",
+	SkipCaller:      2,
+	TimeEncoder:     timeEncoder,
+	LevelEncoder:    zapcore.CapitalLevelEncoder,
+	DurationEncoder: zapcore.StringDurationEncoder,
+	CallerEncoder:   zapcore.ShortCallerEncoder,
 }
 
 // ronyLogger is a wrapper around zap.Logger and adds a good few features to it.
@@ -47,16 +50,17 @@ var DefaultConfig = Config{
 // separately. Separate layers could also have independent log levels.
 // Whenever you change log level it propagates through its children.
 type ronyLogger struct {
-	prefix string
-	z      *zap.Logger
-	sz     *zap.SugaredLogger
-	fz     *zap.Logger
-	lvl    zap.AtomicLevel
+	prefix     string
+	skipCaller int
+	z          *zap.Logger
+	sz         *zap.SugaredLogger
+	lvl        zap.AtomicLevel
 }
 
 func New(cfg Config) *ronyLogger {
 	l := &ronyLogger{
-		lvl: zap.NewAtomicLevelAt(cfg.Level),
+		lvl:        zap.NewAtomicLevelAt(cfg.Level),
+		skipCaller: cfg.SkipCaller,
 	}
 
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
@@ -67,20 +71,15 @@ func New(cfg Config) *ronyLogger {
 		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     timeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		EncodeLevel:    cfg.LevelEncoder,
+		EncodeTime:     cfg.TimeEncoder,
+		EncodeDuration: cfg.DurationEncoder,
+		EncodeCaller:   cfg.CallerEncoder,
 	})
 
-	cores := append([]zapcore.Core{}[:0],
+	cores := append([]zapcore.Core{},
 		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), l.lvl),
 	)
-
-	logFile := filepath.Join(cfg.DirPath, cfg.Filename)
-	if f, err := os.Create(logFile); err == nil {
-		l.fz = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(f), zap.NewAtomicLevelAt(cfg.FileLevel)))
-	}
 
 	sentryCore := NewSentryCore(cfg.SentryDSN, cfg.Release, cfg.Environment, cfg.SentryLevel, nil)
 	if sentryCore != nil {
@@ -94,7 +93,7 @@ func New(cfg Config) *ronyLogger {
 		zap.AddCallerSkip(cfg.SkipCaller),
 	)
 	l.sz = zap.New(
-		zapcore.NewTee(cores...),
+		l.z.Core(),
 		zap.AddCaller(),
 		zap.AddStacktrace(ErrorLevel),
 		zap.AddCallerSkip(cfg.SkipCaller-1),
@@ -123,11 +122,20 @@ func (l *ronyLogger) SetLevel(lvl Level) {
 
 func (l *ronyLogger) With(name string) *ronyLogger {
 	childLogger := &ronyLogger{
-		prefix: fmt.Sprintf("%s[%s]", l.prefix, name),
-		z:      l.z,
-		sz:     l.sz,
-		fz:     l.fz,
-		lvl:    l.lvl,
+		prefix:     fmt.Sprintf("%s[%s]", l.prefix, name),
+		skipCaller: l.skipCaller,
+		z: zap.New(
+			l.z.Core(),
+			zap.AddCaller(),
+			zap.AddStacktrace(ErrorLevel),
+			zap.AddCallerSkip(l.skipCaller),
+		),
+		sz:  zap.New(
+			l.z.Core(),
+			zap.AddCaller(),
+			zap.AddStacktrace(ErrorLevel),
+			zap.AddCallerSkip(l.skipCaller-1)).Sugar(),
+		lvl: l.lvl,
 	}
 
 	return childLogger
