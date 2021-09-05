@@ -125,6 +125,7 @@ func (l *ronyLogger) With(name string) *ronyLogger {
 	childLogger := &ronyLogger{
 		prefix: fmt.Sprintf("%s[%s]", l.prefix, name),
 		z:      l.z,
+		sz:     l.sz,
 		fz:     l.fz,
 		lvl:    l.lvl,
 	}
