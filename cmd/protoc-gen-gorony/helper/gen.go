@@ -72,7 +72,7 @@ func (g *Generator) Generate() {
 			if m.Input.Pkg() != "" {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 			}
-			g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, nil)", m.C, m.Fullname()))
+			g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", m.C, m.Fullname(), m.Input.Name()))
 			g.g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
 		}
 	}
