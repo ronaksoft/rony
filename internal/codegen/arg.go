@@ -390,6 +390,9 @@ func GetServiceArg(s *protogen.Service) ServiceArg {
 		if ma.RestEnabled {
 			arg.HasRestProxy = true
 		}
+		if arg.currentPkg() != "" && arg.currentPkg() != ma.Input.pkg {
+			panic("input must be with in the same package of its service")
+		}
 		arg.Methods = append(arg.Methods, ma)
 	}
 

@@ -121,6 +121,10 @@ func (l *ronyLogger) SetLevel(lvl Level) {
 }
 
 func (l *ronyLogger) With(name string) *ronyLogger {
+	return l.WithSkip(name, l.skipCaller)
+}
+
+func (l *ronyLogger) WithSkip(name string, skipCaller int) *ronyLogger {
 	childLogger := &ronyLogger{
 		prefix:     fmt.Sprintf("%s[%s]", l.prefix, name),
 		skipCaller: l.skipCaller,
@@ -128,13 +132,13 @@ func (l *ronyLogger) With(name string) *ronyLogger {
 			l.z.Core(),
 			zap.AddCaller(),
 			zap.AddStacktrace(ErrorLevel),
-			zap.AddCallerSkip(l.skipCaller),
+			zap.AddCallerSkip(skipCaller),
 		),
-		sz:  zap.New(
+		sz: zap.New(
 			l.z.Core(),
 			zap.AddCaller(),
 			zap.AddStacktrace(ErrorLevel),
-			zap.AddCallerSkip(l.skipCaller-1)).Sugar(),
+			zap.AddCallerSkip(skipCaller-1)).Sugar(),
 		lvl: l.lvl,
 	}
 

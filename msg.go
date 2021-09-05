@@ -3,7 +3,9 @@ package rony
 import (
 	"fmt"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/registry"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*
@@ -58,6 +60,14 @@ func (x *MessageEnvelope) Get(key, defaultVal string) string {
 
 func (x *MessageEnvelope) Set(KVs ...*KeyValue) {
 	x.Header = append(x.Header[:0], KVs...)
+}
+
+func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
+	m, err := registry.Unwrap(x)
+	if err != nil {
+		return nil, err
+	}
+	return m.ProtoReflect(), nil
 }
 
 /*
