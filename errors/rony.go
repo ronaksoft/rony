@@ -33,4 +33,5 @@ var (
 	ErrConnectionNotExists       = fmt.Errorf("connection does not exists")
 	ErrAlreadyExists             = fmt.Errorf("already exists")
 	ErrEmptyObject               = fmt.Errorf("empty object")
+	ErrNotFound                  = fmt.Errorf("not found")
 )

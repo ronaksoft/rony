@@ -53,12 +53,12 @@ func (g *Generator) Generate() {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
 			}
 		}
-		g.appendToInit(fmt.Sprintf("registry.RegisterConstructor(%d, %q)", arg.C, arg.Name()))
+		g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", arg.C, arg.Name(), arg.Name()))
 		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genClone").Parse(genClone)), arg))
 		g.g.P(g.Exec(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
-
+		g.g.P(g.Exec(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
 		if !g.opt.NoEdgeDependency {
 			g.g.P(g.Exec(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 		}
@@ -72,7 +72,7 @@ func (g *Generator) Generate() {
 			if m.Input.Pkg() != "" {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 			}
-			g.appendToInit(fmt.Sprintf("registry.RegisterConstructor(%d, %q)", m.C, m.Fullname()))
+			g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, nil)", m.C, m.Fullname()))
 			g.g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
 		}
 	}
@@ -260,4 +260,15 @@ const genSerializers = `
 		return protojson.Marshal(x)
 	}
 	
+`
+
+const genUnwrap = `
+func unwrap{{.Name}} (e registry.Envelope) (proto.Message, error) {
+	x := &{{.Name}}{}
+	err := x.Unmarshal(e.GetMessage())
+	if err != nil {
+		return nil, err
+	}
+	return x, nil
+}
 `
