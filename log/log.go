@@ -55,7 +55,9 @@ type SugaredLogger interface {
 }
 
 func init() {
-	DefaultLogger = New(DefaultConfig)
+	cfg := DefaultConfig
+	cfg.SkipCaller = 3
+	DefaultLogger = New(cfg)
 }
 
 func Init(config Config) {
