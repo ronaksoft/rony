@@ -94,6 +94,7 @@ var (
 	cn = map[string]uint64{}
 	cs = map[uint64]string{}
 )
+
 func json(plugin *protogen.Plugin) error {
 	var (
 		importPath protogen.GoImportPath
@@ -104,7 +105,7 @@ func json(plugin *protogen.Plugin) error {
 			continue
 		}
 		importPath = f.GoImportPath
-		filePrefix  = f.GeneratedFilenamePrefix
+		filePrefix = f.GeneratedFilenamePrefix
 		// reset the global model and fill with the new data
 		for _, mt := range f.Messages {
 			constructor := codegen.CrcHash([]byte(mt.Desc.Name()))

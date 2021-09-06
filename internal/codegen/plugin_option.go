@@ -14,10 +14,10 @@ import (
 */
 
 const (
-	optKeyRony    = "rony_opt"
-	optValModule  = "module"
-	optValEdgeDep = "no_edge_dep"
-	optValCrc32   = "crc32"
+	optKeyRony            = "rony_opt"
+	optValModule          = "module"
+	optValEdgeDep         = "no_edge_dep"
+	optValCrc32           = "crc32"
 	optValConstructorJSON = "json_c"
 )
 

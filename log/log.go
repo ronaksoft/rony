@@ -37,6 +37,7 @@ type Logger interface {
 	Check(Level, string) *CheckedEntry
 	Sugared() *sugaredRonyLogger
 	SetLevel(level Level)
+	With(name string) Logger
 }
 
 type SugaredLogger interface {
@@ -90,4 +91,8 @@ func Check(level Level, msg string) *CheckedEntry {
 
 func SetLevel(level Level) {
 	DefaultLogger.SetLevel(level)
+}
+
+func With(name string) Logger {
+	return DefaultLogger.With(name)
 }

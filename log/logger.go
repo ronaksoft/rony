@@ -120,11 +120,11 @@ func (l *ronyLogger) SetLevel(lvl Level) {
 	l.lvl.SetLevel(lvl)
 }
 
-func (l *ronyLogger) With(name string) *ronyLogger {
+func (l *ronyLogger) With(name string) Logger {
 	return l.WithSkip(name, l.skipCaller)
 }
 
-func (l *ronyLogger) WithSkip(name string, skipCaller int) *ronyLogger {
+func (l *ronyLogger) WithSkip(name string, skipCaller int) Logger {
 	childLogger := &ronyLogger{
 		prefix:     fmt.Sprintf("%s[%s]", l.prefix, name),
 		skipCaller: l.skipCaller,
