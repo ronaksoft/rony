@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/module"
@@ -8,6 +9,8 @@ import (
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
+	"path/filepath"
+	"text/template"
 )
 
 var (
@@ -32,6 +35,11 @@ func main() {
 			if pluginOpt.CRC32 {
 				codegen.CrcBits = 32
 			}
+
+			if pluginOpt.Constructors {
+				return json(plugin)
+			}
+
 			err := normalMode(plugin)
 			if err != nil {
 				return err
@@ -80,4 +88,59 @@ func moduleMode(plugin *protogen.Plugin) error {
 	g := module.New(plugin)
 
 	return g.Generate()
+}
+
+var (
+	cn = map[string]uint64{}
+	cs = map[uint64]string{}
+)
+func json(plugin *protogen.Plugin) error {
+	var (
+		importPath protogen.GoImportPath
+		filePrefix string
+	)
+	for _, f := range plugin.Files {
+		if !f.Generate {
+			continue
+		}
+		importPath = f.GoImportPath
+		filePrefix  = f.GeneratedFilenamePrefix
+		// reset the global model and fill with the new data
+		for _, mt := range f.Messages {
+			constructor := codegen.CrcHash([]byte(mt.Desc.Name()))
+			cn[string(mt.Desc.Name())] = constructor
+			cs[constructor] = string(mt.Desc.Name())
+		}
+		for _, s := range f.Services {
+			for _, m := range s.Methods {
+				methodName := fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())
+				constructor := codegen.CrcHash([]byte(methodName))
+				cn[methodName] = constructor
+				cs[constructor] = methodName
+			}
+		}
+	}
+
+	t := template.Must(template.New("t1").Parse(`
+	{
+	    "ConstructorsByName": {
+	    {{range $k,$v := .}}    "{{$k}}": "{{$v}}",
+		{{end -}}
+		},
+		"ConstructorsByValue": {
+		{{range $k,$v := .}}    "{{$v}}": "{{$k}}",
+		{{end -}}
+		}
+	}
+	`))
+
+	out := &bytes.Buffer{}
+	err := t.Execute(out, cn)
+	if err != nil {
+		panic(err)
+	}
+
+	gf := plugin.NewGeneratedFile(filepath.Join(filepath.Dir(filePrefix), "constructors.json"), importPath)
+	_, err = gf.Write(out.Bytes())
+	return err
 }

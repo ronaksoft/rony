@@ -18,12 +18,14 @@ const (
 	optValModule  = "module"
 	optValEdgeDep = "no_edge_dep"
 	optValCrc32   = "crc32"
+	optValConstructorJSON = "json_c"
 )
 
 type PluginOptions struct {
 	NoEdgeDependency bool
 	Module           bool
 	CRC32            bool
+	Constructors     bool
 }
 
 func (op *PluginOptions) ParamFunc(key, value string) error {
@@ -37,6 +39,8 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 				op.NoEdgeDependency = true
 			case optValCrc32:
 				op.CRC32 = true
+			case optValConstructorJSON:
+				op.Constructors = true
 			}
 		}
 	}

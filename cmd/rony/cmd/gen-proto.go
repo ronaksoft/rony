@@ -48,15 +48,23 @@ var GenProtoCmd = &cobra.Command{
 
 func compileProto(g *genny.Generator) {
 	// Compile proto files
-	folders := []string{"rpc", "model"}
-	for _, f := range folders {
-		_ = filepath.Walk(filepath.Join(".", f), func(path string, info os.FileInfo, err error) error {
+
+	var (
+		folders           = []string{"rpc", "model"}
+		files             []string
+		projectPathAbs, _ = filepath.Abs(".")
+		folderPathAbs     string
+	)
+	for _, folder := range folders {
+		files = files[:0]
+		folderPathAbs, _ = filepath.Abs(filepath.Join(".", folder))
+		_ = filepath.Walk(filepath.Join(".", folder), func(path string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
 				return nil
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
-				projectPathAbs, _ := filepath.Abs(".")
-				folderPathAbs, _ := filepath.Abs(filepath.Dir(path))
+				//files = append(files, filepath.Join(folderPathAbs, filepath.Base(path)))
+				files = append(files, path)
 				// call protoc-gen-go
 				cmd1 := exec.Command(
 					"protoc",
@@ -76,15 +84,31 @@ func compileProto(g *genny.Generator) {
 					fmt.Sprintf("-I=%s", projectPathAbs),
 					fmt.Sprintf("-I=%s", folderPathAbs),
 					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-					fmt.Sprintf("--gorony_out=paths=source_relative,plugin=server:%s", projectPathAbs),
+					fmt.Sprintf("--gorony_out=paths=source_relative:%s", projectPathAbs),
 					path,
 				)
 				cmd2.Env = os.Environ()
 				cmd2.Dir = filepath.Dir(projectPathAbs)
 				g.Command(cmd2)
+
 			}
 
 			return nil
 		})
+		// generate protoc-gen-gorony
+		args := []string{
+			fmt.Sprintf("-I=%s", projectPathAbs),
+			fmt.Sprintf("-I=%s", folderPathAbs),
+			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
+			fmt.Sprintf("--gorony_out=paths=source_relative,rony_opt=json_c:%s", projectPathAbs),
+		}
+		args = append(args, files...)
+		cmd3 := exec.Command(
+			"protoc", args...,
+		)
+		cmd3.Env = os.Environ()
+		cmd3.Dir = filepath.Dir(projectPathAbs)
+		cmd3.Stderr = os.Stderr
+		g.Command(cmd3)
 	}
 }
