@@ -204,6 +204,7 @@ func (ws *Websocket) newConn(id string, replicaSet uint64, hostPorts ...string) 
 		ws:         ws,
 		replicaSet: replicaSet,
 		hostPorts:  hostPorts,
+		secure:     ws.cfg.Secure,
 	}
 	return wsc
 }
