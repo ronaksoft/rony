@@ -41,6 +41,7 @@ type Http struct {
 	mtx            sync.RWMutex
 	sessionReplica uint64
 	hosts          map[uint64]map[string]*httpConn // holds host by replicaSet/hostID
+	logger         log.Logger
 }
 
 func NewHttp(config HttpConfig) *Http {
@@ -53,7 +54,8 @@ func NewHttp(config HttpConfig) *Http {
 			WriteTimeout:              config.WriteTimeout,
 			MaxResponseBodySize:       0,
 		},
-		hosts: make(map[uint64]map[string]*httpConn, 32),
+		hosts:  make(map[uint64]map[string]*httpConn, 32),
+		logger: log.With("EdgeC(Http)"),
 	}
 	if h.cfg.Router == nil {
 		h.cfg.Router = &httpRouter{
@@ -123,7 +125,7 @@ func (h *Http) initConn() error {
 		x := &rony.Edges{}
 		_ = x.Unmarshal(res.Message)
 		for _, n := range x.Nodes {
-			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
+			if ce := h.logger.Check(log.DebugLevel, "NodeInfo"); ce != nil {
 				ce.Write(
 					zap.String("ServerID", n.ServerID),
 					zap.Uint64("RS", n.ReplicaSet),
@@ -153,7 +155,7 @@ func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvel
 	}
 
 SendLoop:
-	if ce := log.Check(log.DebugLevel, "Send"); ce != nil {
+	if ce := h.logger.Check(log.DebugLevel, "sending"); ce != nil {
 		ce.Write(
 			zap.Uint64("ReqID", req.RequestID),
 			zap.Uint64("RS", rs),

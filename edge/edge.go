@@ -61,7 +61,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 		handlers:   make(map[uint64]*HandlerOption),
 		serverID:   []byte(serverID),
 		dispatcher: &defaultDispatcher{},
-		logger: log.With("EDGE"),
+		logger:     log.With("EDGE"),
 	}
 
 	for _, opt := range opts {

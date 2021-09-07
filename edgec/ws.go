@@ -57,6 +57,7 @@ type Websocket struct {
 	cfg            WebsocketConfig
 	sessionReplica uint64
 	nextReqID      uint64
+	logger         log.Logger
 
 	// Connection Pool
 	connsMtx       sync.RWMutex
@@ -78,6 +79,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		connsByReplica: make(map[uint64]map[string]*wsConn, 64),
 		connsByID:      make(map[string]*wsConn, 64),
 		pending:        make(map[uint64]chan *rony.MessageEnvelope, 1024),
+		logger:         log.With("EdgeC(Websocket)"),
 	}
 
 	c.flusherPool = tools.NewFlusherPool(1, 100, c.sendFunc)
@@ -134,7 +136,7 @@ func (ws *Websocket) Start() error {
 		_ = initConn.close()
 		ws.removeConn("", 0)
 		for _, n := range x.Nodes {
-			if ce := log.Check(log.DebugLevel, "NodeInfo"); ce != nil {
+			if ce := ws.logger.Check(log.DebugLevel, "NodeInfo"); ce != nil {
 				ce.Write(
 					zap.String("ServerID", n.ServerID),
 					zap.Uint64("RS", n.ReplicaSet),
@@ -154,7 +156,7 @@ func (ws *Websocket) Start() error {
 }
 
 func (ws *Websocket) addConn(serverID string, replicaSet uint64, wsc *wsConn) {
-	log.Debug("Pool connection added",
+	ws.logger.Debug("Pool connection added",
 		zap.String("ServerID", serverID),
 		zap.Uint64("RS", replicaSet),
 	)
@@ -250,7 +252,7 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 	}
 
 	if err := wsc.send(me); err != nil {
-		log.Warn("EdgeClient (Websocket) got error on sending request", zap.Error(err))
+		ws.logger.Warn("got error on sending request", zap.Error(err))
 	}
 }
 
@@ -319,7 +321,7 @@ Loop:
 }
 
 func (ws *Websocket) redirect(x *rony.Redirect) (replicaSet uint64) {
-	if ce := log.Check(log.InfoLevel, "EdgeClient (Websocket) received Redirect"); ce != nil {
+	if ce := ws.logger.Check(log.DebugLevel, "received Redirect"); ce != nil {
 		ce.Write(
 			zap.Any("Edges", x.Edges),
 			zap.Any("Wait", x.WaitInSec),
