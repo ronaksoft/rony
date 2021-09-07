@@ -119,7 +119,7 @@ func PromptCompleter(rootCmd *cobra.Command) func(d prompt.Document) []prompt.Su
 				if strings.HasPrefix(flag.Name, currWord[2:]) {
 					suggests = append(suggests, prompt.Suggest{
 						Text:        fmt.Sprintf("--%s", flag.Name),
-						Description: flag.Usage,
+						Description: flag.Shorthand,
 					})
 				}
 			})
