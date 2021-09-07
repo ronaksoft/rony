@@ -137,3 +137,18 @@ func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	}
 	ctx.PushMessage(msg.C_Page, res)
 }
+
+func (pm *Builtin) ping(ctx *RequestCtx, in *rony.MessageEnvelope) {
+	req := rony.PoolPing.Get()
+	defer rony.PoolPing.Put(req)
+	res := rony.PoolPong.Get()
+	defer rony.PoolPong.Put(res)
+	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	if err != nil {
+		ctx.PushError(errors.ErrInvalidRequest)
+		return
+	}
+
+	res.ID = req.ID
+	ctx.PushMessage(rony.C_Pong, res)
+}

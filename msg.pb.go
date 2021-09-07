@@ -160,6 +160,100 @@ func (x *MessageEnvelope) GetHeader() []*KeyValue {
 	return nil
 }
 
+type Ping struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID int64 `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+}
+
+func (x *Ping) Reset() {
+	*x = Ping{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_msg_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Ping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Ping) ProtoMessage() {}
+
+func (x *Ping) ProtoReflect() protoreflect.Message {
+	mi := &file_msg_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Ping.ProtoReflect.Descriptor instead.
+func (*Ping) Descriptor() ([]byte, []int) {
+	return file_msg_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Ping) GetID() int64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+type Pong struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID int64 `protobuf:"varint,2,opt,name=ID,proto3" json:"ID,omitempty"`
+}
+
+func (x *Pong) Reset() {
+	*x = Pong{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_msg_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Pong) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Pong) ProtoMessage() {}
+
+func (x *Pong) ProtoReflect() protoreflect.Message {
+	mi := &file_msg_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Pong.ProtoReflect.Descriptor instead.
+func (*Pong) Descriptor() ([]byte, []int) {
+	return file_msg_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Pong) GetID() int64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
 // KeyValue
 type KeyValue struct {
 	state         protoimpl.MessageState
@@ -173,7 +267,7 @@ type KeyValue struct {
 func (x *KeyValue) Reset() {
 	*x = KeyValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[1]
+		mi := &file_msg_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -186,7 +280,7 @@ func (x *KeyValue) String() string {
 func (*KeyValue) ProtoMessage() {}
 
 func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[1]
+	mi := &file_msg_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +293,7 @@ func (x *KeyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{1}
+	return file_msg_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *KeyValue) GetKey() string {
@@ -230,7 +324,7 @@ type MessageContainer struct {
 func (x *MessageContainer) Reset() {
 	*x = MessageContainer{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[2]
+		mi := &file_msg_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -243,7 +337,7 @@ func (x *MessageContainer) String() string {
 func (*MessageContainer) ProtoMessage() {}
 
 func (x *MessageContainer) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[2]
+	mi := &file_msg_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +350,7 @@ func (x *MessageContainer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageContainer.ProtoReflect.Descriptor instead.
 func (*MessageContainer) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{2}
+	return file_msg_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MessageContainer) GetLength() int32 {
@@ -287,7 +381,7 @@ type Error struct {
 func (x *Error) Reset() {
 	*x = Error{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[3]
+		mi := &file_msg_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -300,7 +394,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[3]
+	mi := &file_msg_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -313,7 +407,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{3}
+	return file_msg_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Error) GetCode() string {
@@ -351,7 +445,7 @@ type Redirect struct {
 func (x *Redirect) Reset() {
 	*x = Redirect{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[4]
+		mi := &file_msg_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -364,7 +458,7 @@ func (x *Redirect) String() string {
 func (*Redirect) ProtoMessage() {}
 
 func (x *Redirect) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[4]
+	mi := &file_msg_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -377,7 +471,7 @@ func (x *Redirect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Redirect.ProtoReflect.Descriptor instead.
 func (*Redirect) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{4}
+	return file_msg_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Redirect) GetReason() RedirectReason {
@@ -415,7 +509,7 @@ type Edge struct {
 func (x *Edge) Reset() {
 	*x = Edge{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[5]
+		mi := &file_msg_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -428,7 +522,7 @@ func (x *Edge) String() string {
 func (*Edge) ProtoMessage() {}
 
 func (x *Edge) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[5]
+	mi := &file_msg_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +535,7 @@ func (x *Edge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Edge.ProtoReflect.Descriptor instead.
 func (*Edge) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{5}
+	return file_msg_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Edge) GetReplicaSet() uint64 {
@@ -477,7 +571,7 @@ type Edges struct {
 func (x *Edges) Reset() {
 	*x = Edges{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[6]
+		mi := &file_msg_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -490,7 +584,7 @@ func (x *Edges) String() string {
 func (*Edges) ProtoMessage() {}
 
 func (x *Edges) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[6]
+	mi := &file_msg_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +597,7 @@ func (x *Edges) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Edges.ProtoReflect.Descriptor instead.
 func (*Edges) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{6}
+	return file_msg_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Edges) GetNodes() []*Edge {
@@ -527,7 +621,7 @@ type GetNodes struct {
 func (x *GetNodes) Reset() {
 	*x = GetNodes{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[7]
+		mi := &file_msg_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -540,7 +634,7 @@ func (x *GetNodes) String() string {
 func (*GetNodes) ProtoMessage() {}
 
 func (x *GetNodes) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[7]
+	mi := &file_msg_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -553,7 +647,7 @@ func (x *GetNodes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNodes.ProtoReflect.Descriptor instead.
 func (*GetNodes) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{7}
+	return file_msg_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetNodes) GetReplicaSet() []uint64 {
@@ -575,7 +669,7 @@ type GetAllNodes struct {
 func (x *GetAllNodes) Reset() {
 	*x = GetAllNodes{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[8]
+		mi := &file_msg_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -588,7 +682,7 @@ func (x *GetAllNodes) String() string {
 func (*GetAllNodes) ProtoMessage() {}
 
 func (x *GetAllNodes) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[8]
+	mi := &file_msg_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -601,7 +695,7 @@ func (x *GetAllNodes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllNodes.ProtoReflect.Descriptor instead.
 func (*GetAllNodes) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{8}
+	return file_msg_proto_rawDescGZIP(), []int{10}
 }
 
 // HttpBody used by REST proxies to fill the output.
@@ -618,7 +712,7 @@ type HttpBody struct {
 func (x *HttpBody) Reset() {
 	*x = HttpBody{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_msg_proto_msgTypes[9]
+		mi := &file_msg_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -631,7 +725,7 @@ func (x *HttpBody) String() string {
 func (*HttpBody) ProtoMessage() {}
 
 func (x *HttpBody) ProtoReflect() protoreflect.Message {
-	mi := &file_msg_proto_msgTypes[9]
+	mi := &file_msg_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -644,7 +738,7 @@ func (x *HttpBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpBody.ProtoReflect.Descriptor instead.
 func (*HttpBody) Descriptor() ([]byte, []int) {
-	return file_msg_proto_rawDescGZIP(), []int{9}
+	return file_msg_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *HttpBody) GetContentType() string {
@@ -683,6 +777,9 @@ var file_msg_proto_rawDesc = []byte{
 	0x0c, 0x52, 0x04, 0x41, 0x75, 0x74, 0x68, 0x12, 0x26, 0x0a, 0x06, 0x48, 0x65, 0x61, 0x64, 0x65,
 	0x72, 0x18, 0x0a, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x72, 0x6f, 0x6e, 0x79, 0x2e, 0x4b,
 	0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x06, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x22,
+	0x16, 0x0a, 0x04, 0x50, 0x69, 0x6e, 0x67, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x22, 0x16, 0x0a, 0x04, 0x50, 0x6f, 0x6e, 0x67, 0x12,
+	0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x49, 0x44, 0x22,
 	0x32, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x4b,
 	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a,
 	0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x56, 0x61,
@@ -750,27 +847,29 @@ func file_msg_proto_rawDescGZIP() []byte {
 }
 
 var file_msg_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_msg_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_msg_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_msg_proto_goTypes = []interface{}{
 	(RedirectReason)(0),      // 0: rony.RedirectReason
 	(*MessageEnvelope)(nil),  // 1: rony.MessageEnvelope
-	(*KeyValue)(nil),         // 2: rony.KeyValue
-	(*MessageContainer)(nil), // 3: rony.MessageContainer
-	(*Error)(nil),            // 4: rony.Error
-	(*Redirect)(nil),         // 5: rony.Redirect
-	(*Edge)(nil),             // 6: rony.Edge
-	(*Edges)(nil),            // 7: rony.Edges
-	(*GetNodes)(nil),         // 8: rony.GetNodes
-	(*GetAllNodes)(nil),      // 9: rony.GetAllNodes
-	(*HttpBody)(nil),         // 10: rony.HttpBody
+	(*Ping)(nil),             // 2: rony.Ping
+	(*Pong)(nil),             // 3: rony.Pong
+	(*KeyValue)(nil),         // 4: rony.KeyValue
+	(*MessageContainer)(nil), // 5: rony.MessageContainer
+	(*Error)(nil),            // 6: rony.Error
+	(*Redirect)(nil),         // 7: rony.Redirect
+	(*Edge)(nil),             // 8: rony.Edge
+	(*Edges)(nil),            // 9: rony.Edges
+	(*GetNodes)(nil),         // 10: rony.GetNodes
+	(*GetAllNodes)(nil),      // 11: rony.GetAllNodes
+	(*HttpBody)(nil),         // 12: rony.HttpBody
 }
 var file_msg_proto_depIdxs = []int32{
-	2, // 0: rony.MessageEnvelope.Header:type_name -> rony.KeyValue
+	4, // 0: rony.MessageEnvelope.Header:type_name -> rony.KeyValue
 	1, // 1: rony.MessageContainer.Envelopes:type_name -> rony.MessageEnvelope
 	0, // 2: rony.Redirect.Reason:type_name -> rony.RedirectReason
-	6, // 3: rony.Redirect.Edges:type_name -> rony.Edge
-	6, // 4: rony.Edges.Nodes:type_name -> rony.Edge
-	2, // 5: rony.HttpBody.Header:type_name -> rony.KeyValue
+	8, // 3: rony.Redirect.Edges:type_name -> rony.Edge
+	8, // 4: rony.Edges.Nodes:type_name -> rony.Edge
+	4, // 5: rony.HttpBody.Header:type_name -> rony.KeyValue
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -797,7 +896,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KeyValue); i {
+			switch v := v.(*Ping); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -809,7 +908,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MessageContainer); i {
+			switch v := v.(*Pong); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -821,7 +920,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Error); i {
+			switch v := v.(*KeyValue); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -833,7 +932,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Redirect); i {
+			switch v := v.(*MessageContainer); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -845,7 +944,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Edge); i {
+			switch v := v.(*Error); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -857,7 +956,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Edges); i {
+			switch v := v.(*Redirect); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -869,7 +968,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetNodes); i {
+			switch v := v.(*Edge); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -881,7 +980,7 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetAllNodes); i {
+			switch v := v.(*Edges); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -893,6 +992,30 @@ func file_msg_proto_init() {
 			}
 		}
 		file_msg_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetNodes); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_msg_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetAllNodes); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_msg_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*HttpBody); i {
 			case 0:
 				return &v.state
@@ -911,7 +1034,7 @@ func file_msg_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_msg_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
