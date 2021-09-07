@@ -312,6 +312,7 @@ func (ctx *RequestCtx) pushRedirect(reason rony.RedirectReason, replicaSet uint6
 
 	ctx.PushMessage(rony.C_Redirect, r)
 	rony.PoolRedirect.Put(r)
+	ctx.StopExecution()
 }
 
 func (ctx *RequestCtx) PushRedirectSession(replicaSet uint64) {
@@ -397,7 +398,7 @@ func (ctx *RequestCtx) TunnelRequest(replicaSet uint64, req, res *rony.MessageEn
 }
 
 func (ctx *RequestCtx) Log() log.Logger {
-	return log.DefaultLogger
+	return ctx.edge.logger
 }
 
 func (ctx *RequestCtx) ReplicaSet() uint64 {

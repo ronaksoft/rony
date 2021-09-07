@@ -47,6 +47,7 @@ type Server struct {
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 	restMux    *restMux
+	logger     log.Logger
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -60,6 +61,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 		handlers:   make(map[uint64]*HandlerOption),
 		serverID:   []byte(serverID),
 		dispatcher: &defaultDispatcher{},
+		logger: log.With("EDGE"),
 	}
 
 	for _, opt := range opts {
@@ -74,7 +76,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 		var err error
 		edgeServer.store, err = store.New(cfg)
 		if err != nil {
-			log.Warn("Error On initializing store", zap.Error(err))
+			edgeServer.logger.Warn("Error On initializing store", zap.Error(err))
 		}
 	}
 
@@ -230,7 +232,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		requestCtx.StopExecution()
 	}
 
-	if ce := log.Check(log.DebugLevel, "Request Executed"); ce != nil {
+	if ce := edge.logger.Check(log.DebugLevel, "Request Executed"); ce != nil {
 		ce.Write(
 			zap.String("ServerID", edge.GetServerID()),
 			zap.String("Kind", requestCtx.Kind().String()),
@@ -248,13 +250,13 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 }
 func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if r := recover(); r != nil {
-		log.Error("Panic Recovered",
+		edge.logger.Error("Panic Recovered",
 			zap.String("C", registry.ConstructorName(in.Constructor)),
 			zap.Uint64("ReqID", in.RequestID),
 			zap.Uint64("ConnID", ctx.ConnID()),
 			zap.Any("Error", r),
 		)
-		log.Error("Panic Stack Trace", zap.ByteString("Stack", debug.Stack()))
+		edge.logger.Error("Panic Stack Trace", zap.ByteString("Stack", debug.Stack()))
 		ctx.PushError(errors.ErrInternalServer)
 	}
 }
@@ -378,7 +380,7 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 // StartCluster is non-blocking function which runs the cluster component of the Edge server.
 func (edge *Server) StartCluster() (err error) {
 	if edge.cluster == nil {
-		log.Warn("Edge Server:: Cluster is NOT set",
+		edge.logger.Warn("Cluster is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 		return errors.ErrClusterNotSet
@@ -389,7 +391,7 @@ func (edge *Server) StartCluster() (err error) {
 		return
 	}
 
-	log.Info("Edge Server:: Cluster Started",
+	edge.logger.Info("Cluster Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Cluster", edge.cluster.Addr()),
 		zap.Uint64("ReplicaSet", edge.cluster.ReplicaSet()),
@@ -401,14 +403,14 @@ func (edge *Server) StartCluster() (err error) {
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	if edge.gateway == nil {
-		log.Warn("Edge Server:: Gateway is NOT set",
+		edge.logger.Warn("Gateway is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 		return errors.ErrGatewayNotSet
 	}
 	edge.gateway.Start()
 
-	log.Info("Edge Server:: Gateway Started",
+	edge.logger.Info("Gateway Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.String("Protocol", edge.gateway.Protocol().String()),
 		zap.Strings("Addr", edge.gateway.Addr()),
@@ -424,14 +426,14 @@ func (edge *Server) StartGateway() error {
 // StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
 func (edge *Server) StartTunnel() error {
 	if edge.tunnel == nil {
-		log.Warn("Edge Server:: Tunnel is NOT set",
+		edge.logger.Warn("Tunnel is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 		return errors.ErrTunnelNotSet
 	}
 	edge.tunnel.Start()
 
-	log.Info("Edge Server:: Tunnel Started",
+	edge.logger.Info("Tunnel Started",
 		zap.ByteString("ServerID", edge.serverID),
 		zap.Strings("Addr", edge.tunnel.Addr()),
 	)
@@ -481,7 +483,7 @@ func (edge *Server) Shutdown() {
 		edge.store.Shutdown()
 	}
 
-	log.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
+	edge.logger.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))
 }
 
 // ShutdownWithSignal blocks until any of the signals has been called
