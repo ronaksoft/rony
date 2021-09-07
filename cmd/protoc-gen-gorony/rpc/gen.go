@@ -349,17 +349,17 @@ func prepare{{.Name}}Command(cmd *cobra.Command, c edgec.Client) (*{{.Name}}Clie
 			config.SetFlags(cmd,
 			{{- range .Input.Fields }}
 				{{- if or (eq .GoKind "string") (eq .GoKind "[]byte") }}
-					config.StringFlag("{{.NameCC}}", "", ""),
+					config.StringFlag("{{.NameCC}}", "{{.DefaultValue}}", "{{.HelpText}}"),
 				{{- else if eq .GoKind "int64" }}
-					config.Int64Flag("{{.NameCC}}", 0, ""),
+					config.Int64Flag("{{.NameCC}}", tools.StrToInt64("{{.DefaultValue}}"), "{{.HelpText}}"),
 				{{- else if eq .GoKind "uint64" }}
-					config.Uint64Flag("{{.NameCC}}", 0, ""),
+					config.Uint64Flag("{{.NameCC}}", tools.StrToUInt64("{{.DefaultValue}}"), "{{.HelpText}}"),
 				{{- else if eq .GoKind "int32" }}
-					config.Int32Flag("{{.NameCC}}", 0, ""),
+					config.Int32Flag("{{.NameCC}}", tools.StrToInt32("{{.DefaultValue}}"), "{{.HelpText}}"),
 				{{- else if eq .GoKind "uint32" }}
-					config.Uint32Flag("{{.NameCC}}", 0, ""),
+					config.Uint32Flag("{{.NameCC}}", tools.StrToUInt32("{{.DefaultValue}}"), "{{.HelpText}}"),
 				{{- else if eq .GoKind "bool" }}
-					config.BoolFlag("{{.NameCC}}", false, ""),
+					config.BoolFlag("{{.NameCC}}", false, "{{.HelpText}}"),
 				{{- end }}
 			{{- end }}
 			)

@@ -39,7 +39,7 @@ service Sample {
 }
 
 message GetRequest {
-    bytes Key = 1;
+    bytes Key = 1 [(rony_default) = "somekey", (rony_help) = "enter some random key"];
 }
 
 message GetResponse {

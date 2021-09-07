@@ -72,4 +72,10 @@ extend google.protobuf.MessageOptions {
 extend google.protobuf.FieldOptions {
     // rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
     optional bool rony_index = 50001;
+    // rony_default set the help text in generated cli client. This flag only works if rony_cobra_cmd is set
+    // in the service.
+    optional string rony_help = 50002;
+    // rony_default set the default value in generated cli client. This flag only works if rony_cobra_cmd is set
+    // in the service.
+    optional string rony_default = 50003;
 }

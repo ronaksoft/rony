@@ -250,17 +250,19 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
-	file        *protogen.File
-	desc        protoreflect.FieldDescriptor
-	name        string
-	pkg         string
-	ImportPath  protogen.GoImportPath
-	ZeroValue   string
-	Kind        string
-	GoKind      string
-	CqlKind     string
-	Cardinality string
-	HasIndex    bool
+	file         *protogen.File
+	desc         protoreflect.FieldDescriptor
+	name         string
+	pkg          string
+	ImportPath   protogen.GoImportPath
+	ZeroValue    string
+	Kind         string
+	GoKind       string
+	CqlKind      string
+	Cardinality  string
+	HasIndex     bool
+	HelpText     string
+	DefaultValue string
 }
 
 func GetFieldArg(f *protogen.Field) FieldArg {
@@ -284,6 +286,8 @@ func GetFieldArg(f *protogen.Field) FieldArg {
 
 	opt, _ := f.Desc.Options().(*descriptorpb.FieldOptions)
 	arg.HasIndex = proto.GetExtension(opt, rony.E_RonyIndex).(bool)
+	arg.HelpText = proto.GetExtension(opt, rony.E_RonyHelp).(string)
+	arg.DefaultValue = proto.GetExtension(opt, rony.E_RonyDefault).(string)
 
 	return arg
 }

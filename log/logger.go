@@ -117,6 +117,7 @@ func ProvideDI(cfg Config) {
 		di.MustProvide(New)
 	})
 }
+
 func (l *ronyLogger) Sugared() *sugaredRonyLogger {
 	return &sugaredRonyLogger{
 		l: l,
