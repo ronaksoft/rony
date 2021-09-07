@@ -2,10 +2,12 @@ package log
 
 import (
 	"fmt"
+	"github.com/ronaksoft/rony/di"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
 	"runtime/debug"
+	"sync"
 )
 
 /*
@@ -102,6 +104,19 @@ func New(cfg Config) *ronyLogger {
 	return l
 }
 
+var (
+	once sync.Once
+)
+
+// ProvideDI is protected by sync.Once and provides the Logger interface for other packages.
+func ProvideDI(cfg Config) {
+	once.Do(func() {
+		di.MustProvide(func() Config {
+			return cfg
+		})
+		di.MustProvide(New)
+	})
+}
 func (l *ronyLogger) Sugared() *sugaredRonyLogger {
 	return &sugaredRonyLogger{
 		l: l,

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/ronaksoft/rony/di"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -59,6 +60,11 @@ func init() {
 	cfg := DefaultConfig
 	cfg.SkipCaller = 3
 	DefaultLogger = New(cfg)
+
+	// bind *ronyLogger for dependency injection
+	di.MustProvide(func(l *ronyLogger) Logger {
+		return l
+	})
 }
 
 func Init(config Config) {
