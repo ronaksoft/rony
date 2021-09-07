@@ -20,17 +20,13 @@ var (
 	_Viper *viper.Viper
 )
 
-func MustInit(configFileName string, configSearchPaths ...string) {
-	err := Init(configFileName, configSearchPaths...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func Init(configFileName string, configSearchPaths ...string) error {
+func Init() {
 	_Viper = viper.NewWithOptions(
 		viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")),
 	)
+}
+
+func ReadFile(configFileName string, configSearchPaths ...string) error {
 	for _, p := range configSearchPaths {
 		_Viper.AddConfigPath(p)
 	}
@@ -41,6 +37,10 @@ func Init(configFileName string, configSearchPaths ...string) error {
 	_Viper.SetConfigName(configFileName)
 
 	return _Viper.ReadInConfig()
+}
+
+func AllSettings() map[string]interface{} {
+	return _Viper.AllSettings()
 }
 
 // SetEnvPrefix defines a prefix that ENVIRONMENT variables will use.

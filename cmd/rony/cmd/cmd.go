@@ -22,7 +22,7 @@ const (
 
 func init() {
 	workingDir, _ := os.Getwd()
-	_ = config.Init("", workingDir)
+	config.Init()
 
 	config.SetPersistentFlags(RootCmd,
 		config.BoolFlag("dry-run", false, "don't actually change anything"),

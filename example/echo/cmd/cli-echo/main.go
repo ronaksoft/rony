@@ -10,10 +10,7 @@ import (
 
 func main() {
 	// Initialize the config package
-	err := config.Init("echo")
-	if err != nil {
-		fmt.Println("config initialization had error:", err)
-	}
+	config.Init()
 
 	// Define the configs if this executable is running as a server instance
 	// Set the flags as config parameters
@@ -38,7 +35,7 @@ func main() {
 	)
 
 	RootCmd.AddCommand(ServerCmd, ClientCmd)
-	err = RootCmd.Execute()
+	err := RootCmd.Execute()
 	if err != nil {
 		fmt.Println("we got error:", err)
 	}
