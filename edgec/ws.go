@@ -328,6 +328,10 @@ func (ws *Websocket) redirect(x *rony.Redirect) (replicaSet uint64) {
 		)
 	}
 
+	if len(x.Edges) == 0 {
+		return
+	}
+
 	for _, n := range x.Edges {
 		ws.addConn(
 			n.ServerID, n.ReplicaSet,
@@ -341,6 +345,8 @@ func (ws *Websocket) redirect(x *rony.Redirect) (replicaSet uint64) {
 	case rony.RedirectReason_ReplicaSetRequest:
 	default:
 	}
+
+	replicaSet = x.Edges[0].ReplicaSet
 
 	return
 }
