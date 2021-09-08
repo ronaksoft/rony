@@ -125,7 +125,7 @@ func (l *ronyLogger) Sugared() *sugaredRonyLogger {
 }
 
 func (l *ronyLogger) Check(lvl Level, msg string) *CheckedEntry {
-	return l.z.Check(lvl, msg)
+	return l.z.Check(lvl, l.addPrefix(msg))
 }
 
 func (l *ronyLogger) Sync() error {
