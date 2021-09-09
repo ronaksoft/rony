@@ -488,9 +488,15 @@ func (edge *Server) Shutdown() {
 }
 
 // ShutdownWithSignal blocks until any of the signals has been called
-func (edge *Server) ShutdownWithSignal(signals ...os.Signal) {
+func (edge *Server) ShutdownWithSignal(signals ...os.Signal) error {
 	edge.WaitForSignal(signals...)
+	if edge.cluster != nil {
+		if err := edge.cluster.Leave(); err != nil {
+			return err
+		}
+	}
 	edge.Shutdown()
+	return nil
 }
 
 func (edge *Server) WaitForSignal(signals ...os.Signal) {

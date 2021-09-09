@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/markbates/pkger"
+	"embed"
 	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 	"os"
@@ -16,9 +16,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-const (
-	skeletonPath = "github.com/ronaksoft/rony:/internal/templates"
-)
+var Skeleton embed.FS
 
 func init() {
 	workingDir, _ := os.Getwd()
@@ -40,9 +38,6 @@ func init() {
 
 	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd)
 
-	_ = pkger.Walk(skeletonPath, func(path string, info os.FileInfo, err error) error {
-		return nil
-	})
 }
 
 var RootCmd = &cobra.Command{

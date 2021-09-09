@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"context"
+	"embed"
+	"fmt"
 	"github.com/gobuffalo/genny/v2"
 	"github.com/gobuffalo/plush/v4"
-	"github.com/markbates/pkger"
 	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 /*
@@ -23,7 +23,7 @@ import (
 */
 
 var CreateProjectCmd = &cobra.Command{
-	Use: "create-project",
+	Use: "new",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := config.BindCmdFlags(cmd)
 		if err != nil {
@@ -51,40 +51,54 @@ var CreateProjectCmd = &cobra.Command{
 	},
 }
 
-func setupSkeleton(g *genny.Generator) {
-	projectPath := config.GetString("project.dir")
-	projectName := config.GetString("project.name")
-
-	_ = os.Mkdir(projectPath, os.ModePerm)
-
-	pathPrefix := skeletonPath + "/skel"
-	err := pkger.Walk(pathPrefix, func(path string, info os.FileInfo, err error) error {
-		realPath := strings.TrimSuffix(strings.TrimPrefix(path, pathPrefix), ".tpl")
-		if info.IsDir() {
-			g.File(genny.NewDir(filepath.Join(projectPath, realPath), os.ModeDir|0744))
-		} else {
-			f, err := pkger.Open(path)
-			if err != nil {
-				return err
-			}
-			tCtx := plush.NewContext()
-			tCtx.Set("projectName", func() string {
-				return projectName
-			})
-			s, err := plush.RenderR(f, tCtx)
-			if err != nil {
-				return err
-			}
-			g.File(genny.NewFileS(filepath.Join(projectPath, realPath), s))
-			_ = f.Close()
+func addFiles(g *genny.Generator, tCtx *plush.Context, fs embed.FS, fsPath, path string, outputDir string) {
+	files, _ := fs.ReadDir(filepath.Join(fsPath, path))
+	for _, ent := range files {
+		if ent.IsDir() {
+			continue
 		}
+		f, err := Skeleton.Open(filepath.Join(fsPath, path, ent.Name()))
+		if err != nil {
+			panic(err)
+		}
+		s, err := plush.RenderR(f, tCtx)
+		if err != nil {
+			panic(err)
+		}
+		g.File(genny.NewFileS(filepath.Join(outputDir, ent.Name()), s))
+		_ = f.Close()
+	}
 
-		return nil
-	})
+}
+
+func setupSkeleton(g *genny.Generator) {
+	projectPath, err := filepath.Abs(config.GetString("project.dir"))
 	if err != nil {
 		panic(err)
 	}
+	projectName := config.GetString("project.name")
+
+	_ = os.MkdirAll(projectPath, os.ModePerm)
+
+	f, _ := Skeleton.Open("build.sh")
+	g.File(genny.NewFile(filepath.Join(projectPath, "build.sh"), f))
+	f, _ = Skeleton.Open("gitignore")
+	g.File(genny.NewFile(filepath.Join(projectPath, ".gitignore"), f))
+
+	tCtx := plush.NewContext()
+	tCtx.Set("projectName", func() string {
+		return projectName
+	})
+
+	// create cmd folder
+	g.File(genny.NewDir(filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)), os.ModeDir|0744))
+	addFiles(g, tCtx, Skeleton, "skel", "cmd/cli-project", filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)))
+
+	// create rpc folder
+	g.File(genny.NewDir(filepath.Join(projectPath, "cmd/rpc"), os.ModeDir|0744))
+	addFiles(g, tCtx, Skeleton, "skel", "rpc", filepath.Join(projectPath, "cmd/rpc"))
 }
+
 func goModuleInit(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
 	packageName := config.GetString("package.name")
@@ -94,18 +108,26 @@ func goModuleInit(g *genny.Generator) {
 	cmd.Dir = projectPath
 	g.Command(cmd)
 }
+
 func goModuleTidy(g *genny.Generator) {
-	cmd := exec.Command("go", "mod", "tidy")
+	cmd := exec.Command("go", "mod", "tidy", "-go=1.16")
+	cmd.Env = os.Environ()
+	cmd.Dir = config.GetString("project.dir")
+	g.Command(cmd)
+
+	cmd = exec.Command("go", "mod", "tidy", "-go=1.17")
 	cmd.Env = os.Environ()
 	cmd.Dir = config.GetString("project.dir")
 	g.Command(cmd)
 }
+
 func goModuleVendor(g *genny.Generator) {
 	cmd := exec.Command("go", "mod", "vendor")
 	cmd.Env = os.Environ()
 	cmd.Dir = config.GetString("project.dir")
 	g.Command(cmd)
 }
+
 func gofmt(g *genny.Generator) {
 	cmd := exec.Command("go", "fmt", "./...")
 	cmd.Env = os.Environ()
