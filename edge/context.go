@@ -413,6 +413,10 @@ func (ctx *RequestCtx) ReplicaSet() uint64 {
 	return ctx.edge.cluster.ReplicaSet()
 }
 
+func (ctx *RequestCtx) Router() rony.Router {
+	return ctx.edge.router
+}
+
 var requestCtxPool = sync.Pool{}
 
 func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {

@@ -153,6 +153,6 @@ func RegisterPrometheus(registerer prometheus.Registerer) {
 
 // Router could be used by Edge servers to find entities and redirect clients to the right Edge server.
 type Router interface {
-	Update(entityID string, replicaSet uint64) error
+	Set(entityID string, replicaSet uint64, replace bool) error
 	Get(entityID string) (replicaSet uint64, err error)
 }

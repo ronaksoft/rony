@@ -6,8 +6,10 @@ import (
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
+	scyllaRouter "github.com/ronaksoft/rony/internal/router/scylla"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 	"github.com/ronaksoft/rony/log"
+	"github.com/scylladb/gocqlx/v2"
 	"runtime"
 	"time"
 )
@@ -169,5 +171,15 @@ func WithInMemoryStore(b bool) Option {
 func WithCustomRouter(r rony.Router) Option {
 	return func(edge *Server) {
 		edge.router = r
+	}
+}
+
+type ScyllaRouterConfig struct {
+	DbSession gocqlx.Session
+}
+
+func WithScyllaRouter(config ScyllaRouterConfig) Option {
+	return func(edge *Server) {
+		edge.router = scyllaRouter.New(config.DbSession)
 	}
 }
