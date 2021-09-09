@@ -73,7 +73,7 @@ func TestRestProxy(t *testing.T) {
 						req := &service.EchoRequest{
 							Int: tools.StrToInt64(tools.GetString(conn.Get("value"), "0")),
 						}
-						ctx.FillEnvelope(conn.ConnID(), service.C_SampleEcho, req)
+						ctx.Fill(conn.ConnID(), service.C_SampleEcho, req)
 						return nil
 					},
 					func(conn rony.RestConn, ctx *edge.DispatchCtx) error {

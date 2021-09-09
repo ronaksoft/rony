@@ -32,6 +32,8 @@ message KeyValue {
 message MessageContainer {
     int32 Length = 1;
     repeated MessageEnvelope Envelopes = 2;
+    // SyncRun makes the execution in sequence if it is TRUE
+    bool SyncRun = 3;
 }
 
 // Error

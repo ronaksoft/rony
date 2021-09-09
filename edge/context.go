@@ -94,7 +94,7 @@ func (ctx *DispatchCtx) StreamID() int64 {
 	return ctx.streamID
 }
 
-func (ctx *DispatchCtx) CopyEnvelope(e *rony.MessageEnvelope) {
+func (ctx *DispatchCtx) FillEnvelope(e *rony.MessageEnvelope) {
 	if ctx.reqFilled {
 		panic("BUG!!! request has been already filled")
 	}
@@ -102,12 +102,20 @@ func (ctx *DispatchCtx) CopyEnvelope(e *rony.MessageEnvelope) {
 	e.DeepCopy(ctx.req)
 }
 
-func (ctx *DispatchCtx) FillEnvelope(requestID uint64, constructor uint64, p proto.Message, kv ...*rony.KeyValue) {
+func (ctx *DispatchCtx) Fill(requestID uint64, constructor uint64, p proto.Message, kv ...*rony.KeyValue) {
 	if ctx.reqFilled {
 		panic("BUG!!! request has been already filled")
 	}
 	ctx.reqFilled = true
 	ctx.req.Fill(requestID, constructor, p, kv...)
+}
+
+func (ctx *DispatchCtx) FillBytes(data []byte) error {
+	if ctx.reqFilled {
+		panic("BUG!!! request has been already filled")
+	}
+	ctx.reqFilled = true
+	return proto.Unmarshal(data, ctx.req)
 }
 
 func (ctx *DispatchCtx) Set(key string, v interface{}) {
@@ -143,12 +151,6 @@ func (ctx *DispatchCtx) GetString(key string, defaultValue string) string {
 	}
 }
 
-// Kind identifies that this dispatch context is generated from Tunnel or Gateway. This helps
-// developer to apply different strategies based on the source of the incoming message
-func (ctx *DispatchCtx) Kind() MessageKind {
-	return ctx.kind
-}
-
 func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
 	v, ok := ctx.Get(key).(int64)
 	if ok {
@@ -165,8 +167,10 @@ func (ctx *DispatchCtx) GetBool(key string) bool {
 	return false
 }
 
-func (ctx *DispatchCtx) UnmarshalEnvelope(data []byte) error {
-	return proto.Unmarshal(data, ctx.req)
+// Kind identifies that this dispatch context is generated from Tunnel or Gateway. This helps
+// developer to apply different strategies based on the source of the incoming message
+func (ctx *DispatchCtx) Kind() MessageKind {
+	return ctx.kind
 }
 
 func (ctx *DispatchCtx) BufferPush(m *rony.MessageEnvelope) {
@@ -225,14 +229,15 @@ type RequestCtx struct {
 	stop        bool
 }
 
-func newRequestCtx(edge *Server) *RequestCtx {
+func newRequestCtx() *RequestCtx {
 	return &RequestCtx{
 		nextChan: make(chan struct{}, 1),
-		edge:     edge,
 	}
 }
 
-func (ctx *RequestCtx) Return() {
+// NextCanGo is useful only if the main request is rony.MessageContainer with SyncRun flag set to TRUE.
+// Then by calling this function it lets the next request (if any) executed concurrently.
+func (ctx *RequestCtx) NextCanGo() {
 	if ctx.quickReturn {
 		ctx.nextChan <- struct{}{}
 	}
@@ -360,7 +365,7 @@ func (ctx *RequestCtx) PushCustomError(code, item string, desc string) {
 }
 
 func (ctx *RequestCtx) Cluster() rony.Cluster {
-	return ctx.dispatchCtx.edge.cluster
+	return ctx.edge.cluster
 }
 
 func (ctx *RequestCtx) ClusterEdges(replicaSet uint64, edges *rony.Edges) (*rony.Edges, error) {
@@ -413,13 +418,14 @@ var requestCtxPool = sync.Pool{}
 func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	var ctx *RequestCtx
 	if v := requestCtxPool.Get(); v == nil {
-		ctx = newRequestCtx(dispatchCtx.edge)
+		ctx = newRequestCtx()
 	} else {
 		ctx = v.(*RequestCtx)
 	}
 	ctx.stop = false
 	ctx.quickReturn = quickReturn
 	ctx.dispatchCtx = dispatchCtx
+	ctx.edge = dispatchCtx.edge
 	return ctx
 }
 

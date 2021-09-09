@@ -41,6 +41,7 @@ type Server struct {
 	postHandlers []Handler
 
 	// Edge components
+	router     rony.Router
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
 	store      *store.Store
@@ -166,19 +167,23 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 		}
 		xLen := len(x.Envelopes)
 		for i := 0; i < xLen; i++ {
-			ctx := acquireRequestCtx(dispatchCtx, true)
-			nextChan := make(chan struct{}, 1)
+			ctx := acquireRequestCtx(dispatchCtx, x.SyncRun)
 			waitGroup.Add(1)
 			go func(ctx *RequestCtx, idx int) {
 				edge.executeFunc(ctx, x.Envelopes[idx])
-				nextChan <- struct{}{}
+				if x.SyncRun {
+					select {
+					case ctx.nextChan <- struct{}{}:
+					default:
+					}
+				}
 				waitGroup.Done()
 				releaseRequestCtx(ctx)
 			}(ctx, i)
-			select {
-			case <-ctx.nextChan:
-				// The handler supported quick return
-			case <-nextChan:
+
+			if x.SyncRun {
+				// wait until we allowed to go to next
+				<-ctx.nextChan
 			}
 		}
 	default:

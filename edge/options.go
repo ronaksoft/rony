@@ -67,6 +67,12 @@ func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 	}
 }
 
+func WithCustomerCluster(c rony.Cluster) Option {
+	return func(edge *Server) {
+		edge.cluster = c
+	}
+}
+
 type TcpGatewayConfig struct {
 	Concurrency   int
 	ListenAddress string
@@ -157,5 +163,11 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 func WithInMemoryStore(b bool) Option {
 	return func(edge *Server) {
 		edge.inMemoryStore = b
+	}
+}
+
+func WithCustomRouter(r rony.Router) Option {
+	return func(edge *Server) {
+		edge.router = r
 	}
 }

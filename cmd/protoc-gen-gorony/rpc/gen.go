@@ -104,7 +104,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	{{.}}
 	{{- end }}
 
-	ctx.FillEnvelope(conn.ConnID(), C_{{.Fullname}}, req)
+	ctx.Fill(conn.ConnID(), C_{{.Fullname}}, req)
 	return nil
 }
 func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {

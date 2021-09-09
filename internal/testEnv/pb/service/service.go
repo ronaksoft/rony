@@ -72,7 +72,7 @@ var EchoRest = edge.NewRestProxy(
 		if err != nil {
 			return err
 		}
-		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+		ctx.Fill(conn.ConnID(), C_SampleEcho, req)
 
 		return nil
 	},
@@ -108,7 +108,7 @@ var EchoRestBinding = edge.NewRestProxy(
 		req := &EchoRequest{}
 		req.Int = tools.StrToInt64(tools.GetString(conn.Get("value"), "0"))
 		req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("ts"), "0"))
-		ctx.FillEnvelope(conn.ConnID(), C_SampleEcho, req)
+		ctx.Fill(conn.ConnID(), C_SampleEcho, req)
 
 		return nil
 	},

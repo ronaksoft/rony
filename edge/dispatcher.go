@@ -46,7 +46,7 @@ func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEn
 }
 
 func (s *defaultDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {
-	return ctx.UnmarshalEnvelope(data)
+	return ctx.FillBytes(data)
 }
 
 func (s *defaultDispatcher) Done(ctx *DispatchCtx) {

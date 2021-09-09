@@ -18,6 +18,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// Cluster is the component which create and present the whole cluster of Edge nodes.
 type Cluster interface {
 	Start() error
 	Shutdown()
@@ -51,7 +52,7 @@ type ClusterDelegate interface {
 }
 
 // Gateway defines the gateway interface where clients could connect
-// and communicate with the edge server
+// and communicate with the Edge servers
 type Gateway interface {
 	Start()
 	Run()
@@ -101,8 +102,8 @@ const (
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
 
-// Tunnel provides the communication channel between edge servers. Tunnel is similar to gateway.Gateway in functionalities.
-// However, Tunnel is optimized for inter-communication between edge servers, and Gateway is optimized for client-server communications.
+// Tunnel provides the communication channel between Edge servers. Tunnel is similar to Gateway in functionalities.
+// However, Tunnel should be optimized for inter-communication between Edge servers, and Gateway is optimized for client-server communications.
 type Tunnel interface {
 	Start()
 	Run()
@@ -127,7 +128,7 @@ type Conn interface {
 	Set(key string, val interface{})
 }
 
-// RestConn is same as Conn but it supports REST format apis.
+// RestConn is same as Conn, but it supports REST format apis.
 type RestConn interface {
 	Conn
 	WriteStatus(status int)
@@ -148,4 +149,10 @@ func SetLogLevel(l LogLevel) {
 
 func RegisterPrometheus(registerer prometheus.Registerer) {
 	metrics.Register(registerer)
+}
+
+// Router could be used by Edge servers to find entities and redirect clients to the right Edge server.
+type Router interface {
+	Update(entityID string, replicaSet uint64) error
+	Get(entityID string) (replicaSet uint64, err error)
 }

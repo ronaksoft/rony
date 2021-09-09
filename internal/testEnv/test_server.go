@@ -49,7 +49,7 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageE
 }
 
 func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
-	return ctx.UnmarshalEnvelope(data)
+	return ctx.FillBytes(data)
 }
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
