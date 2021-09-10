@@ -38,7 +38,7 @@ func New(s gocqlx.Session) *Router {
 			return r.t.DeleteBuilder().Query(s)
 		}),
 		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
-			return r.t.GetQuery(s)
+			return r.t.GetQuery(s, "replica_set", "created_on", "edited_on")
 		}),
 	}
 
