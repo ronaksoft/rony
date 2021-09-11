@@ -4,6 +4,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
 	"hash/crc64"
+	"strings"
+	"text/template"
 )
 
 /*
@@ -90,4 +92,12 @@ func CrcHash(data []byte) uint64 {
 	} else {
 		return uint64(crc32.Checksum(data, crc32.IEEETable))
 	}
+}
+
+func ExecTemplate(t *template.Template, v interface{}) string {
+	sb := &strings.Builder{}
+	if err := t.Execute(sb, v); err != nil {
+		panic(err)
+	}
+	return sb.String()
 }

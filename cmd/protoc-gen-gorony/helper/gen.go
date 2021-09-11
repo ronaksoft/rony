@@ -54,13 +54,13 @@ func (g *Generator) Generate() {
 			}
 		}
 		g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", arg.C, arg.Name(), arg.Name()))
-		g.g.P(g.Exec(template.Must(template.New("genPool").Parse(genPool)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genClone").Parse(genClone)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genPool").Parse(genPool)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
 		if !g.opt.NoEdgeDependency {
-			g.g.P(g.Exec(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
+			g.g.P(codegen.ExecTemplate(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 		}
 	}
 	for _, st := range g.f.Services {
@@ -83,15 +83,6 @@ func (g *Generator) Generate() {
 		g.g.P(g.initFuncBlock.String())
 		g.g.P("}")
 	}
-}
-
-func (g *Generator) Exec(t *template.Template, v interface{}) string {
-	sb := &strings.Builder{}
-	if err := t.Execute(sb, v); err != nil {
-		panic(err)
-	}
-
-	return sb.String()
 }
 
 func (g *Generator) appendToInit(x string) {

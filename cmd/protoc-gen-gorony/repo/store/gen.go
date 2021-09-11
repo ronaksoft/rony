@@ -194,28 +194,20 @@ func Generate(g *Generator, arg codegen.MessageArg) {
 	}
 
 	if arg.IsSingleton {
-		g.g.P(g.Exec(template.Must(template.New("genSingleton").Funcs(helperFunctions).Parse(genSingleton)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSingleton").Funcs(helperFunctions).Parse(genSingleton)), arg))
 	} else if arg.IsAggregate {
-		g.g.P(g.Exec(template.Must(template.New("genHelpers").Funcs(helperFunctions).Parse(genHelpers)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genPrimaryKey").Funcs(helperFunctions).Parse(genPrimaryKey)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genCreate").Funcs(helperFunctions).Parse(genCreate)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genUpdate").Funcs(helperFunctions).Parse(genUpdate)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genSave").Funcs(helperFunctions).Parse(genSave)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genRead").Funcs(helperFunctions).Parse(genRead)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genDelete").Funcs(helperFunctions).Parse(genDelete)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genList").Funcs(helperFunctions).Parse(genList)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genIter").Funcs(helperFunctions).Parse(genIter)), arg))
-		g.g.P(g.Exec(template.Must(template.New("genListByIndex").Funcs(helperFunctions).Parse(genListByIndex)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genHelpers").Funcs(helperFunctions).Parse(genHelpers)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genPrimaryKey").Funcs(helperFunctions).Parse(genPrimaryKey)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genCreate").Funcs(helperFunctions).Parse(genCreate)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genUpdate").Funcs(helperFunctions).Parse(genUpdate)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSave").Funcs(helperFunctions).Parse(genSave)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genRead").Funcs(helperFunctions).Parse(genRead)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genDelete").Funcs(helperFunctions).Parse(genDelete)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genList").Funcs(helperFunctions).Parse(genList)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genIter").Funcs(helperFunctions).Parse(genIter)), arg))
+		g.g.P(codegen.ExecTemplate(template.Must(template.New("genListByIndex").Funcs(helperFunctions).Parse(genListByIndex)), arg))
 	}
-}
-
-func (g *Generator) Exec(t *template.Template, v interface{}) string {
-	sb := &strings.Builder{}
-	if err := t.Execute(sb, v); err != nil {
-		panic(err)
-	}
-	return sb.String()
 }
 
 const genSingleton = `

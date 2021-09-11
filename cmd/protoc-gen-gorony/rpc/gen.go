@@ -9,7 +9,6 @@ import (
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"strings"
 	"text/template"
 )
 
@@ -46,35 +45,26 @@ func (g *Generator) Generate() {
 		g.g.P("var _ = tools.TimeUnix()")
 		for _, s := range g.f.Services {
 			arg := codegen.GetServiceArg(s).With(g.f)
-			g.g.P(g.Exec(template.Must(template.New("genServer").Parse(genServer)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
-			g.g.P(g.Exec(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
+			g.g.P(codegen.ExecTemplate(template.Must(template.New("genServer").Parse(genServer)), arg))
+			g.g.P(codegen.ExecTemplate(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
+			g.g.P(codegen.ExecTemplate(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
 			if arg.HasRestProxy {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "net/http"})
-				g.g.P(g.Exec(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
+				g.g.P(codegen.ExecTemplate(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
 			}
 
 			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
 			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
-				g.g.P(g.Exec(template.Must(template.New("genClient").Parse(genClient)), arg))
+				g.g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
 			}
 			if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
-				g.g.P(g.Exec(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))
+				g.g.P(codegen.ExecTemplate(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))
 			}
 		}
 	}
-}
-
-func (g *Generator) Exec(t *template.Template, v interface{}) string {
-	sb := &strings.Builder{}
-	if err := t.Execute(sb, v); err != nil {
-		panic(err)
-	}
-
-	return sb.String()
 }
 
 const genServerRestProxy = `

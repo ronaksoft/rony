@@ -30,8 +30,12 @@ var GenProtoCmd = &cobra.Command{
 		}
 		r.Logger = log.DefaultLogger.Sugared()
 
+		if len(args) == 0 {
+			args = append(args, "rpc", "model")
+		}
+
 		g := genny.New()
-		compileProto(g)
+		compileProto(g, args)
 		gofmt(g)
 		goModuleTidy(g)
 		goModuleVendor(g)
@@ -46,11 +50,9 @@ var GenProtoCmd = &cobra.Command{
 	},
 }
 
-func compileProto(g *genny.Generator) {
+func compileProto(g *genny.Generator, folders []string) {
 	// Compile proto files
-
 	var (
-		folders           = []string{"rpc", "model"}
 		files             []string
 		projectPathAbs, _ = filepath.Abs(".")
 		folderPathAbs     string

@@ -8,6 +8,10 @@ var (
 	di = dig.New()
 )
 
+func New() *Container {
+	return dig.New()
+}
+
 func Provide(constructor interface{}) error {
 	return di.Provide(constructor)
 }

@@ -5,6 +5,7 @@ import (
 )
 
 type (
-	In  = dig.In
-	Out = dig.Out
+	In        = dig.In
+	Out       = dig.Out
+	Container = dig.Container
 )

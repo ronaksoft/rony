@@ -45,25 +45,26 @@ func GenerateGo(g *Generator, arg codegen.MessageArg) {
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
-	g.g.P(g.Exec(template.Must(template.New("genPartKey").Funcs(helperFunctions).Parse(genPartKey)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genCRUD").Funcs(helperFunctions).Parse(genCRUD)), arg))
-	g.g.P(g.Exec(template.Must(template.New("genListByPK").Funcs(helperFunctions).Parse(genListByPK)), arg))
+	g.g.P(codegen.ExecTemplate(
+		template.Must(template.New("genPartKey").Funcs(helperFunctions).Parse(genPartKey)), arg),
+	)
+	g.g.P(codegen.ExecTemplate(
+		template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg),
+	)
+	g.g.P(codegen.ExecTemplate(
+		template.Must(template.New("genCRUD").Funcs(helperFunctions).Parse(genCRUD)), arg),
+	)
+	g.g.P(codegen.ExecTemplate(
+		template.Must(template.New("genListByPK").Funcs(helperFunctions).Parse(genListByPK)), arg),
+	)
 }
 
 func GenerateCQL(g *Generator, arg codegen.MessageArg) {
 	if arg.IsAggregate {
-		g.g.P(g.Exec(template.Must(template.New("genCQL").Funcs(helperFunctions).Parse(genCQL)), arg))
+		g.g.P(codegen.ExecTemplate(
+			template.Must(template.New("genCQL").Funcs(helperFunctions).Parse(genCQL)), arg),
+		)
 	}
-}
-
-func (g *Generator) Exec(t *template.Template, v interface{}) string {
-	sb := &strings.Builder{}
-	if err := t.Execute(sb, v); err != nil {
-		panic(err)
-	}
-
-	return sb.String()
 }
 
 var helperFunctions = map[string]interface{}{

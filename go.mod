@@ -36,6 +36,7 @@ require (
 	go.uber.org/zap v1.18.1
 	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/protobuf v1.27.1
+	gorm.io/gorm v1.21.15
 )
 
 require (
@@ -73,6 +74,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
