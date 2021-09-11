@@ -77,9 +77,13 @@ func (g *Generator) Generate() {
 			validGlobalRepo = false
 		}
 		if validLocalRepo {
-			if arg.IsAggregate || arg.IsSingleton {
+			if arg.IsAggregate {
 				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/di"})
 				g.appendToInit(fmt.Sprintf("di.MustProvide(New%sLocalRepo)\n", arg.Name()))
+			}
+			if arg.IsSingleton {
+				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/di"})
+				g.appendToInit(fmt.Sprintf("di.MustProvide(New%sLocalSingleton)\n", arg.Name()))
 			}
 		}
 		if validGlobalRepo {
