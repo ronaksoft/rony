@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ronaksoft/rony"
 	c "<%= packagePath() %>/conf"
-	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ import (
 var ClientCmd = &cobra.Command{
 	Use: "client",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := config.BindCmdFlags(cmd)
+		err := c.Conf().BindCmdFlags(cmd)
 		if err != nil {
 			return err
 		}

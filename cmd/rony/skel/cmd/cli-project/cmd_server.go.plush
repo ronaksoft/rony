@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ronaksoft/rony"
 	c "<%= packagePath() %>/conf"
-	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
 	"os"
@@ -14,7 +13,7 @@ var edgeServer *edge.Server
 var ServerCmd = &cobra.Command{
 	Use: "server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := config.BindCmdFlags(cmd)
+		err := c.Conf().BindCmdFlags(cmd)
 		if err != nil {
 			return err
 		}
