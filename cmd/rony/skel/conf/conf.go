@@ -13,4 +13,3 @@ func init() {
 func Conf() *config.Config {
 	return globalC
 }
-

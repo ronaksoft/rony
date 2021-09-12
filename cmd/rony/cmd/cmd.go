@@ -20,7 +20,6 @@ var Skeleton embed.FS
 
 func init() {
 	workingDir, _ := os.Getwd()
-	config.Init()
 
 	config.SetPersistentFlags(RootCmd,
 		config.BoolFlag("dry-run", false, "don't actually change anything"),

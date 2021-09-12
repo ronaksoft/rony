@@ -9,9 +9,6 @@ import (
 )
 
 func main() {
-	// Initialize the config package
-	config.Init()
-
 	// Define the configs if this executable is running as a server instance
 	// Set the flags as config parameters
 	config.SetCmdFlags(ServerCmd,

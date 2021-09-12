@@ -21,7 +21,6 @@ type Config struct {
 }
 
 var (
-
 	globalConfig *Config
 )
 

@@ -59,7 +59,6 @@ func addFiles(g *genny.Generator, tCtx *plush.Context, fs embed.FS, fsPath, path
 			continue
 		}
 
-
 		f, err := Skeleton.Open(filepath.Join(fsPath, path, ent.Name()))
 		if err != nil {
 			panic(err)
@@ -81,7 +80,6 @@ func setupSkeleton(g *genny.Generator) {
 
 	_ = os.MkdirAll(projectPath, os.ModePerm)
 
-
 	tCtx := plush.NewContext()
 	tCtx.Set("projectName", func() string {
 		return projectName
@@ -89,7 +87,6 @@ func setupSkeleton(g *genny.Generator) {
 	tCtx.Set("packagePath", func() string {
 		return packagePath
 	})
-
 
 	addFiles(g, tCtx, Skeleton, "skel", ".", filepath.Join(projectPath, "."))
 
