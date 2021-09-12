@@ -8,6 +8,7 @@
       <w>fullname</w>
       <w>gobwas</w>
       <w>grpc</w>
+      <w>hostport</w>
       <w>moosa</w>
       <w>nats</w>
       <w>protoc</w>

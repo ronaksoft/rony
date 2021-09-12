@@ -29,7 +29,7 @@ func init() {
 	config.SetFlags(CreateProjectCmd,
 		config.StringFlag("project.dir", workingDir, "the root path of the project"),
 		config.StringFlag("project.name", "sample-project", "the name of the project"),
-		config.StringFlag("package.name", "github.com/sample", "the full path of go package in go.mod file"),
+		config.StringFlag("package.path", "github.com/sample", "the full path of go package in go.mod file"),
 	)
 
 	config.SetFlags(GenProtoCmd,

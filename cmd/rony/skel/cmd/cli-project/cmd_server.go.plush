@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ronaksoft/rony"
+	c "<%= packagePath() %>/conf"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
@@ -20,22 +21,22 @@ var ServerCmd = &cobra.Command{
 
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
-			config.GetString("server.id"),
-			edge.WithDataDir(config.GetString("data.path")),
+			c.GetServerID(),
+			edge.WithDataDir(c.GetDataPath()),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
-				ListenAddress: config.GetString("gateway.listen"),
-				MaxIdleTime:   config.GetDuration("idle-time"),
+				ListenAddress: c.GetGatewayListen(),
+				MaxIdleTime:   c.GetIdleTime(),
 				Protocol:      rony.TCP,
-				ExternalAddrs: config.GetStringSlice("gateway.advertise.url"),
+				ExternalAddrs: c.GetGatewayAdvertiseHostPort(),
 			}),
 			edge.WithGossipCluster(edge.GossipClusterConfig{
-				Bootstrap:  config.GetBool("bootstrap"),
-				ReplicaSet: config.GetUint64("replica-set"),
-				GossipPort: config.GetInt("gossip.port"),
+				Bootstrap:  c.GetBootstrap(),
+				ReplicaSet: c.GetReplicaSet(),
+				GossipPort: c.GetGossipPort(),
 			}),
 			edge.WithUdpTunnel(edge.UdpTunnelConfig{
-				ListenAddress: config.GetString("tunnel.listen"),
-				ExternalAddrs: config.GetStringSlice("tunnel.advertise.url"),
+				ListenAddress: c.GetTunnelListen(),
+				ExternalAddrs: c.GetTunnelAdvertiseHostPort(),
 			}),
 		)
 

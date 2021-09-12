@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/gobuffalo/genny/v2"
+	"github.com/gobuffalo/genny/v2/plushgen"
 	"github.com/gobuffalo/plush/v4"
 	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
@@ -57,15 +58,14 @@ func addFiles(g *genny.Generator, tCtx *plush.Context, fs embed.FS, fsPath, path
 		if ent.IsDir() {
 			continue
 		}
+
+
 		f, err := Skeleton.Open(filepath.Join(fsPath, path, ent.Name()))
 		if err != nil {
 			panic(err)
 		}
-		s, err := plush.RenderR(f, tCtx)
-		if err != nil {
-			panic(err)
-		}
-		g.File(genny.NewFileS(filepath.Join(outputDir, ent.Name()), s))
+		ft, err := plushgen.Transformer(tCtx).Transform(genny.NewFile(filepath.Join(outputDir, ent.Name()), f))
+		g.File(ft)
 		_ = f.Close()
 	}
 
@@ -77,33 +77,39 @@ func setupSkeleton(g *genny.Generator) {
 		panic(err)
 	}
 	projectName := config.GetString("project.name")
+	packagePath := config.GetString("package.path")
 
 	_ = os.MkdirAll(projectPath, os.ModePerm)
 
-	f, _ := Skeleton.Open("build.sh")
-	g.File(genny.NewFile(filepath.Join(projectPath, "build.sh"), f))
-	f, _ = Skeleton.Open("gitignore")
-	g.File(genny.NewFile(filepath.Join(projectPath, ".gitignore"), f))
 
 	tCtx := plush.NewContext()
 	tCtx.Set("projectName", func() string {
 		return projectName
 	})
+	tCtx.Set("packagePath", func() string {
+		return packagePath
+	})
+
+
+	addFiles(g, tCtx, Skeleton, "skel", ".", filepath.Join(projectPath, "."))
 
 	// create cmd folder
 	g.File(genny.NewDir(filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)), os.ModeDir|0744))
 	addFiles(g, tCtx, Skeleton, "skel", "cmd/cli-project", filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)))
 
 	// create rpc folder
-	g.File(genny.NewDir(filepath.Join(projectPath, "cmd/rpc"), os.ModeDir|0744))
-	addFiles(g, tCtx, Skeleton, "skel", "rpc", filepath.Join(projectPath, "cmd/rpc"))
+	g.File(genny.NewDir(filepath.Join(projectPath, "rpc"), os.ModeDir|0744))
+	addFiles(g, tCtx, Skeleton, "skel", "rpc", filepath.Join(projectPath, "rpc"))
+
+	g.File(genny.NewDir(filepath.Join(projectPath, "conf"), os.ModeDir|0744))
+	addFiles(g, tCtx, Skeleton, "skel", "conf", filepath.Join(projectPath, "conf"))
 }
 
 func goModuleInit(g *genny.Generator) {
 	projectPath := config.GetString("project.dir")
-	packageName := config.GetString("package.name")
+	packagePath := config.GetString("package.path")
 
-	cmd := exec.Command("go", "mod", "init", packageName)
+	cmd := exec.Command("go", "mod", "init", packagePath)
 	cmd.Env = os.Environ()
 	cmd.Dir = projectPath
 	g.Command(cmd)
