@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -22,14 +21,16 @@ type Config struct {
 }
 
 var (
-	once         = &sync.Once{}
+
 	globalConfig *Config
 )
 
-func Init() {
-	once.Do(func() {
-		globalConfig = New()
-	})
+func init() {
+	globalConfig = New()
+}
+
+func Global() *Config {
+	return globalConfig
 }
 
 func New() *Config {
