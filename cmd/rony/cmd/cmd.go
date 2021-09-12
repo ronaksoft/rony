@@ -36,7 +36,7 @@ func init() {
 		config.StringFlag("project.dir", workingDir, "the root path of the project"),
 	)
 
-	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd)
+	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd, ExportProtoCmd)
 
 }
 
