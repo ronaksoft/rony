@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gobuffalo/genny/v2"
 	"github.com/ronaksoft/rony/config"
+	"github.com/ronaksoft/rony/internal/codegen"
 	"github.com/ronaksoft/rony/log"
 	"github.com/spf13/cobra"
 	"os"
@@ -24,6 +25,11 @@ import (
 var GenProtoCmd = &cobra.Command{
 	Use: "gen-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		err := config.BindCmdFlags(cmd)
+		if err != nil {
+			return err
+		}
+
 		r := genny.WetRunner(context.Background())
 		if config.GetBool("dry-run") {
 			r = genny.DryRunner(context.Background())
@@ -34,14 +40,24 @@ var GenProtoCmd = &cobra.Command{
 			args = append(args, "rpc", "model")
 		}
 
+		cFormat := codegen.ConstructorFormat(config.GetString("c.format"))
+		switch cFormat {
+		case codegen.Int64JSON, codegen.StringJSON:
+		default:
+			cFormat = codegen.StringJSON
+		}
+
+		cmd.Println("Folders:", args)
+		cmd.Println("Constructor Format:", cFormat)
+
 		g := genny.New()
-		compileProto(g, args)
+		compileProto(g, args, cFormat)
 		gofmt(g)
 		goModuleTidy(g)
 		goModuleVendor(g)
 
 		// Create a Runner with the Generator customized by command's arguments
-		err := r.With(g)
+		err = r.With(g)
 		if err != nil {
 			return err
 		}
@@ -50,7 +66,7 @@ var GenProtoCmd = &cobra.Command{
 	},
 }
 
-func compileProto(g *genny.Generator, folders []string) {
+func compileProto(g *genny.Generator, folders []string, cFormat codegen.ConstructorFormat) {
 	// Compile proto files
 	var (
 		files             []string
@@ -102,7 +118,7 @@ func compileProto(g *genny.Generator, folders []string) {
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-			fmt.Sprintf("--gorony_out=paths=source_relative,rony_opt=json_c:%s", projectPathAbs),
+			fmt.Sprintf("--gorony_out=paths=source_relative,rony_opt=json_%s:%s", cFormat, projectPathAbs),
 		}
 		args = append(args, files...)
 		cmd3 := exec.Command(

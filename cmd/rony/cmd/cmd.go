@@ -33,6 +33,7 @@ func init() {
 
 	config.SetFlags(GenProtoCmd,
 		config.StringFlag("project.dir", workingDir, "the root path of the project"),
+		config.StringFlag("c.format", "str", "possible formats: str, int64"),
 	)
 
 	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd, ExportProtoCmd)

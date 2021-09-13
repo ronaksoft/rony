@@ -14,18 +14,26 @@ import (
 */
 
 const (
-	optKeyRony            = "rony_opt"
-	optValModule          = "module"
-	optValEdgeDep         = "no_edge_dep"
-	optValCrc32           = "crc32"
-	optValConstructorJSON = "json_c"
+	optKeyRony                 = "rony_opt"
+	optValModule               = "module"
+	optValEdgeDep              = "no_edge_dep"
+	optValCrc32                = "crc32"
+	optValConstructorJSONStr   = "json_str"
+	optValConstructorJSONInt64 = "json_int64"
+)
+
+type ConstructorFormat string
+
+const (
+	StringJSON ConstructorFormat = "str"
+	Int64JSON  ConstructorFormat = "int64"
 )
 
 type PluginOptions struct {
-	NoEdgeDependency bool
-	Module           bool
-	CRC32            bool
-	Constructors     bool
+	NoEdgeDependency  bool
+	Module            bool
+	CRC32             bool
+	ConstructorFormat ConstructorFormat
 }
 
 func (op *PluginOptions) ParamFunc(key, value string) error {
@@ -39,8 +47,10 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 				op.NoEdgeDependency = true
 			case optValCrc32:
 				op.CRC32 = true
-			case optValConstructorJSON:
-				op.Constructors = true
+			case optValConstructorJSONStr:
+				op.ConstructorFormat = StringJSON
+			case optValConstructorJSONInt64:
+				op.ConstructorFormat = Int64JSON
 			}
 		}
 	}
