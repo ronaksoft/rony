@@ -44,6 +44,8 @@ func collectProto(g *genny.Generator, folders []string) {
 		dstTempFolder     = "_exported-proto"
 	)
 
+	f, _ := Skeleton.Open("skel/proto/msg.proto")
+	g.File(genny.NewFile(filepath.Join(dstTempFolder, "msg.proto"), f))
 	fmt.Println("run in: ", projectPathAbs)
 	for _, folder := range folders {
 		files = files[:0]
