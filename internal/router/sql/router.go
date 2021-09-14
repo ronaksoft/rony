@@ -11,9 +11,12 @@ type Router struct {
 }
 
 func New(db *gorm.DB) *Router {
-	return &Router{
+	r := &Router{
 		db: db,
 	}
+
+	_ = r.db.AutoMigrate(&Entity{})
+	return r
 }
 
 func (r *Router) Set(entityID string, replicaSet uint64, replace bool) error {
