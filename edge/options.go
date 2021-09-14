@@ -7,9 +7,11 @@ import (
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	scyllaRouter "github.com/ronaksoft/rony/internal/router/scylla"
+	sqlRouter "github.com/ronaksoft/rony/internal/router/sql"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 	"github.com/ronaksoft/rony/log"
 	"github.com/scylladb/gocqlx/v2"
+	"gorm.io/gorm"
 	"runtime"
 	"time"
 )
@@ -181,5 +183,15 @@ type ScyllaRouterConfig struct {
 func WithScyllaRouter(config ScyllaRouterConfig) Option {
 	return func(edge *Server) {
 		edge.router = scyllaRouter.New(config.DbSession)
+	}
+}
+
+type SqlRouterConfig struct {
+	DB *gorm.DB
+}
+
+func WithSqlRouter(config SqlRouterConfig) Option {
+	return func(edge *Server) {
+		edge.router = sqlRouter.New(config.DB)
 	}
 }
