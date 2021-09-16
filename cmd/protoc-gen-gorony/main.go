@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
-	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/module"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/internal/codegen"
@@ -47,9 +46,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if pluginOpt.Module {
-				return moduleMode(plugin)
-			}
 
 			return nil
 		},
@@ -85,12 +81,6 @@ func normalMode(plugin *protogen.Plugin) error {
 	}
 
 	return nil
-}
-
-func moduleMode(plugin *protogen.Plugin) error {
-	g := module.New(plugin)
-
-	return g.Generate()
 }
 
 func jsonStr(plugin *protogen.Plugin) error {

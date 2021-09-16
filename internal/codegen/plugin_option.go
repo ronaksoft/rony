@@ -15,7 +15,6 @@ import (
 
 const (
 	optKeyRony                 = "rony_opt"
-	optValModule               = "module"
 	optValEdgeDep              = "no_edge_dep"
 	optValCrc32                = "crc32"
 	optValConstructorJSONStr   = "json_str"
@@ -31,7 +30,6 @@ const (
 
 type PluginOptions struct {
 	NoEdgeDependency  bool
-	Module            bool
 	CRC32             bool
 	ConstructorFormat ConstructorFormat
 }
@@ -41,8 +39,6 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 	case optKeyRony:
 		for _, v := range strings.Split(value, "|") {
 			switch strings.TrimSpace(v) {
-			case optValModule:
-				op.Module = true
 			case optValEdgeDep:
 				op.NoEdgeDependency = true
 			case optValCrc32:
