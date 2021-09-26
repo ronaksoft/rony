@@ -22,6 +22,16 @@ func MustProvide(constructor interface{}) {
 	}
 }
 
+func NamedProvide(constructor interface{}, name string) error {
+	return di.Provide(constructor, dig.Name(name))
+}
+
+func MustNamedProvide(constructor interface{}, name string) {
+	if err := di.Provide(constructor, dig.Name(name)); err != nil {
+		panic(err)
+	}
+}
+
 func Invoke(function interface{}) error {
 	return di.Invoke(function)
 }

@@ -32,7 +32,7 @@ require (
 	github.com/spf13/viper v1.8.1
 	github.com/valyala/fasthttp v1.28.0
 	github.com/valyala/tcplisten v1.0.0
-	go.uber.org/dig v1.12.0
+	go.uber.org/dig v1.13.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/protobuf v1.27.1

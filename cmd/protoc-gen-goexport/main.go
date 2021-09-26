@@ -79,7 +79,7 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			}
 			gFile.P("enum ", m.Desc.Name(), "{")
 			for _, f := range m.Values {
-				gFile.P("\t", f.Desc.Name(), " = ", f.Desc.Number())
+				gFile.P("\t", f.Desc.Name(), " = ", f.Desc.Number(), ";")
 			}
 			gFile.P("}")
 		}
