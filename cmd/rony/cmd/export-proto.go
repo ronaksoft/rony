@@ -44,7 +44,7 @@ func exportProto(g *genny.Generator, folders []string) {
 		folderPathAbs     string
 	)
 
-	_ = os.MkdirAll(filepath.Join(projectPathAbs, "exported_proto"), os.ModePerm | 0755)
+	_ = os.MkdirAll(filepath.Join(projectPathAbs, "exported/proto"), os.ModePerm | 0755)
 	for _, folder := range folders {
 		files = files[:0]
 		folderPathAbs, _ = filepath.Abs(filepath.Join(".", folder))
@@ -53,34 +53,7 @@ func exportProto(g *genny.Generator, folders []string) {
 				return nil
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
-				//files = append(files, filepath.Join(folderPathAbs, filepath.Base(path)))
 				files = append(files, path)
-				// call protoc-gen-go
-				cmd1 := exec.Command(
-					"protoc",
-					fmt.Sprintf("-I=%s", projectPathAbs),
-					fmt.Sprintf("-I=%s", folderPathAbs),
-					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-					fmt.Sprintf("--go_out=paths=source_relative:%s", projectPathAbs),
-					path,
-				)
-				cmd1.Env = os.Environ()
-				cmd1.Dir = filepath.Dir(projectPathAbs)
-				g.Command(cmd1)
-
-				// generate protoc-gen-gorony
-				cmd2 := exec.Command(
-					"protoc",
-					fmt.Sprintf("-I=%s", projectPathAbs),
-					fmt.Sprintf("-I=%s", folderPathAbs),
-					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-					fmt.Sprintf("--gorony_out=paths=source_relative:%s", projectPathAbs),
-					path,
-				)
-				cmd2.Env = os.Environ()
-				cmd2.Dir = filepath.Dir(projectPathAbs)
-				g.Command(cmd2)
-
 			}
 
 			return nil
@@ -90,7 +63,7 @@ func exportProto(g *genny.Generator, folders []string) {
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-			fmt.Sprintf("--goexport_out=paths=source_relative:%s", filepath.Join(projectPathAbs, "exported_proto")),
+			fmt.Sprintf("--goexport_out=paths=source_relative:%s", filepath.Join(projectPathAbs, "exported/proto")),
 		}
 		args = append(args, files...)
 		cmd3 := exec.Command(
