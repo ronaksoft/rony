@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gobuffalo/genny/v2"
 	"github.com/ronaksoft/rony/config"
+	"github.com/ronaksoft/rony/internal/codegen"
 	"github.com/ronaksoft/rony/log"
 	"github.com/spf13/cobra"
 	"os"
@@ -25,8 +26,19 @@ var ExportProtoCmd = &cobra.Command{
 			args = append(args, "rpc", "model")
 		}
 
+		cFormat := codegen.ConstructorFormat(config.GetString("c.format"))
+		switch cFormat {
+		case codegen.Int64JSON, codegen.StringJSON:
+		default:
+			cFormat = codegen.StringJSON
+		}
+
+		cmd.Println("Folders:", args)
+		cmd.Println("Constructor Format:", cFormat)
+
 		g := genny.New()
-		exportProto(g, args)
+		exportProto(g, args, cFormat)
+
 		// Create a Runner with the Generator customized by command's arguments
 		err := r.With(g)
 		if err != nil {
@@ -37,7 +49,7 @@ var ExportProtoCmd = &cobra.Command{
 	},
 }
 
-func exportProto(g *genny.Generator, folders []string) {
+func exportProto(g *genny.Generator, folders []string, cFormat codegen.ConstructorFormat) {
 	var (
 		files             []string
 		projectPathAbs, _ = filepath.Abs(".")
@@ -59,22 +71,39 @@ func exportProto(g *genny.Generator, folders []string) {
 			return nil
 		})
 		// generate protoc-gen-goexport
-		args := []string{
+		args1 := []string{
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
 			fmt.Sprintf("--goexport_out=paths=source_relative:%s", filepath.Join(projectPathAbs, "exports/proto")),
 		}
-		args = append(args, files...)
-		cmd3 := exec.Command(
-			"protoc", args...,
+		args1 = append(args1, files...)
+		cmd1 := exec.Command(
+			"protoc", args1...,
 		)
-		cmd3.Env = os.Environ()
-		cmd3.Dir = filepath.Dir(projectPathAbs)
-		cmd3.Stderr = os.Stderr
-		g.Command(cmd3)
+		cmd1.Env = os.Environ()
+		cmd1.Dir = filepath.Dir(projectPathAbs)
+		cmd1.Stderr = os.Stderr
+		g.Command(cmd1)
+
+		// generate protoc-gen-gorony
+		args2 := []string{
+			fmt.Sprintf("-I=%s", projectPathAbs),
+			fmt.Sprintf("-I=%s", folderPathAbs),
+			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
+			fmt.Sprintf("--gorony_out=paths=source_relative,rony_opt=json_%s:%s", cFormat, filepath.Join(projectPathAbs, "exports/proto")),
+		}
+		args2 = append(args2, files...)
+		cmd2 := exec.Command(
+			"protoc", args2...,
+		)
+		cmd2.Env = os.Environ()
+		cmd2.Dir = filepath.Dir(projectPathAbs)
+		cmd2.Stderr = os.Stderr
+		g.Command(cmd2)
 	}
 }
+
 func collectProto(g *genny.Generator, folders []string) {
 	var (
 		files             []string
