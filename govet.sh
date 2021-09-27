@@ -10,6 +10,7 @@ go vet ./... || exit
 go fmt ./... || exit
 
 go install ./cmd/protoc-gen-gorony
+go install ./cmd/protoc-gen-goexport
 go install ./cmd/rony
 
 mkdir -p "$GOPATH"/src/github.com/ronaksoft/rony

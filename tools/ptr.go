@@ -1,6 +1,5 @@
 package tools
 
-
 func StringPtr(in string) (out *string) {
 	if in == "" {
 		return

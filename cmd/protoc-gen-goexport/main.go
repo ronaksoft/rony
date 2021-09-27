@@ -84,7 +84,6 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			gFile.P("}")
 		}
 
-
 	}
 
 	return nil

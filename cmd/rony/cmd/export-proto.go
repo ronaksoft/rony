@@ -44,7 +44,7 @@ func exportProto(g *genny.Generator, folders []string) {
 		folderPathAbs     string
 	)
 
-	_ = os.MkdirAll(filepath.Join(projectPathAbs, "exported/proto"), os.ModePerm | 0755)
+	_ = os.MkdirAll(filepath.Join(projectPathAbs, "exported/proto"), os.ModePerm|0755)
 	for _, folder := range folders {
 		files = files[:0]
 		folderPathAbs, _ = filepath.Abs(filepath.Join(".", folder))
