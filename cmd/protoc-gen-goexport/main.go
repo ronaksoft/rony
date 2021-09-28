@@ -59,13 +59,37 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			}
 			gFile.P("message ", m.Desc.Name(), "{")
 			for _, f := range m.Fields {
-				switch f.Desc.Kind() {
-				case protoreflect.MessageKind:
-					gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
-				case protoreflect.EnumKind:
-					gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
-				default:
-					gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+				switch protoFile.Proto.GetSyntax() {
+				case "proto3":
+					switch f.Desc.Cardinality() {
+					case protoreflect.Optional, protoreflect.Required:
+						switch f.Desc.Kind() {
+						case protoreflect.MessageKind:
+							gFile.P("\t", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						case protoreflect.EnumKind:
+							gFile.P("\t", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						default:
+							gFile.P("\t", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						}
+					case protoreflect.Repeated:
+						switch f.Desc.Kind() {
+						case protoreflect.MessageKind:
+							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						case protoreflect.EnumKind:
+							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						default:
+							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						}
+					}
+				case "proto2":
+					switch f.Desc.Kind() {
+					case protoreflect.MessageKind:
+						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+					case protoreflect.EnumKind:
+						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+					default:
+						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+					}
 				}
 
 			}
