@@ -44,6 +44,9 @@ func (c *httpConn) send(req, res *rony.MessageEnvelope, timeout time.Duration) (
 	defer fasthttp.ReleaseRequest(httpReq)
 
 	httpReq.Header.SetMethod(http.MethodPost)
+	if c.secure {
+		httpReq.URI().SetScheme("https")
+	}
 	httpReq.SetHost(c.hostPorts[0])
 	httpReq.SetBody(b)
 	if hf := c.h.cfg.HeaderFunc; hf != nil {
