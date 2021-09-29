@@ -1,6 +1,7 @@
 package edgec
 
 import (
+	"crypto/tls"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
@@ -56,6 +57,9 @@ func NewHttp(config HttpConfig) *Http {
 		},
 		hosts:  make(map[uint64]map[string]*httpConn, 32),
 		logger: log.With("EdgeC(Http)"),
+	}
+	if h.cfg.Secure {
+		h.c.TLSConfig = &tls.Config{}
 	}
 	if h.cfg.Router == nil {
 		h.cfg.Router = &httpRouter{
