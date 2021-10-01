@@ -12,22 +12,12 @@ func New() *Container {
 	return dig.New()
 }
 
-func Provide(constructor interface{}) error {
-	return di.Provide(constructor)
+func Provide(constructor interface{}, opt ...ProvideOption) error {
+	return di.Provide(constructor, opt...)
 }
 
-func MustProvide(constructor interface{}) {
-	if err := di.Provide(constructor); err != nil {
-		panic(err)
-	}
-}
-
-func NamedProvide(constructor interface{}, name string) error {
-	return di.Provide(constructor, dig.Name(name))
-}
-
-func MustNamedProvide(constructor interface{}, name string) {
-	if err := di.Provide(constructor, dig.Name(name)); err != nil {
+func MustProvide(constructor interface{}, opt ...ProvideOption) {
+	if err := di.Provide(constructor, opt...); err != nil {
 		panic(err)
 	}
 }
