@@ -136,6 +136,12 @@ func (edge *Server) SetRestProxy(method string, path string, p RestProxy) {
 	edge.restMux.Set(method, path, p)
 }
 
+// SetCustomDispatcher replace the default dispatcher with your custom dispatcher. Usually you don't need to
+// use custom dispatcher, but in some rare cases you can implement your own custom dispatcher
+func (edge *Server) SetCustomDispatcher(d Dispatcher) {
+	edge.dispatcher = d
+}
+
 // Cluster returns a reference to the underlying cluster of the Edge server
 func (edge *Server) Cluster() rony.Cluster {
 	return edge.cluster

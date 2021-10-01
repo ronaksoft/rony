@@ -67,7 +67,7 @@ func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
 
 func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		edge.WithDispatcher(&testDispatcher{}),
+		edge.WithCustomDispatcher(&testDispatcher{}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
