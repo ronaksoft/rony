@@ -38,6 +38,23 @@ const (
 	LangProto Language = "PROTO"
 )
 
+type TemplateArg struct {
+	Messages []MessageArg
+	Services []ServiceArg
+}
+
+func GenTemplateArg(f *protogen.File) *TemplateArg {
+	arg := &TemplateArg{}
+	for _, m := range f.Messages {
+		arg.Messages = append(arg.Messages, GetMessageArg(m).With(f))
+	}
+	for _, s := range f.Services {
+		arg.Services = append(arg.Services, getServiceArg(s).With(f))
+	}
+
+	return arg
+}
+
 // MessageArg holds the data needed by the template engine to generate code based on the protogen.Message
 type MessageArg struct {
 	file       *protogen.File
@@ -65,7 +82,7 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 	arg.C = CrcHash([]byte(m.Desc.Name()))
 	arg.ImportPath = m.GoIdent.GoImportPath
 	for _, f := range m.Fields {
-		arg.Fields = append(arg.Fields, GetFieldArg(f))
+		arg.Fields = append(arg.Fields, getFieldArg(f))
 	}
 
 	// Generate the aggregate description from proto options
@@ -248,6 +265,11 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 	return ma
 }
 
+func (ma MessageArg) Options() *descriptorpb.MessageOptions {
+	opt, _ := ma.desc.Desc.Options().(*descriptorpb.MessageOptions)
+	return opt
+}
+
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
 	file         *protogen.File
@@ -265,7 +287,7 @@ type FieldArg struct {
 	DefaultValue string
 }
 
-func GetFieldArg(f *protogen.Field) FieldArg {
+func getFieldArg(f *protogen.Field) FieldArg {
 	arg := FieldArg{
 		desc: f.Desc,
 	}
@@ -339,6 +361,11 @@ func (fa FieldArg) With(f *protogen.File) FieldArg {
 	return fa
 }
 
+func (fa FieldArg) Options() *descriptorpb.FieldOptions {
+	opt, _ := fa.desc.Options().(*descriptorpb.FieldOptions)
+	return opt
+}
+
 // ServiceArg holds the data needed by the template engine to generate code based on the protogen.Service
 type ServiceArg struct {
 	file         *protogen.File
@@ -383,7 +410,12 @@ func (sa ServiceArg) With(f *protogen.File) ServiceArg {
 	return sa
 }
 
-func GetServiceArg(s *protogen.Service) ServiceArg {
+func (sa ServiceArg) Options() *descriptorpb.ServiceOptions {
+	opt, _ := sa.desc.Options().(*descriptorpb.ServiceOptions)
+	return opt
+}
+
+func getServiceArg(s *protogen.Service) ServiceArg {
 	arg := ServiceArg{
 		desc: s.Desc,
 	}
@@ -451,6 +483,11 @@ func (ma MethodArg) With(f *protogen.File) MethodArg {
 	ma.Output = ma.Output.With(f)
 
 	return ma
+}
+
+func (ma MethodArg) Options() *descriptorpb.MethodOptions {
+	opt, _ := ma.desc.Options().(*descriptorpb.MethodOptions)
+	return opt
 }
 
 func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
@@ -536,70 +573,4 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 	arg.Rest = rest
 
 	return arg
-}
-
-type ModuleArg struct {
-	ImportPath  protogen.GoImportPath
-	PackageName protogen.GoPackageName
-	Service     ServiceArg
-	LocalRepos  []string
-	GlobalRepos []string
-	Aggregates  []MessageArg
-	Singletons  []MessageArg
-}
-
-func GetModuleArg(plugin *protogen.Plugin) ModuleArg {
-	arg := ModuleArg{}
-	for _, f := range plugin.Files {
-		if !f.Generate || f.Proto.GetPackage() == "google.protobuf" {
-			continue
-		}
-		if arg.ImportPath != "" && arg.ImportPath != f.GoImportPath {
-			panic("all files in module must have same import path")
-		}
-		if arg.PackageName != "" && arg.PackageName != f.GoPackageName {
-			panic("all files in module must have same go package name")
-		}
-		arg.ImportPath = f.GoImportPath
-		arg.PackageName = f.GoPackageName
-
-		if len(f.Services) > 0 {
-			arg.Service = GetServiceArg(f.Services[0]).With(f)
-		}
-
-		for _, m := range f.Messages {
-			ma := GetMessageArg(m).With(f)
-			if ma.GlobalRepo != "" {
-				arg.addGlobalRepo(ma.GlobalRepo)
-			}
-			if ma.LocalRepo != "" {
-				arg.addLocalRepo(ma.LocalRepo)
-			}
-			if ma.IsSingleton {
-				arg.Singletons = append(arg.Singletons, ma)
-			} else if ma.IsAggregate {
-				arg.Aggregates = append(arg.Aggregates, ma)
-			}
-		}
-	}
-
-	return arg
-}
-
-func (ma *ModuleArg) addLocalRepo(repo string) {
-	for _, r := range ma.LocalRepos {
-		if r == repo {
-			return
-		}
-	}
-	ma.LocalRepos = append(ma.LocalRepos, repo)
-}
-
-func (ma *ModuleArg) addGlobalRepo(repo string) {
-	for _, r := range ma.GlobalRepos {
-		if r == repo {
-			return
-		}
-	}
-	ma.GlobalRepos = append(ma.GlobalRepos, repo)
 }

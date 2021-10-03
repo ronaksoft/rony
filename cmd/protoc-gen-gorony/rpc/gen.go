@@ -8,7 +8,6 @@ import (
 	// "github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/descriptorpb"
 	"text/template"
 )
 
@@ -21,50 +20,40 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Generator struct {
-	f *protogen.File
-	g *protogen.GeneratedFile
-}
+func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*protogen.File) error {
+	for _, f := range files {
+		templateArg := codegen.GenTemplateArg(f)
+		if len(templateArg.Services) > 0 {
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/errors"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 
-func New(f *protogen.File, g *protogen.GeneratedFile) *Generator {
-	return &Generator{
-		f: f,
-		g: g,
-	}
-}
+			g.P("var _ = tools.TimeUnix()")
+			for _, arg := range templateArg.Services {
+				g.P(codegen.ExecTemplate(template.Must(template.New("genServer").Parse(genServer)), arg))
+				g.P(codegen.ExecTemplate(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
+				g.P(codegen.ExecTemplate(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
+				if arg.HasRestProxy {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "net/http"})
+					g.P(codegen.ExecTemplate(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
+				}
 
-func (g *Generator) Generate() {
-	if len(g.f.Services) > 0 {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/errors"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
-
-		g.g.P("var _ = tools.TimeUnix()")
-		for _, s := range g.f.Services {
-			arg := codegen.GetServiceArg(s).With(g.f)
-			g.g.P(codegen.ExecTemplate(template.Must(template.New("genServer").Parse(genServer)), arg))
-			g.g.P(codegen.ExecTemplate(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
-			g.g.P(codegen.ExecTemplate(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
-			if arg.HasRestProxy {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "net/http"})
-				g.g.P(codegen.ExecTemplate(template.Must(template.New("genServerRestProxy").Parse(genServerRestProxy)), arg))
-			}
-
-			opt, _ := s.Desc.Options().(*descriptorpb.ServiceOptions)
-			if !proto.GetExtension(opt, rony.E_RonyNoClient).(bool) {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
-				g.g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
-			}
-			if proto.GetExtension(opt, rony.E_RonyCobraCmd).(bool) {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
-				g.g.P(codegen.ExecTemplate(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))
+				if !proto.GetExtension(arg.Options(), rony.E_RonyNoClient).(bool) {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
+					g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
+				}
+				if proto.GetExtension(arg.Options(), rony.E_RonyCobraCmd).(bool) {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
+					g.P(codegen.ExecTemplate(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))
+				}
 			}
 		}
 	}
+	return nil
 }
 
 const genServerRestProxy = `

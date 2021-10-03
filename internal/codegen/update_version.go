@@ -45,8 +45,9 @@ func main() {
 }
 
 var packageTemplate = template.Must(template.New("").Parse(`
-// This is auto-generated code; DO NOT EDIT.
 package codegen
+
+// This is auto-generated code; DO NOT EDIT.
 
 var (
 	Commit = {{ .GitCommit }}

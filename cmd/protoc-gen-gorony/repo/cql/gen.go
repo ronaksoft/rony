@@ -67,7 +67,7 @@ func GenerateCQL(g *Generator, arg codegen.MessageArg) {
 	}
 }
 
-var helperFunctions = map[string]interface{}{
+var helperFunctions = template.FuncMap{
 	"Singular": func(x string) string {
 		return inflection.Singular(x)
 	},

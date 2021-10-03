@@ -1,7 +1,8 @@
-// This is auto-generated code; DO NOT EDIT.
 package codegen
 
+// This is auto-generated code; DO NOT EDIT.
+
 var (
-	Commit  = "5bd6cb89d3acea1cde0f1e93b7db5faa6e752a06"
-	Version = "v0.14.10"
+	Commit  = "8062f5134c40f2907eca9ae602818dc1c9a74cf5"
+	Version = "v0.14.12"
 )

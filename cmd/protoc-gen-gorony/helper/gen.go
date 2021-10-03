@@ -17,77 +17,62 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Generator struct {
-	f             *protogen.File
-	g             *protogen.GeneratedFile
-	opt           *codegen.PluginOptions
-	initFuncBlock *strings.Builder
-}
-
-func New(f *protogen.File, g *protogen.GeneratedFile, options *codegen.PluginOptions) *Generator {
-	return &Generator{
-		f:             f,
-		g:             g,
-		opt:           options,
-		initFuncBlock: &strings.Builder{},
+func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*protogen.File) error {
+	initBlock := &strings.Builder{}
+	appendToInit := func(x string) {
+		initBlock.WriteString(x)
+		initBlock.WriteRune('\n')
 	}
-}
-
-func (g *Generator) Generate() {
-	g.g.P("package ", g.f.GoPackageName)
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "sync"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/registry"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/encoding/protojson"})
-	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
-	if !g.opt.NoEdgeDependency {
-		g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
+	g.P("package ", files[0].GoPackageName)
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "sync"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/registry"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/encoding/protojson"})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+	if !opt.NoEdgeDependency {
+		g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edge"})
 	}
 
-	g.g.P("var _ = pools.Imported")
-
-	for _, m := range g.f.Messages {
-		arg := codegen.GetMessageArg(m).With(g.f)
-		for _, f := range arg.Fields {
-			if f.Pkg() != "" {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
+	g.P("var _ = pools.Imported")
+	for _, f := range files {
+		templateArg := codegen.GenTemplateArg(f)
+		for _, arg := range templateArg.Messages {
+			for _, f := range arg.Fields {
+				if f.Pkg() != "" {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
+				}
+			}
+			appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", arg.C, arg.Name(), arg.Name()))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genPool").Parse(genPool)), arg))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
+			if !opt.NoEdgeDependency {
+				g.P(codegen.ExecTemplate(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 			}
 		}
-		g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", arg.C, arg.Name(), arg.Name()))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genPool").Parse(genPool)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
-		if !g.opt.NoEdgeDependency {
-			g.g.P(codegen.ExecTemplate(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
+		for _, arg := range templateArg.Services {
+			for _, m := range arg.Methods {
+				if m.Output.Pkg() != "" {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Output.ImportPath})
+				}
+				if m.Input.Pkg() != "" {
+					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
+				}
+				appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", m.C, m.Fullname(), m.Input.Name()))
+				g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
+			}
+		}
+
+		if initBlock.Len() > 0 {
+			g.P("// register constructors of the messages to the registry package")
+			g.P("func init() {")
+			g.P(initBlock.String())
+			g.P("}")
 		}
 	}
-	for _, st := range g.f.Services {
-		arg := codegen.GetServiceArg(st).With(g.f)
-		for _, m := range arg.Methods {
-			if m.Output.Pkg() != "" {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Output.ImportPath})
-			}
-			if m.Input.Pkg() != "" {
-				g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
-			}
-			g.appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", m.C, m.Fullname(), m.Input.Name()))
-			g.g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
-		}
-	}
-
-	if g.initFuncBlock.Len() > 0 {
-		g.g.P("// register constructors of the messages to the registry package")
-		g.g.P("func init() {")
-		g.g.P(g.initFuncBlock.String())
-		g.g.P("}")
-	}
-}
-
-func (g *Generator) appendToInit(x string) {
-	g.initFuncBlock.WriteString(x)
-	g.initFuncBlock.WriteRune('\n')
+	return nil
 }
 
 const genPool = `

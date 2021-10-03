@@ -68,12 +68,10 @@ func normalMode(plugin *protogen.Plugin) error {
 		generatedFile.P()
 
 		// Generate all the helper functions
-		g1 := helper.New(protoFile, generatedFile, pluginOpt)
-		g1.Generate()
+		_ = helper.GenFunc(generatedFile, pluginOpt, protoFile)
 
 		// Generate rpc helper functions (Server, Client and CLI)
-		g2 := rpc.New(protoFile, generatedFile)
-		g2.Generate()
+		_ = rpc.GenFunc(generatedFile, pluginOpt, protoFile)
 
 		// Generate Repository functionalities
 		g3 := repo.New(plugin, protoFile, generatedFile)

@@ -5,13 +5,13 @@ import (
 )
 
 type (
-	In        = dig.In
-	Out       = dig.Out
-	Container = dig.Container
+	In            = dig.In
+	Out           = dig.Out
+	Container     = dig.Container
 	ProvideOption = dig.ProvideOption
 )
 
 var (
-	As = dig.As
+	As   = dig.As
 	Name = dig.Name
 )
