@@ -345,7 +345,9 @@ func NewPageLocalRepo(s *store.Store) *PageLocalRepo {
 	}
 }
 
-func (r *PageLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
+func (r *PageLocalRepo) CreateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Page,
+) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -379,7 +381,9 @@ func (r *PageLocalRepo) Create(m *Page) error {
 	})
 }
 
-func (r *PageLocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) error {
+func (r *PageLocalRepo) UpdateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Page,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -408,7 +412,9 @@ func (r *PageLocalRepo) Update(id uint32, m *Page) error {
 	return err
 }
 
-func (r *PageLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Page) (err error) {
+func (r *PageLocalRepo) SaveWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Page,
+) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Page, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
@@ -425,7 +431,10 @@ func (r *PageLocalRepo) Save(m *Page) error {
 	})
 }
 
-func (r *PageLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id uint32, m *Page) (*Page, error) {
+func (r *PageLocalRepo) ReadWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id uint32, m *Page,
+) (*Page, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -484,7 +493,10 @@ func (r *PageLocalRepo) ReadByReplicaSetID(replicaSet uint64, id uint32, m *Page
 	return m, err
 }
 
-func (r *PageLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id uint32) error {
+func (r *PageLocalRepo) DeleteWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id uint32,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -518,7 +530,8 @@ func (r *PageLocalRepo) Delete(id uint32) error {
 }
 
 func (r *PageLocalRepo) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset PagePrimaryKey, lo *store.ListOption, cond func(m *Page) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	offset PagePrimaryKey, lo *store.ListOption, cond func(m *Page) bool,
 ) ([]*Page, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -601,7 +614,8 @@ func (r *PageLocalRepo) List(
 }
 
 func (r *PageLocalRepo) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset PagePrimaryKey, ito *store.IterOption, cb func(m *Page) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset PagePrimaryKey,
+	ito *store.IterOption, cb func(m *Page) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()

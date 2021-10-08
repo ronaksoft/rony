@@ -538,7 +538,10 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 func (edge *Server) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
 	return edge.TryTunnelRequest(1, 0, replicaSet, req, res)
 }
-func (edge *Server) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+func (edge *Server) TryTunnelRequest(
+	attempts int, retryWait time.Duration, replicaSet uint64,
+	req, res *rony.MessageEnvelope,
+) error {
 	if edge.tunnel == nil {
 		return errors.ErrTunnelNotSet
 	}
@@ -551,7 +554,10 @@ func (edge *Server) TryTunnelRequest(attempts int, retryWait time.Duration, repl
 
 		return edge.sendRemoteCommand(target, req, res)
 	})
-	metrics.ObserveHistogram(metrics.HistTunnelRoundtripTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+	metrics.ObserveHistogram(
+		metrics.HistTunnelRoundtripTime,
+		float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond),
+	)
 	return err
 }
 func (edge *Server) getReplicaMember(replicaSet uint64) (target rony.ClusterMember) {

@@ -101,8 +101,8 @@ type trie struct {
 	hasRootSlash bool
 }
 
-// InsertOption is just a function which accepts a pointer to a trieNode which can alt its `Handler`, `Tag` and `Data`  fields.
-//
+// InsertOption is just a function which accepts a pointer to a trieNode which can
+// alt its `Handler`, `Tag` and `Data`  fields.
 // See `WithHandler`, `WithTag` and `WithData`.
 type InsertOption func(*trieNode)
 

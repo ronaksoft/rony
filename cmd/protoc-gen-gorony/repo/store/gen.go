@@ -354,7 +354,9 @@ func (r *{{$repoName}}) Save (m *{{$modelName}}) (err error) {
 	})
 }
 
-func (r *{{$repoName}}) ReadWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (*{{$modelName}}, error) {
+func (r *{{$repoName}}) ReadWithTxn (
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}},
+) (*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -445,7 +447,9 @@ const genCreate = `
 {{$model := .}}
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
+func (r *{{$repoName}}) CreateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}},
+) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -506,7 +510,9 @@ const genUpdate = `
 {{$model := .}}
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) UpdateWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) error {
+func (r *{{$repoName}}) UpdateWithTxn (
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}},
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -540,7 +546,9 @@ const genSave = `
 {{$model := .}}
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) SaveWithTxn (txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}}) (err error) {
+func (r *{{$repoName}}) SaveWithTxn (
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *{{$modelName}},
+) (err error) {
 	if store.Exists(txn, alloc, {{DBKey .Table "m."}}) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
@@ -630,7 +638,10 @@ const genDelete = `
 {{$model := .}}
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}) error {
+func (r *{{$repoName}}) DeleteWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, 
+	{{FuncArgs .Table ""}},
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()

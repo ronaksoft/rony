@@ -191,7 +191,9 @@ func NewUserLocalRepo(s *store.Store) *UserLocalRepo {
 	}
 }
 
-func (r *UserLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *User) (err error) {
+func (r *UserLocalRepo) CreateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *User,
+) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -219,7 +221,9 @@ func (r *UserLocalRepo) Create(m *User) error {
 	})
 }
 
-func (r *UserLocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *User) error {
+func (r *UserLocalRepo) UpdateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *User,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -248,7 +252,9 @@ func (r *UserLocalRepo) Update(username string, m *User) error {
 	return err
 }
 
-func (r *UserLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *User) (err error) {
+func (r *UserLocalRepo) SaveWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *User,
+) (err error) {
 	if store.Exists(txn, alloc, 'M', C_User, uint64(12744997956659367007), m.Username) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
@@ -265,7 +271,10 @@ func (r *UserLocalRepo) Save(m *User) error {
 	})
 }
 
-func (r *UserLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, username string, m *User) (*User, error) {
+func (r *UserLocalRepo) ReadWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	username string, m *User,
+) (*User, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -293,7 +302,10 @@ func (r *UserLocalRepo) Read(username string, m *User) (*User, error) {
 	return m, err
 }
 
-func (r *UserLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, username string) error {
+func (r *UserLocalRepo) DeleteWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	username string,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -317,7 +329,8 @@ func (r *UserLocalRepo) Delete(username string) error {
 }
 
 func (r *UserLocalRepo) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset UserPrimaryKey, lo *store.ListOption, cond func(m *User) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	offset UserPrimaryKey, lo *store.ListOption, cond func(m *User) bool,
 ) ([]*User, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -396,7 +409,8 @@ func (r *UserLocalRepo) List(
 }
 
 func (r *UserLocalRepo) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset UserPrimaryKey, ito *store.IterOption, cb func(m *User) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset UserPrimaryKey,
+	ito *store.IterOption, cb func(m *User) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -480,7 +494,9 @@ func NewSessionLocalRepo(s *store.Store) *SessionLocalRepo {
 	}
 }
 
-func (r *SessionLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Session) (err error) {
+func (r *SessionLocalRepo) CreateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Session,
+) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -515,7 +531,9 @@ func (r *SessionLocalRepo) Create(m *Session) error {
 	})
 }
 
-func (r *SessionLocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Session) error {
+func (r *SessionLocalRepo) UpdateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Session,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -544,7 +562,9 @@ func (r *SessionLocalRepo) Update(id string, m *Session) error {
 	return err
 }
 
-func (r *SessionLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Session) (err error) {
+func (r *SessionLocalRepo) SaveWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Session,
+) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Session, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
@@ -561,7 +581,10 @@ func (r *SessionLocalRepo) Save(m *Session) error {
 	})
 }
 
-func (r *SessionLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id string, m *Session) (*Session, error) {
+func (r *SessionLocalRepo) ReadWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id string, m *Session,
+) (*Session, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -589,7 +612,10 @@ func (r *SessionLocalRepo) Read(id string, m *Session) (*Session, error) {
 	return m, err
 }
 
-func (r *SessionLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id string) error {
+func (r *SessionLocalRepo) DeleteWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id string,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -624,7 +650,8 @@ func (r *SessionLocalRepo) Delete(id string) error {
 }
 
 func (r *SessionLocalRepo) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset SessionPrimaryKey, lo *store.ListOption, cond func(m *Session) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	offset SessionPrimaryKey, lo *store.ListOption, cond func(m *Session) bool,
 ) ([]*Session, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -703,7 +730,8 @@ func (r *SessionLocalRepo) List(
 }
 
 func (r *SessionLocalRepo) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset SessionPrimaryKey, ito *store.IterOption, cb func(m *Session) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset SessionPrimaryKey,
+	ito *store.IterOption, cb func(m *Session) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -767,7 +795,9 @@ func (r *SessionLocalRepo) Iter(
 	})
 }
 
-func (r *SessionLocalRepo) ListByUsername(username string, lo *store.ListOption, cond func(*Session) bool) ([]*Session, error) {
+func (r *SessionLocalRepo) ListByUsername(
+	username string, lo *store.ListOption, cond func(*Session) bool,
+) ([]*Session, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 

@@ -102,8 +102,10 @@ const (
 	MethodTrace   = "TRACE"   // RFC 7231, 4.3.8
 )
 
-// Tunnel provides the communication channel between Edge servers. Tunnel is similar to Gateway in functionalities.
-// However, Tunnel should be optimized for inter-communication between Edge servers, and Gateway is optimized for client-server communications.
+// Tunnel provides the communication channel between Edge servers.
+// Tunnel is similar to Gateway in functionalities.
+// However, Tunnel should be optimized for inter-communication between Edge servers,
+// and Gateway is optimized for client-server communications.
 type Tunnel interface {
 	Start()
 	Run()
@@ -121,8 +123,9 @@ type Conn interface {
 	ConnID() uint64
 	ClientIP() string
 	WriteBinary(streamID int64, data []byte) error
-	// Persistent returns FALSE if this connection will be closed when edge.DispatchCtx has been done. i.e. HTTP connections
-	// It returns TRUE if this connection still alive when edge.DispatchCtx has been done. i.e. WebSocket connections
+	// Persistent returns FALSE if this connection will be closed when edge.DispatchCtx has
+	// been done. i.e. HTTP connections. It returns TRUE if this connection still alive when
+	// edge.DispatchCtx has been done. i.e. WebSocket connections
 	Persistent() bool
 	Get(key string) interface{}
 	Set(key string, val interface{})

@@ -544,19 +544,40 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 
 					switch f.Desc.Kind() {
 					case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+						)
 					case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+						)
 					case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+						)
 					case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+						)
 					case protoreflect.StringKind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")",
+						)
 					case protoreflect.BytesKind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))",
+						)
 					case protoreflect.DoubleKind:
-						ec = fmt.Sprint("req.", f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))")
+						ec = fmt.Sprint(
+							"req.",
+							f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+						)
 					default:
 						ec = ""
 					}

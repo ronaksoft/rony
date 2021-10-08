@@ -57,7 +57,10 @@ func New(config Config) *CORS {
 func (c *CORS) Handle(reqCtx *fasthttp.RequestCtx) bool {
 	// ByPass CORS (Cross Origin Resource Sharing) check
 	if c.origins == "*" {
-		reqCtx.Response.Header.SetBytesV(fasthttp.HeaderAccessControlAllowOrigin, reqCtx.Request.Header.Peek(fasthttp.HeaderOrigin))
+		reqCtx.Response.Header.SetBytesV(
+			fasthttp.HeaderAccessControlAllowOrigin,
+			reqCtx.Request.Header.Peek(fasthttp.HeaderOrigin),
+		)
 	} else {
 		reqCtx.Response.Header.Set(fasthttp.HeaderAccessControlAllowOrigin, c.origins)
 	}

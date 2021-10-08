@@ -133,7 +133,9 @@ func NewTaskLocalRepo(s *store.Store) *TaskLocalRepo {
 	}
 }
 
-func (r *TaskLocalRepo) CreateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Task) (err error) {
+func (r *TaskLocalRepo) CreateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Task,
+) (err error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -168,7 +170,9 @@ func (r *TaskLocalRepo) Create(m *Task) error {
 	})
 }
 
-func (r *TaskLocalRepo) UpdateWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Task) error {
+func (r *TaskLocalRepo) UpdateWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Task,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -197,7 +201,9 @@ func (r *TaskLocalRepo) Update(id int64, m *Task) error {
 	return err
 }
 
-func (r *TaskLocalRepo) SaveWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, m *Task) (err error) {
+func (r *TaskLocalRepo) SaveWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, m *Task,
+) (err error) {
 	if store.Exists(txn, alloc, 'M', C_Task, uint64(387204014837596160), m.ID) {
 		return r.UpdateWithTxn(txn, alloc, m)
 	} else {
@@ -214,7 +220,10 @@ func (r *TaskLocalRepo) Save(m *Task) error {
 	})
 }
 
-func (r *TaskLocalRepo) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id int64, m *Task) (*Task, error) {
+func (r *TaskLocalRepo) ReadWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id int64, m *Task,
+) (*Task, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -242,7 +251,10 @@ func (r *TaskLocalRepo) Read(id int64, m *Task) (*Task, error) {
 	return m, err
 }
 
-func (r *TaskLocalRepo) DeleteWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, id int64) error {
+func (r *TaskLocalRepo) DeleteWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	id int64,
+) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -277,7 +289,8 @@ func (r *TaskLocalRepo) Delete(id int64) error {
 }
 
 func (r *TaskLocalRepo) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset TaskPrimaryKey, lo *store.ListOption, cond func(m *Task) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator,
+	offset TaskPrimaryKey, lo *store.ListOption, cond func(m *Task) bool,
 ) ([]*Task, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -356,7 +369,8 @@ func (r *TaskLocalRepo) List(
 }
 
 func (r *TaskLocalRepo) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset TaskPrimaryKey, ito *store.IterOption, cb func(m *Task) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset TaskPrimaryKey,
+	ito *store.IterOption, cb func(m *Task) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -420,7 +434,9 @@ func (r *TaskLocalRepo) Iter(
 	})
 }
 
-func (r *TaskLocalRepo) ListByUsername(username string, lo *store.ListOption, cond func(*Task) bool) ([]*Task, error) {
+func (r *TaskLocalRepo) ListByUsername(
+	username string, lo *store.ListOption, cond func(*Task) bool,
+) ([]*Task, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 

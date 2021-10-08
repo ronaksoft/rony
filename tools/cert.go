@@ -47,7 +47,10 @@ func CertTemplate() (*x509.Certificate, error) {
 	return &tmpl, nil
 }
 
-func CreateCert(template, parent *x509.Certificate, pub interface{}, parentPriv interface{}) (cert *x509.Certificate, certPEM []byte, err error) {
+func CreateCert(
+	template, parent *x509.Certificate,
+	pub interface{}, parentPriv interface{},
+) (cert *x509.Certificate, certPEM []byte, err error) {
 	certDER, err := x509.CreateCertificate(rand.Reader, template, parent, pub, parentPriv)
 	if err != nil {
 		return

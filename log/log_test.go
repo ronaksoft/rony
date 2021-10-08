@@ -44,6 +44,7 @@ func NewDI() *DI {
 	di.MustInvoke(func(l log.Logger) {
 		d.l = l
 	})
+
 	return d
 }
 

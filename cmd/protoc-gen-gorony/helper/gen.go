@@ -72,6 +72,7 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 			g.P("}")
 		}
 	}
+
 	return nil
 }
 

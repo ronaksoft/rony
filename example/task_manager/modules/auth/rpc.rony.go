@@ -331,7 +331,11 @@ func (sw *authWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edg
 	)
 }
 
-func TunnelRequestAuthRegister(ctx *edge.RequestCtx, replicaSet uint64, req *RegisterRequest, res *Authorization, kvs ...*rony.KeyValue) error {
+func TunnelRequestAuthRegister(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *RegisterRequest, res *Authorization,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -354,7 +358,11 @@ func TunnelRequestAuthRegister(ctx *edge.RequestCtx, replicaSet uint64, req *Reg
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestAuthLogin(ctx *edge.RequestCtx, replicaSet uint64, req *LoginRequest, res *Authorization, kvs ...*rony.KeyValue) error {
+func TunnelRequestAuthLogin(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *LoginRequest, res *Authorization,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -387,7 +395,9 @@ func NewAuthClient(ec edgec.Client) *AuthClient {
 		c: ec,
 	}
 }
-func (c *AuthClient) Register(req *RegisterRequest, kvs ...*rony.KeyValue) (*Authorization, error) {
+func (c *AuthClient) Register(
+	req *RegisterRequest, kvs ...*rony.KeyValue,
+) (*Authorization, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -410,7 +420,9 @@ func (c *AuthClient) Register(req *RegisterRequest, kvs ...*rony.KeyValue) (*Aut
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *AuthClient) Login(req *LoginRequest, kvs ...*rony.KeyValue) (*Authorization, error) {
+func (c *AuthClient) Login(
+	req *LoginRequest, kvs ...*rony.KeyValue,
+) (*Authorization, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

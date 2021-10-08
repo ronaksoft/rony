@@ -236,7 +236,11 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 	)
 }
 
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEcho(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *EchoRequest, res *EchoResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -318,7 +322,9 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 		c: ec,
 	}
 }
-func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+func (c *SampleClient) Echo(
+	req *EchoRequest, kvs ...*rony.KeyValue,
+) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

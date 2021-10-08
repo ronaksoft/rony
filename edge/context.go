@@ -41,8 +41,8 @@ func (c MessageKind) String() string {
 	return messageKindNames[c]
 }
 
-// DispatchCtx holds the context of the dispatcher's request. Each DispatchCtx could holds one or many RequestCtx.
-// DispatchCtx lives until the last of its RequestCtx children.
+// DispatchCtx holds the context of the dispatcher's request. Each DispatchCtx could
+// hold one or many RequestCtx. DispatchCtx lives until the last of its RequestCtx children.
 type DispatchCtx struct {
 	edge      *Server
 	streamID  int64
@@ -102,7 +102,9 @@ func (ctx *DispatchCtx) FillEnvelope(e *rony.MessageEnvelope) {
 	e.DeepCopy(ctx.req)
 }
 
-func (ctx *DispatchCtx) Fill(requestID uint64, constructor uint64, p proto.Message, kv ...*rony.KeyValue) {
+func (ctx *DispatchCtx) Fill(
+	requestID uint64, constructor uint64, p proto.Message, kv ...*rony.KeyValue,
+) {
 	if ctx.reqFilled {
 		panic("BUG!!! request has been already filled")
 	}
@@ -197,7 +199,10 @@ func (ctx *DispatchCtx) BufferSize() int32 {
 
 var dispatchCtxPool = sync.Pool{}
 
-func acquireDispatchCtx(edge *Server, conn rony.Conn, streamID int64, serverID []byte, kind MessageKind) *DispatchCtx {
+func acquireDispatchCtx(
+	edge *Server, conn rony.Conn,
+	streamID int64, serverID []byte, kind MessageKind,
+) *DispatchCtx {
 	var ctx *DispatchCtx
 	if v := dispatchCtxPool.Get(); v == nil {
 		ctx = newDispatchCtx(edge)
@@ -396,7 +401,10 @@ func (ctx *RequestCtx) ClusterEdges(replicaSet uint64, edges *rony.Edges) (*rony
 	}
 }
 
-func (ctx *RequestCtx) TryTunnelRequest(attempts int, retryWait time.Duration, replicaSet uint64, req, res *rony.MessageEnvelope) error {
+func (ctx *RequestCtx) TryTunnelRequest(
+	attempts int, retryWait time.Duration, replicaSet uint64,
+	req, res *rony.MessageEnvelope,
+) error {
 	return ctx.edge.TryTunnelRequest(attempts, retryWait, replicaSet, req, res)
 }
 

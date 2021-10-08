@@ -148,7 +148,10 @@ func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) error 
 	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout)
 }
 
-func (h *Http) SendWithDetails(req *rony.MessageEnvelope, res *rony.MessageEnvelope, retry int, timeout time.Duration) (err error) {
+func (h *Http) SendWithDetails(
+	req *rony.MessageEnvelope, res *rony.MessageEnvelope,
+	retry int, timeout time.Duration,
+) (err error) {
 	rs := h.cfg.Router.GetRoute(req)
 	hc := h.getConn(rs)
 	if hc == nil {

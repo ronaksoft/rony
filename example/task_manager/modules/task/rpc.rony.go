@@ -671,7 +671,11 @@ func (sw *taskManagerWrapper) Register(e *edge.Server, handlerFunc func(c uint64
 	)
 }
 
-func TunnelRequestTaskManagerCreate(ctx *edge.RequestCtx, replicaSet uint64, req *CreateRequest, res *TaskView, kvs ...*rony.KeyValue) error {
+func TunnelRequestTaskManagerCreate(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *CreateRequest, res *TaskView,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -694,7 +698,11 @@ func TunnelRequestTaskManagerCreate(ctx *edge.RequestCtx, replicaSet uint64, req
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *TaskView, kvs ...*rony.KeyValue) error {
+func TunnelRequestTaskManagerGet(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *GetRequest, res *TaskView,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -717,7 +725,11 @@ func TunnelRequestTaskManagerGet(ctx *edge.RequestCtx, replicaSet uint64, req *G
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerDelete(ctx *edge.RequestCtx, replicaSet uint64, req *DeleteRequest, res *Bool, kvs ...*rony.KeyValue) error {
+func TunnelRequestTaskManagerDelete(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *DeleteRequest, res *Bool,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -740,7 +752,11 @@ func TunnelRequestTaskManagerDelete(ctx *edge.RequestCtx, replicaSet uint64, req
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestTaskManagerList(ctx *edge.RequestCtx, replicaSet uint64, req *ListRequest, res *TaskViewMany, kvs ...*rony.KeyValue) error {
+func TunnelRequestTaskManagerList(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *ListRequest, res *TaskViewMany,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -773,7 +789,9 @@ func NewTaskManagerClient(ec edgec.Client) *TaskManagerClient {
 		c: ec,
 	}
 }
-func (c *TaskManagerClient) Create(req *CreateRequest, kvs ...*rony.KeyValue) (*TaskView, error) {
+func (c *TaskManagerClient) Create(
+	req *CreateRequest, kvs ...*rony.KeyValue,
+) (*TaskView, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -796,7 +814,9 @@ func (c *TaskManagerClient) Create(req *CreateRequest, kvs ...*rony.KeyValue) (*
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *TaskManagerClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*TaskView, error) {
+func (c *TaskManagerClient) Get(
+	req *GetRequest, kvs ...*rony.KeyValue,
+) (*TaskView, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -819,7 +839,9 @@ func (c *TaskManagerClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*TaskVi
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *TaskManagerClient) Delete(req *DeleteRequest, kvs ...*rony.KeyValue) (*Bool, error) {
+func (c *TaskManagerClient) Delete(
+	req *DeleteRequest, kvs ...*rony.KeyValue,
+) (*Bool, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -842,7 +864,9 @@ func (c *TaskManagerClient) Delete(req *DeleteRequest, kvs ...*rony.KeyValue) (*
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *TaskManagerClient) List(req *ListRequest, kvs ...*rony.KeyValue) (*TaskViewMany, error) {
+func (c *TaskManagerClient) List(
+	req *ListRequest, kvs ...*rony.KeyValue,
+) (*TaskViewMany, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

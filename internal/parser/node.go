@@ -190,7 +190,13 @@ func (t *TableNode) tree() *Tree {
 }
 
 func (t *TableNode) Copy() Node {
-	return &TableNode{tr: t.tr, NodeType: NodeTable, Pos: t.Pos, PartitionKeys: t.PartitionKeys, ClusteringKeys: t.ClusteringKeys}
+	return &TableNode{
+		tr:             t.tr,
+		NodeType:       NodeTable,
+		Pos:            t.Pos,
+		PartitionKeys:  t.PartitionKeys,
+		ClusteringKeys: t.ClusteringKeys,
+	}
 }
 
 // ViewNode holds view

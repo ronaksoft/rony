@@ -83,6 +83,7 @@ var helperFunctions = template.FuncMap{
 		sb.WriteString(tools.ToSnake(m.Name()))
 		sb.WriteString("_")
 		sb.WriteString(tools.ToSnake(alias))
+
 		return sb.String()
 	},
 	"MVName": func(m codegen.ModelKey) string {
@@ -93,6 +94,7 @@ var helperFunctions = template.FuncMap{
 		sb := strings.Builder{}
 		sb.WriteString(m.Name())
 		sb.WriteString(alias)
+
 		return sb.String()
 	},
 	"MVAlias": func(m codegen.ModelKey, prefix string) string {

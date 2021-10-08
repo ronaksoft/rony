@@ -849,7 +849,11 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 	)
 }
 
-func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEcho(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *EchoRequest, res *EchoResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -872,7 +876,11 @@ func TunnelRequestSampleEcho(ctx *edge.RequestCtx, replicaSet uint64, req *EchoR
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetRequest, res *SetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleSet(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *SetRequest, res *SetResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -895,7 +903,11 @@ func TunnelRequestSampleSet(ctx *edge.RequestCtx, replicaSet uint64, req *SetReq
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetRequest, res *GetResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleGet(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *GetRequest, res *GetResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -918,7 +930,11 @@ func TunnelRequestSampleGet(ctx *edge.RequestCtx, replicaSet uint64, req *GetReq
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoTunnel(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *EchoRequest, res *EchoResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -941,7 +957,11 @@ func TunnelRequestSampleEchoTunnel(ctx *edge.RequestCtx, replicaSet uint64, req 
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoInternal(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *EchoRequest, res *EchoResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -964,7 +984,11 @@ func TunnelRequestSampleEchoInternal(ctx *edge.RequestCtx, replicaSet uint64, re
 		return errors.ErrUnexpectedTunnelResponse
 	}
 }
-func TunnelRequestSampleEchoDelay(ctx *edge.RequestCtx, replicaSet uint64, req *EchoRequest, res *EchoResponse, kvs ...*rony.KeyValue) error {
+func TunnelRequestSampleEchoDelay(
+	ctx *edge.RequestCtx, replicaSet uint64,
+	req *EchoRequest, res *EchoResponse,
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1294,7 +1318,9 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 		c: ec,
 	}
 }
-func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+func (c *SampleClient) Echo(
+	req *EchoRequest, kvs ...*rony.KeyValue,
+) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1317,7 +1343,9 @@ func (c *SampleClient) Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoRespo
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *SampleClient) Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error) {
+func (c *SampleClient) Set(
+	req *SetRequest, kvs ...*rony.KeyValue,
+) (*SetResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1340,7 +1368,9 @@ func (c *SampleClient) Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *SampleClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error) {
+func (c *SampleClient) Get(
+	req *GetRequest, kvs ...*rony.KeyValue,
+) (*GetResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1363,7 +1393,9 @@ func (c *SampleClient) Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+func (c *SampleClient) EchoTunnel(
+	req *EchoRequest, kvs ...*rony.KeyValue,
+) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
@@ -1386,7 +1418,9 @@ func (c *SampleClient) EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*Ech
 		return nil, fmt.Errorf("unknown message :%d", in.GetConstructor())
 	}
 }
-func (c *SampleClient) EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error) {
+func (c *SampleClient) EchoDelay(
+	req *EchoRequest, kvs ...*rony.KeyValue,
+) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

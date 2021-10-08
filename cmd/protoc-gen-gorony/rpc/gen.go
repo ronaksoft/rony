@@ -277,7 +277,11 @@ func (c *{{$serviceName}}Client) {{.Name}} (
 const genTunnelCommand = `
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
-func TunnelRequest{{$serviceName}}{{.Name}} (ctx *edge.RequestCtx, replicaSet uint64, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, kvs ...*rony.KeyValue) error {
+func TunnelRequest{{$serviceName}}{{.Name}} (
+	ctx *edge.RequestCtx, replicaSet uint64, 
+	req *{{.Input.Fullname}}, res *{{.Output.Fullname}}, 
+	kvs ...*rony.KeyValue,
+) error {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
