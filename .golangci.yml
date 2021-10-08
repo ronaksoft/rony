@@ -1,12 +1,7 @@
 linters:
   enable-all: true
   disable:
-#    - lll
-#    - wrapcheck
-    - interfacer
-    - golint
     - scopelint
-    - maligned
     - wsl
     - tparallel
     - gomnd
@@ -26,9 +21,5 @@ linters:
     - gci
     - gocyclo
     - forbidigo
-    - prealloc
-#  presets:
-#    - bugs
-#    - unused
   fast: true
 
