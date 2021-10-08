@@ -6,6 +6,7 @@ func StringPtr(in string) (out *string) {
 	}
 	out = new(string)
 	*out = in
+
 	return
 }
 
@@ -15,6 +16,7 @@ func Int64Ptr(in int64) (out *int64) {
 	}
 	out = new(int64)
 	*out = in
+
 	return
 }
 
@@ -24,6 +26,7 @@ func Int32Ptr(in int32) (out *int32) {
 	}
 	out = new(int32)
 	*out = in
+
 	return
 }
 
@@ -33,6 +36,7 @@ func Uint64Ptr(in uint64) (out *uint64) {
 	}
 	out = new(uint64)
 	*out = in
+
 	return
 }
 
@@ -42,6 +46,7 @@ func Uint32Ptr(in uint32) (out *uint32) {
 	}
 	out = new(uint32)
 	*out = in
+
 	return
 }
 
@@ -51,6 +56,7 @@ func IntPtr(in int) (out *int) {
 	}
 	out = new(int)
 	*out = in
+
 	return
 }
 
@@ -60,5 +66,6 @@ func UintPtr(in uint) (out *uint) {
 	}
 	out = new(uint)
 	*out = in
+
 	return
 }

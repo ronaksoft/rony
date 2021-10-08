@@ -45,6 +45,7 @@ func main() {
 		port = tools.StrToInt64(os.Args[3])
 	default:
 		fmt.Println("needs 3 args, n m port")
+
 		return
 	}
 
@@ -113,6 +114,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 				if err != nil {
 					log.Warn("Error on Close", zap.Error(err))
 				}
+
 				return
 			}
 			atomic.AddInt64(&latency, int64(d))
@@ -132,6 +134,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 		if err != nil {
 			log.Error(err.Error())
 			_ = c.Close()
+
 			return
 		} else {
 			atomic.AddInt32(&cntWritePacket, 1)

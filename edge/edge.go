@@ -201,6 +201,7 @@ func (edge *Server) execute(dispatchCtx *DispatchCtx) (err error) {
 	}
 	waitGroup.Wait()
 	pools.ReleaseWaitGroup(waitGroup)
+
 	return nil
 }
 func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope) {
@@ -214,6 +215,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	ho, ok := edge.handlers[in.GetConstructor()]
 	if !ok {
 		requestCtx.PushError(errors.ErrInvalidHandler)
+
 		return
 	}
 
@@ -291,6 +293,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 			p := edge.restMux.Search(rc)
 			if p != nil {
 				edge.onGatewayRest(rc, p)
+
 				return
 			}
 		}
@@ -323,6 +326,7 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 		conn.WriteStatus(http.StatusInternalServerError)
 		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
 		_ = conn.WriteBinary(0, b)
+
 		return
 	}
 
@@ -331,6 +335,7 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 		conn.WriteStatus(http.StatusInternalServerError)
 		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
 		_ = conn.WriteBinary(0, b)
+
 		return
 	}
 
@@ -403,6 +408,7 @@ func (edge *Server) StartCluster() (err error) {
 		edge.logger.Warn("Cluster is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
+
 		return errors.ErrClusterNotSet
 	}
 
@@ -426,6 +432,7 @@ func (edge *Server) StartGateway() error {
 		edge.logger.Warn("Gateway is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
+
 		return errors.ErrGatewayNotSet
 	}
 	edge.gateway.Start()
@@ -449,6 +456,7 @@ func (edge *Server) StartTunnel() error {
 		edge.logger.Warn("Tunnel is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
+
 		return errors.ErrTunnelNotSet
 	}
 	edge.tunnel.Start()
@@ -515,6 +523,7 @@ func (edge *Server) ShutdownWithSignal(signals ...os.Signal) error {
 		}
 	}
 	edge.Shutdown()
+
 	return nil
 }
 
@@ -531,6 +540,7 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 	if edge.gateway == nil {
 		return nil
 	}
+
 	return edge.gateway.GetConn(connID)
 }
 
@@ -558,6 +568,7 @@ func (edge *Server) TryTunnelRequest(
 		metrics.HistTunnelRoundtripTime,
 		float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond),
 	)
+
 	return err
 }
 func (edge *Server) getReplicaMember(replicaSet uint64) (target rony.ClusterMember) {
@@ -570,6 +581,7 @@ func (edge *Server) getReplicaMember(replicaSet uint64) (target rony.ClusterMemb
 
 		break
 	}
+
 	return
 }
 func (edge *Server) sendRemoteCommand(target rony.ClusterMember, req, res *rony.MessageEnvelope) error {
@@ -608,5 +620,6 @@ func (edge *Server) sendRemoteCommand(target rony.ClusterMember, req, res *rony.
 
 	// deep copy
 	tmIn.Envelope.DeepCopy(res)
+
 	return nil
 }

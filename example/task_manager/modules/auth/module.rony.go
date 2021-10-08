@@ -12,6 +12,7 @@ func New(store *store.Store) ModuleBase {
 	m := ModuleBase{
 		local: newLocalRepos(store),
 	}
+
 	return m
 }
 

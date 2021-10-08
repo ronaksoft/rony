@@ -26,6 +26,7 @@ func (w *wrapListener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return acquireWrapConn(c), nil
 }
 
@@ -46,5 +47,6 @@ func newWrapListener(listenOn string) (wl *wrapListener, err error) {
 	}
 	wl = &wrapListener{}
 	wl.l, err = tcpConfig.NewListener("tcp4", listenOn)
+
 	return
 }

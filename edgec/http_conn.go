@@ -79,6 +79,7 @@ SendLoop:
 			return
 		}
 		replicaSet, err = c.redirect(x)
+
 		return
 	}
 

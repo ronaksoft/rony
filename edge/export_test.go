@@ -25,5 +25,6 @@ func (edge *Server) GatewayConns() int {
 	if g == nil {
 		return 0
 	}
+
 	return g.TotalConnections()
 }

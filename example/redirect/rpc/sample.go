@@ -27,10 +27,12 @@ func (s *Sample) InfoWithClientRedirect(ctx *edge.RequestCtx, req *InfoRequest, 
 	ctx.Log().Warn("Received", zap.Uint64("ReqRS", req.GetReplicaSet()), zap.Uint64("ServerRS", ctx.ReplicaSet()))
 	if req.GetReplicaSet() != ctx.ReplicaSet() {
 		ctx.PushRedirectRequest(req.GetReplicaSet())
+
 		return nil
 	}
 	res.ServerID = ctx.ServerID()
 	res.RandomText = req.GetRandomText()
+
 	return nil
 }
 
@@ -40,11 +42,14 @@ func (s *Sample) InfoWithServerRedirect(ctx *edge.RequestCtx, req *InfoRequest, 
 		err := TunnelRequestSampleInfoWithServerRedirect(ctx, req.GetReplicaSet(), req, res)
 		if err != nil {
 			ctx.Log().Warn("Got Error", zap.Error(err))
+
 			return errors.ErrInternalServer
 		}
+
 		return nil
 	}
 	res.ServerID = ctx.Cluster().ServerID()
 	res.RandomText = req.GetRandomText()
+
 	return nil
 }

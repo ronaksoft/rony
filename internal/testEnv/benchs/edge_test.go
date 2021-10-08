@@ -216,5 +216,6 @@ func sendHttp(c *fasthttp.HostClient, req, res *rony.MessageEnvelope) error {
 		return err
 	}
 	err = res.Unmarshal(httpRes.Body())
+
 	return err
 }

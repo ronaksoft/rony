@@ -47,6 +47,7 @@ func SanitizePhone(phoneNumber string, defaultRegion string) string {
 					zap.String("DefaultRegion", defaultRegion),
 				)
 			}
+
 			return ""
 		}
 	}
@@ -54,6 +55,7 @@ func SanitizePhone(phoneNumber string, defaultRegion string) string {
 	if !phonenumbers.IsValidNumberForRegion(phone, phonenumbers.GetRegionCodeForNumber(phone)) {
 		return ""
 	}
+
 	return fmt.Sprintf("%d%d", phone.GetCountryCode(), phone.GetNationalNumber())
 }
 
@@ -63,5 +65,6 @@ func GetCountryCode(phone string) string {
 	if err != nil {
 		return ""
 	}
+
 	return phonenumbers.GetRegionCodeForNumber(ph)
 }

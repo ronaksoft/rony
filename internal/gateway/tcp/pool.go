@@ -32,6 +32,7 @@ func acquireHttpConn(gw *Gateway, req *fasthttp.RequestCtx) *httpConn {
 	}
 	c.gateway = gw
 	c.ctx = req
+
 	return c
 }
 
@@ -56,6 +57,7 @@ func acquireWriteRequest(wc *websocketConn, opCode ws.OpCode) *writeRequest {
 	}
 	wr.wc = wc
 	wr.opCode = opCode
+
 	return wr
 }
 
@@ -71,8 +73,10 @@ func acquireWebsocketMessage() *[]wsutil.Message {
 	x, ok := websocketMessagePool.Get().(*[]wsutil.Message)
 	if !ok {
 		arr := make([]wsutil.Message, 0, 8)
+
 		return &arr
 	}
+
 	return x
 }
 

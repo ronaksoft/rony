@@ -37,6 +37,7 @@ func NewServer(serverID string, d edge.Dispatcher) *Server {
 			},
 		}),
 	)
+
 	return s
 }
 

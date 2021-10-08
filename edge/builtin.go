@@ -103,6 +103,7 @@ func (pm *Builtin) getAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if pm.cluster.ReplicaSet() != 1 {
 		ctx.PushError(errors.ErrUnavailableRequest)
+
 		return
 	}
 
@@ -113,6 +114,7 @@ func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
+
 		return
 	}
 
@@ -129,10 +131,12 @@ func (pm *Builtin) getPage(ctx *RequestCtx, in *rony.MessageEnvelope) {
 		}
 		res.ReplicaSet = req.GetReplicaSet()
 		res.ID = req.GetPageID()
+
 		return pm.pageRepo.SaveWithTxn(txn, alloc, res)
 	})
 	if err != nil {
 		ctx.PushError(errors.GenInternalErr(err.Error(), err))
+
 		return
 	}
 	ctx.PushMessage(msg.C_Page, res)
@@ -146,6 +150,7 @@ func (pm *Builtin) ping(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
+
 		return
 	}
 

@@ -69,6 +69,7 @@ func (g *Gateway) openConn(connID uint64, persistent bool) *Conn {
 	g.connsMtx.Unlock()
 
 	atomic.AddInt32(&g.connsTotal, 1)
+
 	return dConn
 }
 

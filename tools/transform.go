@@ -55,6 +55,7 @@ func toCamelInitCase(s string, initCase bool) string {
 			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
 		}
 	}
+
 	return n.String()
 }
 

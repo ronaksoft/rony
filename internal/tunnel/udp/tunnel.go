@@ -165,6 +165,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	req := msg.PoolTunnelMessage.Get()
 	if err := req.Unmarshal(frame); err != nil {
 		t.cfg.Logger.Warn("Error On Tunnel's data received", zap.Error(err))
+
 		return nil, gnet.Close
 	}
 

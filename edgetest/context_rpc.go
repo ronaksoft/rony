@@ -106,6 +106,7 @@ func (c *rpcCtx) expectCount() int {
 	c.mtx.Lock()
 	n := len(c.expect)
 	c.mtx.Unlock()
+
 	return n
 }
 

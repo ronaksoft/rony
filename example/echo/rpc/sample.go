@@ -28,6 +28,7 @@ func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	ctx.Log().Warn("Received", zap.Int64("ID", req.ID))
 	res.ReqID = req.ID
 	res.RandomText = req.RandomText
+
 	return nil
 }
 
@@ -41,8 +42,10 @@ func (s *SampleCli) Echo(cli *SampleClient, cmd *cobra.Command, args []string) e
 	res, err := cli.Echo(req)
 	if err != nil {
 		cmd.Println("Receiver Error:", err.Error())
+
 		return err
 	}
 	cmd.Println("EchoResponse:", res.ReqID, res.RandomText)
+
 	return nil
 }

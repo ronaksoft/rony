@@ -117,6 +117,7 @@ func (ctx *DispatchCtx) FillBytes(data []byte) error {
 		panic("BUG!!! request has been already filled")
 	}
 	ctx.reqFilled = true
+
 	return proto.Unmarshal(data, ctx.req)
 }
 
@@ -130,6 +131,7 @@ func (ctx *DispatchCtx) Get(key string) interface{} {
 	ctx.mtx.RLock()
 	v := ctx.kv[key]
 	ctx.mtx.RUnlock()
+
 	return v
 }
 
@@ -138,6 +140,7 @@ func (ctx *DispatchCtx) GetBytes(key string, defaultValue []byte) []byte {
 	if ok {
 		return v
 	}
+
 	return defaultValue
 }
 
@@ -158,6 +161,7 @@ func (ctx *DispatchCtx) GetInt64(key string, defaultValue int64) int64 {
 	if ok {
 		return v
 	}
+
 	return defaultValue
 }
 
@@ -166,6 +170,7 @@ func (ctx *DispatchCtx) GetBool(key string) bool {
 	if ok {
 		return v
 	}
+
 	return false
 }
 
@@ -185,6 +190,7 @@ func (ctx *DispatchCtx) BufferPop(f func(envelope *rony.MessageEnvelope)) bool {
 		return false
 	}
 	f(me)
+
 	return true
 }
 
@@ -213,6 +219,7 @@ func acquireDispatchCtx(
 	ctx.kind = kind
 	ctx.streamID = streamID
 	ctx.serverID = append(ctx.serverID[:0], serverID...)
+
 	return ctx
 }
 
@@ -252,6 +259,7 @@ func (ctx *RequestCtx) ConnID() uint64 {
 	if ctx.dispatchCtx.Conn() != nil {
 		return ctx.dispatchCtx.Conn().ConnID()
 	}
+
 	return 0
 }
 
@@ -391,10 +399,12 @@ func (ctx *RequestCtx) ClusterEdges(replicaSet uint64, edges *rony.Edges) (*rony
 			edges = &rony.Edges{}
 		}
 		_ = edges.Unmarshal(res.GetMessage())
+
 		return edges, nil
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(res.GetMessage())
+
 		return nil, x
 	default:
 		return nil, errors.ErrUnexpectedTunnelResponse
@@ -420,6 +430,7 @@ func (ctx *RequestCtx) ReplicaSet() uint64 {
 	if ctx.edge.cluster == nil {
 		return 0
 	}
+
 	return ctx.edge.cluster.ReplicaSet()
 }
 
@@ -440,6 +451,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.quickReturn = quickReturn
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
+
 	return ctx
 }
 

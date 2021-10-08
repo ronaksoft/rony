@@ -56,6 +56,7 @@ func TestWithTestGateway(t *testing.T) {
 				c.So(err, ShouldBeNil)
 				c.So(x.Int, ShouldEqual, 100)
 				c.So(x.Timestamp, ShouldEqual, 123)
+
 				return nil
 			}).
 			Run(time.Second)
@@ -74,6 +75,7 @@ func TestRestProxy(t *testing.T) {
 							Int: tools.StrToInt64(tools.GetString(conn.Get("value"), "0")),
 						}
 						ctx.Fill(conn.ConnID(), service.C_SampleEcho, req)
+
 						return nil
 					},
 					func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
@@ -98,6 +100,7 @@ func TestRestProxy(t *testing.T) {
 				Request(rony.MethodGet, "/x/123", nil).
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					c.So(string(b), ShouldResemble, "123")
+
 					return nil
 				}).
 				RunShort()
@@ -124,6 +127,7 @@ func TestRestProxy(t *testing.T) {
 					c.So(err, ShouldBeNil)
 					c.So(res.Int, ShouldEqual, req.Int)
 					c.So(res.Timestamp, ShouldEqual, req.Timestamp)
+
 					return nil
 				}).
 				RunShort()
@@ -145,6 +149,7 @@ func TestRestProxy(t *testing.T) {
 					c.So(err, ShouldBeNil)
 					c.So(res.Int, ShouldEqual, value)
 					c.So(res.Timestamp, ShouldEqual, ts)
+
 					return nil
 				}).
 				RunShort()

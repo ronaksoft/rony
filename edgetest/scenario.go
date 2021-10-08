@@ -30,5 +30,6 @@ func (s scenario) Run(timeout time.Duration) error {
 			return err
 		}
 	}
+
 	return nil
 }

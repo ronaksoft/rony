@@ -39,6 +39,7 @@ func NewHandlerOptions() *HandlerOption {
 
 func (ho *HandlerOption) setBuiltin() *HandlerOption {
 	ho.builtin = true
+
 	return ho
 }
 
@@ -46,12 +47,14 @@ func (ho *HandlerOption) SetConstructor(constructors ...uint64) *HandlerOption {
 	for _, c := range constructors {
 		ho.constructors[c] = struct{}{}
 	}
+
 	return ho
 }
 
 // SetHandler replaces the handlers for this constructor with h
 func (ho *HandlerOption) SetHandler(h ...Handler) *HandlerOption {
 	ho.handlers = append(ho.handlers[:0], h...)
+
 	return ho
 }
 
@@ -59,6 +62,7 @@ func (ho *HandlerOption) SetHandler(h ...Handler) *HandlerOption {
 func (ho *HandlerOption) GatewayOnly() *HandlerOption {
 	ho.tunnel = false
 	ho.gateway = true
+
 	return ho
 }
 
@@ -66,6 +70,7 @@ func (ho *HandlerOption) GatewayOnly() *HandlerOption {
 func (ho *HandlerOption) TunnelOnly() *HandlerOption {
 	ho.tunnel = true
 	ho.gateway = false
+
 	return ho
 }
 
@@ -75,11 +80,13 @@ func (ho *HandlerOption) Prepend(h ...Handler) *HandlerOption {
 	nh = append(nh, h...)
 	nh = append(nh, ho.handlers...)
 	ho.handlers = nh
+
 	return ho
 }
 
 // Append adds the h handlers after already set handlers
 func (ho *HandlerOption) Append(h ...Handler) *HandlerOption {
 	ho.handlers = append(ho.handlers, h...)
+
 	return ho
 }

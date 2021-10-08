@@ -157,6 +157,7 @@ func (ws *Websocket) Start() error {
 	default:
 		return ErrUnknownResponse
 	}
+
 	return nil
 }
 
@@ -202,6 +203,7 @@ func (ws *Websocket) getConnByID(serverID string) *wsConn {
 	defer ws.connsMtx.RUnlock()
 
 	wsc := ws.connsByID[serverID]
+
 	return wsc
 }
 
@@ -213,6 +215,7 @@ func (ws *Websocket) newConn(id string, replicaSet uint64, hostPorts ...string) 
 		hostPorts:  hostPorts,
 		secure:     ws.cfg.Secure,
 	}
+
 	return wsc
 }
 
@@ -263,6 +266,7 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 
 func (ws *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
 	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, "")
+
 	return
 }
 
@@ -319,6 +323,7 @@ Loop:
 		ws.pendingMtx.Lock()
 		delete(ws.pending, req.GetRequestID())
 		ws.pendingMtx.Unlock()
+
 		return ErrTimeout
 	}
 
@@ -365,6 +370,7 @@ func (ws *Websocket) Close() error {
 			_ = c.close()
 		}
 	}
+
 	return nil
 }
 
@@ -382,6 +388,7 @@ func (ws *Websocket) ConnInfo() string {
 	}
 	ws.connsMtx.Unlock()
 	sb.WriteString("-----\n")
+
 	return sb.String()
 }
 
@@ -398,12 +405,15 @@ func (ws *Websocket) ClusterInfo(replicaSets ...uint64) (*rony.Edges, error) {
 	case rony.C_Edges:
 		x := &rony.Edges{}
 		_ = x.Unmarshal(res.GetMessage())
+
 		return x, nil
 	case rony.C_Error:
 		x := &rony.Error{}
 		_ = x.Unmarshal(res.GetMessage())
+
 		return nil, x
 	}
+
 	return nil, ErrUnknownResponse
 }
 

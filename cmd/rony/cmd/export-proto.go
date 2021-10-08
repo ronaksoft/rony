@@ -13,6 +13,10 @@ import (
 	"path/filepath"
 )
 
+const (
+	protoExt = ".proto"
+)
+
 var ExportProtoCmd = &cobra.Command{
 	Use: "export-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,7 +68,7 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 			if info == nil || info.IsDir() {
 				return nil
 			}
-			if filepath.Ext(info.Name()) == ".proto" {
+			if filepath.Ext(info.Name()) == protoExt {
 				files = append(files, path)
 			}
 
@@ -133,6 +137,7 @@ func collectProto(g *genny.Generator, folders []string) {
 				cmd1.Dir = projectPathAbs
 				g.Command(cmd1)
 			}
+
 			return nil
 		})
 	}

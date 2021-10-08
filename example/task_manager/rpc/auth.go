@@ -91,5 +91,6 @@ func (s *Auth) MustAuthorized(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	if username == "" {
 		ctx.PushError(errors.GenAccessErr("SESSION", nil))
 	}
+
 	return
 }

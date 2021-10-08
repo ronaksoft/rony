@@ -45,6 +45,7 @@ var rndGen randomGenerator
 func init() {
 	rndGen.New = func() interface{} {
 		x := mathRand.New(mathRand.NewSource(CPUTicks()))
+
 		return x
 	}
 }
@@ -57,6 +58,7 @@ func RandomID(n int) string {
 		b[i] = alphaNumerics[FastRand()%alphaNumericsLength]
 	}
 	rndGen.PutRand(rnd)
+
 	return ByteToStr(b)
 }
 
@@ -65,6 +67,7 @@ func RandomIDs(n ...int) []string {
 	for _, x := range n {
 		str = append(str, RandomID(x))
 	}
+
 	return str
 }
 
@@ -76,6 +79,7 @@ func RandomDigit(n int) string {
 		b[i] = digits[FastRand()%digitsLength]
 	}
 	rndGen.PutRand(rnd)
+
 	return ByteToStr(b)
 }
 
@@ -89,6 +93,7 @@ func RandomInt64(n int64) (x int64) {
 		x = rnd.Int63n(n)
 	}
 	rndGen.PutRand(rnd)
+
 	return
 }
 
@@ -102,6 +107,7 @@ func RandomInt32(n int32) (x int32) {
 		x = rnd.Int31n(n)
 	}
 	rndGen.PutRand(rnd)
+
 	return
 }
 
@@ -115,6 +121,7 @@ func SecureRandomInt63(n int64) (x int64) {
 	} else {
 		x = int64(xx >> 1)
 	}
+
 	return
 }
 
@@ -126,6 +133,7 @@ func RandomInt(n int) (x int) {
 		x = rnd.Intn(n)
 	}
 	rndGen.PutRand(rnd)
+
 	return
 }
 
@@ -138,6 +146,7 @@ func RandomUint64(n uint64) (x uint64) {
 		x = rnd.Uint64() % n
 	}
 	rndGen.PutRand(rnd)
+
 	return
 }
 
@@ -146,5 +155,6 @@ func SecureRandomUint64() (x uint64) {
 	var b [8]byte
 	_, _ = rand.Read(b[:])
 	x = binary.BigEndian.Uint64(b[:])
+
 	return
 }

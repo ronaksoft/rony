@@ -178,6 +178,7 @@ SendLoop:
 	// If we exceeds the maximum retry then we return
 	if retry--; retry < 0 {
 		err = errors.ErrRetriesExceeded(err)
+
 		return
 	}
 
@@ -187,6 +188,7 @@ SendLoop:
 // Close implements Client interface
 func (h *Http) Close() error {
 	h.c.CloseIdleConnections()
+
 	return nil
 }
 

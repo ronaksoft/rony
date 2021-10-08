@@ -70,36 +70,43 @@ func AppendStrUInt32(sb *strings.Builder, x uint32) {
 
 func StrToFloat64(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
+
 	return v
 }
 
 func StrToFloat32(s string) float32 {
 	v, _ := strconv.ParseFloat(s, 32)
+
 	return float32(v)
 }
 
 func StrToInt64(s string) int64 {
 	v, _ := strconv.ParseInt(s, 10, 64)
+
 	return v
 }
 
 func StrToInt32(s string) int32 {
 	v, _ := strconv.ParseInt(s, 10, 32)
+
 	return int32(v)
 }
 
 func StrToUInt64(s string) uint64 {
 	v, _ := strconv.ParseInt(s, 10, 64)
+
 	return uint64(v)
 }
 
 func StrToUInt32(s string) uint32 {
 	v, _ := strconv.ParseInt(s, 10, 32)
+
 	return uint32(v)
 }
 
 func StrToInt(s string) int {
 	v, _ := strconv.ParseInt(s, 10, 32)
+
 	return int(v)
 }
 
@@ -147,6 +154,7 @@ func StrToByte(str string) (b []byte) {
 	bh.Data = sh.Data
 	bh.Len = sh.Len
 	bh.Cap = sh.Len
+
 	return b
 }
 

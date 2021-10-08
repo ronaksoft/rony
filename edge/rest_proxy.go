@@ -71,6 +71,7 @@ func (hp *restMux) Search(conn rony.RestConn) RestProxy {
 	if n == nil {
 		return nil
 	}
+
 	return n.Proxy
 }
 
@@ -298,6 +299,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 					// /second/wild/static/otherstatic/
 					// req: /second/wild/static/otherstatic/random => but not found!
 					params.Set(n.paramKeys[0], q[len(n.staticKey):])
+
 					return n
 				}
 
@@ -321,6 +323,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 		if n != nil { // we need it on both places, on last segment (below) or on the first unnknown (above).
 			if n = n.findClosestParentWildcardNode(); n != nil {
 				params.Set(n.paramKeys[0], q[len(n.staticKey):])
+
 				return n
 			}
 		}
@@ -334,6 +337,7 @@ func (t *trie) Search(q string, params ParamsSetter) *trieNode {
 			// by the /other2/*myparam and not the root wildcard (see above), which is what we want.
 			n = t.root.getChild(wildcardParamStart)
 			params.Set(n.paramKeys[0], q[1:])
+
 			return n
 		}
 
@@ -377,6 +381,7 @@ type trieNode struct {
 // newTrieNode returns a new, empty, trieNode.
 func newTrieNode() *trieNode {
 	n := new(trieNode)
+
 	return n
 }
 

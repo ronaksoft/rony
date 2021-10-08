@@ -52,6 +52,7 @@ func (m *Member) Proto(p *rony.Edge) *rony.Edge {
 	p.ReplicaSet = m.replicaSet
 	p.ServerID = m.serverID
 	p.HostPorts = append(p.HostPorts, m.gatewayAddr...)
+
 	return p
 }
 
@@ -71,6 +72,7 @@ func (m *Member) Dial() (net.Conn, error) {
 		conn, err := net.Dial("udp", m.tunnelAddr[idx])
 		if err == nil {
 			m.idx = idx
+
 			return conn, nil
 		}
 		idx = (idx + 1) % len(m.tunnelAddr)

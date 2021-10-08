@@ -29,6 +29,7 @@ func (d *clusterDelegate) nodeData() []byte {
 		TunnelAddr:  d.c.localTunnelAddr,
 	}
 	b, _ := proto.Marshal(n)
+
 	return b
 }
 
@@ -36,8 +37,10 @@ func (d *clusterDelegate) NodeMeta(limit int) []byte {
 	b := d.nodeData()
 	if len(b) > limit {
 		d.c.cfg.Logger.Warn("Too Large Meta", zap.ByteString("ServerID", d.c.localServerID))
+
 		return nil
 	}
+
 	return b
 }
 

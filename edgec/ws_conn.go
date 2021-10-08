@@ -59,6 +59,7 @@ func (c *wsConn) createDialer(timeout time.Duration) {
 					if err != nil {
 						continue
 					}
+
 					return
 				}
 			}
@@ -161,6 +162,7 @@ func (c *wsConn) handler(e *rony.MessageEnvelope) {
 		if defaultHandler != nil {
 			defaultHandler(e)
 		}
+
 		return
 	}
 

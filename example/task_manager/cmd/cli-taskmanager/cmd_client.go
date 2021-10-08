@@ -59,6 +59,7 @@ var ClientCmd = &cobra.Command{
 		shellCmd.AddCommand(exitCmd)
 		task.RegisterTaskManagerCli(&TaskManagerCLI{}, wsc, shellCmd)
 		tools.RunShell(shellCmd)
+
 		return nil
 	},
 }
@@ -78,6 +79,7 @@ func (t *TaskManagerCLI) Register(cli *auth.AuthClient, cmd *cobra.Command, args
 	}
 	_sessionID = res.GetSessionID()
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }
 
@@ -92,6 +94,7 @@ func (t *TaskManagerCLI) Login(cli *auth.AuthClient, cmd *cobra.Command, args []
 	}
 	_sessionID = res.GetSessionID()
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }
 
@@ -106,6 +109,7 @@ func (t *TaskManagerCLI) Create(cli *task.TaskManagerClient, cmd *cobra.Command,
 		return err
 	}
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }
 
@@ -118,6 +122,7 @@ func (t *TaskManagerCLI) Get(cli *task.TaskManagerClient, cmd *cobra.Command, ar
 		return err
 	}
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }
 
@@ -130,6 +135,7 @@ func (t *TaskManagerCLI) Delete(cli *task.TaskManagerClient, cmd *cobra.Command,
 		return err
 	}
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }
 
@@ -143,5 +149,6 @@ func (t *TaskManagerCLI) List(cli *task.TaskManagerClient, cmd *cobra.Command, a
 		return err
 	}
 	cmd.Println("Response: ", res.String())
+
 	return nil
 }

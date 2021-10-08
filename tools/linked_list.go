@@ -24,6 +24,7 @@ func acquireNode() *Node {
 	if !ok {
 		return &Node{}
 	}
+
 	return n
 }
 
@@ -89,6 +90,7 @@ func (ll *LinkedList) Size() int32 {
 	ll.lock.RLock()
 	n := ll.size
 	ll.lock.RUnlock()
+
 	return n
 }
 
@@ -100,6 +102,7 @@ func (ll *LinkedList) PickHeadData() interface{} {
 	ll.lock.Lock()
 	if ll.head == nil {
 		ll.lock.Unlock()
+
 		return nil
 	}
 
@@ -114,6 +117,7 @@ func (ll *LinkedList) PickHeadData() interface{} {
 	ll.lock.Unlock()
 	data := n.data
 	releaseNode(n)
+
 	return data
 }
 
@@ -125,6 +129,7 @@ func (ll *LinkedList) PickTailData() interface{} {
 	ll.lock.Lock()
 	if ll.tail == nil {
 		ll.lock.Unlock()
+
 		return nil
 	}
 	n := ll.tail
@@ -138,6 +143,7 @@ func (ll *LinkedList) PickTailData() interface{} {
 	ll.lock.Unlock()
 	data := n.data
 	releaseNode(n)
+
 	return data
 }
 
@@ -157,6 +163,7 @@ func (ll *LinkedList) Get(index int32) (n *Node) {
 		}
 	}
 	ll.lock.RUnlock()
+
 	return n
 }
 
@@ -187,5 +194,6 @@ func (ll *LinkedList) String() string {
 		n = n.next
 		idx++
 	}
+
 	return sb.String()
 }

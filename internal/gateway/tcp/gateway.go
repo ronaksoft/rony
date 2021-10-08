@@ -181,6 +181,7 @@ func MustNew(config Config) *Gateway {
 	if err != nil {
 		panic(err)
 	}
+
 	return g
 }
 
@@ -479,6 +480,7 @@ func (g *Gateway) websocketWritePump(wr *writeRequest) (err error) {
 			atomic.AddUint64(&g.cntWrites, 1)
 		}
 	}
+
 	return
 }
 

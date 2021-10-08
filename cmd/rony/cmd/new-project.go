@@ -64,6 +64,9 @@ func addFiles(g *genny.Generator, tCtx *plush.Context, fs embed.FS, fsPath, path
 			panic(err)
 		}
 		ft, err := plushgen.Transformer(tCtx).Transform(genny.NewFile(filepath.Join(outputDir, ent.Name()), f))
+		if err != nil {
+			panic(err)
+		}
 		g.File(ft)
 		_ = f.Close()
 	}

@@ -66,6 +66,7 @@ var ServerCmd = &cobra.Command{
 		edgeServer.WaitForSignal(os.Kill, os.Interrupt)
 		_ = edgeServer.Cluster().Leave()
 		edgeServer.Shutdown()
+
 		return nil
 	},
 }
