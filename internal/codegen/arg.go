@@ -364,6 +364,7 @@ func (fa FieldArg) With(f *protogen.File) FieldArg {
 
 func (fa FieldArg) Options() *descriptorpb.FieldOptions {
 	opt, _ := fa.desc.Options().(*descriptorpb.FieldOptions)
+
 	return opt
 }
 
@@ -413,6 +414,7 @@ func (sa ServiceArg) With(f *protogen.File) ServiceArg {
 
 func (sa ServiceArg) Options() *descriptorpb.ServiceOptions {
 	opt, _ := sa.desc.Options().(*descriptorpb.ServiceOptions)
+
 	return opt
 }
 
@@ -488,6 +490,7 @@ func (ma MethodArg) With(f *protogen.File) MethodArg {
 
 func (ma MethodArg) Options() *descriptorpb.MethodOptions {
 	opt, _ := ma.desc.Options().(*descriptorpb.MethodOptions)
+
 	return opt
 }
 

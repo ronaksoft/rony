@@ -14,6 +14,7 @@ func GetString(v interface{}, defaultValue string) string {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
@@ -22,6 +23,7 @@ func GetInt64(v interface{}, defaultValue int64) int64 {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
@@ -30,6 +32,7 @@ func GetUint64(v interface{}, defaultValue uint64) uint64 {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
@@ -38,6 +41,7 @@ func GetInt32(v interface{}, defaultValue int32) int32 {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
@@ -46,6 +50,7 @@ func GetUint32(v interface{}, defaultValue uint32) uint32 {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
@@ -54,5 +59,6 @@ func GetBytes(v interface{}, defaultValue []byte) []byte {
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }

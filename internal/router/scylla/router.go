@@ -56,6 +56,7 @@ func (r *Router) Set(entityID string, replicaSet uint64, replace bool) error {
 	}
 
 	q.Bind(entityID, replicaSet, tools.TimeUnix(), tools.TimeUnix())
+
 	return q.Exec()
 }
 

@@ -136,6 +136,7 @@ func jsonStr(plugin *protogen.Plugin) error {
 
 	gf := plugin.NewGeneratedFile(filepath.Join(filepath.Dir(filePrefix), "constructors.json"), importPath)
 	_, err = gf.Write(out.Bytes())
+
 	return err
 }
 
@@ -189,5 +190,6 @@ func jsonInt(plugin *protogen.Plugin) error {
 
 	gf := plugin.NewGeneratedFile(filepath.Join(filepath.Dir(filePrefix), "constructors.json"), importPath)
 	_, err = gf.Write(out.Bytes())
+
 	return err
 }

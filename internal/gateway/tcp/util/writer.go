@@ -417,6 +417,7 @@ func (w *Writer) opCode() ws.OpCode {
 	if w.fragmented {
 		return ws.OpContinuation
 	}
+
 	return w.op
 }
 
@@ -433,6 +434,7 @@ func (w *bytesWriter) Write(p []byte) (int, error) {
 	if n != len(p) {
 		return n, errNoSpace
 	}
+
 	return n, nil
 }
 

@@ -28,11 +28,13 @@ func Sha512(in, out []byte) error {
 	if _, err := h.Write(in); err != nil {
 		h.Reset()
 		poolSha512.Put(h)
+
 		return err
 	}
 	h.Sum(out)
 	h.Reset()
 	poolSha512.Put(h)
+
 	return nil
 }
 
@@ -54,11 +56,13 @@ func Sha256(in, out []byte) error {
 	if _, err := h.Write(in); err != nil {
 		h.Reset()
 		poolSha256.Put(h)
+
 		return err
 	}
 	h.Sum(out)
 	h.Reset()
 	poolSha256.Put(h)
+
 	return nil
 }
 

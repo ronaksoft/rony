@@ -82,6 +82,7 @@ func newWebsocketConn(g *Gateway, conn net.Conn, clientIP []byte) (*websocketCon
 		)
 	}
 	g.connGC.monitorConnection(connID)
+
 	return wsConn, nil
 }
 
@@ -91,6 +92,7 @@ func (wc *websocketConn) registerDesc() error {
 	if err != nil {
 		wc.release(1)
 	}
+
 	return err
 }
 
@@ -141,6 +143,7 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 
 	if event&netpoll.EventReadHup != 0 {
 		wc.release(2)
+
 		return
 	}
 
@@ -178,6 +181,7 @@ func (wc *websocketConn) read(ms []wsutil.Message) ([]wsutil.Message, error) {
 		err = ErrConnectionClosed
 	}
 	wc.mtx.Unlock()
+
 	return ms, err
 }
 
@@ -190,6 +194,7 @@ func (wc *websocketConn) write(opCode ws.OpCode, payload []byte) (err error) {
 		err = ErrWriteToClosedConn
 	}
 	wc.mtx.Unlock()
+
 	return
 }
 
@@ -197,6 +202,7 @@ func (wc *websocketConn) Get(key string) interface{} {
 	wc.kvLock.Lock()
 	v := wc.kv[key]
 	wc.kvLock.Unlock()
+
 	return v
 }
 
@@ -235,6 +241,7 @@ func (wc *websocketConn) WriteBinary(streamID int64, payload []byte) error {
 	}
 	releaseWriteRequest(wr)
 	metrics.IncCounter(metrics.CntGatewayOutgoingWebsocketMessage)
+
 	return nil
 }
 

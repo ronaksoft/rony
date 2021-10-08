@@ -81,6 +81,7 @@ func NewFlusherPoolWithWaitTime(maxWorkers, batchSize int32, minWaitTime time.Du
 		flusherFunc: f,
 		pool:        make(map[string]*flusher, 16),
 	}
+
 	return fp
 }
 
@@ -99,6 +100,7 @@ func (fp *FlusherPool) getFlusher(targetID string) *flusher {
 		fp.pool[targetID] = f
 	}
 	fp.poolMtx.Unlock()
+
 	return f
 }
 
@@ -125,6 +127,7 @@ func (f *flusher) startWorker() {
 	if atomic.AddInt32(&f.readyWorkers, -1) < 0 {
 		atomic.AddInt32(&f.readyWorkers, 1)
 		f.Unlock()
+
 		return
 	}
 	f.Unlock()

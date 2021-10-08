@@ -16,6 +16,7 @@ func New(db *gorm.DB) *Router {
 	}
 
 	_ = r.db.AutoMigrate(&Entity{})
+
 	return r
 }
 

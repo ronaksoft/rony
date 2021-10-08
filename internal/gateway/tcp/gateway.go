@@ -150,6 +150,7 @@ func New(config Config) (*Gateway, error) {
 	err = g.detectAddrs()
 	if err != nil {
 		g.cfg.Logger.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+
 		return nil, err
 	}
 
@@ -230,6 +231,7 @@ func (g *Gateway) detectAddrs() error {
 	g.addrsMtx.Lock()
 	g.addrs = append(g.addrs[:0], lAddrs...)
 	g.addrsMtx.Unlock()
+
 	return nil
 }
 
@@ -302,6 +304,7 @@ func (g *Gateway) Addr() []string {
 	g.addrsMtx.RLock()
 	addrs := g.addrs
 	g.addrsMtx.RUnlock()
+
 	return addrs
 }
 
@@ -311,6 +314,7 @@ func (g *Gateway) GetConn(connID uint64) rony.Conn {
 	if c == nil {
 		return nil
 	}
+
 	return c
 }
 
@@ -322,6 +326,7 @@ func (g *Gateway) TotalConnections() int {
 	g.connsMtx.RLock()
 	n := len(g.conns)
 	g.connsMtx.RUnlock()
+
 	return n
 }
 
@@ -342,6 +347,7 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 		if !g.Support(rony.Websocket) {
 			reqCtx.SetConnectionClose()
 			reqCtx.SetStatusCode(http.StatusNotAcceptable)
+
 			return
 		}
 		reqCtx.HijackSetNoResponse(true)
@@ -352,6 +358,7 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 			g.websocketHandler(wc, meta)
 			releaseConnInfo(meta)
 		})
+
 		return
 	}
 
@@ -359,6 +366,7 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	reqCtx.SetConnectionClose()
 	if !g.Support(rony.Http) {
 		reqCtx.SetStatusCode(http.StatusNotAcceptable)
+
 		return
 	}
 
@@ -391,6 +399,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 			)
 		}
 		_ = c.Close()
+
 		return
 	}
 
@@ -401,6 +410,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 	wsConn, err := newWebsocketConn(g, c, meta.clientIP)
 	if err != nil {
 		g.cfg.Logger.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
+
 		return
 	}
 
@@ -422,6 +432,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 				zap.Error(err),
 			)
 		}
+
 		return ErrUnexpectedSocketRead
 	}
 	atomic.AddUint64(&g.cntReads, 1)
@@ -478,5 +489,6 @@ func (g *Gateway) getConnection(connID uint64) *websocketConn {
 	if ok {
 		return wsConn
 	}
+
 	return nil
 }
