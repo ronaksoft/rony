@@ -68,7 +68,15 @@ func (m *TaskManager) Delete(ctx *edge.RequestCtx, req *task.DeleteRequest, res 
 
 func (m *TaskManager) List(ctx *edge.RequestCtx, req *task.ListRequest, res *task.TaskViewMany) *rony.Error {
 	username := ctx.GetString("Username", "")
-	tasks, err := m.Local().Task.ListByUsername(username, store.NewListOption().SetSkip(req.GetOffset()).SetLimit(req.GetLimit()), nil)
+	tasks, err := m.Local().
+		Task.
+		ListByUsername(
+			username,
+			store.NewListOption().
+				SetSkip(req.GetOffset()).
+				SetLimit(req.GetLimit()),
+			nil,
+		)
 	if err != nil {
 		return errors.GenUnavailableErr("TASK", err)
 	}

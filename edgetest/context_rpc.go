@@ -69,8 +69,8 @@ func (c *rpcCtx) Request(constructor uint64, p proto.Message, kv ...*rony.KeyVal
 	return c
 }
 
-// Expect let you set what you expect to receive. If cf is set, then you can do more checks on the response and return error
-// if the response was not fully acceptable
+// Expect let you set what you expect to receive. If cf is set, then you can do more checks
+// on the response and return error if the response was not fully acceptable
 func (c *rpcCtx) Expect(constructor uint64, cf CheckFunc) *rpcCtx {
 	c.expect[constructor] = cf
 

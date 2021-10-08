@@ -77,18 +77,20 @@ func (hp *restMux) Search(conn rony.RestConn) RestProxy {
 const (
 	// paramStart is the character, as a string, which a path pattern starts to define its named parameter.
 	paramStart = ":"
-	// wildcardParamStart is the character, as a string, which a path pattern starts to define its named parameter for wildcards.
-	// It allows everything else after that path prefix
-	// but the trie checks for static paths and named parameters before that in order to support everything that other implementations do not,
-	// and if nothing else found then it tries to find the closest wildcard path(super and unique).
+	// wildcardParamStart is the character, as a string, which a path pattern starts to define
+	// its named parameter for wildcards. It allows everything else after that path prefix
+	// but the trie checks for static paths and named parameters before that in order to
+	// support everything that other implementations do not, and if nothing else found then it tries to
+	//find the closest wildcard path(super and unique).
 	wildcardParamStart = "*"
 )
 
 // trie contains the main logic for adding and searching nodes for path segments.
 // It supports wildcard and named path parameters.
 // trie supports very coblex and useful path patterns for routes.
-// The trie checks for static paths(path without : or *) and named parameters before that in order to support everything that other implementations do not,
-// and if nothing else found then it tries to find the closest wildcard path(super and unique).
+// The trie checks for static paths(path without : or *) and named parameters before that in order to
+// support everything that other implementations do not, and if nothing else found then it tries
+// to find the closest wildcard path(super and unique).
 type trie struct {
 	root *trieNode
 

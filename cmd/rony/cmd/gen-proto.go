@@ -99,7 +99,6 @@ func compileProto(g *genny.Generator, folders []string) {
 				cmd2.Env = os.Environ()
 				cmd2.Dir = filepath.Dir(projectPathAbs)
 				g.Command(cmd2)
-
 			}
 
 			return nil

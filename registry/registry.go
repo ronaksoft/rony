@@ -44,6 +44,7 @@ func Unwrap(envelope Envelope) (proto.Message, error) {
 	if unwrapFunc == nil {
 		return nil, fmt.Errorf("not found")
 	}
+
 	return unwrapFunc(envelope)
 }
 

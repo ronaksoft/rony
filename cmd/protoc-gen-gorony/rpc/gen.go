@@ -53,6 +53,7 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -240,7 +241,9 @@ func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 {{- if not .TunnelOnly }}
-func (c *{{$serviceName}}Client) {{.Name}} (req *{{.Input.Fullname}}, kvs ...*rony.KeyValue) (*{{.Output.Fullname}}, error) {
+func (c *{{$serviceName}}Client) {{.Name}} (
+	req *{{.Input.Fullname}}, kvs ...*rony.KeyValue,
+) (*{{.Output.Fullname}}, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()

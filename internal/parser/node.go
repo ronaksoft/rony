@@ -219,7 +219,13 @@ func (t *ViewNode) tree() *Tree {
 }
 
 func (t *ViewNode) Copy() Node {
-	return &ViewNode{tr: t.tr, NodeType: NodeView, Pos: t.Pos, PartitionKeys: t.PartitionKeys, ClusteringKeys: t.ClusteringKeys}
+	return &ViewNode{
+		tr:             t.tr,
+		NodeType:       NodeView,
+		Pos:            t.Pos,
+		PartitionKeys:  t.PartitionKeys,
+		ClusteringKeys: t.ClusteringKeys,
+	}
 }
 
 // CounterNode holds counter

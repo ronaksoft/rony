@@ -32,6 +32,8 @@ const (
 
 type MessageHandler func(m *rony.MessageEnvelope)
 
+type ConnectHandler func(c *Websocket)
+
 // WebsocketConfig holds the configs for the Websocket client
 type WebsocketConfig struct {
 	SeedHostPort string
@@ -49,7 +51,10 @@ type WebsocketConfig struct {
 	RequestTimeout time.Duration
 	// ContextTimeout is the amount that Send function will wait until times out. This includes all the retries.
 	ContextTimeout time.Duration
-	Router         Router
+	// Router is an optional parameter which give more control over selecting the target host based on each request.
+	Router Router
+	// OnConnect will be called everytime the websocket connection is established.
+	OnConnect ConnectHandler
 }
 
 // Websocket client which could handle multiple connections
@@ -368,7 +373,12 @@ func (ws *Websocket) ConnInfo() string {
 	sb.WriteString("\n-----\n")
 	ws.connsMtx.Lock()
 	for id, wsc := range ws.connsByID {
-		sb.WriteString(fmt.Sprintf("%s: [RS=%d] [HostPorts=%v] [Connected: %t]\n", id, wsc.replicaSet, wsc.hostPorts, wsc.connected))
+		sb.WriteString(
+			fmt.Sprintf(
+				"%s: [RS=%d] [HostPorts=%v] [Connected: %t]\n",
+				id, wsc.replicaSet, wsc.hostPorts, wsc.connected,
+			),
+		)
 	}
 	ws.connsMtx.Unlock()
 	sb.WriteString("-----\n")

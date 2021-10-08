@@ -29,7 +29,13 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 		}
 
 		// Create the generator func
-		gFile := plugin.NewGeneratedFile(fmt.Sprintf("%s.clean.proto", protoFile.GeneratedFilenamePrefix), protoFile.GoImportPath)
+		gFile := plugin.NewGeneratedFile(
+			fmt.Sprintf(
+				"%s.clean.proto",
+				protoFile.GeneratedFilenamePrefix,
+			),
+			protoFile.GoImportPath,
+		)
 		gFile.P("syntax = \"", protoFile.Proto.GetSyntax(), "\";")
 		gFile.P()
 		gFile.P("package ", protoFile.Proto.GetPackage(), ";")
@@ -74,27 +80,49 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 					case protoreflect.Repeated:
 						switch f.Desc.Kind() {
 						case protoreflect.MessageKind:
-							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
 						case protoreflect.EnumKind:
-							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
 						default:
-							gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
 						}
 					}
 				case "proto2":
 					switch f.Desc.Kind() {
 					case protoreflect.MessageKind:
-						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
 					case protoreflect.EnumKind:
-						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
 					default:
-						gFile.P("\t", f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
 					}
 				}
-
 			}
 			gFile.P("}")
-
 		}
 		for _, m := range protoFile.Enums {
 			gFile.P()
@@ -107,7 +135,6 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			}
 			gFile.P("}")
 		}
-
 	}
 
 	return nil

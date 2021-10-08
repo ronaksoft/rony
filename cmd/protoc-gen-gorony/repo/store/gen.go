@@ -194,19 +194,127 @@ func Generate(g *Generator, arg codegen.MessageArg) {
 	}
 
 	if arg.IsSingleton {
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSingleton").Funcs(helperFunctions).Parse(genSingleton)), arg))
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genSingleton").
+						Funcs(helperFunctions).
+						Parse(genSingleton),
+				),
+				arg,
+			),
+		)
 	} else if arg.IsAggregate {
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genHelpers").Funcs(helperFunctions).Parse(genHelpers)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genPrimaryKey").Funcs(helperFunctions).Parse(genPrimaryKey)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genRepo").Funcs(helperFunctions).Parse(genRepo)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genCreate").Funcs(helperFunctions).Parse(genCreate)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genUpdate").Funcs(helperFunctions).Parse(genUpdate)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genSave").Funcs(helperFunctions).Parse(genSave)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genRead").Funcs(helperFunctions).Parse(genRead)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genDelete").Funcs(helperFunctions).Parse(genDelete)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genList").Funcs(helperFunctions).Parse(genList)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genIter").Funcs(helperFunctions).Parse(genIter)), arg))
-		g.g.P(codegen.ExecTemplate(template.Must(template.New("genListByIndex").Funcs(helperFunctions).Parse(genListByIndex)), arg))
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genHelpers").
+						Funcs(helperFunctions).
+						Parse(genHelpers),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genPrimaryKey").
+						Funcs(helperFunctions).
+						Parse(genPrimaryKey),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genRepo").
+						Funcs(helperFunctions).
+						Parse(genRepo),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genCreate").
+						Funcs(helperFunctions).
+						Parse(genCreate),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genUpdate").
+						Funcs(helperFunctions).
+						Parse(genUpdate),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genSave").
+						Funcs(helperFunctions).
+						Parse(genSave),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genRead").
+						Funcs(helperFunctions).
+						Parse(genRead),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genDelete").
+						Funcs(helperFunctions).
+						Parse(genDelete),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genList").
+						Funcs(helperFunctions).
+						Parse(genList),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genIter").
+						Funcs(helperFunctions).
+						Parse(genIter),
+				),
+				arg,
+			),
+		)
+		g.g.P(
+			codegen.ExecTemplate(
+				template.Must(
+					template.New("genListByIndex").
+						Funcs(helperFunctions).
+						Parse(genListByIndex),
+				),
+				arg,
+			),
+		)
 	}
 }
 
@@ -454,7 +562,10 @@ const genRead = `
 {{$model := .}}
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
-func (r *{{$repoName}}) ReadWithTxn(txn *rony.StoreTxn, alloc *tools.Allocator, {{FuncArgs .Table ""}}, m *{{$modelName}}) (*{{$modelName}}, error) {
+func (r *{{$repoName}}) ReadWithTxn(
+	txn *rony.StoreTxn, alloc *tools.Allocator, 
+	{{FuncArgs .Table ""}}, m *{{$modelName}},
+) (*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
 		defer alloc.ReleaseAll()
@@ -607,7 +718,8 @@ const genIter = `
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) IterWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, ito *store.IterOption, cb func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, 
+    ito *store.IterOption, cb func(m *{{$modelName}}) bool,
 ) error {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -682,7 +794,8 @@ const genList = `
 {{$repoName := RepoName .Name}}
 {{$modelName := .Name}}
 func (r *{{$repoName}}) ListWithTxn(
-	txn *rony.StoreTxn, alloc *tools.Allocator, offset {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
+	txn *rony.StoreTxn, alloc *tools.Allocator, 
+	offset {{$modelName}}PrimaryKey, lo *store.ListOption, cond func(m *{{$modelName}}) bool,
 ) ([]*{{$modelName}}, error) {
 	if alloc == nil {
 		alloc = tools.NewAllocator()
@@ -771,7 +884,9 @@ const genListByIndex = `
 {{$modelName := .Name}}
 {{ range .Fields }}
 {{ if .HasIndex }}
-func (r *{{$repoName}}) ListBy{{Singular .Name}} ({{Singular .NameCC}} {{.GoKind}}, lo *store.ListOption, cond func(*{{$modelName}}) bool) ([]*{{$modelName}}, error) {
+func (r *{{$repoName}}) ListBy{{Singular .Name}} (
+	{{Singular .NameCC}} {{.GoKind}}, lo *store.ListOption, cond func(*{{$modelName}}) bool,
+) ([]*{{$modelName}}, error) {
 	alloc := tools.NewAllocator()
 	defer alloc.ReleaseAll()
 

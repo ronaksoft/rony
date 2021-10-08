@@ -101,7 +101,11 @@ func (g *Gateway) RPC(connID uint64, streamID int64, data []byte) error {
 }
 
 // REST emulates a Http REST request.
-func (g *Gateway) REST(connID uint64, method, path string, body []byte, kvs ...*rony.KeyValue) (respBody []byte, respHdr map[string]string) {
+func (g *Gateway) REST(
+	connID uint64, method, path string,
+	body []byte,
+	kvs ...*rony.KeyValue,
+) (respBody []byte, respHdr map[string]string) {
 	conn := g.openConn(connID, false)
 	conn.onMessage = func(connID uint64, streamID int64, data []byte, hdr map[string]string) {
 		respHdr = hdr

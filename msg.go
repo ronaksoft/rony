@@ -67,6 +67,7 @@ func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return m.ProtoReflect(), nil
 }
 

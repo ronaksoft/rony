@@ -40,7 +40,6 @@ func init() {
 		config.StringFlag("c.format", "str", "possible values: str, int64"),
 	)
 	RootCmd.AddCommand(CreateProjectCmd, GenProtoCmd, ExportProtoCmd)
-
 }
 
 var RootCmd = &cobra.Command{

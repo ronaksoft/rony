@@ -1,8 +1,8 @@
 linters:
   enable-all: true
   disable:
-    - lll
-    - wrapcheck
+#    - lll
+#    - wrapcheck
     - interfacer
     - golint
     - scopelint

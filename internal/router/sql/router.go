@@ -37,5 +37,6 @@ func (r *Router) Set(entityID string, replicaSet uint64, replace bool) error {
 func (r *Router) Get(entityID string) (replicaSet uint64, err error) {
 	var entity = &Entity{}
 	err = r.db.First(entity, "entity_id = ?", entityID).Error
+
 	return entity.ReplicaSet, err
 }

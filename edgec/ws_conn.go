@@ -104,6 +104,10 @@ ConnectLoop:
 	c.connected = true
 
 	go c.receiver()
+
+	if c.ws.cfg.OnConnect != nil {
+		c.ws.cfg.OnConnect(c.ws)
+	}
 }
 
 func (c *wsConn) receiver() {

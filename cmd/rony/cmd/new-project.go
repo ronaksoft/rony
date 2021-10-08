@@ -67,7 +67,6 @@ func addFiles(g *genny.Generator, tCtx *plush.Context, fs embed.FS, fsPath, path
 		g.File(ft)
 		_ = f.Close()
 	}
-
 }
 
 func setupSkeleton(g *genny.Generator) {
@@ -92,7 +91,11 @@ func setupSkeleton(g *genny.Generator) {
 
 	// create cmd folder
 	g.File(genny.NewDir(filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)), os.ModeDir|0744))
-	addFiles(g, tCtx, Skeleton, "skel", "cmd/cli-project", filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)))
+	addFiles(
+		g, tCtx, Skeleton,
+		"skel", "cmd/cli-project",
+		filepath.Join(projectPath, fmt.Sprintf("cmd/cli-%s", projectName)),
+	)
 
 	// create rpc folder
 	g.File(genny.NewDir(filepath.Join(projectPath, "rpc"), os.ModeDir|0744))

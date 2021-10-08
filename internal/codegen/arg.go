@@ -267,6 +267,7 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 
 func (ma MessageArg) Options() *descriptorpb.MessageOptions {
 	opt, _ := ma.desc.Desc.Options().(*descriptorpb.MessageOptions)
+
 	return opt
 }
 

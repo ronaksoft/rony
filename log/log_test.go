@@ -31,9 +31,7 @@ func TestLog(t *testing.T) {
 			log.ProvideDI(log.DefaultConfig)
 			x2 := NewDI()
 			x2.Info("DI Hooorraa2")
-
 		})
-
 	})
 }
 

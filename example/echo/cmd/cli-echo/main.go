@@ -32,8 +32,8 @@ func main() {
 	)
 
 	RootCmd.AddCommand(ServerCmd, ClientCmd)
-	err := RootCmd.Execute()
-	if err != nil {
+
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println("we got error:", err)
 	}
 }

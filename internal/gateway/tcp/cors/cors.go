@@ -35,7 +35,10 @@ func New(config Config) *CORS {
 		c.origins = strings.Join(config.AllowedOrigins, ", ")
 	}
 	if len(config.AllowedHeaders) == 0 {
-		config.AllowedHeaders = []string{"Origin", "Accept", "Content-Type", "X-Requested-With", "X-Auth-Tokens", "Authorization"}
+		config.AllowedHeaders = []string{
+			"Origin", "Accept", "Content-Type",
+			"X-Requested-With", "X-Auth-Tokens", "Authorization",
+		}
 	}
 	c.headers = strings.Join(config.AllowedHeaders, ",")
 	if len(config.AllowedMethods) == 0 {

@@ -100,16 +100,18 @@ func (edge *Server) GetServerID() string {
 	return string(edge.serverID)
 }
 
-// SetGlobalPreHandlers set the handler which will be called before executing any request. These pre handlers are like middlewares
-// which will be automatically triggered for each request. If you want to set pre handler for specific request the your must
-// use SetHandlers, PrependHandlers or AppendHandlers
+// SetGlobalPreHandlers set the handler which will be called before executing any request.
+// These pre handlers are like middlewares which will be automatically triggered for each request.
+// If you want to set pre handler for specific request then you must use SetHandlers,
+// PrependHandlers or AppendHandlers
 func (edge *Server) SetGlobalPreHandlers(handlers ...Handler) {
 	edge.preHandlers = handlers
 }
 
-// SetGlobalPostHandlers set the handler which will be called after executing any request. These pre handlers are like middlewares
-// which will be automatically triggered for each request. If you want to set post handler for specific request the your must
-// use SetHandlers, PrependHandlers or AppendHandlers
+// SetGlobalPostHandlers set the handler which will be called after executing any request.
+// These pre handlers are like middlewares which will be automatically triggered for each request.
+// If you want to set post handler for specific request then you must use SetHandlers,
+// PrependHandlers or AppendHandlers
 func (edge *Server) SetGlobalPostHandlers(handlers ...Handler) {
 	edge.postHandlers = handlers
 }
@@ -255,9 +257,15 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 	switch requestCtx.Kind() {
 	case GatewayMessage:
-		metrics.ObserveHistogram(metrics.HistGatewayRequestTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+		metrics.ObserveHistogram(
+			metrics.HistGatewayRequestTime,
+			float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond),
+		)
 	case TunnelMessage:
-		metrics.ObserveHistogram(metrics.HistTunnelRequestTime, float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond))
+		metrics.ObserveHistogram(
+			metrics.HistTunnelRequestTime,
+			float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond),
+		)
 	}
 }
 func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {

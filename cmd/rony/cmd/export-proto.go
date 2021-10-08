@@ -91,7 +91,11 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-			fmt.Sprintf("--gorony_out=paths=source_relative,rony_opt=json_%s:%s", cFormat, filepath.Join(projectPathAbs, "exports/proto")),
+			fmt.Sprintf(
+				"--gorony_out=paths=source_relative,rony_opt=json_%s:%s",
+				cFormat,
+				filepath.Join(projectPathAbs, "exports/proto"),
+			),
 		}
 		args2 = append(args2, files...)
 		cmd2 := exec.Command(

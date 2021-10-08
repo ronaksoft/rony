@@ -332,7 +332,9 @@ func (ctx *RequestCtx) PushMessage(constructor uint64, proto proto.Message) {
 	ctx.PushCustomMessage(ctx.ReqID(), constructor, proto)
 }
 
-func (ctx *RequestCtx) PushCustomMessage(requestID uint64, constructor uint64, message proto.Message, kvs ...*rony.KeyValue) {
+func (ctx *RequestCtx) PushCustomMessage(
+	requestID uint64, constructor uint64, message proto.Message, kvs ...*rony.KeyValue,
+) {
 	envelope := rony.PoolMessageEnvelope.Get()
 	envelope.Fill(requestID, constructor, message, kvs...)
 
