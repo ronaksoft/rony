@@ -40,7 +40,7 @@ var DefaultConfig = Config{
 	SentryLevel:     WarnLevel,
 	Release:         "",
 	Environment:     "",
-	SkipCaller:      2,
+	SkipCaller:      1,
 	TimeEncoder:     timeEncoder,
 	LevelEncoder:    zapcore.CapitalLevelEncoder,
 	DurationEncoder: zapcore.StringDurationEncoder,
@@ -94,11 +94,12 @@ func New(cfg Config) *ronyLogger {
 		zap.AddStacktrace(ErrorLevel),
 		zap.AddCallerSkip(cfg.SkipCaller),
 	)
+
 	l.sz = zap.New(
 		l.z.Core(),
 		zap.AddCaller(),
 		zap.AddStacktrace(ErrorLevel),
-		zap.AddCallerSkip(cfg.SkipCaller-1),
+		zap.AddCallerSkip(cfg.SkipCaller),
 	).Sugar()
 
 	return l
@@ -150,7 +151,7 @@ func (l *ronyLogger) WithSkip(name string, skipCaller int) Logger {
 			l.z.Core(),
 			zap.AddCaller(),
 			zap.AddStacktrace(ErrorLevel),
-			zap.AddCallerSkip(skipCaller-1)).Sugar(),
+			zap.AddCallerSkip(skipCaller)).Sugar(),
 		lvl: l.lvl,
 	}
 
