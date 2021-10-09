@@ -20,6 +20,11 @@ const (
 var ExportProtoCmd = &cobra.Command{
 	Use: "export-proto",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		err := config.BindCmdFlags(cmd)
+		if err != nil {
+			return err
+		}
+
 		r := genny.WetRunner(context.Background())
 		if config.GetBool("dry-run") {
 			r = genny.DryRunner(context.Background())
@@ -44,7 +49,7 @@ var ExportProtoCmd = &cobra.Command{
 		exportProto(g, args, cFormat)
 
 		// Create a Runner with the Generator customized by command's arguments
-		err := r.With(g)
+		err = r.With(g)
 		if err != nil {
 			return err
 		}
