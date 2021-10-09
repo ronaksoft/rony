@@ -124,10 +124,6 @@ func (l *ronyLogger) Sugared() *sugaredRonyLogger {
 	}
 }
 
-func (l *ronyLogger) Check(lvl Level, msg string) *CheckedEntry {
-	return l.z.Check(lvl, l.addPrefix(msg))
-}
-
 func (l *ronyLogger) Sync() error {
 	return l.z.Sync()
 }
@@ -169,12 +165,6 @@ func (l *ronyLogger) addPrefix(m string) string {
 	return m
 }
 
-func (l *ronyLogger) log(lvl Level, msg string, fields ...Field) {
-	if ce := l.z.Check(lvl, l.addPrefix(msg)); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
 func (l *ronyLogger) WarnOnErr(guideTxt string, err error, fields ...Field) {
 	if err != nil {
 		fields = append(fields, zap.Error(err))
@@ -189,24 +179,38 @@ func (l *ronyLogger) ErrorOnErr(guideTxt string, err error, fields ...Field) {
 	}
 }
 
-func (l *ronyLogger) Debug(msg string, fields ...Field) {
-	l.log(zap.DebugLevel, msg, fields...)
+func (l *ronyLogger) Check(lvl Level, msg string) *CheckedEntry {
+	return l.z.Check(lvl, l.addPrefix(msg))
 }
 
-func (l *ronyLogger) Warn(msg string, fields ...Field) {
-	l.log(zap.WarnLevel, msg, fields...)
+func (l *ronyLogger) Debug(msg string, fields ...Field) {
+	if ce := l.z.Check(DebugLevel, l.addPrefix(msg)); ce != nil {
+		ce.Write(fields...)
+	}
 }
 
 func (l *ronyLogger) Info(msg string, fields ...Field) {
-	l.log(zap.InfoLevel, msg, fields...)
+	if ce := l.z.Check(InfoLevel, l.addPrefix(msg)); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (l *ronyLogger) Warn(msg string, fields ...Field) {
+	if ce := l.z.Check(WarnLevel, l.addPrefix(msg)); ce != nil {
+		ce.Write(fields...)
+	}
 }
 
 func (l *ronyLogger) Error(msg string, fields ...Field) {
-	l.log(zap.ErrorLevel, msg, fields...)
+	if ce := l.z.Check(ErrorLevel, l.addPrefix(msg)); ce != nil {
+		ce.Write(fields...)
+	}
 }
 
 func (l *ronyLogger) Fatal(msg string, fields ...Field) {
-	l.log(zap.FatalLevel, msg, fields...)
+	if ce := l.z.Check(FatalLevel, l.addPrefix(msg)); ce != nil {
+		ce.Write(fields...)
+	}
 }
 
 func (l *ronyLogger) RecoverPanic(funcName string, extraInfo interface{}, compensationFunc func()) {
