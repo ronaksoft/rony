@@ -105,6 +105,14 @@ func New(cfg Config) *ronyLogger {
 	return l
 }
 
+func newNOP() *ronyLogger {
+	l := &ronyLogger{}
+	l.z = zap.NewNop()
+	l.sz = zap.NewNop().Sugar()
+
+	return l
+}
+
 var (
 	once sync.Once
 )

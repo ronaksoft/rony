@@ -16,6 +16,7 @@ import (
 
 var (
 	DefaultLogger *ronyLogger
+	NopLogger *ronyLogger
 )
 
 type (
@@ -60,6 +61,8 @@ func init() {
 	cfg := DefaultConfig
 	cfg.SkipCaller = 3
 	DefaultLogger = New(cfg)
+
+	NopLogger = newNOP()
 
 	// bind *ronyLogger for dependency injection
 	di.MustProvide(func(l *ronyLogger) Logger {
