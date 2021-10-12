@@ -16,7 +16,7 @@ import (
 
 var (
 	DefaultLogger *ronyLogger
-	NopLogger *ronyLogger
+	NopLogger     *ronyLogger
 )
 
 type (

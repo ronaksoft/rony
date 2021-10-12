@@ -54,6 +54,9 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			}
 			gFile.P("service ", s.Desc.Name(), "{")
 			for _, m := range s.Methods {
+				for _, c := range m.Comments.LeadingDetached {
+					gFile.P(m.Comments.Leading, " ", c, " ", m.Comments.Trailing)
+				}
 				gFile.P("\t rpc ", m.Desc.Name(), "(", m.Desc.Input().Name(), ") returns (", m.Desc.Output().Name(), ");")
 			}
 			gFile.P("}")
@@ -65,6 +68,9 @@ func clearRonyTags(plugin *protogen.Plugin) error {
 			}
 			gFile.P("message ", m.Desc.Name(), "{")
 			for _, f := range m.Fields {
+				for _, c := range f.Comments.LeadingDetached {
+					gFile.P(f.Comments.Leading, " ", c, " ", f.Comments.Trailing)
+				}
 				switch protoFile.Proto.GetSyntax() {
 				case "proto3":
 					switch f.Desc.Cardinality() {
