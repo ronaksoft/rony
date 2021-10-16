@@ -62,11 +62,9 @@ const genServerRestProxy = `
 {{- range .Methods }}
 func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	{{- if eq .Input.Pkg "" }}
-		req := Pool{{.Input.Name}}.Get()
-		defer Pool{{.Input.Name}}.Put(req)
+		req := &{{.Input.Name}}{}
 	{{- else }}
-		req := {{.Input.Pkg}}Pool{{.Input.Name}}.Get()
-		defer {{.Input.Pkg}}Pool{{.Input.Name}}.Put(req)
+		req := &{{.Input.Pkg}}{{.Input.Name}}{}
 	{{- end }}
 	
 	{{- if .Rest.Unmarshal }}
@@ -167,18 +165,14 @@ type {{.NameCC}}Wrapper struct {
 {{- range .Methods }}
 func (sw *{{$serviceNameCC}}Wrapper) {{.NameCC}}Wrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelope) {
 	{{- if eq .Input.Pkg "" }}
-		req := Pool{{.Input.Name}}.Get()
-		defer Pool{{.Input.Name}}.Put(req)
+		req := &{{.Input.Name}}{}
 	{{- else }}
-		req := {{.Input.Pkg}}.Pool{{.Input.Name}}.Get()
-		defer {{.Input.Pkg}}.Pool{{.Input.Name}}.Put(req)
+		req := &{{.Input.Pkg}}.{{.Input.Name}}{}
 	{{- end }}
 	{{- if eq .Output.Pkg "" }}
-		res := Pool{{.Output.Name}}.Get()
-		defer Pool{{.Output.Name}}.Put(res)
+		res := &{{.Output.Name}}{}
 	{{- else }}
-		res := {{.Output.Pkg}}.Pool{{.Output.Name}}.Get()
-		defer {{.Output.Pkg}}.Pool{{.Output.Name}}.Put(res)
+		res := &{{.Output.Pkg}}.{{.Output.Name}}{}
 	{{- end }}
 
 	err := proto.UnmarshalOptions{Merge:true}.Unmarshal(in.Message, req)

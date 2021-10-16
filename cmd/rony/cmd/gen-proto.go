@@ -66,6 +66,9 @@ func compileProto(g *genny.Generator, folders []string) {
 	)
 	for _, folder := range folders {
 		files = files[:0]
+		fmt.Printf("generate protos in [%s]\n", folder)
+		fmt.Printf("- Import: %s\n", projectPathAbs)
+		fmt.Printf("- Import: %s\n", folderPathAbs)
 		folderPathAbs, _ = filepath.Abs(filepath.Join(".", folder))
 		_ = filepath.Walk(filepath.Join(".", folder), func(path string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
