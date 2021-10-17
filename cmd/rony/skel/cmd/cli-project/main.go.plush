@@ -4,6 +4,7 @@ import (
 	"fmt"
 	c "<%= packagePath() %>/conf"
 	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/config"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -11,23 +12,23 @@ import (
 func main() {
 	// Define the configs if this executable is running as a server instance
 	// Set the flags as config parameters
-	c.Conf().SetCmdFlags(ServerCmd,
-		c.Conf().StringFlag(c.ServerID, tools.RandomID(12), ""),
-		c.Conf().StringFlag(c.GatewayListen, "0.0.0.0:80", ""),
-		c.Conf().StringSliceFlag(c.GatewayAdvertiseHostPort, nil, ""),
-		c.Conf().StringFlag(c.TunnelListen, "0.0.0.0:81", ""),
-		c.Conf().StringSliceFlag(c.TunnelAdvertiseHostPort, nil, ""),
-		c.Conf().DurationFlag(c.IdleTime, time.Minute, ""),
-		c.Conf().Uint64Flag(c.ReplicaSet, 1, ""),
-		c.Conf().IntFlag(c.GossipPort, 7081, ""),
-		c.Conf().StringFlag(c.DataPath, "./_hdd", ""),
-		c.Conf().BoolFlag(c.Bootstrap, false, ""),
+	config.SetCmdFlags(ServerCmd,
+		config.StringFlag(c.ServerID, tools.RandomID(12), ""),
+		config.StringFlag(c.GatewayListen, "0.0.0.0:80", ""),
+		config.StringSliceFlag(c.GatewayAdvertiseHostPort, nil, ""),
+		config.StringFlag(c.TunnelListen, "0.0.0.0:81", ""),
+		config.StringSliceFlag(c.TunnelAdvertiseHostPort, nil, ""),
+		config.DurationFlag(c.IdleTime, time.Minute, ""),
+		config.Uint64Flag(c.ReplicaSet, 1, ""),
+		config.IntFlag(c.GossipPort, 7081, ""),
+		config.StringFlag(c.DataPath, "./_hdd", ""),
+		config.BoolFlag(c.Bootstrap, false, ""),
 	)
 
 	// Define the configs if this executable is running as a server instance
-	c.Conf().SetCmdFlags(ClientCmd,
-		c.Conf().StringFlag(c.Host, "127.0.0.1", "the host of the seed server"),
-		c.Conf().IntFlag(c.Port, 80, "the port of the seed server"),
+	config.SetCmdFlags(ClientCmd,
+		config.StringFlag(c.Host, "127.0.0.1", "the host of the seed server"),
+		config.IntFlag(c.Port, 80, "the port of the seed server"),
 	)
 
 	RootCmd.AddCommand(ServerCmd, ClientCmd)
