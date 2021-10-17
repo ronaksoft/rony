@@ -19,12 +19,14 @@ var ClientCmd = &cobra.Command{
 
 		// Sample code for creating a client
 		// Instantiate a websocket connection, to use http connection we could use edgec.NewHttp
-		wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
-			SeedHostPort: fmt.Sprintf("%s:%d", c.GetHost(), c.GetPort()),
-			Handler: func(m *rony.MessageEnvelope) {
-				fmt.Println(m.RequestID, registry.ConstructorName(m.Constructor))
-			},
-		})
+		wsc := edgec.NewWebsocket(
+		    edgec.WebsocketConfig{
+                SeedHostPort: fmt.Sprintf("%s:%d", c.GetHost(), c.GetPort()),
+                Handler: func(m *rony.MessageEnvelope) {
+                    fmt.Println(m.RequestID, registry.ConstructorName(m.Constructor))
+                },
+		    },
+		)
 
 		// Start the websocket connection manager
 		err = wsc.Start()
