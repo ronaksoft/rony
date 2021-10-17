@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Generate the auto-generated codes
-go generate ./...
+rony gen-proto rpc
 
 # Check for errors and warnings
 go vet ./...

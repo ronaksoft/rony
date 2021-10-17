@@ -35,7 +35,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		// Instantiate the client stub code and set its underlying client connection
-		// c := service.NewSampleServiceClient(wsc)
+		// client := rpc.NewSampleClient(wsc)
 
 		return nil
 	},
