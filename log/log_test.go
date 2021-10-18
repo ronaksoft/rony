@@ -11,7 +11,6 @@ import (
 func TestLog(t *testing.T) {
 	Convey("Log", t, func(c C) {
 		Convey("Different styles", func(c C) {
-			log.Info("Info")
 			l := log.New(log.DefaultConfig)
 			l.SetLevel(log.DebugLevel)
 			l.Info("INFO", zap.Int("Index", 1))

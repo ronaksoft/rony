@@ -22,9 +22,9 @@ func TestSanitizePhone(t *testing.T) {
 	}
 
 	for ph, cph := range phones {
-		sph := tools.SanitizePhone(ph, "IR")
-		if sph != cph {
-			t.Fatal()
+		sph, err := tools.SanitizePhone(ph, "IR")
+		if sph != cph || err != nil {
+			t.Fatal(err)
 		}
 	}
 }

@@ -87,7 +87,7 @@ SendLoop:
 }
 
 func (c *httpConn) redirect(x *rony.Redirect) (replicaSet uint64, err error) {
-	if ce := log.Check(log.InfoLevel, "Redirect"); ce != nil {
+	if ce := c.h.logger.Check(log.InfoLevel, "Redirect"); ce != nil {
 		ce.Write(
 			zap.Any("Edges", x.Edges),
 			zap.Any("Wait", x.WaitInSec),

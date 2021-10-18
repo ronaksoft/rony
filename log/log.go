@@ -70,34 +70,6 @@ func init() {
 	})
 }
 
-func Init(config Config) {
-	DefaultLogger = New(config)
-}
-
-func Debug(msg string, fields ...Field) {
-	DefaultLogger.Debug(msg, fields...)
-}
-
-func Info(msg string, fields ...Field) {
-	DefaultLogger.Info(msg, fields...)
-}
-
-func Warn(msg string, fields ...Field) {
-	DefaultLogger.Warn(msg, fields...)
-}
-
-func Error(msg string, fields ...Field) {
-	DefaultLogger.Error(msg, fields...)
-}
-
-func Fatal(msg string, fields ...Field) {
-	DefaultLogger.Fatal(msg, fields...)
-}
-
-func Check(level Level, msg string) *CheckedEntry {
-	return DefaultLogger.Check(level, msg)
-}
-
 func SetLevel(level Level) {
 	DefaultLogger.SetLevel(level)
 }

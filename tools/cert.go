@@ -8,8 +8,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"github.com/ronaksoft/rony/log"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -71,12 +69,12 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 	// generate a new key-pair
 	rootKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		log.Fatal("generating random key:", zap.Error(err))
+		panic(err)
 	}
 
 	rootCertTmpl, err := CertTemplate()
 	if err != nil {
-		log.Fatal("creating cert template:", zap.Error(err))
+		panic(err)
 	}
 	// describe what the certificate will be used for
 	rootCertTmpl.IsCA = true
@@ -86,10 +84,9 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 
 	rootCert, rootCertPEM, err := CreateCert(rootCertTmpl, rootCertTmpl, &rootKey.PublicKey, rootKey)
 	if err != nil {
-		log.Fatal("error creating cert", zap.Error(err))
+		panic(err)
 	}
-	// fmt.Printf("%s\n", rootCertPEM)
-	// fmt.Printf("%#x\n", rootCert.Signature) // more ugly binary
+
 	_ = rootCert
 
 	// PEM encode the private key
@@ -101,14 +98,14 @@ func GenerateSelfSignedCerts(keyPath, certPath string) {
 	_ = ioutil.WriteFile(keyPath, rootKeyPEM, os.ModePerm)
 }
 
-func GetCertificate(keyPath, certPath string) tls.Certificate {
+func GetCertificate(keyPath, certPath string) (*tls.Certificate, error) {
 	keyPEM, _ := ioutil.ReadFile(keyPath)
 	certPEM, _ := ioutil.ReadFile(certPath)
 	// Create a TLS cert using the private key and certificate
 	rootTLSCert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
-		log.Fatal("invalid key pair", zap.Error(err))
+		return nil, err
 	}
 
-	return rootTLSCert
+	return &rootTLSCert, nil
 }

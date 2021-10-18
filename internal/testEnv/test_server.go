@@ -27,6 +27,7 @@ var (
 )
 
 type testDispatcher struct {
+	l log.Logger
 }
 
 func (t testDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
@@ -41,7 +42,7 @@ func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageE
 	buf := pools.Buffer.FromProto(envelope)
 	err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 	if err != nil {
-		log.Warn("Error On WriteBinary", zap.Error(err))
+		t.l.Warn("Error On WriteBinary", zap.Error(err))
 	}
 	pools.Buffer.Put(buf)
 
@@ -57,7 +58,7 @@ func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
 		buf := pools.Buffer.FromProto(envelope)
 		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
 		if err != nil {
-			log.Warn("Error On WriteBinary", zap.Error(err))
+			t.l.Warn("Error On WriteBinary", zap.Error(err))
 		}
 		pools.Buffer.Put(buf)
 
@@ -67,7 +68,9 @@ func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
 
 func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		edge.WithCustomDispatcher(&testDispatcher{}),
+		edge.WithCustomDispatcher(&testDispatcher{
+			l: log.DefaultLogger,
+		}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
@@ -82,7 +85,9 @@ func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.O
 }
 
 func TestServer(serverID string) *edgetest.Server {
-	return edgetest.NewServer(serverID, &testDispatcher{})
+	return edgetest.NewServer(serverID, &testDispatcher{
+		l: log.DefaultLogger,
+	})
 }
 
 func ResetCounters() {

@@ -1,7 +1,6 @@
 package testEnv
 
 import (
-	"github.com/ronaksoft/rony/log"
 	"os"
 )
 
@@ -24,11 +23,6 @@ func Init() {
 	} else {
 		return
 	}
-
-	log.Init(log.Config{
-		Level:       log.WarnLevel,
-		SentryLevel: log.WarnLevel,
-	})
 
 	_ = os.RemoveAll("./_hdd")
 	_ = os.MkdirAll("./_hdd", os.ModePerm)

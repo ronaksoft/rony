@@ -3,8 +3,6 @@ package tools
 import (
 	"fmt"
 	"github.com/nyaruka/phonenumbers"
-	"github.com/ronaksoft/rony/log"
-	"go.uber.org/zap"
 	"regexp"
 	"strings"
 )
@@ -30,33 +28,25 @@ func init() {
 	RegExPhone = exp1
 }
 
-func SanitizePhone(phoneNumber string, defaultRegion string) string {
+func SanitizePhone(phoneNumber string, defaultRegion string) (string, error) {
 	phoneNumber = strings.TrimLeft(phoneNumber, "0+ ")
 	if !RegExPhone.MatchString(phoneNumber) {
-		return ""
+		return "", fmt.Errorf("did not match phone number regex")
 	}
 	phone, err := phonenumbers.Parse(phoneNumber, defaultRegion)
 	if err != nil {
 		phoneNumber = fmt.Sprintf("+%s", phoneNumber)
 		phone, err = phonenumbers.Parse(phoneNumber, defaultRegion)
 		if err != nil {
-			if ce := log.Check(log.DebugLevel, "Error On SanitizePhone"); ce != nil {
-				ce.Write(
-					zap.Error(err),
-					zap.String("Phone", phoneNumber),
-					zap.String("DefaultRegion", defaultRegion),
-				)
-			}
-
-			return ""
+			return "", err
 		}
 	}
 
 	if !phonenumbers.IsValidNumberForRegion(phone, phonenumbers.GetRegionCodeForNumber(phone)) {
-		return ""
+		return "", fmt.Errorf("not valid for region")
 	}
 
-	return fmt.Sprintf("%d%d", phone.GetCountryCode(), phone.GetNationalNumber())
+	return fmt.Sprintf("%d%d", phone.GetCountryCode(), phone.GetNationalNumber()), nil
 }
 
 func GetCountryCode(phone string) string {
