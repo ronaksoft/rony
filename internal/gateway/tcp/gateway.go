@@ -63,8 +63,8 @@ type Gateway struct {
 	cfg                Config
 	transportMode      rony.GatewayProtocol
 	listener           *wrapListener
-	addrsMtx           sync.RWMutex
-	addrs              []string
+	listenerAddressMtx sync.RWMutex
+	listenerAddresses  []string
 	poller             netpoll.Poller
 	stop               int32
 	waitGroupAcceptors *sync.WaitGroup
@@ -147,9 +147,9 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	// try to detect the ip address of the listener
-	err = g.detectAddrs()
+	err = g.detectListenerAddress()
 	if err != nil {
-		g.cfg.Logger.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+		g.cfg.Logger.Warn("Rony:: Gateway got error on detecting listener addresses", zap.Error(err))
 
 		return nil, err
 	}
@@ -188,50 +188,50 @@ func MustNew(config Config) *Gateway {
 func (g *Gateway) watchdog() {
 	for {
 		metrics.SetGauge(metrics.GaugeActiveWebsocketConnections, float64(g.TotalConnections()))
-		err := g.detectAddrs()
+		err := g.detectListenerAddress()
 		if err != nil {
-			g.cfg.Logger.Warn("Rony:: Gateway got error on detecting addrs", zap.Error(err))
+			g.cfg.Logger.Warn("Gateway got error on detecting listener address", zap.Error(err))
 		}
 		time.Sleep(time.Second * 15)
 	}
 }
 
-func (g *Gateway) detectAddrs() error {
+func (g *Gateway) detectListenerAddress() error {
 	// try to detect the ip address of the listener
 	ta, err := net.ResolveTCPAddr("tcp4", g.listener.Addr().String())
 	if err != nil {
 		return err
 	}
-	lAddrs := make([]string, 0, 10)
+	listenerAddresses := make([]string, 0, 10)
 	if ta.IP.IsUnspecified() {
-		addrs, err := net.InterfaceAddrs()
+		interfaceAddresses, err := net.InterfaceAddrs()
 		if err == nil {
-			for _, a := range addrs {
+			for _, a := range interfaceAddresses {
 				switch x := a.(type) {
 				case *net.IPNet:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					listenerAddresses = append(listenerAddresses, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.IPAddr:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					listenerAddresses = append(listenerAddresses, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				case *net.TCPAddr:
 					if x.IP.To4() == nil || x.IP.IsLoopback() {
 						continue
 					}
-					lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
+					listenerAddresses = append(listenerAddresses, fmt.Sprintf("%s:%d", x.IP.String(), ta.Port))
 				}
 			}
 		}
 	} else {
-		lAddrs = append(lAddrs, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
+		listenerAddresses = append(listenerAddresses, fmt.Sprintf("%s:%d", ta.IP, ta.Port))
 	}
-	g.addrsMtx.Lock()
-	g.addrs = append(g.addrs[:0], lAddrs...)
-	g.addrsMtx.Unlock()
+	g.listenerAddressMtx.Lock()
+	g.listenerAddresses = append(g.listenerAddresses[:0], listenerAddresses...)
+	g.listenerAddressMtx.Unlock()
 
 	return nil
 }
@@ -302,9 +302,9 @@ func (g *Gateway) Addr() []string {
 	if len(g.cfg.ExternalAddrs) > 0 {
 		return g.cfg.ExternalAddrs
 	}
-	g.addrsMtx.RLock()
-	addrs := g.addrs
-	g.addrsMtx.RUnlock()
+	g.listenerAddressMtx.RLock()
+	addrs := g.listenerAddresses
+	g.listenerAddressMtx.RUnlock()
 
 	return addrs
 }

@@ -31,11 +31,13 @@ var (
 	cntReceivedPacket int32
 	cntWritePacket    int32
 	latency           int64
+	logger            = log.DefaultLogger
 )
 
 func main() {
 	fmt.Println("RUN...")
-	log.SetLevel(log.InfoLevel)
+
+	logger.SetLevel(log.InfoLevel)
 
 	var n, m, port int64
 	switch len(os.Args) {
@@ -51,7 +53,7 @@ func main() {
 
 	go func() {
 		for {
-			log.Info("Stats",
+			logger.Info("Stats",
 				zap.Int32("Received", cntReceivedPacket),
 				zap.Int32("Sent", cntWritePacket),
 				zap.Int32("Connected", cntConnected),
@@ -61,7 +63,7 @@ func main() {
 	}()
 
 	runClients(int(n), int(m), int(port))
-	log.Info("Final Stats",
+	logger.Info("Final Stats",
 		zap.Int32("Received", cntReceivedPacket),
 		zap.Int32("Sent", cntWritePacket),
 		zap.Int32("Connected", cntConnected),
@@ -80,7 +82,7 @@ func runClients(n, m, port int) {
 		time.Sleep(time.Millisecond)
 	}
 	waitGroup.Wait()
-	log.Debug("Running Clients Finished")
+	logger.Debug("Running Clients Finished")
 }
 
 func runClient(wg *sync.WaitGroup, m int, port int) {
@@ -94,7 +96,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 		if err == nil {
 			break
 		}
-		log.Warn("error on connect: ", zap.Error(err))
+		logger.Warn("error on connect: ", zap.Error(err))
 		time.Sleep(time.Millisecond)
 	}
 	atomic.AddInt32(&cntConnected, 1)
@@ -112,7 +114,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 			if err != nil {
 				err = c.Close()
 				if err != nil {
-					log.Warn("Error on Close", zap.Error(err))
+					logger.Warn("Error on Close", zap.Error(err))
 				}
 
 				return
@@ -132,7 +134,7 @@ func runClient(wg *sync.WaitGroup, m int, port int) {
 	for i := 0; i < m; i++ {
 		err := wsutil.WriteClientMessage(c, ws.OpBinary, reqBytes)
 		if err != nil {
-			log.Error(err.Error())
+			logger.Error(err.Error())
 			_ = c.Close()
 
 			return

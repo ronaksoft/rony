@@ -6,7 +6,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
@@ -51,7 +50,7 @@ func (c *wsConn) createDialer(timeout time.Duration) {
 			if err != nil {
 				return nil, err
 			}
-			log.Debug("DNS LookIP", zap.String("Addr", addr), zap.Any("IPs", ips))
+			c.ws.logger.Debug("DNS LookIP", zap.String("Addr", addr), zap.Any("IPs", ips))
 			d := net.Dialer{Timeout: timeout}
 			for _, ip := range ips {
 				if ip.To4() != nil {
@@ -80,7 +79,7 @@ func (c *wsConn) connect() {
 		urlPrefix = "wss://"
 	}
 ConnectLoop:
-	log.Debug("Connect", zap.Strings("H", c.hostPorts))
+	c.ws.logger.Debug("Connect", zap.Strings("H", c.hostPorts))
 	c.createDialer(c.ws.cfg.DialTimeout)
 
 	sb := strings.Builder{}
@@ -96,7 +95,7 @@ ConnectLoop:
 	c.dialer.Header = ws.HandshakeHeaderString(sb.String())
 	conn, _, _, err := c.dialer.Dial(context.Background(), fmt.Sprintf("%s%s", urlPrefix, c.hostPorts[0]))
 	if err != nil {
-		log.Debug("Dial failed", zap.Error(err), zap.Strings("Host", c.hostPorts))
+		c.ws.logger.Debug("Dial failed", zap.Error(err), zap.Strings("Host", c.hostPorts))
 		time.Sleep(time.Duration(tools.RandomInt64(2000))*time.Millisecond + time.Second)
 
 		goto ConnectLoop

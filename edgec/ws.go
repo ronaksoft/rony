@@ -40,7 +40,7 @@ type WebsocketConfig struct {
 	IdleTimeout  time.Duration
 	DialTimeout  time.Duration
 	// Handler must not block in function because other incoming messages might get blocked.
-	// This handler must returns quickly and pass a deep copy of the MessageEnvelope to other
+	// This handler must return quickly and pass a deep copy of the MessageEnvelope to other
 	// routines.
 	Handler    MessageHandler
 	HeaderFunc func() map[string]string
