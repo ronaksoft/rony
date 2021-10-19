@@ -64,6 +64,10 @@ func (c *httpConn) WriteStatus(status int) {
 	c.ctx.SetStatusCode(status)
 }
 
+func (c *httpConn) ReadHeader(key string) string {
+	return string(c.ctx.Request.Header.Peek(key))
+}
+
 func (c *httpConn) WriteBinary(streamID int64, data []byte) (err error) {
 	_, err = c.ctx.Write(data)
 	metrics.IncCounter(metrics.CntGatewayOutgoingHttpMessage)

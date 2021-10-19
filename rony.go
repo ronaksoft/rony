@@ -134,6 +134,7 @@ type Conn interface {
 // RestConn is same as Conn, but it supports REST format apis.
 type RestConn interface {
 	Conn
+	ReadHeader(key string) string
 	WriteStatus(status int)
 	WriteHeader(key, value string)
 	MultiPart() (*multipart.Form, error)
