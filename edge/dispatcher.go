@@ -58,7 +58,9 @@ func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
 }
 
 func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
-	// Do nothing
+	for _, kv := range kvs {
+		conn.Set(kv.Key, kv.Value)
+	}
 }
 
 func (s *defaultDispatcher) OnClose(conn rony.Conn) {
