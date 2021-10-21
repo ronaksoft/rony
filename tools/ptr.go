@@ -1,5 +1,12 @@
 package tools
 
+func BoolPtr(in bool) (out *bool) {
+	out = new(bool)
+	*out = in
+
+	return
+}
+
 func StringPtr(in string) (out *string) {
 	if in == "" {
 		return
