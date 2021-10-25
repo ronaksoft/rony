@@ -31,6 +31,7 @@ type Config struct {
 	LevelEncoder    LevelEncoder
 	DurationEncoder DurationEncoder
 	CallerEncoder   CallerEncode
+	SyslogTag       string
 }
 
 var DefaultConfig = Config{
@@ -83,9 +84,19 @@ func New(cfg Config) *ronyLogger {
 		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), l.lvl),
 	)
 
-	sentryCore := NewSentryCore(cfg.SentryDSN, cfg.Release, cfg.Environment, cfg.SentryLevel, nil)
-	if sentryCore != nil {
-		cores = append(cores, sentryCore)
+	if cfg.SyslogTag != "" {
+		syslogCore, err := NewSyslogCore(l.lvl, encoder, cfg.SyslogTag)
+		if err != nil {
+			panic(err)
+		}
+		cores = append(cores, syslogCore)
+	}
+
+	if cfg.SentryDSN != "" {
+		sentryCore := NewSentryCore(cfg.SentryDSN, cfg.Release, cfg.Environment, cfg.SentryLevel, nil)
+		if sentryCore != nil {
+			cores = append(cores, sentryCore)
+		}
 	}
 
 	l.z = zap.New(

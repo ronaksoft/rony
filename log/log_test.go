@@ -31,6 +31,20 @@ func TestLog(t *testing.T) {
 			x2 := NewDI()
 			x2.Info("DI Hooorraa2")
 		})
+		Convey("Logger with SysLog", func(c C) {
+			cfg := log.DefaultConfig
+			cfg.SyslogTag = "rony-logger"
+			l := log.New(cfg)
+			l.SetLevel(log.DebugLevel)
+			l.Info("INFO", zap.Int("Index", 1))
+			l.Sugared().Info("INFO", 1)
+			l.Sugared().Infof("INFO %d", 1)
+			ll := l.With("CHILD")
+			ll.SetLevel(log.DebugLevel)
+			ll.Info("INFO", zap.Int("Index", 1))
+			ll.Sugared().Info("INFO", 1)
+			ll.Sugared().Infof("INFO %d", 1)
+		})
 	})
 }
 
