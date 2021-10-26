@@ -32,6 +32,10 @@ type Conn struct {
 	body    []byte
 }
 
+func (c *Conn) ReadHeader(key string) string {
+	return c.httpHdr[key]
+}
+
 func (c *Conn) Redirect(statusCode int, newHostPort string) {
 	// TODO:: implement it
 }
