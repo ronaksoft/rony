@@ -236,12 +236,9 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			}
 		}
 	}
-	if !requestCtx.stop && !ho.builtin {
+	if !ho.builtin {
 		for idx := range edge.postHandlers {
 			edge.postHandlers[idx](requestCtx, in)
-			if requestCtx.stop {
-				break
-			}
 		}
 	}
 	if !requestCtx.stop {
