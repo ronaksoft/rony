@@ -457,7 +457,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.quickReturn = quickReturn
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
-	ctx.edge = nil
+	ctx.err = nil
 
 	return ctx
 }
