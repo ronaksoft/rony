@@ -19,11 +19,27 @@ func TestSanitizePhone(t *testing.T) {
 		"989121228718":  "989121228718",
 		"+989121228718": "989121228718",
 		"9121228718":    "989121228718",
+		"00989121228718": "989121228718",
 	}
 
 	for ph, cph := range phones {
 		sph, err := tools.SanitizePhone(ph, "IR")
 		if sph != cph || err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	phones = map[string]string{
+		"989121228718":  "989121228718",
+		"+989121228718": "989121228718",
+		"00989121228718": "989121228718",
+	}
+
+
+	for ph, cph := range phones {
+		sph, err := tools.SanitizePhone(ph, "")
+		if sph != cph || err != nil {
+			t.Log(ph, "->", sph)
 			t.Fatal(err)
 		}
 	}

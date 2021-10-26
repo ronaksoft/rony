@@ -29,6 +29,9 @@ func init() {
 }
 
 func SanitizePhone(phoneNumber string, defaultRegion string) (string, error) {
+	if defaultRegion == "" {
+		defaultRegion = GetCountryCode(phoneNumber)
+	}
 	phoneNumber = strings.TrimLeft(phoneNumber, "0+ ")
 	if !RegExPhone.MatchString(phoneNumber) {
 		return "", fmt.Errorf("did not match phone number regex")
