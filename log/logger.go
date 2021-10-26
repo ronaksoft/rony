@@ -87,9 +87,10 @@ func New(cfg Config) *ronyLogger {
 	if cfg.SyslogTag != "" {
 		syslogCore, err := NewSyslogCore(l.lvl, encoder, cfg.SyslogTag)
 		if err != nil {
-			panic(err)
+			fmt.Println("got error on enabling syslog:", err)
+		} else {
+			cores = append(cores, syslogCore)
 		}
-		cores = append(cores, syslogCore)
 	}
 
 	if cfg.SentryDSN != "" {

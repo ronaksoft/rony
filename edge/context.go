@@ -239,6 +239,7 @@ type RequestCtx struct {
 	nextChan    chan struct{}
 	quickReturn bool
 	stop        bool
+	err         *rony.Error
 }
 
 func newRequestCtx() *RequestCtx {
@@ -366,6 +367,7 @@ func (ctx *RequestCtx) PushCustomMessage(
 }
 
 func (ctx *RequestCtx) PushError(err *rony.Error) {
+	ctx.err = err.Clone()
 	ctx.PushMessage(rony.C_Error, err)
 	ctx.stop = true
 }
@@ -438,6 +440,10 @@ func (ctx *RequestCtx) Router() rony.Router {
 	return ctx.edge.router
 }
 
+func (ctx *RequestCtx) Err() *rony.Error {
+	return ctx.err
+}
+
 var requestCtxPool = sync.Pool{}
 
 func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
@@ -451,6 +457,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.quickReturn = quickReturn
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
+	ctx.edge = nil
 
 	return ctx
 }
