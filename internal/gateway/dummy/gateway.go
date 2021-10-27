@@ -59,11 +59,7 @@ func (g *Gateway) OpenConn(
 }
 
 func (g *Gateway) openConn(connID uint64, persistent bool) *Conn {
-	dConn := &Conn{
-		id:         connID,
-		kv:         make(map[string]interface{}),
-		persistent: persistent,
-	}
+	dConn := NewConn(connID).SetPersistent(persistent)
 	g.connsMtx.Lock()
 	g.conns[connID] = dConn
 	g.connsMtx.Unlock()

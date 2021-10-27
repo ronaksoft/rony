@@ -2,7 +2,6 @@ package dummyGateway
 
 import (
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/tools"
 	"mime/multipart"
 	"sync"
 )
@@ -32,22 +31,27 @@ type Conn struct {
 	body    []byte
 }
 
+func NewConn(id uint64) *Conn {
+	return &Conn{
+		id:         id,
+		kv:         map[string]interface{}{},
+		httpHdr:    map[string]string{},
+		persistent: false,
+	}
+}
+
+func (c *Conn) WithHandler(onMessage func(connID uint64, streamID int64, data []byte, hdr map[string]string)) *Conn {
+	c.onMessage = onMessage
+
+	return c
+}
+
 func (c *Conn) ReadHeader(key string) string {
 	return c.httpHdr[key]
 }
 
 func (c *Conn) Redirect(statusCode int, newHostPort string) {
 	// TODO:: implement it
-}
-
-func NewConn(onMessage func(connID uint64, streamID int64, data []byte, hdr map[string]string)) *Conn {
-	return &Conn{
-		id:         tools.RandomUint64(0),
-		kv:         map[string]interface{}{},
-		httpHdr:    map[string]string{},
-		persistent: false,
-		onMessage:  onMessage,
-	}
 }
 
 func (c *Conn) WriteStatus(status int) {
@@ -108,6 +112,8 @@ func (c *Conn) Persistent() bool {
 	return c.persistent
 }
 
-func (c *Conn) SetPersistent(b bool) {
+func (c *Conn) SetPersistent(b bool) *Conn {
 	c.persistent = b
+
+	return c
 }

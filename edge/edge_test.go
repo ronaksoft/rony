@@ -174,17 +174,22 @@ func BenchmarkEdge(b *testing.B) {
 			me := rony.PoolMessageEnvelope.Get()
 			me.Fill(tools.RandomUint64(0), service.C_SampleEcho, req)
 			buf := pools.Buffer.FromProto(me)
-			e.OnGatewayMessage(dummyGateway.NewConn(func(connID uint64, streamID int64, data []byte, hdr map[string]string) {
-				me := rony.PoolMessageEnvelope.Get()
-				err := me.Unmarshal(data)
-				if err != nil {
-					b.Fatal(err)
-				}
-				if me.Constructor != service.C_EchoResponse {
-					b.Fatal("invalid constructor")
-				}
-				rony.PoolMessageEnvelope.Put(me)
-			}), 0, *buf.Bytes())
+
+			conn := dummyGateway.NewConn(tools.RandomUint64(0)).
+				WithHandler(
+					func(connID uint64, streamID int64, data []byte, hdr map[string]string) {
+						me := rony.PoolMessageEnvelope.Get()
+						err := me.Unmarshal(data)
+						if err != nil {
+							b.Fatal(err)
+						}
+						if me.Constructor != service.C_EchoResponse {
+							b.Fatal("invalid constructor")
+						}
+						rony.PoolMessageEnvelope.Put(me)
+					},
+				)
+			e.OnGatewayMessage(conn, 0, *buf.Bytes())
 			pools.Buffer.Put(buf)
 			service.PoolEchoRequest.Put(req)
 			rony.PoolMessageEnvelope.Put(me)
