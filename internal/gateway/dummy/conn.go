@@ -43,7 +43,8 @@ func (c *Conn) Redirect(statusCode int, newHostPort string) {
 func NewConn(onMessage func(connID uint64, streamID int64, data []byte, hdr map[string]string)) *Conn {
 	return &Conn{
 		id:         tools.RandomUint64(0),
-		kv:         make(map[string]interface{}),
+		kv:         map[string]interface{}{},
+		httpHdr:    map[string]string{},
 		persistent: false,
 		onMessage:  onMessage,
 	}
@@ -60,6 +61,7 @@ func (c *Conn) WriteHeader(key, value string) {
 }
 
 func (c *Conn) MultiPart() (*multipart.Form, error) {
+
 	return nil, errors.New(errors.NotImplemented, "Multipart")
 }
 
