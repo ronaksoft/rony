@@ -8,7 +8,7 @@ service Sample {
     rpc Echo (EchoRequest) returns (EchoResponse) {
         option (rony_rest) = {
             method: "get"
-            path: "/echo"
+            path: "/echo/:replica_set"
             json_encode: true
         };
     }
@@ -59,7 +59,7 @@ message SetResponse {
 message EchoRequest {
     int64 Int = 1;
     int64 Timestamp = 3;
-    uint64 ReplicaSet = 4;
+    uint64 replica_set = 4;
 }
 
 message EchoResponse {

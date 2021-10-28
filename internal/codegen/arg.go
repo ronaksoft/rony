@@ -538,48 +538,48 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 
 		for _, pathVar := range pathVars {
 			varName := pathVar
-			if bindVars[pathVar] != "" {
+			if _, ok := bindVars[pathVar]; ok {
 				varName = bindVars[pathVar]
 			}
 			for _, f := range m.Input.Fields {
-				if f.Desc.JSONName() == varName {
+				if string(f.Desc.Name()) == varName {
 					var ec string
 
 					switch f.Desc.Kind() {
 					case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+							f.GoName, "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
 						)
 					case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+							f.GoName, "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
 						)
 					case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+							f.GoName, "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
 						)
 					case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+							f.GoName, "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
 						)
 					case protoreflect.StringKind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")",
+							f.GoName, "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")",
 						)
 					case protoreflect.BytesKind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))",
+							f.GoName, "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))",
 						)
 					case protoreflect.DoubleKind:
 						ec = fmt.Sprint(
 							"req.",
-							f.Desc.Name(), "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
+							f.GoName, "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
 						)
 					default:
 						ec = ""

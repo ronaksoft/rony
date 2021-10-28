@@ -20,7 +20,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*protogen.File) error {
+func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*protogen.File) error {
 	for _, f := range files {
 		templateArg := codegen.GenTemplateArg(f)
 		if len(templateArg.Services) > 0 {

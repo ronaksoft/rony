@@ -74,7 +74,6 @@ func BenchmarkMarshalWithAllocator(b *testing.B) {
 			rony.PoolMessageEnvelope.Put(m)
 		}
 
-
 	})
 }
 
