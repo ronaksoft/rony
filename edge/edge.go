@@ -3,7 +3,6 @@ package edge
 import (
 	"bufio"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
@@ -82,7 +81,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	}
 
 	// inject the edge store
-	di.MustProvide(edgeServer.Store)
+	// di.MustProvide(edgeServer.Store)
 
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer)
@@ -393,10 +392,11 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	switch ctx.kind {
 	case GatewayMessage:
 		edge.dispatcher.OnMessage(ctx, envelope)
+		rony.PoolMessageEnvelope.Put(envelope)
 	case TunnelMessage:
-		ctx.BufferPush(envelope.Clone())
+		ctx.BufferPush(envelope)
 	}
-	rony.PoolMessageEnvelope.Put(envelope)
+
 }
 
 // StartCluster is non-blocking function which runs the cluster component of the Edge server.

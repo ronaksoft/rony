@@ -190,6 +190,7 @@ func (ctx *DispatchCtx) BufferPop(f func(envelope *rony.MessageEnvelope)) bool {
 		return false
 	}
 	f(me)
+	rony.PoolMessageEnvelope.Put(me)
 
 	return true
 }
@@ -354,16 +355,15 @@ func (ctx *RequestCtx) PushCustomMessage(
 
 	switch ctx.Kind() {
 	case TunnelMessage:
-		ctx.dispatchCtx.BufferPush(envelope.Clone())
+		ctx.dispatchCtx.BufferPush(envelope)
 	case GatewayMessage:
 		if ctx.Conn().Persistent() {
 			ctx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
+			rony.PoolMessageEnvelope.Put(envelope)
 		} else {
-			ctx.dispatchCtx.BufferPush(envelope.Clone())
+			ctx.dispatchCtx.BufferPush(envelope)
 		}
 	}
-
-	rony.PoolMessageEnvelope.Put(envelope)
 }
 
 func (ctx *RequestCtx) PushError(err *rony.Error) {

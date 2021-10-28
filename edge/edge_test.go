@@ -144,8 +144,6 @@ func TestRestProxy(t *testing.T) {
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					res := &service.EchoResponse{}
 					err := protojson.Unmarshal(b, res)
-					c.Println(string(b))
-					c.Println(res)
 					c.So(err, ShouldBeNil)
 					c.So(res.Int, ShouldEqual, value)
 					c.So(res.Timestamp, ShouldEqual, ts)
@@ -160,11 +158,6 @@ func TestRestProxy(t *testing.T) {
 
 func BenchmarkEdge(b *testing.B) {
 	rony.SetLogLevel(log.WarnLevel)
-	e := testEnv.EdgeServer(tools.RandomID(0), 8080, 1000, edge.WithInMemoryStore(true))
-	service.RegisterSample(&service.Sample{}, e)
-	e.Start()
-	defer e.Shutdown()
-
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -174,7 +167,6 @@ func BenchmarkEdge(b *testing.B) {
 			me := rony.PoolMessageEnvelope.Get()
 			me.Fill(tools.RandomUint64(0), service.C_SampleEcho, req)
 			buf := pools.Buffer.FromProto(me)
-
 			conn := dummyGateway.NewConn(tools.RandomUint64(0)).
 				WithHandler(
 					func(connID uint64, streamID int64, data []byte, hdr map[string]string) {
@@ -184,12 +176,12 @@ func BenchmarkEdge(b *testing.B) {
 							b.Fatal(err)
 						}
 						if me.Constructor != service.C_EchoResponse {
-							b.Fatal("invalid constructor")
+							b.Fatal("invalid response constructor")
 						}
 						rony.PoolMessageEnvelope.Put(me)
 					},
 				)
-			e.OnGatewayMessage(conn, 0, *buf.Bytes())
+			s.RealEdge().OnGatewayMessage(conn, 0, *buf.Bytes())
 			pools.Buffer.Put(buf)
 			service.PoolEchoRequest.Put(req)
 			rony.PoolMessageEnvelope.Put(me)

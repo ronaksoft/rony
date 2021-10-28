@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"runtime/debug"
+	"strings"
 	"sync"
 )
 
@@ -178,12 +179,17 @@ func (l *ronyLogger) WithSkip(name string, skipCaller int) Logger {
 	return childLogger
 }
 
-func (l *ronyLogger) addPrefix(m string) string {
+func (l *ronyLogger) addPrefix(in string) (out string) {
 	if l.prefix != "" {
-		return fmt.Sprintf("%s %s", l.prefix, m)
+		sb := &strings.Builder{}
+		sb.WriteString(l.prefix)
+		sb.WriteRune(' ')
+		sb.WriteString(in)
+		out = sb.String()
+		return out
 	}
 
-	return m
+	return in
 }
 
 func (l *ronyLogger) WarnOnErr(guideTxt string, err error, fields ...Field) {
@@ -200,38 +206,61 @@ func (l *ronyLogger) ErrorOnErr(guideTxt string, err error, fields ...Field) {
 	}
 }
 
+func (l *ronyLogger) checkLevel(lvl Level) bool {
+	// Check the level first to reduce the cost of disabled log calls.
+	// Since Panic and higher may exit, we skip the optimization for those levels.
+	if lvl < zapcore.DPanicLevel && !l.z.Core().Enabled(lvl) {
+		return false
+	}
+
+	return true
+}
+
 func (l *ronyLogger) Check(lvl Level, msg string) *CheckedEntry {
+	if !l.checkLevel(lvl) {
+		return nil
+	}
 	return l.z.Check(lvl, l.addPrefix(msg))
 }
 
 func (l *ronyLogger) Debug(msg string, fields ...Field) {
+	if !l.checkLevel(DebugLevel) {
+		return
+	}
 	if ce := l.z.Check(DebugLevel, l.addPrefix(msg)); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (l *ronyLogger) Info(msg string, fields ...Field) {
+	if !l.checkLevel(InfoLevel) {
+		return
+	}
 	if ce := l.z.Check(InfoLevel, l.addPrefix(msg)); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (l *ronyLogger) Warn(msg string, fields ...Field) {
+	if !l.checkLevel(WarnLevel) {
+		return
+	}
 	if ce := l.z.Check(WarnLevel, l.addPrefix(msg)); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (l *ronyLogger) Error(msg string, fields ...Field) {
+	if !l.checkLevel(ErrorLevel) {
+		return
+	}
 	if ce := l.z.Check(ErrorLevel, l.addPrefix(msg)); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (l *ronyLogger) Fatal(msg string, fields ...Field) {
-	if ce := l.z.Check(FatalLevel, l.addPrefix(msg)); ce != nil {
-		ce.Write(fields...)
-	}
+	l.z.Fatal(l.addPrefix(msg), fields...)
 }
 
 func (l *ronyLogger) RecoverPanic(funcName string, extraInfo interface{}, compensationFunc func()) {

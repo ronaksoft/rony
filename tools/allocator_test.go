@@ -41,35 +41,55 @@ func TestNewAllocator(t *testing.T) {
 		alloc.ReleaseAll()
 	})
 }
-func BenchmarkBulkKey_GenKey(b *testing.B) {
+
+func BenchmarkBulkKey_Gen(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
-		bk := tools.NewAllocator()
 		for pb.Next() {
+			bk := tools.NewAllocator()
 			d := bk.Gen(tools.FastRand(), "tools.RandomID(10)", 3, 125)
 			if len(d) != 38 {
 				b.Fatal("invalid size", len(d))
 			}
+			bk.ReleaseAll()
 		}
-		bk.ReleaseAll()
 	})
 }
 
-func BenchmarkAllocator_GenValue(b *testing.B) {
+func BenchmarkMarshalWithAllocator(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
-		m := rony.PoolMessageEnvelope.Get()
-		m.RequestID = tools.RandomUint64(0)
-		m.Constructor = 3232
-		m.Message = append(m.Message, tools.StrToByte("Something here for test ONLY!")...)
-		bk := tools.NewAllocator()
 		for pb.Next() {
-			d := bk.Gen(m)
+			m := rony.PoolMessageEnvelope.Get()
+			m.RequestID = tools.RandomUint64(0)
+			m.Constructor = 3232
+			m.Message = append(m.Message, tools.StrToByte("Something here for test ONLY!")...)
+
+			bk := tools.NewAllocator()
+			d := bk.Marshal(m)
+			if len(d) != proto.Size(m) {
+				b.Fatal("invalid size", len(d))
+			}
+			bk.ReleaseAll()
+			rony.PoolMessageEnvelope.Put(m)
+		}
+
+
+	})
+}
+
+func BenchmarkMarshalWithoutAllocator(b *testing.B) {
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m := &rony.MessageEnvelope{}
+			m.RequestID = tools.RandomUint64(0)
+			m.Constructor = 3232
+			m.Message = append(m.Message, tools.StrToByte("Something here for test ONLY!")...)
+			d, _ := proto.Marshal(m)
 			if len(d) != proto.Size(m) {
 				b.Fatal("invalid size", len(d))
 			}
 		}
-		bk.ReleaseAll()
-		rony.PoolMessageEnvelope.Put(m)
 	})
 }

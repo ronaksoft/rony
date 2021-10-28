@@ -89,16 +89,3 @@ func TestServer(serverID string) *edgetest.Server {
 		l: log.DefaultLogger,
 	})
 }
-
-func ResetCounters() {
-	atomic.StoreInt32(&receivedMessages, 0)
-	atomic.StoreInt32(&receivedUpdates, 0)
-}
-
-func ReceivedMessages() int32 {
-	return atomic.LoadInt32(&receivedMessages)
-}
-
-func ReceivedUpdates() int32 {
-	return atomic.LoadInt32(&receivedUpdates)
-}
