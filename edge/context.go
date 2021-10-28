@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
@@ -240,7 +241,10 @@ type RequestCtx struct {
 	nextChan    chan struct{}
 	quickReturn bool
 	stop        bool
-	err         *rony.Error
+	err *rony.Error
+	// cfg holds all cancel functions which will be called at the
+	// end of the lifecycle of the RequestCtx
+	cfs []func()
 }
 
 func newRequestCtx() *RequestCtx {
@@ -440,8 +444,15 @@ func (ctx *RequestCtx) Router() rony.Router {
 	return ctx.edge.router
 }
 
-func (ctx *RequestCtx) Err() *rony.Error {
+func (ctx *RequestCtx) Error() *rony.Error {
 	return ctx.err
+}
+
+func (ctx *RequestCtx) WithTimeout(t time.Duration) context.Context {
+	iCtx, cf := context.WithTimeout(context.Background(), t)
+	ctx.cfs = append(ctx.cfs, cf)
+
+	return iCtx
 }
 
 var requestCtxPool = sync.Pool{}
@@ -467,6 +478,11 @@ func releaseRequestCtx(ctx *RequestCtx) {
 	select {
 	case <-ctx.nextChan:
 	default:
+	}
+
+	// Call any possible context created in the RequestCtx lifecycle
+	for _, cf := range ctx.cfs {
+		cf()
 	}
 
 	ctx.reqID = 0
