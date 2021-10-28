@@ -484,6 +484,7 @@ func releaseRequestCtx(ctx *RequestCtx) {
 	for _, cf := range ctx.cfs {
 		cf()
 	}
+	ctx.cfs = ctx.cfs[:0]
 
 	ctx.reqID = 0
 
