@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/tools"
 	"path/filepath"
@@ -40,6 +41,12 @@ func New(cfg Config) (*Store, error) {
 	go runVlogGC(db, 1<<30)
 
 	return st, nil
+}
+
+func ProvideDI(cfg Config) {
+	di.MustProvide(func() (*Store, error){
+		return New(cfg)
+	})
 }
 
 func newDB(config Config) (*badger.DB, error) {
