@@ -1,7 +1,7 @@
 package scyllaRouter
 
 import (
-	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/pools/querypool"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/scylladb/gocqlx/v2"
 	"github.com/scylladb/gocqlx/v2/table"
@@ -9,7 +9,7 @@ import (
 
 type Router struct {
 	s  gocqlx.Session
-	qp map[string]*pools.QueryPool
+	qp map[string]*querypool.QueryPool
 	t  *table.Table
 	v  map[string]*table.Table
 }
@@ -24,20 +24,20 @@ func New(s gocqlx.Session) *Router {
 			SortKey: []string{},
 		}),
 	}
-	r.qp = map[string]*pools.QueryPool{
-		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+	r.qp = map[string]*querypool.QueryPool{
+		"insertIF": querypool.New(func() *gocqlx.Queryx {
 			return r.t.InsertBuilder().Unique().Query(s)
 		}),
-		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"insert": querypool.New(func() *gocqlx.Queryx {
 			return r.t.InsertBuilder().Query(s)
 		}),
-		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"update": querypool.New(func() *gocqlx.Queryx {
 			return r.t.UpdateBuilder().Set("replica_set", "edited_on").Query(s)
 		}),
-		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"delete": querypool.New(func() *gocqlx.Queryx {
 			return r.t.DeleteBuilder().Query(s)
 		}),
-		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"get": querypool.New(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s, "replica_set", "created_on", "edited_on")
 		}),
 	}

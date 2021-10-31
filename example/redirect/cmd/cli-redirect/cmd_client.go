@@ -7,7 +7,7 @@ import (
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/registry"
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/tools/cliutil"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -36,7 +36,7 @@ var ClientCmd = &cobra.Command{
 		}
 
 		ShellCmd.AddCommand(ExitCmd)
-		tools.RunShell(ShellCmd)
+		cliutil.RunShell(ShellCmd)
 
 		return nil
 	},

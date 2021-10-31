@@ -1,4 +1,4 @@
-package pools
+package querypool
 
 import (
 	"github.com/scylladb/gocqlx/v2"
@@ -21,8 +21,8 @@ type QueryPool struct {
 
 type queryBuilderFunc func() *gocqlx.Queryx
 
-// NewQueryPool creates a new query pool
-func NewQueryPool(genFunc queryBuilderFunc) *QueryPool {
+// New creates a new query pool
+func New(genFunc queryBuilderFunc) *QueryPool {
 	return &QueryPool{
 		gen: genFunc,
 	}

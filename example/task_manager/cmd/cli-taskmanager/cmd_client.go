@@ -8,7 +8,7 @@ import (
 	"github.com/ronaksoft/rony/example/task_manager/modules/auth"
 	"github.com/ronaksoft/rony/example/task_manager/modules/task"
 	"github.com/ronaksoft/rony/registry"
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/tools/cliutil"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -58,7 +58,7 @@ var ClientCmd = &cobra.Command{
 		var shellCmd = &cobra.Command{}
 		shellCmd.AddCommand(exitCmd)
 		task.RegisterTaskManagerCli(&TaskManagerCLI{}, wsc, shellCmd)
-		tools.RunShell(shellCmd)
+		cliutil.RunShell(shellCmd)
 
 		return nil
 	},

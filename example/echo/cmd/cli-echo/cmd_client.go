@@ -8,7 +8,7 @@ import (
 	"github.com/ronaksoft/rony/errors"
 	service "github.com/ronaksoft/rony/example/echo/rpc"
 	"github.com/ronaksoft/rony/registry"
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/tools/cliutil"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -40,7 +40,7 @@ var ClientCmd = &cobra.Command{
 		service.RegisterSampleCli(&service.SampleCli{}, wsc, ShellCmd)
 
 		ShellCmd.AddCommand(ExitCmd)
-		tools.RunShell(ShellCmd)
+		cliutil.RunShell(ShellCmd)
 
 		return nil
 	},

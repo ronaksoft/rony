@@ -241,7 +241,7 @@ type RequestCtx struct {
 	nextChan    chan struct{}
 	quickReturn bool
 	stop        bool
-	err *rony.Error
+	err         *rony.Error
 	// cfg holds all cancel functions which will be called at the
 	// end of the lifecycle of the RequestCtx
 	cfs []func()

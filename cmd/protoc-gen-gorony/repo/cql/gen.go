@@ -42,6 +42,7 @@ func GenerateGo(g *Generator, arg codegen.MessageArg) {
 	}
 
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools"})
+	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/pools/querypool"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx"})
 	g.g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/scylladb/gocqlx/v2/table"})
 
@@ -229,7 +230,7 @@ PRIMARY KEY {{PrimaryKey .}}
 const genRepo = `
 {{$repoName := RepoName .Name}}
 type {{$repoName}} struct {
-	qp map[string]*pools.QueryPool
+	qp map[string]*querypool.QueryPool
 	t *table.Table
 	v map[string]*table.Table
 	s gocqlx.Session
@@ -256,24 +257,24 @@ func New{{$repoName}}(s gocqlx.Session) *{{$repoName}} {
 		},
 	}
     
-	r.qp = map[string]*pools.QueryPool{
-		"insertIF": pools.NewQueryPool(func() *gocqlx.Queryx {
+	r.qp = map[string]*querypool.QueryPool{
+		"insertIF": querypool.New(func() *gocqlx.Queryx {
 			return r.t.InsertBuilder().Unique().Query(s)
 		}),
-		"insert": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"insert": querypool.New(func() *gocqlx.Queryx {
 			return r.t.InsertBuilder().Query(s)
 		}),
-		"update": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"update": querypool.New(func() *gocqlx.Queryx {
 			return r.t.UpdateBuilder().Set("sdata").Query(s)
 		}),
-		"delete": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"delete": querypool.New(func() *gocqlx.Queryx {
 			return r.t.DeleteBuilder().Query(s)
 		}),
-		"get": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"get": querypool.New(func() *gocqlx.Queryx {
 			return r.t.GetQuery(s)
 		}),
 		{{- range .Views }}
-		"getBy{{MVAlias . ""}}": pools.NewQueryPool(func() *gocqlx.Queryx {
+		"getBy{{MVAlias . ""}}": querypool.New(func() *gocqlx.Queryx {
 			return r.v["{{MVAlias . ""}}"].GetQuery(s)
 		}),
 		{{- end }}

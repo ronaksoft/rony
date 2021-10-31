@@ -1,7 +1,7 @@
-package tools_test
+package phoneutil_test
 
 import (
-	"github.com/ronaksoft/rony/tools"
+	"github.com/ronaksoft/rony/tools/phoneutil"
 	"testing"
 )
 
@@ -23,7 +23,7 @@ func TestSanitizePhone(t *testing.T) {
 	}
 
 	for ph, cph := range phones {
-		sph, err := tools.SanitizePhone(ph, "IR")
+		sph, err := phoneutil.SanitizePhone(ph, "IR")
 		if sph != cph || err != nil {
 			t.Fatal(err)
 		}
@@ -36,7 +36,7 @@ func TestSanitizePhone(t *testing.T) {
 	}
 
 	for ph, cph := range phones {
-		sph, err := tools.SanitizePhone(ph, "")
+		sph, err := phoneutil.SanitizePhone(ph, "")
 		if sph != cph || err != nil {
 			t.Log(ph, "->", sph)
 			t.Fatal(err)
