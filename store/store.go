@@ -44,7 +44,7 @@ func New(cfg Config) (*Store, error) {
 }
 
 func ProvideDI(cfg Config) {
-	di.MustProvide(func() (*Store, error){
+	di.MustProvide(func() (*Store, error) {
 		return New(cfg)
 	})
 }

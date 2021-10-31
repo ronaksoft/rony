@@ -6,7 +6,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/allegro/bigcache/v2 v2.2.5
 	github.com/c-bata/go-prompt v0.2.5
-	github.com/dgraph-io/badger/v3 v3.2103.1
+	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/genny/v2 v2.0.6
@@ -64,7 +64,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/flatbuffers v1.12.0 // indirect
+	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
