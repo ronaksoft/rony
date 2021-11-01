@@ -79,12 +79,15 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 
 			return nil
 		})
-		// generate protoc-gen-goexport
+		// generate protoc-gen-gorony (Clean Proto Files)
 		args1 := []string{
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
-			fmt.Sprintf("--goexport_out=paths=source_relative:%s", filepath.Join(projectPathAbs, "exports/proto")),
+			fmt.Sprintf(
+				"--gorony_out=paths=source_relative,rony_opt=clean_proto:%s",
+				filepath.Join(projectPathAbs, "exports/proto"),
+			),
 		}
 		args1 = append(args1, files...)
 		cmd1 := exec.Command(
@@ -95,7 +98,7 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 		cmd1.Stderr = os.Stderr
 		g.Command(cmd1)
 
-		// generate protoc-gen-gorony
+		// generate protoc-gen-gorony (Constructors)
 		args2 := []string{
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
@@ -114,6 +117,25 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 		cmd2.Dir = filepath.Dir(projectPathAbs)
 		cmd2.Stderr = os.Stderr
 		g.Command(cmd2)
+
+		// generate protoc-gen-gorony (Swagger APIs)
+		args3 := []string{
+			fmt.Sprintf("-I=%s", projectPathAbs),
+			fmt.Sprintf("-I=%s", folderPathAbs),
+			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
+			fmt.Sprintf(
+				"--gorony_out=paths=source_relative,rony_opt=open_api:%s",
+				filepath.Join(projectPathAbs, "exports/proto"),
+			),
+		}
+		args3 = append(args3, files...)
+		cmd3 := exec.Command(
+			"protoc", args3...,
+		)
+		cmd3.Env = os.Environ()
+		cmd3.Dir = filepath.Dir(projectPathAbs)
+		cmd3.Stderr = os.Stderr
+		g.Command(cmd3)
 	}
 }
 

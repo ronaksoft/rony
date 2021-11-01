@@ -19,6 +19,8 @@ const (
 	optValCrc32                = "crc32"
 	optValConstructorJSONStr   = "json_str"
 	optValConstructorJSONInt64 = "json_int64"
+	optOpenAPI                 = "open_api"
+	optCleanProto              = "clean_proto"
 )
 
 type ConstructorFormat string
@@ -32,6 +34,8 @@ type PluginOptions struct {
 	NoEdgeDependency  bool
 	CRC32             bool
 	ConstructorFormat ConstructorFormat
+	OpenAPI           bool
+	ExportCleanProto  bool
 }
 
 func (op *PluginOptions) ParamFunc(key, value string) error {
@@ -47,6 +51,10 @@ func (op *PluginOptions) ParamFunc(key, value string) error {
 				op.ConstructorFormat = StringJSON
 			case optValConstructorJSONInt64:
 				op.ConstructorFormat = Int64JSON
+			case optOpenAPI:
+				op.OpenAPI = true
+			case optCleanProto:
+				op.ExportCleanProto = true
 			}
 		}
 	}

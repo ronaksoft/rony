@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/go-openapi/spec"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/rpc"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -40,6 +43,14 @@ func main() {
 				return jsonStr(plugin)
 			case codegen.Int64JSON:
 				return jsonInt(plugin)
+			}
+
+			if pluginOpt.OpenAPI {
+				return exportOpenAPI(plugin)
+			}
+
+			if pluginOpt.ExportCleanProto {
+				return clearRonyTags(plugin)
 			}
 
 			err := normalMode(plugin)
@@ -192,4 +203,224 @@ func jsonInt(plugin *protogen.Plugin) error {
 	_, err = gf.Write(out.Bytes())
 
 	return err
+}
+
+func exportOpenAPI(plugin *protogen.Plugin) error {
+	swag := &spec.Swagger{}
+	swag.Info = &spec.Info{
+		InfoProps: spec.InfoProps{
+			Description:    "",
+			Title:          "",
+			TermsOfService: "",
+			Contact:        nil,
+			License:        nil,
+			Version:        "",
+		},
+	}
+	paths := map[string]spec.PathItem{}
+	defs := map[string]spec.Schema{}
+	for _, protoFile := range plugin.Files {
+		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {
+			continue
+		}
+
+		arg := codegen.GenTemplateArg(protoFile)
+		for _, s := range arg.Services {
+			for _, m := range s.Methods {
+				if !m.RestEnabled {
+					continue
+				}
+				pathItem := spec.PathItemProps{}
+				opID := fmt.Sprintf("%s%s", s.NameCC(), m.NameCC())
+				op := spec.NewOperation(opID)
+				op.RespondsWith(200,
+					spec.NewResponse().
+						WithSchema(
+							spec.RefProperty(m.Output.NameCC()),
+						),
+				)
+
+				if m.Rest.Json {
+					op.WithProduces("application/json").
+						WithConsumes("application/json")
+				} else {
+					op.WithProduces("application/protobuf").
+						WithConsumes("application/protobuf")
+				}
+
+				for name, kind := range m.Rest.PathVars {
+					p := spec.PathParam(name).
+						AsRequired().
+						NoEmptyValues()
+					switch kind {
+					case protoreflect.StringKind:
+						p.Typed("string", kind.String())
+					case protoreflect.BytesKind:
+						p.Typed("blob", kind.String())
+					case protoreflect.DoubleKind, protoreflect.FloatKind:
+						p.Typed("float", kind.String())
+					default:
+						p.Typed("integer", kind.String())
+					}
+
+					op.AddParam(p)
+
+				}
+
+				switch strings.ToLower(m.Rest.Method) {
+				case "get":
+					pathItem.Get = op
+				case "post":
+					pathItem.Post = op
+				case "put":
+					pathItem.Put = op
+				case "delete":
+					pathItem.Delete = op
+				case "patch":
+					pathItem.Patch = op
+				}
+
+				defs[m.Output.NameCC()] = spec.Schema{
+					VendorExtensible:   spec.VendorExtensible{},
+					SchemaProps:        spec.SchemaProps{},
+					SwaggerSchemaProps: spec.SwaggerSchemaProps{},
+					ExtraProps:         nil,
+				}
+
+				spec.BooleanProperty()
+
+			}
+		}
+		swag.Paths = &spec.Paths{
+			VendorExtensible: spec.VendorExtensible{},
+			Paths:            paths,
+		}
+		swag.Definitions = defs
+	}
+
+	return nil
+}
+
+func clearRonyTags(plugin *protogen.Plugin) error {
+	for _, protoFile := range plugin.Files {
+		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {
+			continue
+		}
+
+		// Create the generator func
+		gFile := plugin.NewGeneratedFile(
+			fmt.Sprintf(
+				"%s.clean.proto",
+				protoFile.GeneratedFilenamePrefix,
+			),
+			protoFile.GoImportPath,
+		)
+		gFile.P("syntax = \"", protoFile.Proto.GetSyntax(), "\";")
+		gFile.P()
+		gFile.P("package ", protoFile.Proto.GetPackage(), ";")
+		gFile.P()
+		for _, dep := range protoFile.Proto.Dependency {
+			for _, f := range plugin.Request.FileToGenerate {
+				if f == dep {
+					gFile.P("import \"", dep, "\";")
+				}
+			}
+		}
+		for _, s := range protoFile.Services {
+			gFile.P()
+			for _, c := range s.Comments.LeadingDetached {
+				gFile.P(s.Comments.Leading, " ", c, " ", s.Comments.Trailing)
+			}
+			gFile.P("service ", s.Desc.Name(), "{")
+			for _, m := range s.Methods {
+				for _, c := range m.Comments.LeadingDetached {
+					gFile.P(m.Comments.Leading, " ", c, " ", m.Comments.Trailing)
+				}
+				gFile.P("\t rpc ", m.Desc.Name(), "(", m.Desc.Input().Name(), ") returns (", m.Desc.Output().Name(), ");")
+			}
+			gFile.P("}")
+		}
+		for _, m := range protoFile.Messages {
+			gFile.P()
+			for _, c := range m.Comments.LeadingDetached {
+				gFile.P(m.Comments.Leading, " ", c, " ", m.Comments.Trailing)
+			}
+			gFile.P("message ", m.Desc.Name(), "{")
+			for _, f := range m.Fields {
+				for _, c := range f.Comments.LeadingDetached {
+					gFile.P(f.Comments.Leading, " ", c, " ", f.Comments.Trailing)
+				}
+				switch protoFile.Proto.GetSyntax() {
+				case "proto3":
+					switch f.Desc.Cardinality() {
+					case protoreflect.Optional, protoreflect.Required:
+						switch f.Desc.Kind() {
+						case protoreflect.MessageKind:
+							gFile.P("\t", f.Desc.Message().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						case protoreflect.EnumKind:
+							gFile.P("\t", f.Desc.Enum().Name(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						default:
+							gFile.P("\t", f.Desc.Kind(), " ", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+						}
+					case protoreflect.Repeated:
+						switch f.Desc.Kind() {
+						case protoreflect.MessageKind:
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
+						case protoreflect.EnumKind:
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
+						default:
+							gFile.P(
+								"\t",
+								f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ",
+								f.Desc.Name(), " = ", f.Desc.Number(), ";",
+							)
+						}
+					}
+				case "proto2":
+					switch f.Desc.Kind() {
+					case protoreflect.MessageKind:
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Message().Name(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
+					case protoreflect.EnumKind:
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Enum().Name(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
+					default:
+						gFile.P(
+							"\t",
+							f.Desc.Cardinality().String(), " ", f.Desc.Kind(), " ",
+							f.Desc.Name(), " = ", f.Desc.Number(), ";",
+						)
+					}
+				}
+			}
+			gFile.P("}")
+		}
+		for _, m := range protoFile.Enums {
+			gFile.P()
+			for _, c := range m.Comments.LeadingDetached {
+				gFile.P(m.Comments.Leading, " ", c, " ", m.Comments.Trailing)
+			}
+			gFile.P("enum ", m.Desc.Name(), "{")
+			for _, f := range m.Values {
+				gFile.P("\t", f.Desc.Name(), " = ", f.Desc.Number(), ";")
+			}
+			gFile.P("}")
+		}
+	}
+
+	return nil
 }
