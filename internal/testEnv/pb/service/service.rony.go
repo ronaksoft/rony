@@ -19,6 +19,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
 	sync "sync"
 )
 
@@ -793,20 +794,36 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 			SetHandler(handlerFunc(C_SampleEcho)...).
 			Append(sw.echoWrapper),
 	)
+	e.SetRestProxy(
+		"get", "/echo/:replica_set",
+		edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer),
+	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleSet).
 			SetHandler(handlerFunc(C_SampleSet)...).
 			Append(sw.setWrapper),
+	)
+	e.SetRestProxy(
+		"post", "/set",
+		edge.NewRestProxy(sw.setRestClient, sw.setRestServer),
 	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleGet).
 			SetHandler(handlerFunc(C_SampleGet)...).
 			Append(sw.getWrapper),
 	)
+	e.SetRestProxy(
+		"get", "/req/:Key/something",
+		edge.NewRestProxy(sw.getRestClient, sw.getRestServer),
+	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).
 			SetHandler(handlerFunc(C_SampleEchoTunnel)...).
 			Append(sw.echoTunnelWrapper),
+	)
+	e.SetRestProxy(
+		"get", "/echo_tunnel/:X/:YY",
+		edge.NewRestProxy(sw.echoTunnelRestClient, sw.echoTunnelRestServer),
 	)
 	e.SetHandler(
 		edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).
@@ -981,6 +998,298 @@ func TunnelRequestSampleEchoDelay(
 	default:
 		return errors.ErrUnexpectedTunnelResponse
 	}
+}
+
+func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &EchoRequest{}
+	err := req.UnmarshalJSON(conn.Body())
+	if err != nil {
+		return err
+	}
+	req.ReplicaSet = tools.StrToUInt64(tools.GetString(conn.Get("replica_set"), "0"))
+
+	ctx.Fill(conn.ConnID(), C_SampleEcho, req)
+	return nil
+}
+func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_EchoResponse:
+			x := &EchoResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.MarshalJSON()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
+}
+
+func (sw *sampleWrapper) setRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &SetRequest{}
+	err := req.Unmarshal(conn.Body())
+	if err != nil {
+		return err
+	}
+
+	ctx.Fill(conn.ConnID(), C_SampleSet, req)
+	return nil
+}
+func (sw *sampleWrapper) setRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_SetResponse:
+			x := &SetResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.Marshal()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
+}
+
+func (sw *sampleWrapper) getRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &GetRequest{}
+	req.Key = tools.S2B(tools.GetString(conn.Get("Key"), ""))
+
+	ctx.Fill(conn.ConnID(), C_SampleGet, req)
+	return nil
+}
+func (sw *sampleWrapper) getRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_GetResponse:
+			x := &GetResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.Marshal()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
+}
+
+func (sw *sampleWrapper) echoTunnelRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &EchoRequest{}
+	err := req.Unmarshal(conn.Body())
+	if err != nil {
+		return err
+	}
+	req.Int = tools.StrToInt64(tools.GetString(conn.Get("X"), "0"))
+	req.Timestamp = tools.StrToInt64(tools.GetString(conn.Get("YY"), "0"))
+
+	ctx.Fill(conn.ConnID(), C_SampleEchoTunnel, req)
+	return nil
+}
+func (sw *sampleWrapper) echoTunnelRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_EchoResponse:
+			x := &EchoResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.Marshal()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
+}
+
+func (sw *sampleWrapper) echoInternalRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &EchoRequest{}
+
+	ctx.Fill(conn.ConnID(), C_SampleEchoInternal, req)
+	return nil
+}
+func (sw *sampleWrapper) echoInternalRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_EchoResponse:
+			x := &EchoResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.Marshal()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
+}
+
+func (sw *sampleWrapper) echoDelayRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
+	req := &EchoRequest{}
+
+	ctx.Fill(conn.ConnID(), C_SampleEchoDelay, req)
+	return nil
+}
+func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
+		switch envelope.Constructor {
+		case C_EchoResponse:
+			x := &EchoResponse{}
+			_ = x.Unmarshal(envelope.Message)
+			var b []byte
+			b, err = x.Marshal()
+			if err != nil {
+				return
+			}
+			err = conn.WriteBinary(ctx.StreamID(), b)
+			return
+		case rony.C_Error:
+			x := &rony.Error{}
+			_ = x.Unmarshal(envelope.Message)
+			err = x
+			return
+		case rony.C_Redirect:
+			x := &rony.Redirect{}
+			_ = x.Unmarshal(envelope.Message)
+			if len(x.Edges) == 0 || len(x.Edges[0].HostPorts) == 0 {
+				break
+			}
+			switch x.Reason {
+			case rony.RedirectReason_ReplicaSetSession:
+				conn.Redirect(http.StatusPermanentRedirect, x.Edges[0].HostPorts[0])
+			case rony.RedirectReason_ReplicaSetRequest:
+				conn.Redirect(http.StatusTemporaryRedirect, x.Edges[0].HostPorts[0])
+			}
+			return
+		}
+		err = errors.ErrUnexpectedResponse
+	}) {
+		err = errors.ErrInternalServer
+	}
+
+	return
 }
 
 type SampleClient struct {

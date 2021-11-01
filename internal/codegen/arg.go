@@ -468,7 +468,7 @@ func getRestArg(m *protogen.Method, arg *MethodArg) {
 		return
 	}
 
-	//rest := RestArg{Method: "", Path: "", Json: false}
+	arg.RestEnabled = true
 	arg.Rest.Method = restOpt.GetMethod()
 	arg.Rest.Path = fmt.Sprintf("/%s", strings.Trim(restOpt.GetPath(), "/"))
 	arg.Rest.Json = restOpt.GetJsonEncode()

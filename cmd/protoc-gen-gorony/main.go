@@ -206,23 +206,28 @@ func jsonInt(plugin *protogen.Plugin) error {
 }
 
 func exportOpenAPI(plugin *protogen.Plugin) error {
+	var (
+		importPath protogen.GoImportPath
+		filePrefix string
+	)
 	swag := &spec.Swagger{}
 	swag.Info = &spec.Info{
 		InfoProps: spec.InfoProps{
-			Description:    "",
-			Title:          "",
-			TermsOfService: "",
-			Contact:        nil,
-			License:        nil,
-			Version:        "",
+			Description: "Rony Swagger Service Description",
+			Title:       "Rony",
+			Version:     "0.0.1",
 		},
 	}
+	swag.Schemes = []string{"http", "https"}
+
 	paths := map[string]spec.PathItem{}
 	defs := map[string]spec.Schema{}
 	for _, protoFile := range plugin.Files {
 		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {
 			continue
 		}
+		importPath = protoFile.GoImportPath
+		filePrefix = protoFile.GeneratedFilenamePrefix
 
 		arg := codegen.GenTemplateArg(protoFile)
 		for _, s := range arg.Services {
@@ -230,13 +235,14 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 				if !m.RestEnabled {
 					continue
 				}
+
 				pathItem := spec.PathItemProps{}
-				opID := fmt.Sprintf("%s%s", s.NameCC(), m.NameCC())
+				opID := fmt.Sprintf("%s%s", s.NameCC(), m.Name())
 				op := spec.NewOperation(opID)
 				op.RespondsWith(200,
 					spec.NewResponse().
 						WithSchema(
-							spec.RefProperty(m.Output.NameCC()),
+							spec.RefProperty(fmt.Sprintf("#/definitions/%s", m.Output.Name())),
 						),
 				)
 
@@ -264,7 +270,6 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 					}
 
 					op.AddParam(p)
-
 				}
 
 				switch strings.ToLower(m.Rest.Method) {
@@ -280,23 +285,45 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 					pathItem.Patch = op
 				}
 
-				defs[m.Output.NameCC()] = spec.Schema{
-					VendorExtensible:   spec.VendorExtensible{},
-					SchemaProps:        spec.SchemaProps{},
-					SwaggerSchemaProps: spec.SwaggerSchemaProps{},
-					ExtraProps:         nil,
+				def := spec.Schema{}
+				def.Type = append(def.Type, "object")
+
+				for _, f := range m.Output.Fields {
+					switch f.GoKind {
+					case "string":
+						def.SetProperty(f.Name(), *spec.StringProperty())
+					case "[]byte":
+						def.SetProperty(f.Name(), *spec.ArrayProperty(spec.Int8Property()))
+					case "int32", "uint32", "int8", "in16", "int64":
+						def.SetProperty(f.Name(), *spec.Int64Property())
+					default:
+						def.SetProperty(f.Name(), *spec.StringProperty())
+					}
 				}
 
-				spec.BooleanProperty()
+				defs[m.Output.Name()] = def
 
+				paths[m.Rest.Path] = spec.PathItem{
+					PathItemProps: pathItem,
+				}
 			}
 		}
-		swag.Paths = &spec.Paths{
-			VendorExtensible: spec.VendorExtensible{},
-			Paths:            paths,
-		}
-		swag.Definitions = defs
 	}
+
+	swag.Paths = &spec.Paths{
+		Paths: paths,
+	}
+	swag.Definitions = defs
+	swag.Swagger = "2.0"
+
+	out, err := swag.MarshalJSON()
+	//out, err := yaml.Marshal(swag)
+	if err != nil {
+		return err
+	}
+
+	gf := plugin.NewGeneratedFile(filepath.Join(filepath.Dir(filePrefix), "swagger.json"), importPath)
+	_, err = gf.Write(out)
 
 	return nil
 }

@@ -19,6 +19,7 @@ import (
 
 //go:generate protoc -I=. -I=../../../.. --go_out=. service.proto
 //go:generate protoc -I=. -I=../../../.. --gorony_out=. service.proto
+//go:generate protoc -I=. -I=../../../.. --gorony_out=rony_opt=open_api:. service.proto
 
 // Sample implements ISample interface.
 type Sample struct {
