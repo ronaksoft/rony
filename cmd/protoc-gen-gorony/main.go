@@ -219,9 +219,8 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 		},
 	}
 	swag.Schemes = []string{"http", "https"}
+	swag.Swagger = "2.0"
 
-	paths := map[string]spec.PathItem{}
-	defs := map[string]spec.Schema{}
 	for _, protoFile := range plugin.Files {
 		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {
 			continue
@@ -231,93 +230,19 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 
 		arg := codegen.GenTemplateArg(protoFile)
 		for _, s := range arg.Services {
+			addTag(swag, s)
 			for _, m := range s.Methods {
 				if !m.RestEnabled {
 					continue
 				}
-
-				pathItem := spec.PathItemProps{}
-				opID := fmt.Sprintf("%s%s", s.NameCC(), m.Name())
-				op := spec.NewOperation(opID)
-				op.RespondsWith(200,
-					spec.NewResponse().
-						WithSchema(
-							spec.RefProperty(fmt.Sprintf("#/definitions/%s", m.Output.Name())),
-						),
-				)
-
-				if m.Rest.Json {
-					op.WithProduces("application/json").
-						WithConsumes("application/json")
-				} else {
-					op.WithProduces("application/protobuf").
-						WithConsumes("application/protobuf")
-				}
-
-				for name, kind := range m.Rest.PathVars {
-					p := spec.PathParam(name).
-						AsRequired().
-						NoEmptyValues()
-					switch kind {
-					case protoreflect.StringKind:
-						p.Typed("string", kind.String())
-					case protoreflect.BytesKind:
-						p.Typed("blob", kind.String())
-					case protoreflect.DoubleKind, protoreflect.FloatKind:
-						p.Typed("float", kind.String())
-					default:
-						p.Typed("integer", kind.String())
-					}
-
-					op.AddParam(p)
-				}
-
-				switch strings.ToLower(m.Rest.Method) {
-				case "get":
-					pathItem.Get = op
-				case "post":
-					pathItem.Post = op
-				case "put":
-					pathItem.Put = op
-				case "delete":
-					pathItem.Delete = op
-				case "patch":
-					pathItem.Patch = op
-				}
-
-				def := spec.Schema{}
-				def.Type = append(def.Type, "object")
-
-				for _, f := range m.Output.Fields {
-					switch f.GoKind {
-					case "string":
-						def.SetProperty(f.Name(), *spec.StringProperty())
-					case "[]byte":
-						def.SetProperty(f.Name(), *spec.ArrayProperty(spec.Int8Property()))
-					case "int32", "uint32", "int8", "in16", "int64":
-						def.SetProperty(f.Name(), *spec.Int64Property())
-					default:
-						def.SetProperty(f.Name(), *spec.StringProperty())
-					}
-				}
-
-				defs[m.Output.Name()] = def
-
-				paths[m.Rest.Path] = spec.PathItem{
-					PathItemProps: pathItem,
-				}
+				addOperation(swag, s, m)
+				addDefinition(swag, m.Input.Name(), m.Input.Fields)
+				addDefinition(swag, m.Output.Name(), m.Output.Fields)
 			}
 		}
 	}
 
-	swag.Paths = &spec.Paths{
-		Paths: paths,
-	}
-	swag.Definitions = defs
-	swag.Swagger = "2.0"
-
 	out, err := swag.MarshalJSON()
-	//out, err := yaml.Marshal(swag)
 	if err != nil {
 		return err
 	}
@@ -326,6 +251,98 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 	_, err = gf.Write(out)
 
 	return nil
+}
+func addTag(swag *spec.Swagger, s codegen.ServiceArg) {
+	swag.Tags = append(
+		swag.Tags,
+		spec.NewTag(s.Name(), "Service", nil),
+	)
+}
+func addDefinition(swag *spec.Swagger, name string, fields []codegen.FieldArg) {
+	if swag.Definitions == nil {
+		swag.Definitions = map[string]spec.Schema{}
+	}
+
+	def := spec.Schema{}
+	def.Type = append(def.Type, "object")
+	for _, f := range fields {
+		switch f.GoKind {
+		case "string":
+			def.SetProperty(f.Name(), *spec.StringProperty())
+		case "[]byte":
+			def.SetProperty(f.Name(), *spec.ArrayProperty(spec.Int8Property()))
+		case "int32", "uint32", "int8", "in16", "int64":
+			def.SetProperty(f.Name(), *spec.Int64Property())
+		case "float32":
+			def.SetProperty(f.Name(), *spec.Float32Property())
+		case "float64":
+			def.SetProperty(f.Name(), *spec.Float64Property())
+		default:
+			def.SetProperty(f.Name(), *spec.StringProperty())
+		}
+	}
+
+	swag.Definitions[name] = def
+
+}
+func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg) {
+	if swag.Paths == nil {
+		swag.Paths = &spec.Paths{
+			Paths: map[string]spec.PathItem{},
+		}
+	}
+
+	opID := fmt.Sprintf("%s%s", s.NameCC(), m.Name())
+	op := spec.NewOperation(opID).
+		RespondsWith(200,
+			spec.NewResponse().
+				WithSchema(
+					spec.RefProperty(fmt.Sprintf("#/definitions/%s", m.Output.Name())),
+				),
+		).
+		WithTags(s.Name())
+
+	if m.Rest.Json {
+		op.WithProduces("application/json").
+			WithConsumes("application/json")
+	} else {
+		op.WithProduces("application/protobuf").
+			WithConsumes("application/protobuf")
+	}
+
+	for name, kind := range m.Rest.PathVars {
+		p := spec.PathParam(name).
+			AsRequired().
+			NoEmptyValues()
+		switch kind {
+		case protoreflect.StringKind:
+			p.Typed("string", kind.String())
+		case protoreflect.BytesKind:
+			p.Typed("array", kind.String())
+		case protoreflect.DoubleKind, protoreflect.FloatKind:
+			p.Typed("number", kind.String())
+		default:
+			p.Typed("integer", kind.String())
+		}
+
+		op.AddParam(p)
+	}
+
+	pathItem := swag.Paths.Paths[m.Rest.Path]
+	switch strings.ToLower(m.Rest.Method) {
+	case "get":
+		pathItem.Get = op
+	case "post":
+		pathItem.Post = op
+	case "put":
+		pathItem.Put = op
+	case "delete":
+		pathItem.Delete = op
+	case "patch":
+		pathItem.Patch = op
+	}
+	swag.Paths.Paths[m.Rest.Method] = pathItem
+
 }
 
 func clearRonyTags(plugin *protogen.Plugin) error {
