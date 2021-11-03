@@ -333,7 +333,7 @@ func (sw *sampleWrapper) infoWithClientRedirectRestServer(conn rony.RestConn, ct
 			x := &InfoResponse{}
 			_ = x.Unmarshal(envelope.Message)
 			var b []byte
-			b, err = x.MarshalJSON()
+			b, err = x.Marshal()
 			if err != nil {
 				return
 			}
@@ -381,7 +381,7 @@ func (sw *sampleWrapper) infoWithServerRedirectRestServer(conn rony.RestConn, ct
 			x := &InfoResponse{}
 			_ = x.Unmarshal(envelope.Message)
 			var b []byte
-			b, err = x.MarshalJSON()
+			b, err = x.Marshal()
 			if err != nil {
 				return
 			}

@@ -64,6 +64,7 @@ type MessageArg struct {
 	Fields     []FieldArg
 	C          uint64
 	ImportPath protogen.GoImportPath
+	Comments   string
 
 	// If message is representing a model then following parameters are filled
 	IsAggregate bool
@@ -83,6 +84,9 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 	arg.ImportPath = m.GoIdent.GoImportPath
 	for _, f := range m.Fields {
 		arg.Fields = append(arg.Fields, getFieldArg(f))
+	}
+	for _, c := range m.Comments.LeadingDetached {
+		arg.Comments += c.String() + "\r\n"
 	}
 
 	// Generate the aggregate description from proto options
@@ -375,6 +379,7 @@ type ServiceArg struct {
 	name         string
 	C            uint64
 	Methods      []MethodArg
+	Comments     string
 	HasRestProxy bool
 }
 
@@ -424,6 +429,10 @@ func getServiceArg(s *protogen.Service) ServiceArg {
 	}
 	arg.name = string(s.Desc.Name())
 	arg.C = CrcHash([]byte(arg.name))
+	for _, c := range s.Comments.LeadingDetached {
+		arg.Comments += c.String() + "\r\n"
+	}
+
 	for _, m := range s.Methods {
 		ma := getMethodArg(s, m)
 		if ma.RestEnabled {
@@ -445,6 +454,7 @@ type MethodArg struct {
 	name        string
 	fullname    string
 	C           uint64
+	Comments    string
 	Input       MessageArg
 	Output      MessageArg
 	RestEnabled bool
@@ -481,7 +491,13 @@ func getRestArg(m *protogen.Method, arg *MethodArg) {
 		}
 		pathVars = append(pathVars, strings.TrimLeft(pv, ":"))
 	}
-	for _, bv := range restOpt.GetBindVariables() {
+	for _, bv := range restOpt.GetBindPathParam() {
+		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
+		if len(parts) == 2 {
+			bindVars[parts[0]] = parts[1]
+		}
+	}
+	for _, bv := range restOpt.GetBindQueryParam() {
 		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
 		if len(parts) == 2 {
 			bindVars[parts[0]] = parts[1]
@@ -601,6 +617,10 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 	arg.C = CrcHash([]byte(fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())))
 	arg.Input = GetMessageArg(m.Input)
 	arg.Output = GetMessageArg(m.Output)
+	for _, c := range m.Comments.LeadingDetached {
+		arg.Comments += c.String() + "\r\n"
+	}
+
 	if arg.Input.IsSingleton || arg.Input.IsAggregate {
 		panic("method input cannot be aggregate or singleton")
 	}

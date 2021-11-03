@@ -28,8 +28,8 @@ service Sample {
         option (rony_rest) = {
             method: "get"
             path: "/echo_tunnel/:X/:YY"
-            bind_variables: "X=Int"
-            bind_variables: "YY=Timestamp"
+            bind_path_param: "X=Int"
+            bind_path_param: "YY=Timestamp"
         };
     }
     rpc EchoInternal (EchoRequest) returns (EchoResponse) {

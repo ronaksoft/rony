@@ -1002,7 +1002,7 @@ func TunnelRequestSampleEchoDelay(
 
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := &EchoRequest{}
-	err := req.UnmarshalJSON(conn.Body())
+	err := req.Unmarshal(conn.Body())
 	if err != nil {
 		return err
 	}
@@ -1018,7 +1018,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 			x := &EchoResponse{}
 			_ = x.Unmarshal(envelope.Message)
 			var b []byte
-			b, err = x.MarshalJSON()
+			b, err = x.Marshal()
 			if err != nil {
 				return
 			}

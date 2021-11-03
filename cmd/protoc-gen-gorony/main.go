@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 )
@@ -29,6 +30,7 @@ var (
 			return path
 		},
 	}
+	pathRegEx = regexp.MustCompile(``)
 )
 
 func main() {
@@ -236,8 +238,8 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 					continue
 				}
 				addOperation(swag, s, m)
-				addDefinition(swag, m.Input.Name(), m.Input.Fields)
-				addDefinition(swag, m.Output.Name(), m.Output.Fields)
+				addDefinition(swag, m.Input)
+				addDefinition(swag, m.Output)
 			}
 		}
 	}
@@ -255,23 +257,30 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 func addTag(swag *spec.Swagger, s codegen.ServiceArg) {
 	swag.Tags = append(
 		swag.Tags,
-		spec.NewTag(s.Name(), "Service", nil),
+		spec.NewTag(s.Name(), s.Comments, nil),
 	)
 }
-func addDefinition(swag *spec.Swagger, name string, fields []codegen.FieldArg) {
+func addDefinition(swag *spec.Swagger, m codegen.MessageArg) {
 	if swag.Definitions == nil {
 		swag.Definitions = map[string]spec.Schema{}
 	}
 
 	def := spec.Schema{}
-	def.Type = append(def.Type, "object")
-	for _, f := range fields {
+	def.Description = m.Comments
+	def.Typed("object", "")
+	for _, f := range m.Fields {
 		switch f.GoKind {
 		case "string":
 			def.SetProperty(f.Name(), *spec.StringProperty())
 		case "[]byte":
 			def.SetProperty(f.Name(), *spec.ArrayProperty(spec.Int8Property()))
-		case "int32", "uint32", "int8", "in16", "int64":
+		case "int8", "uint8":
+			def.SetProperty(f.Name(), *spec.Int8Property())
+		case "int16", "uint16":
+			def.SetProperty(f.Name(), *spec.Int16Property())
+		case "int32", "uint32":
+			def.SetProperty(f.Name(), *spec.Int32Property())
+		case "int64", "uint64":
 			def.SetProperty(f.Name(), *spec.Int64Property())
 		case "float32":
 			def.SetProperty(f.Name(), *spec.Float32Property())
@@ -282,7 +291,7 @@ func addDefinition(swag *spec.Swagger, name string, fields []codegen.FieldArg) {
 		}
 	}
 
-	swag.Definitions[name] = def
+	swag.Definitions[m.Name()] = def
 
 }
 func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg) {
@@ -318,9 +327,15 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 		case protoreflect.StringKind:
 			p.Typed("string", kind.String())
 		case protoreflect.BytesKind:
-			p.Typed("array", kind.String())
+			p.Typed("array", "int8")
 		case protoreflect.DoubleKind, protoreflect.FloatKind:
 			p.Typed("number", kind.String())
+		case protoreflect.Int32Kind, protoreflect.Sint32Kind,
+			protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+			p.Typed("integer", "int32")
+		case protoreflect.Int64Kind, protoreflect.Sint64Kind,
+			protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+			p.Typed("integer", "int64")
 		default:
 			p.Typed("integer", kind.String())
 		}
@@ -328,7 +343,8 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 		op.AddParam(p)
 	}
 
-	pathItem := swag.Paths.Paths[m.Rest.Path]
+	restPath := replacePath(m.Rest.Path)
+	pathItem := swag.Paths.Paths[restPath]
 	switch strings.ToLower(m.Rest.Method) {
 	case "get":
 		pathItem.Get = op
@@ -341,10 +357,26 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 	case "patch":
 		pathItem.Patch = op
 	}
-	swag.Paths.Paths[m.Rest.Method] = pathItem
+	swag.Paths.Paths[restPath] = pathItem
 
 }
+func replacePath(path string) string {
+	sb := strings.Builder{}
+	for idx, p := range strings.Split(path, "/") {
+		if idx > 0 {
+			sb.WriteRune('/')
+		}
+		if strings.HasPrefix(p, ":") {
+			sb.WriteRune('{')
+			sb.WriteString(p[1:])
+			sb.WriteRune('}')
+		} else {
+			sb.WriteString(p)
+		}
+	}
 
+	return sb.String()
+}
 func clearRonyTags(plugin *protogen.Plugin) error {
 	for _, protoFile := range plugin.Files {
 		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {

@@ -6,76 +6,78 @@ option go_package = "github.com/ronaksoft/rony";
 // By adding 'rony_rest' option to the method definition a REST wrapper will be generated for that
 // method and that RPC handler will become accessible using REST endpoint.
 message RestOpt {
-    // method identifies the HTTP command: i.e. 'get', 'post', 'put', ...
-    required string method = 1;
-    // path identifies the path that this RPC method will be available as REST endpoint.
-    required string path = 2;
-    // bind_variables is a list of pair of bindings. For example if we have a path '/part1/:var1/:var2'
-    // and we want to bind 'var1' to field 'fieldVar1' and bind 'var2' to field 'fieldVar2' then it will be:
-    // `["var1=fieldVar1" , "var2=fieldVar2"]`
-    repeated string bind_variables = 3;
-    // json_encode if is set then input and output data are json encoded version of the proto messages
-    optional bool json_encode = 4;
+  // method identifies the HTTP command: i.e. 'get', 'post', 'put', ...
+  required string method = 1;
+  // path identifies the path that this RPC method will be available as REST endpoint.
+  required string path = 2;
+  // bind_path_variables is a list of pair of bindings. For example if we have a path '/part1/:var1/:var2'
+  // and we want to bind 'var1' to field 'fieldVar1': "var1=fieldVar1"
+  repeated string bind_path_param = 3;
+  // bind_query_param is a list of pair of bindings. For example if we have a query param var1
+  // and we want to bind 'var1' to field 'fieldVar1': "var1=fieldVar1"
+  repeated string bind_query_param = 4;
+  // json_encode if is set then input and output data are json encoded version of the proto messages
+  optional bool json_encode = 5;
 }
 
 // PrimaryKeyOpt is the container for aggregate primary key settings. It is going to replace old
 // rony_aggregate_table & rony_aggregate_view options.
 message PrimaryKeyOpt {
-    repeated string part_key = 1;
-    repeated string sort_key = 2;
-    // Alias could be used to override the name of materialized view. If this is not set, Rony automatically
-    // generates for you.
-    optional string alias = 4;
+  repeated string part_key = 1;
+  repeated string sort_key = 2;
+  // Alias could be used to override the name of materialized view. If this is not set, Rony automatically
+  // generates for you.
+  optional string alias = 4;
 }
 
 extend google.protobuf.ServiceOptions {
-    // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
-    optional bool rony_cobra_cmd = 50001;
-    // rony_cobra_cmd_protocol defines what protocol should client use to communicate with server.
-    // POSSIBLE VALUES: "ws", "http"
-    optional string rony_cobra_cmd_protocol = 50002;
-    // rony_no_client if is set then no client code will be generated. This flag is for internal usage.
-    // DO NOT USE IT.
-    optional bool rony_no_client = 50003;
+  // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
+  optional bool rony_cobra_cmd = 50001;
+  // rony_cobra_cmd_protocol defines what protocol should client use to communicate with server.
+  // POSSIBLE VALUES: "ws", "http"
+  optional string rony_cobra_cmd_protocol = 50002;
+  // rony_no_client if is set then no client code will be generated. This flag is for internal usage.
+  // DO NOT USE IT.
+  optional bool rony_no_client = 50003;
 }
 
 extend google.protobuf.MethodOptions {
-    // rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
-    // this command is not exposed to external clients connected through th gateway.
-    optional bool rony_internal = 50002;
-    optional RestOpt rony_rest = 50003;
+  // rony_internal marks this method internal, hence only edges could execute this rpc through tunnel messages. In other words,
+  // this command is not exposed to external clients connected through th gateway.
+  optional bool rony_internal = 50002;
+  optional RestOpt rony_rest = 50003;
 }
 
 extend google.protobuf.MessageOptions {
-    // rony_local_repo generates the code for local repository
-    // POSSIBLE VALUES: store, cql, sql
-    optional string rony_local_repo = 50001;
-    // rony_global_repo generates the code for remote repository
-    // POSSIBLE VALUES: store, cql, sql
-    optional string rony_global_repo = 50002;
-    // rony_singleton marks this message as a singleton.
-    // NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
-    // cause unpredictable results.
-    optional bool rony_singleton = 50003;
-    // rony_table creates a virtual table presentation to hold instances of this message, like rows in a table
-    // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
-    optional PrimaryKeyOpt rony_table = 50024;
-    // rony_view creates a materialized view of the aggregate based on the primary key.
-    // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
-    // NOTE: The primary key of the view must contains all the primary key items of the table. They don't need to
-    //           follow the same order as table. for example the following is correct:
-    //                  rony_aggregate_table = ((a, b), c)
-    //                  rony_aggregate_view = ((c, a),  d, b)
-    repeated PrimaryKeyOpt rony_view = 50025;
+  // rony_local_repo generates the code for local repository
+  // POSSIBLE VALUES: store, cql, sql
+  optional string rony_local_repo = 50001;
+  // rony_global_repo generates the code for remote repository
+  // POSSIBLE VALUES: store, cql, sql
+  optional string rony_global_repo = 50002;
+  // rony_singleton marks this message as a singleton.
+  // NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
+  // cause unpredictable results.
+  optional bool rony_singleton = 50003;
+  // rony_table creates a virtual table presentation to hold instances of this message, like rows in a table
+  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+  optional PrimaryKeyOpt rony_table = 50024;
+  // rony_view creates a materialized view of the aggregate based on the primary key.
+  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+  // NOTE: The primary key of the view must contains all the primary key items of the table. They don't need to
+  //           follow the same order as table. for example the following is correct:
+  //                  rony_aggregate_table = ((a, b), c)
+  //                  rony_aggregate_view = ((c, a),  d, b)
+  repeated PrimaryKeyOpt rony_view = 50025;
 }
 
 extend google.protobuf.FieldOptions {
-    // rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
-    optional bool rony_index = 50001;
-    // rony_default set the help text in generated cli client. This flag only works if rony_cobra_cmd is set
-    // in the service.
-    optional string rony_help = 50002;
-    // rony_default set the default value in generated cli client. This flag only works if rony_cobra_cmd is set
-    // in the service.
-    optional string rony_default = 50003;
+  // rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
+  optional bool rony_index = 50001;
+  // rony_default set the help text in generated cli client. This flag only works if rony_cobra_cmd is set
+  // in the service.
+  optional string rony_help = 50002;
+  // rony_default set the default value in generated cli client. This flag only works if rony_cobra_cmd is set
+  // in the service.
+  optional string rony_default = 50003;
 }

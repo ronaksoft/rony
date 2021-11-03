@@ -11,7 +11,7 @@ service Sample {
             method: "get"
             path: "/echo/:ID/:Random"
             json_encode: true
-            bind_variables: "Random=RandomText"
+            bind_path_param: "Random=RandomText"
         };
     }
 }
