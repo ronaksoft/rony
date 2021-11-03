@@ -64,6 +64,7 @@ func compileProto(g *genny.Generator, folders []string) {
 		projectPathAbs, _ = filepath.Abs(".")
 		folderPathAbs     string
 	)
+
 	for _, folder := range folders {
 		files = files[:0]
 		fmt.Printf("generate protos in [%s]\n", folder)
@@ -80,6 +81,7 @@ func compileProto(g *genny.Generator, folders []string) {
 				// call protoc-gen-go
 				cmd1 := exec.Command(
 					"protoc",
+					fmt.Sprintf("-I=%s/src", os.Getenv("GOPATH")),
 					fmt.Sprintf("-I=%s", projectPathAbs),
 					fmt.Sprintf("-I=%s", folderPathAbs),
 					fmt.Sprintf("-I=%s/vendor", projectPathAbs),
@@ -93,6 +95,7 @@ func compileProto(g *genny.Generator, folders []string) {
 				// generate protoc-gen-gorony
 				cmd2 := exec.Command(
 					"protoc",
+					fmt.Sprintf("-I=%s/src", os.Getenv("GOPATH")),
 					fmt.Sprintf("-I=%s", projectPathAbs),
 					fmt.Sprintf("-I=%s", folderPathAbs),
 					fmt.Sprintf("-I=%s/vendor", projectPathAbs),

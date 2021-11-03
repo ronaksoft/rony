@@ -81,6 +81,7 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 		})
 		// generate protoc-gen-gorony (Clean Proto Files)
 		args1 := []string{
+			fmt.Sprintf("-I=%s/src", os.Getenv("GOPATH")),
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
@@ -100,6 +101,7 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 
 		// generate protoc-gen-gorony (Constructors)
 		args2 := []string{
+			fmt.Sprintf("-I=%s/src", os.Getenv("GOPATH")),
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
@@ -120,6 +122,7 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 
 		// generate protoc-gen-gorony (Swagger APIs)
 		args3 := []string{
+			fmt.Sprintf("-I=%s/src", os.Getenv("GOPATH")),
 			fmt.Sprintf("-I=%s", projectPathAbs),
 			fmt.Sprintf("-I=%s", folderPathAbs),
 			fmt.Sprintf("-I=%s/vendor", projectPathAbs),
@@ -137,47 +140,4 @@ func exportProto(g *genny.Generator, folders []string, cFormat codegen.Construct
 		cmd3.Stderr = os.Stderr
 		g.Command(cmd3)
 	}
-}
-
-func collectProto(g *genny.Generator, folders []string) {
-	var (
-		files             []string
-		projectPathAbs, _ = filepath.Abs(".")
-		dstTempFolder     = "_exported-proto"
-	)
-
-	f, _ := Skeleton.Open("skel/proto/msg.proto")
-	g.File(genny.NewFile(filepath.Join(dstTempFolder, "msg.proto"), f))
-	fmt.Println("run in: ", projectPathAbs)
-	for _, folder := range folders {
-		files = files[:0]
-		_ = filepath.Walk(filepath.Join(".", folder), func(path string, info os.FileInfo, err error) error {
-			if info == nil || info.IsDir() {
-				return nil
-			}
-			if filepath.Ext(info.Name()) == ".proto" {
-				files = append(files, path)
-				cmd0 := exec.Command("mkdir", "-p", filepath.Join(dstTempFolder, filepath.Dir(path)))
-				cmd0.Dir = projectPathAbs
-				g.Command(cmd0)
-				cmd1 := exec.Command("cp", path, filepath.Join(dstTempFolder, filepath.Dir(path)))
-				cmd1.Dir = projectPathAbs
-				g.Command(cmd1)
-			}
-
-			return nil
-		})
-	}
-	cmd3 := exec.Command("tar", "-czf", fmt.Sprintf("proto.tar.gz"), dstTempFolder)
-	cmd3.Env = os.Environ()
-	cmd3.Dir = projectPathAbs
-	cmd3.Stderr = os.Stderr
-	g.Command(cmd3)
-	fmt.Println(cmd3.String())
-
-	cmd4 := exec.Command("rm", "-r", dstTempFolder)
-	cmd4.Dir = projectPathAbs
-	cmd4.Stderr = os.Stderr
-	g.Command(cmd4)
-	fmt.Println(cmd4.String())
 }
