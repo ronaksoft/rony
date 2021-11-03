@@ -396,7 +396,6 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	case TunnelMessage:
 		ctx.BufferPush(envelope)
 	}
-
 }
 
 // StartCluster is non-blocking function which runs the cluster component of the Edge server.

@@ -186,6 +186,7 @@ func (l *ronyLogger) addPrefix(in string) (out string) {
 		sb.WriteRune(' ')
 		sb.WriteString(in)
 		out = sb.String()
+
 		return out
 	}
 
@@ -220,6 +221,7 @@ func (l *ronyLogger) Check(lvl Level, msg string) *CheckedEntry {
 	if !l.checkLevel(lvl) {
 		return nil
 	}
+
 	return l.z.Check(lvl, l.addPrefix(msg))
 }
 

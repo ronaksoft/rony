@@ -39,6 +39,7 @@ func (s *syslogCore) With(fields []zapcore.Field) zapcore.Core {
 	for _, field := range fields {
 		field.AddTo(clone.encoder)
 	}
+
 	return clone
 }
 
@@ -46,6 +47,7 @@ func (s *syslogCore) Check(entry zapcore.Entry, checkedEntry *zapcore.CheckedEnt
 	if s.Enabled(entry.Level) {
 		return checkedEntry.AddCore(entry, s)
 	}
+
 	return checkedEntry
 }
 

@@ -65,7 +65,6 @@ func (c *Conn) WriteHeader(key, value string) {
 }
 
 func (c *Conn) MultiPart() (*multipart.Form, error) {
-
 	return nil, errors.New(errors.NotImplemented, "Multipart")
 }
 

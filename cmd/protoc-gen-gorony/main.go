@@ -68,7 +68,7 @@ func main() {
 func normalMode(plugin *protogen.Plugin) error {
 	protocVer := plugin.Request.GetCompilerVersion()
 	for _, protoFile := range plugin.Files {
-		if !protoFile.Generate || protoFile.Proto.GetPackage() == "google.protobuf" {
+		if !protoFile.Generate {
 			continue
 		}
 
@@ -250,9 +250,10 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 	}
 
 	gf := plugin.NewGeneratedFile(filepath.Join(filepath.Dir(filePrefix), "swagger.json"), importPath)
+
 	_, err = gf.Write(out)
 
-	return nil
+	return err
 }
 func addTag(swag *spec.Swagger, s codegen.ServiceArg) {
 	swag.Tags = append(
@@ -292,7 +293,6 @@ func addDefinition(swag *spec.Swagger, m codegen.MessageArg) {
 	}
 
 	swag.Definitions[m.Name()] = def
-
 }
 func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg) {
 	if swag.Paths == nil {
@@ -365,7 +365,6 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 		pathItem.Patch = op
 	}
 	swag.Paths.Paths[restPath] = pathItem
-
 }
 func setParamType(p *spec.Parameter, kind protoreflect.Kind) *spec.Parameter {
 	switch kind {

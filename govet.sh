@@ -16,4 +16,4 @@ mkdir -p "$GOPATH"/src/github.com/ronaksoft/rony
 cp ./*.proto "$GOPATH"/src/github.com/ronaksoft/rony
 
 
-#golangci-lint run
+golangci-lint run
