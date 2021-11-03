@@ -374,15 +374,19 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	conn := acquireHttpConn(g, reqCtx)
 	conn.SetClientIP(meta.clientIP)
 	conn.SetClientType(meta.clientType)
+	for k, v := range meta.kvs {
+		conn.Set(k, v)
+	}
 
 	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
 
-	g.ConnectHandler(conn, meta.kvs...)
-	releaseConnInfo(meta)
+	g.ConnectHandler(conn)
 
 	g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 
 	g.CloseHandler(conn)
+
+	releaseConnInfo(meta)
 	releaseHttpConn(conn)
 }
 
@@ -414,8 +418,11 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 
 		return
 	}
+	for k, v := range meta.kvs {
+		wsConn.Set(k, v)
+	}
 
-	g.ConnectHandler(wsConn, meta.kvs...)
+	g.ConnectHandler(wsConn)
 
 	err = wsConn.registerDesc()
 	if err != nil {

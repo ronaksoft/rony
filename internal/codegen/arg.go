@@ -537,13 +537,14 @@ func getRestArg(m *protogen.Method, arg *MethodArg) {
 
 	return
 }
+
 func getExtraCode(f *protogen.Field, fieldName, paramName string) (ec string) {
 	if string(f.Desc.Name()) != fieldName {
 		return
 	}
 
 	switch f.Desc.Kind() {
-	case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
+	case protoreflect.Int64Kind, protoreflect.Sfixed64Kind, protoreflect.Sint64Kind:
 		ec = fmt.Sprint(
 			"req.",
 			f.GoName, "= tools.StrToInt64(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
@@ -553,7 +554,7 @@ func getExtraCode(f *protogen.Field, fieldName, paramName string) (ec string) {
 			"req.",
 			f.GoName, "= tools.StrToUInt64(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
 		)
-	case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
+	case protoreflect.Int32Kind, protoreflect.Sfixed32Kind, protoreflect.Sint32Kind:
 		ec = fmt.Sprint(
 			"req.",
 			f.GoName, "= tools.StrToInt32(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",

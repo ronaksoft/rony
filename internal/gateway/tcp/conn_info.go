@@ -2,7 +2,6 @@ package tcpGateway
 
 import (
 	"bytes"
-	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"sync"
@@ -33,7 +32,7 @@ var (
 )
 
 type connInfo struct {
-	kvs        []*rony.KeyValue
+	kvs        map[string]string
 	clientIP   []byte
 	clientType []byte
 	upgrade    bool
@@ -41,15 +40,12 @@ type connInfo struct {
 
 func newConnInfo() *connInfo {
 	return &connInfo{
-		kvs: make([]*rony.KeyValue, 0, 8),
+		kvs: make(map[string]string, 8),
 	}
 }
 
 func (m *connInfo) AppendKV(key, value string) {
-	kv := rony.PoolKeyValue.Get()
-	kv.Key = key
-	kv.Value = value
-	m.kvs = append(m.kvs, kv)
+	m.kvs[key] = value
 }
 
 func (m *connInfo) SetClientIP(clientIP []byte, onlyNew bool) {
@@ -72,20 +68,28 @@ func acquireConnInfo(reqCtx *fasthttp.RequestCtx) *connInfo {
 	if !ok {
 		mt = newConnInfo()
 	}
-	reqCtx.Request.Header.VisitAll(func(key, value []byte) {
-		switch tools.B2S(key) {
-		case "Cf-Connecting-Ip":
-			mt.SetClientIP(value, false)
-		case "X-Forwarded-For", "X-Real-Ip", "Forwarded", "X-Forwarded":
-			mt.SetClientIP(value, true)
-		case "X-Client-Type":
-			mt.SetClientType(value)
-		default:
-			if !ignoredHeaders[tools.B2S(key)] {
-				mt.AppendKV(string(key), string(value))
+	reqCtx.Request.Header.VisitAll(
+		func(key, value []byte) {
+			switch tools.B2S(key) {
+			case "Cf-Connecting-Ip":
+				mt.SetClientIP(value, false)
+			case "X-Forwarded-For", "X-Real-Ip", "Forwarded", "X-Forwarded":
+				mt.SetClientIP(value, true)
+			case "X-Client-Type":
+				mt.SetClientType(value)
+			default:
+				if !ignoredHeaders[tools.B2S(key)] {
+					mt.AppendKV(string(key), string(value))
+				}
 			}
-		}
-	})
+		},
+	)
+	reqCtx.QueryArgs().VisitAll(
+		func(key, value []byte) {
+			mt.AppendKV(string(key), string(value))
+		},
+	)
+
 	mt.SetClientIP(tools.S2B(reqCtx.RemoteIP().To4().String()), true)
 
 	if reqCtx.Request.Header.ConnectionUpgrade() {
@@ -99,11 +103,10 @@ func acquireConnInfo(reqCtx *fasthttp.RequestCtx) *connInfo {
 }
 
 func releaseConnInfo(m *connInfo) {
-	for _, kv := range m.kvs {
-		rony.PoolKeyValue.Put(kv)
+	for k := range m.kvs {
+		delete(m.kvs, k)
 	}
 	m.upgrade = false
-	m.kvs = m.kvs[:0]
 	m.clientIP = m.clientIP[:0]
 	m.clientType = m.clientType[:0]
 	connInfoPool.Put(m)
