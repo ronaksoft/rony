@@ -320,19 +320,34 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 	}
 
 	for name, kind := range m.Rest.PathParams {
-		p := spec.PathParam(name).
-			AsRequired().
-			NoEmptyValues()
-		setParamType(p, kind)
-		op.AddParam(p)
+		op.AddParam(
+			setParamType(
+				spec.PathParam(name).
+					AsRequired().
+					NoEmptyValues(),
+				kind,
+			),
+		)
 	}
 
 	for name, kind := range m.Rest.QueryParams {
-		p := spec.QueryParam(name).
-			AsRequired().
-			NoEmptyValues()
-		setParamType(p, kind)
-		op.AddParam(p)
+		op.AddParam(
+			setParamType(
+				spec.QueryParam(name).
+					AsRequired().
+					NoEmptyValues(),
+				kind,
+			),
+		)
+	}
+
+	if m.Rest.Unmarshal {
+		op.AddParam(
+			spec.BodyParam(
+				m.Input.Name(),
+				spec.RefProperty(fmt.Sprintf("#/definitions/%s", m.Input.Name())),
+			),
+		)
 	}
 
 	restPath := replacePath(m.Rest.Path)
@@ -352,7 +367,7 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 	swag.Paths.Paths[restPath] = pathItem
 
 }
-func setParamType(p *spec.Parameter, kind protoreflect.Kind) {
+func setParamType(p *spec.Parameter, kind protoreflect.Kind) *spec.Parameter {
 	switch kind {
 	case protoreflect.StringKind:
 		p.Typed("string", kind.String())
@@ -369,7 +384,10 @@ func setParamType(p *spec.Parameter, kind protoreflect.Kind) {
 	default:
 		p.Typed("integer", kind.String())
 	}
+
+	return p
 }
+
 func replacePath(path string) string {
 	sb := strings.Builder{}
 	for idx, p := range strings.Split(path, "/") {
