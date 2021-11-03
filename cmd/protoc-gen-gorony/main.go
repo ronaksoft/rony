@@ -319,27 +319,19 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 			WithConsumes("application/protobuf")
 	}
 
-	for name, kind := range m.Rest.PathVars {
+	for name, kind := range m.Rest.PathParams {
 		p := spec.PathParam(name).
 			AsRequired().
 			NoEmptyValues()
-		switch kind {
-		case protoreflect.StringKind:
-			p.Typed("string", kind.String())
-		case protoreflect.BytesKind:
-			p.Typed("array", "int8")
-		case protoreflect.DoubleKind, protoreflect.FloatKind:
-			p.Typed("number", kind.String())
-		case protoreflect.Int32Kind, protoreflect.Sint32Kind,
-			protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-			p.Typed("integer", "int32")
-		case protoreflect.Int64Kind, protoreflect.Sint64Kind,
-			protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-			p.Typed("integer", "int64")
-		default:
-			p.Typed("integer", kind.String())
-		}
+		setParamType(p, kind)
+		op.AddParam(p)
+	}
 
+	for name, kind := range m.Rest.QueryParams {
+		p := spec.QueryParam(name).
+			AsRequired().
+			NoEmptyValues()
+		setParamType(p, kind)
 		op.AddParam(p)
 	}
 
@@ -359,6 +351,24 @@ func addOperation(swag *spec.Swagger, s codegen.ServiceArg, m codegen.MethodArg)
 	}
 	swag.Paths.Paths[restPath] = pathItem
 
+}
+func setParamType(p *spec.Parameter, kind protoreflect.Kind) {
+	switch kind {
+	case protoreflect.StringKind:
+		p.Typed("string", kind.String())
+	case protoreflect.BytesKind:
+		p.Typed("array", "int8")
+	case protoreflect.DoubleKind, protoreflect.FloatKind:
+		p.Typed("number", kind.String())
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind,
+		protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		p.Typed("integer", "int32")
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind,
+		protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		p.Typed("integer", "int64")
+	default:
+		p.Typed("integer", kind.String())
+	}
 }
 func replacePath(path string) string {
 	sb := strings.Builder{}

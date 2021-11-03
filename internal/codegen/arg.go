@@ -463,12 +463,13 @@ type MethodArg struct {
 }
 
 type RestArg struct {
-	Method    string
-	Path      string
-	Json      bool
-	Unmarshal bool
-	ExtraCode []string
-	PathVars  map[string]protoreflect.Kind
+	Method      string
+	Path        string
+	Json        bool
+	Unmarshal   bool
+	ExtraCode   []string
+	PathParams  map[string]protoreflect.Kind
+	QueryParams map[string]protoreflect.Kind
 }
 
 func getRestArg(m *protogen.Method, arg *MethodArg) {
@@ -483,86 +484,102 @@ func getRestArg(m *protogen.Method, arg *MethodArg) {
 	arg.Rest.Path = fmt.Sprintf("/%s", strings.Trim(restOpt.GetPath(), "/"))
 	arg.Rest.Json = restOpt.GetJsonEncode()
 
-	var pathVars []string
-	bindVars := map[string]string{}
+	var (
+		pathParams  []string
+		queryParams []string
+	)
+	bindParams := map[string]string{}
 	for _, pv := range strings.Split(arg.Rest.Path, "/") {
 		if !strings.HasPrefix(pv, ":") {
 			continue
 		}
-		pathVars = append(pathVars, strings.TrimLeft(pv, ":"))
+		pathParam := strings.TrimLeft(pv, ":")
+		pathParams = append(pathParams, pathParam)
+		bindParams[pathParam] = pathParam
 	}
 	for _, bv := range restOpt.GetBindPathParam() {
 		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
 		if len(parts) == 2 {
-			bindVars[parts[0]] = parts[1]
+			bindParams[parts[0]] = parts[1]
 		}
 	}
 	for _, bv := range restOpt.GetBindQueryParam() {
 		parts := strings.SplitN(strings.TrimSpace(bv), "=", 2)
 		if len(parts) == 2 {
-			bindVars[parts[0]] = parts[1]
+			bindParams[parts[0]] = parts[1]
+			queryParams = append(queryParams, strings.TrimSpace(parts[0]))
 		}
 	}
 
-	if len(arg.Input.Fields) > len(pathVars) {
+	if len(arg.Input.Fields) > len(bindParams) {
 		arg.Rest.Unmarshal = true
 	}
 
-	for _, pathVar := range pathVars {
-		varName := pathVar
-		if _, ok := bindVars[pathVar]; ok {
-			varName = bindVars[pathVar]
-		}
+	for _, paramName := range pathParams {
+		fieldName := bindParams[paramName]
 		for _, f := range m.Input.Fields {
-			if string(f.Desc.Name()) == varName {
-				var ec string
-
-				switch f.Desc.Kind() {
-				case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.StrToInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
-					)
-				case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.StrToUInt64(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
-					)
-				case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.StrToInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
-					)
-				case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.StrToUInt32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
-					)
-				case protoreflect.StringKind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.GetString(conn.Get(\"", pathVar, "\"), \"\")",
-					)
-				case protoreflect.BytesKind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.S2B(tools.GetString(conn.Get(\"", pathVar, "\"), \"\"))",
-					)
-				case protoreflect.DoubleKind:
-					ec = fmt.Sprint(
-						"req.",
-						f.GoName, "= tools.StrToFloat32(tools.GetString(conn.Get(\"", pathVar, "\"), \"0\"))",
-					)
-				default:
-					ec = ""
-				}
-
-				if ec != "" {
-					arg.Rest.ExtraCode = append(arg.Rest.ExtraCode, ec)
-					arg.Rest.PathVars[pathVar] = f.Desc.Kind()
-				}
+			if ec := getExtraCode(f, fieldName, paramName); ec != "" {
+				arg.Rest.ExtraCode = append(arg.Rest.ExtraCode, ec)
+				arg.Rest.PathParams[paramName] = f.Desc.Kind()
 			}
 		}
+	}
+
+	for _, paramName := range queryParams {
+		fieldName := bindParams[paramName]
+		for _, f := range m.Input.Fields {
+			if ec := getExtraCode(f, fieldName, paramName); ec != "" {
+				arg.Rest.ExtraCode = append(arg.Rest.ExtraCode, ec)
+				arg.Rest.QueryParams[paramName] = f.Desc.Kind()
+			}
+		}
+	}
+
+	return
+}
+func getExtraCode(f *protogen.Field, fieldName, paramName string) (ec string) {
+	if string(f.Desc.Name()) != fieldName {
+		return
+	}
+
+	switch f.Desc.Kind() {
+	case protoreflect.Int64Kind, protoreflect.Sfixed64Kind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.StrToInt64(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
+		)
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.StrToUInt64(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
+		)
+	case protoreflect.Int32Kind, protoreflect.Sfixed32Kind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.StrToInt32(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
+		)
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.StrToUInt32(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
+		)
+	case protoreflect.StringKind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.GetString(conn.Get(\"", paramName, "\"), \"\")",
+		)
+	case protoreflect.BytesKind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.S2B(tools.GetString(conn.Get(\"", paramName, "\"), \"\"))",
+		)
+	case protoreflect.DoubleKind:
+		ec = fmt.Sprint(
+			"req.",
+			f.GoName, "= tools.StrToFloat32(tools.GetString(conn.Get(\"", paramName, "\"), \"0\"))",
+		)
+	default:
+		ec = ""
 	}
 
 	return
@@ -606,10 +623,11 @@ func getMethodArg(s *protogen.Service, m *protogen.Method) MethodArg {
 	arg := MethodArg{
 		desc: m.Desc,
 		Rest: RestArg{
-			Method:   "",
-			Path:     "",
-			Json:     false,
-			PathVars: map[string]protoreflect.Kind{},
+			Method:      "",
+			Path:        "",
+			Json:        false,
+			PathParams:  map[string]protoreflect.Kind{},
+			QueryParams: map[string]protoreflect.Kind{},
 		},
 	}
 	arg.fullname = fmt.Sprintf("%s%s", s.Desc.Name(), m.Desc.Name())

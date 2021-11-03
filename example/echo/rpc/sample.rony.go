@@ -277,7 +277,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 			x := &EchoResponse{}
 			_ = x.Unmarshal(envelope.Message)
 			var b []byte
-			b, err = x.Marshal()
+			b, err = x.MarshalJSON()
 			if err != nil {
 				return
 			}
