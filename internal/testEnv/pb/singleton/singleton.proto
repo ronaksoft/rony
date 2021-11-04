@@ -12,7 +12,9 @@ enum Enum {
 
 
 message Single1 {
-    option (rony_singleton) = true;
+    option (rony_model) = {
+        singleton: true
+    };
     int32 ID = 1;
     int32 ShardKey = 2;
     string P1 = 3;
@@ -22,7 +24,9 @@ message Single1 {
 }
 
 message Single2 {
-    option (rony_singleton) = true;
+    option (rony_model) = {
+        singleton: true
+    };
     int64 ID = 1;
     int32 ShardKey = 2;
     string P1 = 3 ;

@@ -91,16 +91,22 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 
 	// Generate the aggregate description from proto options
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	arg.GlobalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyGlobalRepo).(string))
-	arg.LocalRepo = strings.ToLower(proto.GetExtension(opt, rony.E_RonyLocalRepo).(string))
-	arg.IsSingleton = proto.GetExtension(opt, rony.E_RonySingleton).(bool)
+	modelOpt := proto.GetExtension(opt, rony.E_RonyModel).(*rony.ModelOpt)
+	if modelOpt == nil {
+		return arg
+	}
+
+	arg.GlobalRepo = strings.ToLower(modelOpt.GetGlobalDatasource())
+	arg.LocalRepo = strings.ToLower(modelOpt.GetLocalDatasource())
+	arg.IsSingleton = modelOpt.GetSingleton()
+
 	if arg.IsSingleton {
 		// if message is going to be singleton then it could not be aggregate
 		return arg
 	}
 
 	// If there is no table defined then it is not an aggregate
-	if proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt) == nil {
+	if modelOpt.Table == nil {
 		return arg
 	}
 
@@ -112,8 +118,9 @@ func GetMessageArg(m *protogen.Message) MessageArg {
 
 func (ma *MessageArg) parsePrimaryKeyOpt(m *protogen.Message) {
 	opt, _ := m.Desc.Options().(*descriptorpb.MessageOptions)
-	tablePK := proto.GetExtension(opt, rony.E_RonyTable).(*rony.PrimaryKeyOpt)
-	viewPKs := proto.GetExtension(opt, rony.E_RonyView).([]*rony.PrimaryKeyOpt)
+	modelOpt := proto.GetExtension(opt, rony.E_RonyModel).(*rony.ModelOpt)
+	tablePK := modelOpt.Table
+	viewPKs := modelOpt.View
 
 	// Generate Go and CQL kinds of the fields
 	cqlTypes := map[string]string{}

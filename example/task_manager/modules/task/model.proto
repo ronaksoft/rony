@@ -5,9 +5,11 @@ option go_package = "github.com/ronaksoft/rony/example/task_manager/modules/task
 
 
 message Task {
-    option (rony_local_repo) = "store";
-    option (rony_table) = {
-        part_key: "ID"
+    option (rony_model) = {
+        local_datasource: "store"
+        table: {
+            part_key: "ID"
+        }
     };
     int64 ID = 1;
     string Title = 2;

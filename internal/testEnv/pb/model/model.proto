@@ -5,77 +5,83 @@ option go_package = "./;model";
 
 
 enum Enum {
-    None = 0;
-    Something = 1;
-    Else = 2;
+  None = 0;
+  Something = 1;
+  Else = 2;
 }
 
 
 message Model1 {
-    option (rony_local_repo) = "store";
-    option (rony_global_repo) = "cql";
-    option (rony_table) = {
-        part_key: "ID"
-        sort_key: "ShardKey"
-        sort_key: "Enum"
-    };
-    option (rony_view) = {
-        part_key: "Enum"
-        sort_key: "ShardKey"
-        sort_key: "ID"
-        alias: "CustomerSort"
-    };
-    int32 ID = 1;
-    int32 ShardKey = 2;
-    string P1 = 3 [(rony_index) = true];
-    repeated string P2 = 4 [(rony_index) = true];
-    uint64 P5 = 5;
-    Enum Enum = 7;
+  option (rony_model) = {
+    local_datasource: "store"
+    global_datasource: "cql"
+    table : {
+      part_key: "ID"
+      sort_key: "ShardKey"
+      sort_key: "Enum"
+    }
+    view: {
+      part_key: "Enum"
+      sort_key: "ShardKey"
+      sort_key: "ID"
+      alias: "CustomerSort"
+    }
+  };
+  int32 ID = 1;
+  int32 ShardKey = 2;
+  string P1 = 3 [(rony_index) = true];
+  repeated string P2 = 4 [(rony_index) = true];
+  uint64 P5 = 5;
+  Enum Enum = 7;
 }
 
 message Model2 {
-    option (rony_local_repo) = "store";
-    option (rony_global_repo) = "cql";
-    option (rony_table) = {
-        part_key: "ID"
-        part_key: "ShardKey"
-        sort_key: "-P1"
-    };
-    option (rony_view) = {
-        part_key: "P1"
-        sort_key: "ShardKey"
-        sort_key: "ID"
-    };
-    int64 ID = 1;
-    int32 ShardKey = 2;
-    string P1 = 3;
-    repeated string P2 = 4;
-    uint64 P5 = 5;
+  option (rony_model) = {
+    local_datasource: "store"
+    global_datasource: "cql"
+    table : {
+      part_key: "ID"
+      part_key: "ShardKey"
+      sort_key: "-P1"
+    }
+    view: {
+      part_key: "P1"
+      sort_key: "ShardKey"
+      sort_key: "ID"
+    }
+  };
+  int64 ID = 1;
+  int32 ShardKey = 2;
+  string P1 = 3;
+  repeated string P2 = 4;
+  uint64 P5 = 5;
 }
 
 message Model3 {
-    option (rony_local_repo) = "store";
-    option (rony_global_repo) = "cql";
-    option (rony_table) = {
-        part_key: "ID"
-        part_key: "ShardKey"
-        sort_key: "-P1"
-    };
-    option (rony_view) = {
-        part_key: "P1"
-        sort_key: "ShardKey"
-        sort_key: "ID"
-    };
-    option (rony_view) = {
-        part_key: "P1"
-        sort_key: "ID"
-        sort_key: "ShardKey"
-    };
-    int64 ID = 1;
-    int32 ShardKey = 2;
-    bytes P1 = 3;
-    repeated string P2 = 4;
-    repeated bytes P5 = 5 [(rony_index) = true];
+  option (rony_model) = {
+    local_datasource : "store"
+    global_datasource : "cql"
+    table : {
+      part_key: "ID"
+      part_key: "ShardKey"
+      sort_key: "-P1"
+    }
+    view: {
+      part_key: "P1"
+      sort_key: "ShardKey"
+      sort_key: "ID"
+    }
+    view: {
+      part_key: "P1"
+      sort_key: "ID"
+      sort_key: "ShardKey"
+    }
+  };
+  int64 ID = 1;
+  int32 ShardKey = 2;
+  bytes P1 = 3;
+  repeated string P2 = 4;
+  repeated bytes P5 = 5 [(rony_index) = true];
 }
 
 

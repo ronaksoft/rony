@@ -20,6 +20,27 @@ message RestOpt {
   optional bool json_encode = 5;
 }
 
+message ModelOpt {
+  // singleton marks this model as a singleton.
+  optional bool singleton = 1;
+  // global_datasource generates the code for remote repository
+  // POSSIBLE VALUES: store, cql, sql
+  optional string global_datasource = 2;
+  // local_datasource generates the code for local repository
+  // POSSIBLE VALUES: store, cql, sql
+  optional string local_datasource = 3;
+  // table a virtual table presentation to hold instances of this message, like rows in a table
+  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+  optional PrimaryKeyOpt table = 4;
+  // view creates a materialized view of the aggregate based on the primary key.
+  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
+  // NOTE: The primary key of the view must contains all the primary key items of the table. They don't need to
+  //           follow the same order as table. for example the following is correct:
+  //                  table = ((a, b), c)
+  //                  view = ((c, a),  d, b)
+  repeated PrimaryKeyOpt view = 5;
+
+}
 // PrimaryKeyOpt is the container for aggregate primary key settings. It is going to replace old
 // rony_aggregate_table & rony_aggregate_view options.
 message PrimaryKeyOpt {
@@ -49,26 +70,8 @@ extend google.protobuf.MethodOptions {
 }
 
 extend google.protobuf.MessageOptions {
-  // rony_local_repo generates the code for local repository
-  // POSSIBLE VALUES: store, cql, sql
-  optional string rony_local_repo = 50001;
-  // rony_global_repo generates the code for remote repository
-  // POSSIBLE VALUES: store, cql, sql
-  optional string rony_global_repo = 50002;
-  // rony_singleton marks this message as a singleton.
-  // NOTE: a message could either have 'rony_aggregate' ro 'rony_singleton' options at a same time. Setting both
-  // cause unpredictable results.
-  optional bool rony_singleton = 50003;
-  // rony_table creates a virtual table presentation to hold instances of this message, like rows in a table
-  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
-  optional PrimaryKeyOpt rony_table = 50024;
-  // rony_view creates a materialized view of the aggregate based on the primary key.
-  // PRIMARY KEY FORMAT: ( (partitionKey1, partitionKey2, ...), clusteringKey1, clusteringKey2, ...)
-  // NOTE: The primary key of the view must contains all the primary key items of the table. They don't need to
-  //           follow the same order as table. for example the following is correct:
-  //                  rony_aggregate_table = ((a, b), c)
-  //                  rony_aggregate_view = ((c, a),  d, b)
-  repeated PrimaryKeyOpt rony_view = 50025;
+  optional ModelOpt rony_model = 50001;
+  optional bool rony_json_unwrap = 50031;
 }
 
 extend google.protobuf.FieldOptions {

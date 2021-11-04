@@ -33,14 +33,16 @@ message EdgeNode {
 
 // Page
 message Page {
-    option (rony_table) = {
-        part_key: "ID"
+    option (rony_model) = {
+        local_datasource: "store"
+        table: {
+            part_key: "ID"
+        }
+        view: {
+            part_key: "ReplicaSet"
+            sort_key: "ID"
+        }
     };
-    option (rony_view) = {
-        part_key: "ReplicaSet"
-        sort_key: "ID"
-    };
-    option (rony_local_repo) = "store";
     uint32 ID = 1;
     uint64 ReplicaSet = 2;
 }
