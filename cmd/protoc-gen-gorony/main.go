@@ -238,8 +238,8 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 					continue
 				}
 				addOperation(swag, s, m)
-				addDefinition(swag, m.Input)
-				addDefinition(swag, m.Output)
+				addDefinition(swag, m.Input, m.Rest.Json)
+				addDefinition(swag, m.Output, m.Rest.Json)
 			}
 		}
 	}
@@ -261,7 +261,7 @@ func addTag(swag *spec.Swagger, s codegen.ServiceArg) {
 		spec.NewTag(s.Name(), s.Comments, nil),
 	)
 }
-func addDefinition(swag *spec.Swagger, m codegen.MessageArg) {
+func addDefinition(swag *spec.Swagger, m codegen.MessageArg, jsonEncode bool) {
 	if swag.Definitions == nil {
 		swag.Definitions = map[string]spec.Schema{}
 	}
@@ -270,25 +270,29 @@ func addDefinition(swag *spec.Swagger, m codegen.MessageArg) {
 	def.Description = m.Comments
 	def.Typed("object", "")
 	for _, f := range m.Fields {
+		fName := f.DescName()
+		if jsonEncode {
+			fName = f.JSONName()
+		}
 		switch f.GoKind {
 		case "string":
-			def.SetProperty(f.Name(), *spec.StringProperty())
+			def.SetProperty(fName, *spec.StringProperty())
 		case "[]byte":
-			def.SetProperty(f.Name(), *spec.ArrayProperty(spec.Int8Property()))
+			def.SetProperty(fName, *spec.ArrayProperty(spec.Int8Property()))
 		case "int8", "uint8":
-			def.SetProperty(f.Name(), *spec.Int8Property())
+			def.SetProperty(fName, *spec.Int8Property())
 		case "int16", "uint16":
-			def.SetProperty(f.Name(), *spec.Int16Property())
+			def.SetProperty(fName, *spec.Int16Property())
 		case "int32", "uint32":
-			def.SetProperty(f.Name(), *spec.Int32Property())
+			def.SetProperty(fName, *spec.Int32Property())
 		case "int64", "uint64":
-			def.SetProperty(f.Name(), *spec.Int64Property())
+			def.SetProperty(fName, *spec.Int64Property())
 		case "float32":
-			def.SetProperty(f.Name(), *spec.Float32Property())
+			def.SetProperty(fName, *spec.Float32Property())
 		case "float64":
-			def.SetProperty(f.Name(), *spec.Float64Property())
+			def.SetProperty(fName, *spec.Float64Property())
 		default:
-			def.SetProperty(f.Name(), *spec.StringProperty())
+			def.SetProperty(fName, *spec.StringProperty())
 		}
 	}
 

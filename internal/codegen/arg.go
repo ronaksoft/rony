@@ -344,6 +344,14 @@ func (fa FieldArg) NameSC() string {
 	return tools.ToSnake(fa.name)
 }
 
+func (fa FieldArg) JSONName() string {
+	return fa.desc.JSONName()
+}
+
+func (fa FieldArg) DescName() string {
+	return string(fa.desc.Name())
+}
+
 func (fa FieldArg) Type() string {
 	if fa.desc.Message() != nil {
 		return string(fa.desc.Message().Name())
