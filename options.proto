@@ -51,12 +51,14 @@ message PrimaryKeyOpt {
   optional string alias = 4;
 }
 
-extend google.protobuf.ServiceOptions {
-  // rony_cobra_cmd generates the boiler plate code for client stub of rpc methods, using cobra package.
-  optional bool rony_cobra_cmd = 50001;
-  // rony_cobra_cmd_protocol defines what protocol should client use to communicate with server.
+message CliOpt {
+  // protocol defines what protocol should client use to communicate with server.
   // POSSIBLE VALUES: "ws", "http"
-  optional string rony_cobra_cmd_protocol = 50002;
+  optional string protocol = 1;
+}
+extend google.protobuf.ServiceOptions {
+  // rony_cli generates the boiler plate code for client stub of rpc methods.
+  optional CliOpt rony_cli = 50001;
   // rony_no_client if is set then no client code will be generated. This flag is for internal usage.
   // DO NOT USE IT.
   optional bool rony_no_client = 50003;

@@ -6,7 +6,7 @@ option go_package = "github.com/ronaksoft/rony/example/task_manager/modules/task
 
 // TaskManager
 service TaskManager {
-    option (rony_cobra_cmd) = true;
+    option (rony_cli) = {};
     rpc Create(CreateRequest) returns (TaskView);
     rpc Get(GetRequest) returns (TaskView);
     rpc Delete(DeleteRequest) returns (Bool);

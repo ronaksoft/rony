@@ -45,7 +45,8 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
 				}
-				if proto.GetExtension(arg.Options(), rony.E_RonyCobraCmd).(bool) {
+				cliOpt := proto.GetExtension(arg.Options(), rony.E_RonyCli).(*rony.CliOpt)
+				if cliOpt != nil {
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/spf13/cobra"})
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/config"})
 					g.P(codegen.ExecTemplate(template.Must(template.New("genCobraCmd").Parse(genCobraCmd)), arg))

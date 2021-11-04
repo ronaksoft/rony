@@ -5,7 +5,7 @@ option go_package = "github.com/ronaksoft/rony/example/task_manager/modules/auth
 
 // Auth
 service Auth {
-    option (rony_cobra_cmd) = true;
+    option (rony_cli) = {};
     rpc Register(RegisterRequest) returns (Authorization);
     rpc Login(LoginRequest) returns (Authorization);
 }
