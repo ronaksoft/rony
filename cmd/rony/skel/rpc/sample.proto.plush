@@ -6,7 +6,7 @@ option go_package = "<%= packagePath() %>/rpc";
 
 // Sample
 service Sample {
-    option (rony_cobra_cmd) = true;
+    option (rony_cli) = {};
     rpc Echo(EchoRequest) returns (EchoResponse);
 }
 
