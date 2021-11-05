@@ -48,7 +48,7 @@ func TestWithTestGateway(t *testing.T) {
 				Timestamp: 123,
 			}).
 			ErrorHandler(func(constructor uint64, e *rony.Error) {
-				c.Println(registry.ConstructorName(constructor), "-->", e.Code, e.Items, e.Description)
+				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
 			}).
 			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
 				x := &service.EchoResponse{}

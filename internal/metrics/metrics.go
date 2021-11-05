@@ -70,7 +70,7 @@ func IncCounter(name string) {
 	_Prom.Counter(name).Inc()
 }
 
-func InCounterVec(name string, labelValues ...string) {
+func IncCounterVec(name string, labelValues ...string) {
 	if _Prom == nil {
 		return
 	}

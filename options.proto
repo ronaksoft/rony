@@ -20,11 +20,12 @@ message RestOpt {
   optional bool json_encode = 5;
 }
 
+// ModelOpt holds all the information if you want to create a model from your proto message.
 message ModelOpt {
   // singleton marks this model as a singleton.
   optional bool singleton = 1;
   // global_datasource generates the code for remote repository
-  // POSSIBLE VALUES: store, cql, sql
+  // POSSIBLE VALUES: cql, sql
   optional string global_datasource = 2;
   // local_datasource generates the code for local repository
   // POSSIBLE VALUES: store, cql, sql
@@ -41,6 +42,7 @@ message ModelOpt {
   repeated PrimaryKeyOpt view = 5;
 
 }
+
 // PrimaryKeyOpt is the container for aggregate primary key settings. It is going to replace old
 // rony_aggregate_table & rony_aggregate_view options.
 message PrimaryKeyOpt {
@@ -56,6 +58,7 @@ message CliOpt {
   // POSSIBLE VALUES: "ws", "http"
   optional string protocol = 1;
 }
+
 extend google.protobuf.ServiceOptions {
   // rony_cli generates the boiler plate code for client stub of rpc methods.
   optional CliOpt rony_cli = 50001;
@@ -73,7 +76,7 @@ extend google.protobuf.MethodOptions {
 
 extend google.protobuf.MessageOptions {
   optional ModelOpt rony_model = 50001;
-  optional bool rony_json_unwrap = 50031;
+  optional bool rony_is_envelope = 50031;
 }
 
 extend google.protobuf.FieldOptions {

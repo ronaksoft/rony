@@ -26,7 +26,7 @@ var ClientCmd = &cobra.Command{
 		wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 			SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
 			Handler: func(m *rony.MessageEnvelope) {
-				fmt.Println(m.RequestID, registry.ConstructorName(m.Constructor))
+				fmt.Println(m.RequestID, registry.C(m.Constructor))
 			},
 		})
 

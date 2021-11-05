@@ -276,6 +276,15 @@ func (ma MessageArg) With(f *protogen.File) MessageArg {
 	return ma
 }
 
+func (ma MessageArg) IsEnvelope() bool {
+	opt := ma.Options()
+	if opt == nil {
+		return false
+	}
+
+	return proto.GetExtension(opt, rony.E_RonyIsEnvelope).(bool)
+}
+
 func (ma MessageArg) Options() *descriptorpb.MessageOptions {
 	opt, _ := ma.desc.Desc.Options().(*descriptorpb.MessageOptions)
 

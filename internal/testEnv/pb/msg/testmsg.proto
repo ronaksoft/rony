@@ -1,0 +1,22 @@
+syntax = "proto3";
+package testmsg;
+option go_package = "./;testmsg";
+import "options.proto";
+
+message Envelope1 {
+  string e1 = 1;
+  Embed1 embed1 = 2;
+}
+
+message Envelope2 {
+  option (rony_is_envelope) = true;
+  uint64 constructor = 1;
+  bytes message = 2;
+}
+
+message Embed1 {
+  string f1 = 1;
+}
+message Embed2 {
+  string f2 = 2;
+}

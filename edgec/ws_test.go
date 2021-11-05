@@ -53,7 +53,7 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 				Handler: func(m *rony.MessageEnvelope) {
-					c.Println("Received Uncaught Message", registry.ConstructorName(m.Constructor))
+					c.Println("Received Uncaught Message", registry.C(m.Constructor))
 				},
 			})
 			clnt := service.NewSampleClient(wsc)

@@ -249,7 +249,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			zap.String("ServerID", edge.GetServerID()),
 			zap.String("Kind", requestCtx.Kind().String()),
 			zap.Uint64("ReqID", in.GetRequestID()),
-			zap.String("C", registry.ConstructorName(in.GetConstructor())),
+			zap.String("C", registry.C(in.GetConstructor())),
 			zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
 		)
 	}
@@ -269,7 +269,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	if r := recover(); r != nil {
 		edge.logger.Error("Panic Recovered",
-			zap.String("C", registry.ConstructorName(in.Constructor)),
+			zap.String("C", registry.C(in.Constructor)),
 			zap.Uint64("ReqID", in.RequestID),
 			zap.Uint64("ConnID", ctx.ConnID()),
 			zap.Any("Error", r),
