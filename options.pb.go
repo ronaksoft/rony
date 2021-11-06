@@ -110,6 +110,7 @@ func (x *RestOpt) GetJsonEncode() bool {
 	return false
 }
 
+// ModelOpt holds all the information if you want to create a model from your proto message.
 type ModelOpt struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -118,7 +119,7 @@ type ModelOpt struct {
 	// singleton marks this model as a singleton.
 	Singleton *bool `protobuf:"varint,1,opt,name=singleton" json:"singleton,omitempty"`
 	// global_datasource generates the code for remote repository
-	// POSSIBLE VALUES: store, cql, sql
+	// POSSIBLE VALUES: cql, sql
 	GlobalDatasource *string `protobuf:"bytes,2,opt,name=global_datasource,json=globalDatasource" json:"global_datasource,omitempty"`
 	// local_datasource generates the code for local repository
 	// POSSIBLE VALUES: store, cql, sql

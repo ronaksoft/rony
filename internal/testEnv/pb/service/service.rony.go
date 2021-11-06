@@ -1002,9 +1002,11 @@ func TunnelRequestSampleEchoDelay(
 
 func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCtx) error {
 	req := &EchoRequest{}
-	err := req.UnmarshalJSON(conn.Body())
-	if err != nil {
-		return err
+	if len(conn.Body()) > 0 {
+		err := req.UnmarshalJSON(conn.Body())
+		if err != nil {
+			return err
+		}
 	}
 	req.ReplicaSet = tools.StrToUInt64(tools.GetString(conn.Get("replica_set"), "0"))
 

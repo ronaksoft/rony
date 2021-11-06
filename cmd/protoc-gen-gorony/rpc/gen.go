@@ -70,13 +70,18 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	
 	{{- if .Rest.Unmarshal }}
 	{{- if .Rest.Json }}
-		err := req.UnmarshalJSON(conn.Body())
+		if len(conn.Body()) > 0 {
+			err := req.UnmarshalJSON(conn.Body())
+			if err != nil {
+				return err 
+			}
+		}
 	{{- else }}
 		err := req.Unmarshal(conn.Body())
-	{{- end }}
 		if err != nil {
 			return err 
 		}
+	{{- end }}
 	{{- end }}
 
 	{{- range .Rest.ExtraCode }}
