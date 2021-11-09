@@ -46,6 +46,13 @@ var ServerCmd = &cobra.Command{
 			}),
 		)
 
+    	// Register the implemented service into the edge server
+		// rpc.RegisterSampleService(&rpc.SampleService{}, edgeServer)
+
+		// Start the edge server components
+		edgeServer.Start()
+
+        // Join the cluster if is set in config
 		if !c.GetBootstrap() && c.GetGossipSeedHostPort() != "" {
             _, err = edgeServer.Cluster().Join(c.GetGossipSeedHostPort())
             if err != nil {
@@ -53,12 +60,6 @@ var ServerCmd = &cobra.Command{
             }
         }
 
-
-		// Register the implemented service into the edge server
-		// rpc.RegisterSampleService(&rpc.SampleService{}, edgeServer)
-
-		// Start the edge server components
-		edgeServer.Start()
 
 		// Wait until a shutdown signal received.
 		return edgeServer.ShutdownWithSignal(os.Kill, os.Interrupt)
