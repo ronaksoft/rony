@@ -57,7 +57,6 @@ func NewServer(serverID string, opts ...Option) *Server {
 	})
 
 	edgeServer := &Server{
-		dataDir:    "./_hdd",
 		handlers:   make(map[uint64]*HandlerOption),
 		serverID:   []byte(serverID),
 		dispatcher: &defaultDispatcher{},
@@ -66,6 +65,10 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	for _, opt := range opts {
 		opt(edgeServer)
+	}
+
+	if edgeServer.dataDir == "" {
+		edgeServer.inMemoryStore = true
 	}
 
 	if edgeServer.store == nil {
