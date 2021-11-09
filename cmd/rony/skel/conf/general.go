@@ -11,11 +11,17 @@ const (
 	IdleTime                 = "idle-time"
 	ReplicaSet               = "replica-set"
 	GossipPort               = "gossip.port"
+	GossipSeedHostPort       = "gossip.seed.hostport"
 	DataPath                 = "data.path"
 	Bootstrap                = "bootstrap"
 	Host                     = "host"
 	Port                     = "post"
+	Config                   = "config"
 )
+
+func GetConfig() string {
+	return globalC.GetString(Config)
+}
 
 func GetReplicaSet() uint64 {
 	return globalC.GetUint64(ReplicaSet)
@@ -47,6 +53,10 @@ func GetServerID() string {
 
 func GetGossipPort() int {
 	return globalC.GetInt(GossipPort)
+}
+
+func GetGossipSeedHostPort() string {
+	return globalC.GetString(GossipSeedHostPort)
 }
 
 func GetDataPath() string {

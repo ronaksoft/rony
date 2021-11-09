@@ -18,6 +18,13 @@ var ServerCmd = &cobra.Command{
 			return err
 		}
 
+		wd, _ := os.Getwd()
+        err = c.Conf().ReadFile(c.GetConfig(), wd)
+        if err != nil {
+            cmd.Println("could not read from config file: ", err)
+        }
+
+
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
 			c.GetServerID(),
@@ -38,6 +45,14 @@ var ServerCmd = &cobra.Command{
 				ExternalAddrs: c.GetTunnelAdvertiseHostPort(),
 			}),
 		)
+
+		if !c.GetBootstrap() && c.GetGossipSeedHostPort() != "" {
+            _, err = edgeServer.Cluster().Join(c.GetGossipSeedHostPort())
+            if err != nil {
+                cmd.Println("could not join gossip cluster")
+            }
+        }
+
 
 		// Register the implemented service into the edge server
 		// rpc.RegisterSampleService(&rpc.SampleService{}, edgeServer)
