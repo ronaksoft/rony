@@ -1,4 +1,4 @@
-package pools_test
+package gopool_test
 
 /*
    Creation Time: 2020 - Dec - 29

@@ -8,7 +8,7 @@ import (
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/internal/tunnel"
 	"github.com/ronaksoft/rony/log"
-	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/pools/gopool"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 	"net"
@@ -170,7 +170,7 @@ func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Actio
 	}
 
 	conn := newConn(t.nextID(), c)
-	pools.Go(func() {
+	gopool.Go(func() {
 		metrics.IncCounter(metrics.CntTunnelIncomingMessage)
 		t.MessageHandler(conn, req)
 		msg.PoolTunnelMessage.Put(req)

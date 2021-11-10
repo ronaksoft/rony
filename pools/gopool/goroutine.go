@@ -1,4 +1,4 @@
-package pools
+package gopool
 
 import (
 	"github.com/panjf2000/ants/v2"

@@ -99,3 +99,4 @@ func (x *Error) Expand() (string, string) {
 func (x *Error) ToEnvelope(me *MessageEnvelope) {
 	// me.Fill(me.RequestID, C_Error, x)
 }
+
