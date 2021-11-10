@@ -11,14 +11,12 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-openapi/spec v0.20.4
 	github.com/gobuffalo/genny/v2 v2.0.6
-	github.com/gobuffalo/here v0.6.2 // indirect
 	github.com/gobuffalo/plush/v4 v4.1.6
 	github.com/gobwas/pool v0.2.1
-	github.com/gobwas/ws v1.0.3
+	github.com/gobwas/ws v1.1.0
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
-	github.com/markbates/pkger v0.17.1
 	github.com/nyaruka/phonenumbers v1.0.70
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
@@ -36,7 +34,7 @@ require (
 	go.uber.org/dig v1.13.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1
-	gorm.io/gorm v1.21.15
+	gorm.io/gorm v1.22.2
 )
 
 require (
@@ -61,7 +59,7 @@ require (
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/tags/v3 v3.0.2 // indirect
 	github.com/gobuffalo/validate/v3 v3.0.0 // indirect
-	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
+	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gocql/gocql v0.0.0-20200131111108-92af2e088537 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -119,13 +117,11 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211008194852-3b03d305991f // indirect
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.7 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
