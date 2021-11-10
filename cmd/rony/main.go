@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+
 	"github.com/ronaksoft/rony/cmd/rony/cmd"
 )
 

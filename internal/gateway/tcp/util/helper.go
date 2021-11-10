@@ -2,10 +2,11 @@ package wsutil
 
 import (
 	"bytes"
-	"github.com/gobwas/ws"
-	"github.com/ronaksoft/rony/pools"
 	"io"
 	"io/ioutil"
+
+	"github.com/gobwas/ws"
+	"github.com/ronaksoft/rony/pools"
 )
 
 // Message represents a message from peer, that could be presented in one or

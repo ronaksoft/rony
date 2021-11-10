@@ -1,11 +1,12 @@
 package log_test
 
 import (
+	"testing"
+
 	"github.com/ronaksoft/rony/di"
 	"github.com/ronaksoft/rony/log"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestLog(t *testing.T) {

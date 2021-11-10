@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
@@ -8,7 +10,6 @@ import (
 	"github.com/ronaksoft/rony/example/task_manager/modules/task"
 	"github.com/ronaksoft/rony/example/task_manager/rpc"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var edgeServer *edge.Server

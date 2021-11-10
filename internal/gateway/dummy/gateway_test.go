@@ -1,13 +1,14 @@
 package dummyGateway_test
 
 import (
+	"sync"
+	"sync/atomic"
+	"testing"
+
 	"github.com/ronaksoft/rony"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
-	"sync"
-	"sync/atomic"
-	"testing"
 )
 
 /*

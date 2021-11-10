@@ -1,9 +1,10 @@
 package cors
 
 import (
-	"github.com/valyala/fasthttp"
 	"net/http"
 	"strings"
+
+	"github.com/valyala/fasthttp"
 )
 
 /*

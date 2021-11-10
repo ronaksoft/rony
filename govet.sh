@@ -7,7 +7,10 @@ go generate ./... || exit
 go vet ./... || exit
 
 # Format the code
-go fmt ./... || exit
+dirs=$(go list -f {{.Dir}} ./...)
+for d in $dirs; do goimports -w $d/*.go; done
+
+#go fmt ./... || exit
 
 go install ./cmd/protoc-gen-gorony
 go install ./cmd/rony

@@ -1,11 +1,12 @@
 package tools_test
 
 import (
+	"testing"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
-	"testing"
 )
 
 /*

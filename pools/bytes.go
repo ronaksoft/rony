@@ -1,9 +1,10 @@
 package pools
 
 import (
-	"google.golang.org/protobuf/proto"
 	"io"
 	"sync"
+
+	"google.golang.org/protobuf/proto"
 )
 
 /*

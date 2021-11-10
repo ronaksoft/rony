@@ -2,16 +2,17 @@ package gossipCluster
 
 import (
 	"fmt"
+	"hash/crc64"
+	"io/ioutil"
+	"sync"
+	"time"
+
 	"github.com/ronaksoft/memberlist"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/msg"
 	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-	"hash/crc64"
-	"io/ioutil"
-	"sync"
-	"time"
 )
 
 /*

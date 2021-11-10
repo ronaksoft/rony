@@ -1,7 +1,7 @@
 package task
 
 import (
-	store "github.com/ronaksoft/rony/store"
+	"github.com/ronaksoft/rony/store"
 )
 
 type ModuleBase struct {

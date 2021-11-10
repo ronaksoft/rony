@@ -2,6 +2,12 @@ package edge
 
 import (
 	"bufio"
+	"net/http"
+	"os"
+	"os/signal"
+	"runtime/debug"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -12,11 +18,6 @@ import (
 	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"os/signal"
-	"runtime/debug"
-	"time"
 )
 
 /*

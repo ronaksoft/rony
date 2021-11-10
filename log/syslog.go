@@ -1,9 +1,10 @@
 package log
 
 import (
+	"log/syslog"
+
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
-	"log/syslog"
 )
 
 type syslogCore struct {

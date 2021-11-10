@@ -2,6 +2,9 @@ package edge_test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
@@ -14,8 +17,6 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/encoding/protojson"
-	"testing"
-	"time"
 )
 
 /*

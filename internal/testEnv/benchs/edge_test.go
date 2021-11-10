@@ -2,6 +2,11 @@ package benchs_test
 
 import (
 	"flag"
+	"os"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgec"
@@ -11,10 +16,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"sync/atomic"
-	"testing"
-	"time"
 )
 
 /*

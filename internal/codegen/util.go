@@ -1,11 +1,12 @@
 package codegen
 
 import (
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"hash/crc32"
 	"hash/crc64"
 	"strings"
 	"text/template"
+
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*

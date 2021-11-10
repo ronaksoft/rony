@@ -1,12 +1,13 @@
 package rony_test
 
 import (
+	"sync"
+	"testing"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
-	"sync"
-	"testing"
 )
 
 /*

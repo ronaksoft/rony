@@ -2,8 +2,9 @@ package wsutil
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/pools"
 	"io"
+
+	"github.com/ronaksoft/rony/pools"
 
 	"github.com/gobwas/pool"
 	"github.com/gobwas/ws"

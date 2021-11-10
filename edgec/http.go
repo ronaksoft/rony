@@ -1,14 +1,15 @@
 package edgec
 
 import (
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 /*

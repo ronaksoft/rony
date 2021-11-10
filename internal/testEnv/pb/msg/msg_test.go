@@ -1,9 +1,10 @@
 package testmsg_test
 
 import (
+	"testing"
+
 	testmsg "github.com/ronaksoft/rony/internal/testEnv/pb/msg"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestMsg(t *testing.T) {

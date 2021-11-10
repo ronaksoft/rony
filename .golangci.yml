@@ -16,7 +16,7 @@ linters:
     - gocognit
     - funlen
     - gofumpt
-    - goimports
+#    - goimports
     - godot
     - gci
     - gocyclo

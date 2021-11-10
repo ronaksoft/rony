@@ -2,11 +2,12 @@ package repo
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/cql"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo/store"
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
-	"strings"
 )
 
 /*

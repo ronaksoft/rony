@@ -1,10 +1,11 @@
 package tools_test
 
 import (
-	"github.com/ronaksoft/rony/tools"
-	. "github.com/smartystreets/goconvey/convey"
 	"sync"
 	"testing"
+
+	"github.com/ronaksoft/rony/tools"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 /*

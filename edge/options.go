@@ -1,6 +1,9 @@
 package edge
 
 import (
+	"runtime"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
@@ -12,8 +15,6 @@ import (
 	"github.com/ronaksoft/rony/log"
 	"github.com/scylladb/gocqlx/v2"
 	"gorm.io/gorm"
-	"runtime"
-	"time"
 )
 
 /*

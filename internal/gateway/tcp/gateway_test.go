@@ -3,6 +3,10 @@ package tcpGateway_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"testing"
+	"time"
+
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
@@ -12,9 +16,6 @@ import (
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/valyala/fasthttp"
-	"net/http"
-	"testing"
-	"time"
 )
 
 /*

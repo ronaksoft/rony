@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 func main() {

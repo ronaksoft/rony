@@ -1,10 +1,11 @@
 package gossipCluster
 
 import (
+	"hash/crc64"
+
 	"github.com/ronaksoft/rony/internal/msg"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-	"hash/crc64"
 )
 
 /*

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
@@ -10,7 +12,6 @@ import (
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools/cliutil"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (

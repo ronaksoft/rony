@@ -1,15 +1,16 @@
 package main
 
 import (
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/example/redirect/rpc"
 	"github.com/spf13/cobra"
-	"os"
-	"runtime"
-	"time"
 )
 
 var edgeServer *edge.Server

@@ -2,6 +2,11 @@ package edgec_test
 
 import (
 	"flag"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edgec"
 	"github.com/ronaksoft/rony/internal/testEnv"
@@ -10,10 +15,6 @@ import (
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
 
 /*

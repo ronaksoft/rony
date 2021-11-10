@@ -2,9 +2,10 @@ package phoneutil
 
 import (
 	"fmt"
-	"github.com/nyaruka/phonenumbers"
 	"regexp"
 	"strings"
+
+	"github.com/nyaruka/phonenumbers"
 )
 
 /*

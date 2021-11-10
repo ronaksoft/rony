@@ -5,6 +5,9 @@ package tcpGateway
 
 import (
 	"encoding/binary"
+	"sync"
+	"time"
+
 	"github.com/allegro/bigcache/v2"
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
@@ -14,8 +17,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 
 	"net"
 	"sync/atomic"

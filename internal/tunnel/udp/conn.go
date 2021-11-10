@@ -1,9 +1,10 @@
 package udpTunnel
 
 import (
+	"sync"
+
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony/internal/metrics"
-	"sync"
 )
 
 /*

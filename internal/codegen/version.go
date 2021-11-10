@@ -3,6 +3,6 @@ package codegen
 // This is auto-generated code; DO NOT EDIT.
 
 var (
-	Commit  = "2d8511951b962cc063974a06790b927e8d3c3e73"
+	Commit  = "879b35cb8191cea668eb220cdcc2a56e193d7863"
 	Version = "v0.15.1"
 )

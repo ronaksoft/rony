@@ -3,6 +3,10 @@ package udpTunnel
 import (
 	"context"
 	"fmt"
+	"net"
+	"sync/atomic"
+	"time"
+
 	"github.com/panjf2000/gnet"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/internal/msg"
@@ -11,9 +15,6 @@ import (
 	"github.com/ronaksoft/rony/pools/gopool"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-	"net"
-	"sync/atomic"
-	"time"
 )
 
 /*

@@ -2,11 +2,12 @@ package cliutil
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"strings"
-	"time"
 )
 
 /*

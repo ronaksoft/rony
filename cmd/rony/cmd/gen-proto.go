@@ -3,13 +3,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+
 	"github.com/gobuffalo/genny/v2"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/log"
 	"github.com/spf13/cobra"
-	"os"
-	"os/exec"
-	"path/filepath"
 )
 
 /*

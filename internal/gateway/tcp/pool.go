@@ -1,11 +1,12 @@
 package tcpGateway
 
 import (
+	"sync"
+
 	"github.com/gobwas/ws"
 	"github.com/panjf2000/ants/v2"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/valyala/fasthttp"
-	"sync"
 )
 
 /*

@@ -1,10 +1,11 @@
 package edgetest
 
 import (
-	"github.com/ronaksoft/rony"
-	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"sync/atomic"
 	"time"
+
+	"github.com/ronaksoft/rony"
+	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 )
 
 /*

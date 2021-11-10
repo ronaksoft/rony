@@ -1,8 +1,9 @@
 package querypool
 
 import (
-	"github.com/scylladb/gocqlx/v2"
 	"sync"
+
+	"github.com/scylladb/gocqlx/v2"
 )
 
 /*

@@ -1,9 +1,10 @@
 package log
 
 import (
+	"time"
+
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap/zapcore"
-	"time"
 )
 
 /*

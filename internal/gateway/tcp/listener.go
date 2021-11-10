@@ -4,8 +4,9 @@
 package tcpGateway
 
 import (
-	"github.com/valyala/tcplisten"
 	"net"
+
+	"github.com/valyala/tcplisten"
 )
 
 /*

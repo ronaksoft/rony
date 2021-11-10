@@ -2,13 +2,14 @@ package log
 
 import (
 	"fmt"
-	"github.com/ronaksoft/rony/di"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"os"
 	"runtime/debug"
 	"strings"
 	"sync"
+
+	"github.com/ronaksoft/rony/di"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 /*

@@ -1,8 +1,9 @@
 package wsutil
 
 import (
-	"github.com/ronaksoft/rony/pools"
 	"io"
+
+	"github.com/ronaksoft/rony/pools"
 
 	"github.com/gobwas/ws"
 )

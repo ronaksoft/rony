@@ -2,6 +2,7 @@ package rony
 
 import (
 	"fmt"
+
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"google.golang.org/protobuf/proto"
@@ -99,4 +100,3 @@ func (x *Error) Expand() (string, string) {
 func (x *Error) ToEnvelope(me *MessageEnvelope) {
 	// me.Fill(me.RequestID, C_Error, x)
 }
-

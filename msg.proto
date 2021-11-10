@@ -5,83 +5,78 @@ option go_package = "github.com/ronaksoft/rony";
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
 message MessageEnvelope {
-    uint64 Constructor = 1 [jstype = JS_STRING];
-    fixed64 RequestID = 2;
-    bytes Message = 4;
-    bytes Auth = 8;
-    repeated KeyValue Header = 10;
+  uint64 Constructor = 1 [jstype = JS_STRING];
+  fixed64 RequestID = 2;
+  bytes Message = 4;
+  bytes Auth = 8;
+  repeated KeyValue Header = 10;
 }
 
 message Ping {
-    int64 ID = 1;
+  int64 ID = 1;
 }
 
 message Pong {
-    int64 ID = 2;
+  int64 ID = 2;
 }
 
 
 // KeyValue
 message KeyValue {
-    string Key = 1;
-    string Value = 2;
+  string Key = 1;
+  string Value = 2;
 }
 
 // MessageContainer
 // This type of message will be used to send multi messages inside a single container message
 message MessageContainer {
-    int32 Length = 1;
-    repeated MessageEnvelope Envelopes = 2;
-    // SyncRun makes the execution in sequence if it is TRUE
-    bool SyncRun = 3;
+  int32 Length = 1;
+  repeated MessageEnvelope Envelopes = 2;
+  // SyncRun makes the execution in sequence if it is TRUE
+  bool SyncRun = 3;
 }
 
 // Error
 message Error {
-    string Code = 1;
-    string Items = 2;
-    string Description = 3;
-}
-
-// Bool
-message Bool {
-    bool Result = 1;
+  string Code = 1;
+  string Items = 2;
+  string Description = 3;
 }
 
 // RedirectReason
 enum RedirectReason {
-    ReplicaSetSession = 0;
-    ReplicaSetRequest = 1;
-    Reserved1 = 3;
-    Reserved2 = 4;
-    Reserved3 = 5;
-    Reserved4 = 6;
+  ReplicaSetSession = 0;
+  ReplicaSetRequest = 1;
+  Reserved1 = 3;
+  Reserved2 = 4;
+  Reserved3 = 5;
+  Reserved4 = 6;
 }
 
 // Redirect
 message Redirect {
-    RedirectReason Reason = 100;
-    repeated Edge Edges = 2;
-    uint32 WaitInSec = 3;
+  RedirectReason Reason = 100;
+  repeated Edge Edges = 2;
+  uint32 WaitInSec = 3;
 }
 
 // Edge
 message Edge {
-    uint64 ReplicaSet = 1;
-    string ServerID = 2;
-    repeated string HostPorts = 3;
+  uint64 ReplicaSet = 1;
+  string ServerID = 2;
+  repeated string HostPorts = 3;
 }
 
 // Edges
 message Edges {
-    repeated Edge Nodes = 1;
+  repeated Edge Nodes = 1;
 }
 
 // GetNodes
 // @Function
 // @Return: Edges
 message GetNodes {
-    repeated uint64 ReplicaSet = 1;
+  repeated uint64 ReplicaSet = 1;
 }
 
 // GetNodes
@@ -92,7 +87,7 @@ message GetAllNodes {
 
 // HttpBody used by REST proxies to fill the output.
 message HttpBody {
-    string ContentType = 1;
-    repeated KeyValue Header = 2;
-    bytes Body = 3;
+  string ContentType = 1;
+  repeated KeyValue Header = 2;
+  bytes Body = 3;
 }

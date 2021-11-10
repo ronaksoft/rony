@@ -2,9 +2,10 @@ package tcpGateway
 
 import (
 	"bytes"
+	"sync"
+
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
-	"sync"
 )
 
 /*

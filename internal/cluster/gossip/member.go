@@ -1,12 +1,13 @@
 package gossipCluster
 
 import (
+	"net"
+
 	"github.com/ronaksoft/memberlist"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/msg"
 	"google.golang.org/protobuf/proto"
-	"net"
 )
 
 /*

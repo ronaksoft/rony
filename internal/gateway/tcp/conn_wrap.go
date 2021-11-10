@@ -2,12 +2,13 @@ package tcpGateway
 
 import (
 	"bytes"
-	"github.com/mailru/easygo/netpoll"
 	"io"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/mailru/easygo/netpoll"
 )
 
 /*

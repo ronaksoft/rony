@@ -1,9 +1,10 @@
 package config
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"time"
 )
 
 /*

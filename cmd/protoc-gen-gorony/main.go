@@ -3,6 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"text/template"
+
 	"github.com/go-openapi/spec"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/helper"
 	"github.com/ronaksoft/rony/cmd/protoc-gen-gorony/repo"
@@ -10,10 +15,6 @@ import (
 	"github.com/ronaksoft/rony/internal/codegen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"text/template"
 )
 
 var (

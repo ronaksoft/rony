@@ -1,13 +1,14 @@
 package edgetest
 
 import (
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/ronaksoft/rony"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 /*
