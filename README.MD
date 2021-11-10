@@ -9,13 +9,13 @@
 ![](https://github.com/ronaksoft/rony/actions/workflows/codacy-analysis.yml/badge.svg?color=379c9c&style=flat-square)
 
 ## About
-**Rony** lets you create a clustered aware service easily. Checkout [Wiki](https://rony.ronaksoft.com) 
 
-
+**Rony** lets you create a clustered aware service easily. Checkout [Wiki](https://rony.ronaksoft.com)
 
 ### Performance
 
-Rony is very fast and with very low overhead. In a non-raft environment it adds < 25us latency, and in raft-enabled scenario around 1ms latency.
+Rony is very fast and with very low overhead. In a non-raft environment it adds < 25us latency, and in raft-enabled scenario around 1ms
+latency.
 
 Rony has negligible memory footprint by reusing buffers and pooling.
 
@@ -95,15 +95,15 @@ Rony is made of big and popular packages. Without these great libraries building
 
 ### Contribution
 
-We need to make a clear and understandable documentation for Rony, so any help would be appreciated. We also appreciate benchmarking Rony against other platforms for common
-scenarios and will be cited.
+We need to make a clear and understandable documentation for Rony, so any help would be appreciated. We also appreciate benchmarking Rony
+against other platforms for common scenarios and will be cited.
 
 ### TODOs
 
 - [x] Auto-generate REST handlers
 - [ ] Auto-generate test units
-- [ ] Implement scenario tests using `edgetest` framework
-- [ ] Write Examples and Tutorials
-- [ ] Helper functions for dependency injection
-- [ ] Move store package to internal and provide required interfaces and helper through rony package
-- [ ] Update the code generator templates to handle new structure.
+- [x] Implement scenario tests using `edgetest` framework
+- [x] Write Examples and Tutorials
+- [x] Helper functions for dependency injection
+- [ ] Update constructors to use full name (breaks backward compatibility)
+- [ ] implement RAFT enabled store
