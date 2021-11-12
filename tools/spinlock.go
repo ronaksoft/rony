@@ -18,7 +18,7 @@ import (
 // SpinLock is a spinlock implementation.
 //
 // A SpinLock must not be copied after first use.
-// This SpinLock intended to be used to synchronize exceptionally short lived operations.
+// This SpinLock intended to be used to synchronize exceptionally short-lived operations.
 type SpinLock struct {
 	_    sync.Mutex // for copy protection compiler warning
 	lock uintptr

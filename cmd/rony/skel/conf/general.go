@@ -15,7 +15,7 @@ const (
 	DataPath                 = "data.path"
 	Bootstrap                = "bootstrap"
 	Host                     = "host"
-	Port                     = "post"
+	Port                     = "port"
 	Config                   = "config"
 )
 

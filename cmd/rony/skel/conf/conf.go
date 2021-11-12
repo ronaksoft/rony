@@ -7,7 +7,7 @@ var (
 )
 
 func init() {
-	globalC = config.New()
+	globalC = config.Global()
 }
 
 func Conf() *config.Config {
