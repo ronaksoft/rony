@@ -97,7 +97,7 @@ func New(opts ...Option) *ronyLogger {
 func newNOP() *ronyLogger {
 	l := &ronyLogger{}
 	l.z = zap.NewNop()
-	l.sz = zap.NewNop().Sugar()
+	l.sz = l.z.Sugar()
 
 	return l
 }
@@ -156,6 +156,7 @@ func (l *ronyLogger) with(core zapcore.Core, name string, skip int) Logger {
 	childLogger := &ronyLogger{
 		prefix:     prefix,
 		skipCaller: l.skipCaller,
+		encoder:    l.encoder.Clone(),
 		z: zap.New(
 			core,
 			zap.AddCaller(),

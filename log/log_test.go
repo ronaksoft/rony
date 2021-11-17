@@ -1,6 +1,7 @@
 package log_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/ronaksoft/rony/di"
@@ -43,6 +44,28 @@ func TestLog(t *testing.T) {
 			ll.Info("INFO", zap.Int("Index", 1))
 			ll.Sugared().Info("INFO", 1)
 			ll.Sugared().Infof("INFO %d", 1)
+		})
+	})
+}
+
+func TestLogWithWriter(t *testing.T) {
+	Convey("Log With Added Writer", t, func(c C) {
+		Convey("File Writer", func(c C) {
+			_ = os.MkdirAll("./_hdd", os.ModePerm)
+			l := log.New()
+			l.Warn("Log1")
+			l.Info("Log2")
+			f, err := os.OpenFile(
+				"./_hdd/testlog.txt",
+				os.O_RDWR|os.O_CREATE|os.O_APPEND,
+				0666,
+			)
+			c.So(err, ShouldBeNil)
+			l2 := l.WithWriter(f)
+			l2.Warn("File Log1")
+			l2.Info("File Log2")
+			err = f.Close()
+			c.So(err, ShouldBeNil)
 		})
 	})
 }
