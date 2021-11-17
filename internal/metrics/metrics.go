@@ -9,13 +9,16 @@ const (
 	CntGatewayIncomingWebsocketMessage = "gateway_incoming_websocket_message"
 	CntGatewayOutgoingHttpMessage      = "gateway_outgoing_http_message"
 	CntGatewayOutgoingWebsocketMessage = "gateway_outgoing_websocket_message"
-	CntTunnelIncomingMessage           = "tunnel_incoming_message"
-	CntTunnelOutgoingMessage           = "tunnel_outgoing_message"
-	CntStoreConflicts                  = "store_conflicts"
-	GaugeActiveWebsocketConnections    = "gateway_active_websocket_conns"
-	HistGatewayRequestTime             = "gateway_request_time"
-	HistTunnelRequestTime              = "tunnel_request_time"
-	HistTunnelRoundtripTime            = "tunnel_roundtrip_time"
+	GaugeActiveWebsocketConnections    = "gateway_active_websocket_conns_total"
+	HistGatewayRequestTime             = "gateway_request_duration_milliseconds"
+
+	CntTunnelIncomingMessage = "tunnel_incoming_message"
+	CntTunnelOutgoingMessage = "tunnel_outgoing_message"
+	HistTunnelRequestTime    = "tunnel_request_duration_milliseconds"
+	HistTunnelRoundTripTime  = "tunnel_round_trip_duration_milliseconds"
+
+	CntStoreConflicts = "store_conflicts"
+	CntRPC            = "rpc_requests"
 )
 
 var (
@@ -37,12 +40,13 @@ func Init(constLabels map[string]string) {
 	_Prom.RegisterCounter(CntTunnelIncomingMessage, "number of incoming messages", nil)
 	_Prom.RegisterCounter(CntTunnelOutgoingMessage, "number of outgoing messages", nil)
 	_Prom.RegisterCounter(CntStoreConflicts, "number of txn conflicts", nil)
+	_Prom.RegisterCounterVec(CntRPC, "number of rpc calls", nil, []string{"constructor"})
 
 	_Prom.RegisterGauge(GaugeActiveWebsocketConnections, "number of gateway active websocket connections", nil)
 
 	_Prom.RegisterHistogram(HistGatewayRequestTime, "the amount of process time for gateway requests", TimeBucketMS, nil)
 	_Prom.RegisterHistogram(HistTunnelRequestTime, "the amount of process time for tunnel requests", TimeBucketMS, nil)
-	_Prom.RegisterHistogram(HistTunnelRoundtripTime, "the roundtrip of a execute remote command", TimeBucketMS, nil)
+	_Prom.RegisterHistogram(HistTunnelRoundTripTime, "the roundtrip of a execute remote command", TimeBucketMS, nil)
 }
 
 func Register(registerer prometheus.Registerer) {

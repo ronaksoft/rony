@@ -257,6 +257,9 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			zap.Duration("T", time.Duration(tools.CPUTicks()-startTime)),
 		)
 	}
+
+	metrics.AddCounterVec(metrics.CntRPC, 1, registry.C(in.Constructor))
+	
 	switch requestCtx.Kind() {
 	case GatewayMessage:
 		metrics.ObserveHistogram(
@@ -565,7 +568,7 @@ func (edge *Server) TryTunnelRequest(
 		return edge.sendRemoteCommand(target, req, res)
 	})
 	metrics.ObserveHistogram(
-		metrics.HistTunnelRoundtripTime,
+		metrics.HistTunnelRoundTripTime,
 		float64(time.Duration(tools.CPUTicks()-startTime)/time.Millisecond),
 	)
 
