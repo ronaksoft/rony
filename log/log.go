@@ -29,6 +29,8 @@ type (
 	CallerEncode    = zapcore.CallerEncoder
 	LevelEncoder    = zapcore.LevelEncoder
 	TimeEncoder     = zapcore.TimeEncoder
+	Encoder         = zapcore.Encoder
+	Core            = zapcore.Core
 )
 
 type Logger interface {
@@ -41,7 +43,7 @@ type Logger interface {
 	Sugared() *sugaredRonyLogger
 	SetLevel(level Level)
 	With(name string) Logger
-	WithWriter(w io.Writer) Logger
+	WithCore(enc Encoder, w io.Writer) Logger
 }
 
 type SugaredLogger interface {

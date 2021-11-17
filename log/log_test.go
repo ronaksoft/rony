@@ -61,7 +61,7 @@ func TestLogWithWriter(t *testing.T) {
 				0666,
 			)
 			c.So(err, ShouldBeNil)
-			l2 := l.WithWriter(f)
+			l2 := l.WithCore(log.EncoderBuilder().ConsoleEncoder(), f)
 			l2.Warn("File Log1")
 			l2.Info("File Log2")
 			err = f.Close()

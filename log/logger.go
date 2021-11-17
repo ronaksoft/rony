@@ -46,21 +46,13 @@ func New(opts ...Option) *ronyLogger {
 		skipCaller: cfg.skipCaller,
 	}
 
-	l.encoder = zapcore.NewConsoleEncoder(
-		zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    cfg.LevelEncoder,
-			EncodeTime:     cfg.TimeEncoder,
-			EncodeDuration: cfg.DurationEncoder,
-			EncodeCaller:   cfg.CallerEncoder,
-		},
-	)
+	l.encoder = EncoderBuilder().
+		WithTimeKey("ts").
+		WithLevelKey("level").
+		WithNameKey("name").
+		WithCallerKey("caller").
+		WithMessageKey("msg").
+		ConsoleEncoder()
 
 	cores := append([]zapcore.Core{},
 		zapcore.NewCore(l.encoder, zapcore.Lock(os.Stdout), l.lvl),
@@ -139,10 +131,10 @@ func (l *ronyLogger) WithSkip(name string, skipCaller int) Logger {
 	return l.with(l.z.Core(), name, skipCaller)
 }
 
-func (l *ronyLogger) WithWriter(w io.Writer) Logger {
+func (l *ronyLogger) WithCore(enc Encoder, w io.Writer) Logger {
 	core := zapcore.NewTee(
 		l.z.Core(),
-		zapcore.NewCore(l.encoder, zapcore.AddSync(w), l.lvl),
+		zapcore.NewCore(enc, zapcore.AddSync(w), l.lvl),
 	)
 
 	return l.with(core, "", l.skipCaller)
