@@ -1,7 +1,8 @@
 package log
 
 import (
-	"github.com/ronaksoft/rony/di"
+	"io"
+
 	"go.uber.org/zap/zapcore"
 )
 
@@ -40,6 +41,7 @@ type Logger interface {
 	Sugared() *sugaredRonyLogger
 	SetLevel(level Level)
 	With(name string) Logger
+	WithWriter(w io.Writer) Logger
 }
 
 type SugaredLogger interface {
@@ -58,16 +60,11 @@ type SugaredLogger interface {
 }
 
 func init() {
-	cfg := DefaultConfig
-	cfg.SkipCaller = 3
-	DefaultLogger = New(cfg)
+	DefaultLogger = New(
+		WithSkipCaller(3),
+	)
 
 	NopLogger = newNOP()
-
-	// bind *ronyLogger for dependency injection
-	di.MustProvide(func(l *ronyLogger) Logger {
-		return l
-	})
 }
 
 func SetLevel(level Level) {

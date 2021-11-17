@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -21,35 +22,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type Config struct {
-	Level           Level
-	DirPath         string
-	SentryDSN       string
-	SentryLevel     Level
-	Release         string
-	Environment     string
-	SkipCaller      int
-	TimeEncoder     TimeEncoder
-	LevelEncoder    LevelEncoder
-	DurationEncoder DurationEncoder
-	CallerEncoder   CallerEncode
-	SyslogTag       string
-}
-
-var DefaultConfig = Config{
-	Level:           InfoLevel,
-	DirPath:         ".",
-	SentryDSN:       "",
-	SentryLevel:     WarnLevel,
-	Release:         "",
-	Environment:     "",
-	SkipCaller:      1,
-	TimeEncoder:     timeEncoder,
-	LevelEncoder:    zapcore.CapitalLevelEncoder,
-	DurationEncoder: zapcore.StringDurationEncoder,
-	CallerEncoder:   zapcore.ShortCallerEncoder,
-}
-
 // ronyLogger is a wrapper around zap.Logger and adds a good few features to it.
 // It provides layered logs which could be used by separate packages, and could be turned off or on
 // separately. Separate layers could also have independent log levels.
@@ -57,37 +29,45 @@ var DefaultConfig = Config{
 type ronyLogger struct {
 	prefix     string
 	skipCaller int
+	encoder    zapcore.Encoder
 	z          *zap.Logger
 	sz         *zap.SugaredLogger
 	lvl        zap.AtomicLevel
 }
 
-func New(cfg Config) *ronyLogger {
-	l := &ronyLogger{
-		lvl:        zap.NewAtomicLevelAt(cfg.Level),
-		skipCaller: cfg.SkipCaller,
+func New(opts ...Option) *ronyLogger {
+	cfg := defaultConfig
+	for _, opt := range opts {
+		opt(&cfg)
 	}
 
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    cfg.LevelEncoder,
-		EncodeTime:     cfg.TimeEncoder,
-		EncodeDuration: cfg.DurationEncoder,
-		EncodeCaller:   cfg.CallerEncoder,
-	})
+	l := &ronyLogger{
+		lvl:        zap.NewAtomicLevelAt(cfg.level),
+		skipCaller: cfg.skipCaller,
+	}
 
-	cores := append([]zapcore.Core{},
-		zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), l.lvl),
+	l.encoder = zapcore.NewConsoleEncoder(
+		zapcore.EncoderConfig{
+			TimeKey:        "ts",
+			LevelKey:       "level",
+			NameKey:        "logger",
+			CallerKey:      "caller",
+			MessageKey:     "msg",
+			StacktraceKey:  "stacktrace",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    cfg.LevelEncoder,
+			EncodeTime:     cfg.TimeEncoder,
+			EncodeDuration: cfg.DurationEncoder,
+			EncodeCaller:   cfg.CallerEncoder,
+		},
 	)
 
-	if cfg.SyslogTag != "" {
-		syslogCore, err := NewSyslogCore(l.lvl, encoder, cfg.SyslogTag)
+	cores := append([]zapcore.Core{},
+		zapcore.NewCore(l.encoder, zapcore.Lock(os.Stdout), l.lvl),
+	)
+
+	if cfg.syslogTag != "" {
+		syslogCore, err := NewSyslogCore(l.lvl, l.encoder, cfg.syslogTag)
 		if err != nil {
 			fmt.Println("got error on enabling syslog:", err)
 		} else {
@@ -95,8 +75,8 @@ func New(cfg Config) *ronyLogger {
 		}
 	}
 
-	if cfg.SentryDSN != "" {
-		sentryCore := NewSentryCore(cfg.SentryDSN, cfg.Release, cfg.Environment, cfg.SentryLevel, nil)
+	if cfg.sentryDSN != "" {
+		sentryCore := NewSentryCore(cfg.sentryDSN, cfg.release, cfg.environment, cfg.sentryLevel, nil)
 		if sentryCore != nil {
 			cores = append(cores, sentryCore)
 		}
@@ -106,15 +86,10 @@ func New(cfg Config) *ronyLogger {
 		zapcore.NewTee(cores...),
 		zap.AddCaller(),
 		zap.AddStacktrace(ErrorLevel),
-		zap.AddCallerSkip(cfg.SkipCaller),
+		zap.AddCallerSkip(cfg.skipCaller),
 	)
 
-	l.sz = zap.New(
-		l.z.Core(),
-		zap.AddCaller(),
-		zap.AddStacktrace(ErrorLevel),
-		zap.AddCallerSkip(cfg.SkipCaller),
-	).Sugar()
+	l.sz = l.z.Sugar()
 
 	return l
 }
@@ -132,12 +107,13 @@ var (
 )
 
 // ProvideDI is protected by sync.Once and provides the Logger interface for other packages.
-func ProvideDI(cfg Config) {
+func ProvideDI(opts ...Option) {
 	once.Do(func() {
-		di.MustProvide(func() Config {
-			return cfg
-		})
-		di.MustProvide(New)
+		di.MustProvide(
+			func() Logger {
+				return New(opts...)
+			},
+		)
 	})
 }
 
@@ -160,20 +136,37 @@ func (l *ronyLogger) With(name string) Logger {
 }
 
 func (l *ronyLogger) WithSkip(name string, skipCaller int) Logger {
+	return l.with(l.z.Core(), name, skipCaller)
+}
+
+func (l *ronyLogger) WithWriter(w io.Writer) Logger {
+	core := zapcore.NewTee(
+		l.z.Core(),
+		zapcore.NewCore(l.encoder, zapcore.AddSync(w), l.lvl),
+	)
+
+	return l.with(core, "", l.skipCaller)
+}
+
+func (l *ronyLogger) with(core zapcore.Core, name string, skip int) Logger {
+	prefix := l.prefix
+	if name != "" {
+		prefix = fmt.Sprintf("%s[%s]", l.prefix, name)
+	}
 	childLogger := &ronyLogger{
-		prefix:     fmt.Sprintf("%s[%s]", l.prefix, name),
+		prefix:     prefix,
 		skipCaller: l.skipCaller,
 		z: zap.New(
-			l.z.Core(),
+			core,
 			zap.AddCaller(),
 			zap.AddStacktrace(ErrorLevel),
-			zap.AddCallerSkip(skipCaller),
+			zap.AddCallerSkip(skip),
 		),
 		sz: zap.New(
-			l.z.Core(),
+			core,
 			zap.AddCaller(),
 			zap.AddStacktrace(ErrorLevel),
-			zap.AddCallerSkip(skipCaller)).Sugar(),
+			zap.AddCallerSkip(skip)).Sugar(),
 		lvl: l.lvl,
 	}
 

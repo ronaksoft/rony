@@ -259,7 +259,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	metrics.AddCounterVec(metrics.CntRPC, 1, registry.C(in.Constructor))
-	
+
 	switch requestCtx.Kind() {
 	case GatewayMessage:
 		metrics.ObserveHistogram(

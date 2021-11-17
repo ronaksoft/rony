@@ -12,7 +12,7 @@ import (
 func TestLog(t *testing.T) {
 	Convey("Log", t, func(c C) {
 		Convey("Different styles", func(c C) {
-			l := log.New(log.DefaultConfig)
+			l := log.New()
 			l.SetLevel(log.DebugLevel)
 			l.Info("INFO", zap.Int("Index", 1))
 			l.Sugared().Info("INFO", 1)
@@ -24,18 +24,16 @@ func TestLog(t *testing.T) {
 			ll.Sugared().Infof("INFO %d", 1)
 		})
 		Convey("Dependency Injection", func(c C) {
-			log.ProvideDI(log.DefaultConfig)
+			log.ProvideDI()
 			x := NewDI()
 			x.Info("DI Hooorraa")
 
-			log.ProvideDI(log.DefaultConfig)
+			log.ProvideDI()
 			x2 := NewDI()
 			x2.Info("DI Hooorraa2")
 		})
 		Convey("Logger with SysLog", func(c C) {
-			cfg := log.DefaultConfig
-			cfg.SyslogTag = "rony-logger"
-			l := log.New(cfg)
+			l := log.New(log.WithSyslog("rony-logger"))
 			l.SetLevel(log.DebugLevel)
 			l.Info("INFO", zap.Int("Index", 1))
 			l.Sugared().Info("INFO", 1)
