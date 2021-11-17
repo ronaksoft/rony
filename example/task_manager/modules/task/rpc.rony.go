@@ -773,6 +773,13 @@ func TunnelRequestTaskManagerList(
 	}
 }
 
+type ITaskManagerClient interface {
+	Create(req *CreateRequest, kvs ...*rony.KeyValue) (*TaskView, error)
+	Get(req *GetRequest, kvs ...*rony.KeyValue) (*TaskView, error)
+	Delete(req *DeleteRequest, kvs ...*rony.KeyValue) (*Bool, error)
+	List(req *ListRequest, kvs ...*rony.KeyValue) (*TaskViewMany, error)
+}
+
 type TaskManagerClient struct {
 	c edgec.Client
 }

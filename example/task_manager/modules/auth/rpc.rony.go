@@ -383,6 +383,11 @@ func TunnelRequestAuthLogin(
 	}
 }
 
+type IAuthClient interface {
+	Register(req *RegisterRequest, kvs ...*rony.KeyValue) (*Authorization, error)
+	Login(req *LoginRequest, kvs ...*rony.KeyValue) (*Authorization, error)
+}
+
 type AuthClient struct {
 	c edgec.Client
 }

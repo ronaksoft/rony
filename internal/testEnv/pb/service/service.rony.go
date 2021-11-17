@@ -1295,6 +1295,14 @@ func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.Dispa
 	return
 }
 
+type ISampleClient interface {
+	Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error)
+	Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error)
+	EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+}
+
 type SampleClient struct {
 	c edgec.Client
 }

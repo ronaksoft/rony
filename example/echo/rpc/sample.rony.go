@@ -311,6 +311,10 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 	return
 }
 
+type ISampleClient interface {
+	Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+}
+
 type SampleClient struct {
 	c edgec.Client
 }

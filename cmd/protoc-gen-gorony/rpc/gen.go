@@ -34,7 +34,7 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 
 			g.P("var _ = tools.TimeUnix()")
 			for _, arg := range templateArg.Services {
-				g.P(codegen.ExecTemplate(template.Must(template.New("genServer").Parse(genServer)), arg))
+				g.P(codegen.ExecTemplate(template.Must(template.New("genServerInterface").Parse(genServerInterface)), arg))
 				g.P(codegen.ExecTemplate(template.Must(template.New("genServerWrapper").Parse(genServerWrapper)), arg))
 				g.P(codegen.ExecTemplate(template.Must(template.New("genTunnelCommand").Parse(genTunnelCommand)), arg))
 				if arg.HasRestProxy {
@@ -44,6 +44,7 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 
 				if !proto.GetExtension(arg.Options(), rony.E_RonyNoClient).(bool) {
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
+					g.P(codegen.ExecTemplate(template.Must(template.New("genClientInterface").Parse(genClientInterface)), arg))
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
 				}
 				cliOpt := proto.GetExtension(arg.Options(), rony.E_RonyCli).(*rony.CliOpt)
@@ -138,7 +139,7 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, 
 {{ end }}
 `
 
-const genServer = `
+const genServerInterface = `
 type I{{.Name}} interface {
 {{- range .Methods }}
 	{{.Name}} (ctx *edge.RequestCtx, req *{{.Input.Fullname}}, res *{{.Output.Fullname}}) *rony.Error
@@ -273,6 +274,17 @@ func (c *{{$serviceName}}Client) {{.Name}} (
 }
 {{- end }}
 {{- end }}
+`
+
+const genClientInterface = `
+type I{{.Name}}Client interface {
+{{- $serviceName := .Name -}}
+{{- range .Methods }}
+{{- if not .TunnelOnly }}
+{{.Name}} (req *{{.Input.Fullname}}, kvs ...*rony.KeyValue) (*{{.Output.Fullname}}, error)
+{{- end }}
+{{- end }}	
+}
 `
 
 const genTunnelCommand = `

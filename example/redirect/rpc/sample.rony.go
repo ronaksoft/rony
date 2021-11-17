@@ -415,6 +415,11 @@ func (sw *sampleWrapper) infoWithServerRedirectRestServer(conn rony.RestConn, ct
 	return
 }
 
+type ISampleClient interface {
+	InfoWithClientRedirect(req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
+	InfoWithServerRedirect(req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
+}
+
 type SampleClient struct {
 	c edgec.Client
 }
