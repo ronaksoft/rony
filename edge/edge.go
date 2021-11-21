@@ -15,7 +15,6 @@ import (
 	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
 )
@@ -44,7 +43,6 @@ type Server struct {
 	router     rony.Router
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
-	store      *store.Store
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 	restMux    *restMux
@@ -72,27 +70,11 @@ func NewServer(serverID string, opts ...Option) *Server {
 		edgeServer.inMemoryStore = true
 	}
 
-	if edgeServer.store == nil {
-		cfg := store.DefaultConfig(edgeServer.dataDir)
-		if edgeServer.inMemoryStore {
-			cfg.InMemory = true
-		}
-		var err error
-		edgeServer.store, err = store.New(cfg)
-		if err != nil {
-			edgeServer.logger.Warn("Error On initializing store", zap.Error(err))
-		}
-	}
-
-	// inject the edge store
-	// di.MustProvide(edgeServer.Store)
-
 	// register builtin rony handlers
 	builtin := newBuiltin(edgeServer)
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetNodes).Append(builtin.getNodes))
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_GetAllNodes).Append(builtin.getAllNodes))
 	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(rony.C_Ping).Append(builtin.ping))
-	edgeServer.SetHandler(NewHandlerOptions().SetConstructor(msg.C_GetPage).Append(builtin.getPage).setBuiltin())
 
 	return edgeServer
 }
@@ -150,11 +132,6 @@ func (edge *Server) SetCustomDispatcher(d Dispatcher) {
 // Cluster returns a reference to the underlying cluster of the Edge server
 func (edge *Server) Cluster() rony.Cluster {
 	return edge.cluster
-}
-
-// Store returns the store component of the Edge server.
-func (edge *Server) Store() *store.Store {
-	return edge.store
 }
 
 // Gateway returns a reference to the underlying gateway of the Edge server
@@ -507,11 +484,6 @@ func (edge *Server) Shutdown() {
 	// Shutdown the tunnel
 	if edge.tunnel != nil {
 		edge.tunnel.Shutdown()
-	}
-
-	// Shutdown the store
-	if edge.store != nil {
-		edge.store.Shutdown()
 	}
 
 	edge.logger.Info("Server Shutdown!", zap.ByteString("ID", edge.serverID))

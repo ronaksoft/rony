@@ -10,7 +10,6 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
-	"github.com/ronaksoft/rony/store"
 	"github.com/ronaksoft/rony/tools"
 	"google.golang.org/protobuf/proto"
 )
@@ -292,10 +291,6 @@ func (ctx *RequestCtx) StopExecution() {
 
 func (ctx *RequestCtx) Stopped() bool {
 	return ctx.stop
-}
-
-func (ctx *RequestCtx) Store() *store.Store {
-	return ctx.edge.store
 }
 
 func (ctx *RequestCtx) Set(key string, v interface{}) {

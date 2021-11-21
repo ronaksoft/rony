@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/ronaksoft/rony/store"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
@@ -34,12 +36,17 @@ var ServerCmd = &cobra.Command{
 			}),
 		)
 
+		st, err := store.New(store.DefaultConfig(config.GetString("data.path")))
+		if err != nil {
+			return err
+		}
+
 		// Register the implemented service into the edge server
 		taskService := &rpc.TaskManager{
-			ModuleBase: task.New(edgeServer.Store()),
+			ModuleBase: task.New(st),
 		}
 		authService := &rpc.Auth{
-			ModuleBase: auth.New(edgeServer.Store()),
+			ModuleBase: auth.New(st),
 		}
 
 		auth.RegisterAuth(authService, edgeServer)
