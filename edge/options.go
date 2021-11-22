@@ -14,6 +14,7 @@ import (
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 	"github.com/ronaksoft/rony/log"
 	"github.com/scylladb/gocqlx/v2"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -28,9 +29,16 @@ import (
 
 type Option func(edge *Server)
 
-func WithDataDir(path string) Option {
+type TracerConfig struct {
+	Name        string
+	Version     string
+	Environment string
+}
+
+func WithTracer(name string, tp trace.TracerProvider) Option {
 	return func(edge *Server) {
-		edge.dataDir = path
+		edge.name = name
+		edge.tracer = tp
 	}
 }
 

@@ -2,11 +2,14 @@ package edge
 
 import (
 	"bufio"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"time"
+
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -49,8 +53,9 @@ func (c MessageKind) String() string {
 
 type Server struct {
 	// General
-	dataDir  string
+	name     string
 	serverID []byte
+	logger   log.Logger
 
 	// Handlers
 	preHandlers  []Handler
@@ -58,13 +63,13 @@ type Server struct {
 	postHandlers []Handler
 
 	// Edge components
+	tracer     trace.TracerProvider
 	router     rony.Router
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 	restMux    *restMux
-	logger     log.Logger
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -213,6 +218,24 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 		return
 	}
 
+	if edge.tracer != nil {
+		methodName := registry.C(in.GetConstructor())
+		var span trace.Span
+		requestCtx.ctx, span = edge.tracer.Tracer(
+			ho.serviceName,
+			trace.WithSchemaURL(""),
+		).Start(
+			requestCtx.ctx,
+			fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, methodName),
+			trace.WithAttributes(
+				semconv.RPCServiceKey.String(ho.serviceName),
+				semconv.RPCMethodKey.String(methodName),
+			),
+			trace.WithSpanKind(trace.SpanKindServer),
+		)
+		defer span.End()
+	}
+
 	// Run the handler
 	if !ho.builtin {
 		for idx := range edge.preHandlers {
@@ -278,9 +301,6 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
-	// _, task := trace.NewTask(context.Background(), "onGatewayMessage")
-	// defer task.End()
-
 	// if it is REST API then we take a different approach.
 	if !conn.Persistent() && edge.restMux != nil {
 		if rc, ok := conn.(rony.RestConn); ok {

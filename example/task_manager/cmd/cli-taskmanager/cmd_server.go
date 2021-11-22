@@ -27,7 +27,6 @@ var ServerCmd = &cobra.Command{
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
 			config.GetString("server.id"),
-			edge.WithDataDir(config.GetString("data.path")),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				ListenAddress: config.GetString("gateway.listen"),
 				MaxIdleTime:   config.GetDuration("idle-time"),

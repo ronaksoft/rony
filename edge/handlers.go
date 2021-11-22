@@ -23,6 +23,7 @@ type HandlerOption struct {
 	handlers     []Handler
 	tunnel       bool
 	gateway      bool
+	serviceName  string
 
 	// internal use
 	builtin bool
@@ -47,6 +48,13 @@ func (ho *HandlerOption) SetConstructor(constructors ...uint64) *HandlerOption {
 	for _, c := range constructors {
 		ho.constructors[c] = struct{}{}
 	}
+
+	return ho
+}
+
+// SetServiceName set the service name for this handler, this is mostly used for Tracing.
+func (ho *HandlerOption) SetServiceName(serviceName string) *HandlerOption {
+	ho.serviceName = serviceName
 
 	return ho
 }

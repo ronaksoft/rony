@@ -18,7 +18,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/nyaruka/phonenumbers v1.0.70
-	github.com/opentracing/opentracing-go v1.2.0
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
 	github.com/pkg/errors v0.9.1
@@ -32,6 +31,9 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/valyala/fasthttp v1.31.0
 	github.com/valyala/tcplisten v1.0.0
+	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/sdk v1.2.0
+	go.opentelemetry.io/otel/trace v1.2.0
 	go.uber.org/dig v1.13.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1
@@ -97,6 +99,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
 	github.com/miekg/dns v1.1.43 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect

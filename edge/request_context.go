@@ -23,6 +23,7 @@ type RequestCtx struct {
 	err         *rony.Error
 	// cfg holds all cancel functions which will be called at the
 	// end of the lifecycle of the RequestCtx
+	ctx context.Context
 	cfs []func()
 }
 
@@ -243,7 +244,7 @@ func (ctx *RequestCtx) Router() rony.Router {
 }
 
 func (ctx *RequestCtx) WithTimeout(t time.Duration) context.Context {
-	iCtx, cf := context.WithTimeout(context.Background(), t)
+	iCtx, cf := context.WithTimeout(ctx.ctx, t)
 	ctx.cfs = append(ctx.cfs, cf)
 
 	return iCtx
@@ -263,6 +264,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
 	ctx.err = nil
+	ctx.ctx = context.TODO()
 
 	return ctx
 }
