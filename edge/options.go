@@ -57,7 +57,6 @@ type GossipClusterConfig struct {
 func WithGossipCluster(clusterConfig GossipClusterConfig) Option {
 	return func(edge *Server) {
 		edge.cluster = gossipCluster.New(
-			edge.dataDir,
 			gossipCluster.Config{
 				ServerID:       edge.serverID,
 				Bootstrap:      clusterConfig.Bootstrap,
@@ -161,13 +160,6 @@ func WithUdpTunnel(config UdpTunnelConfig) Option {
 		}
 		tunnelUDP.MessageHandler = edge.onTunnelMessage
 		edge.tunnel = tunnelUDP
-	}
-}
-
-// WithInMemoryStore make the store in-memory and non-persistent.
-func WithInMemoryStore(b bool) Option {
-	return func(edge *Server) {
-		edge.inMemoryStore = b
 	}
 }
 

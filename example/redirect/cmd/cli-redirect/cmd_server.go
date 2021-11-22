@@ -27,7 +27,6 @@ var ServerCmd = &cobra.Command{
 		edgeServer = edge.NewServer(
 			config.GetString("server.id"),
 			edge.WithDataDir(config.GetString("data.path")),
-			edge.WithInMemoryStore(true),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),

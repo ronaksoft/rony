@@ -39,7 +39,6 @@ type Config struct {
 }
 
 type Cluster struct {
-	dataPath         string
 	cfg              Config
 	mtx              sync.RWMutex
 	localServerID    []byte
@@ -53,7 +52,7 @@ type Cluster struct {
 	subscriber       rony.ClusterDelegate
 }
 
-func New(dataPath string, cfg Config) *Cluster {
+func New(cfg Config) *Cluster {
 	if cfg.Logger == nil {
 		cfg.Logger = log.DefaultLogger
 	}
@@ -68,7 +67,6 @@ func New(dataPath string, cfg Config) *Cluster {
 	}
 
 	c := &Cluster{
-		dataPath:         dataPath,
 		cfg:              cfg,
 		localServerID:    cfg.ServerID,
 		membersByID:      make(map[string]*Member, 4096),

@@ -49,9 +49,8 @@ func (c MessageKind) String() string {
 
 type Server struct {
 	// General
-	dataDir       string
-	serverID      []byte
-	inMemoryStore bool
+	dataDir  string
+	serverID []byte
 
 	// Handlers
 	preHandlers  []Handler
@@ -83,10 +82,6 @@ func NewServer(serverID string, opts ...Option) *Server {
 
 	for _, opt := range opts {
 		opt(edgeServer)
-	}
-
-	if edgeServer.dataDir == "" {
-		edgeServer.inMemoryStore = true
 	}
 
 	// register builtin rony handlers
