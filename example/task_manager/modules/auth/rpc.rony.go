@@ -7,9 +7,8 @@ package auth
 
 import (
 	bytes "bytes"
+	context "context"
 	fmt "fmt"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -21,6 +20,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -384,8 +384,8 @@ func TunnelRequestAuthLogin(
 }
 
 type IAuthClient interface {
-	Register(req *RegisterRequest, kvs ...*rony.KeyValue) (*Authorization, error)
-	Login(req *LoginRequest, kvs ...*rony.KeyValue) (*Authorization, error)
+	Register(ctx context.Context, req *RegisterRequest, kvs ...*rony.KeyValue) (*Authorization, error)
+	Login(ctx context.Context, req *LoginRequest, kvs ...*rony.KeyValue) (*Authorization, error)
 }
 
 type AuthClient struct {
@@ -398,14 +398,14 @@ func NewAuthClient(ec edgec.Client) *AuthClient {
 	}
 }
 func (c *AuthClient) Register(
-	req *RegisterRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *RegisterRequest, kvs ...*rony.KeyValue,
 ) (*Authorization, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_AuthRegister, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -423,14 +423,14 @@ func (c *AuthClient) Register(
 	}
 }
 func (c *AuthClient) Login(
-	req *LoginRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *LoginRequest, kvs ...*rony.KeyValue,
 ) (*Authorization, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_AuthLogin, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}

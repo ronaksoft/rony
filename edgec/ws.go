@@ -1,6 +1,7 @@
 package edgec
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -23,6 +24,10 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+var (
+	_ Client = &Websocket{}
+)
 
 const (
 	requestTimeout = 3 * time.Second
@@ -132,7 +137,7 @@ func (ws *Websocket) Start() error {
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{})
 
-	if err := ws.Send(req, res); err != nil {
+	if err := ws.Send(context.Background(), req, res); err != nil {
 		return err
 	}
 	switch res.Constructor {
@@ -265,17 +270,18 @@ func (ws *Websocket) sendFunc(serverID string, entries []tools.FlushEntry) {
 	}
 }
 
-func (ws *Websocket) Send(req, res *rony.MessageEnvelope) (err error) {
-	err = ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, "")
+func (ws *Websocket) Send(ctx context.Context, req, res *rony.MessageEnvelope) (err error) {
+	err = ws.SendWithDetails(ctx, req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, "")
 
 	return
 }
 
-func (ws *Websocket) SendTo(req, res *rony.MessageEnvelope, serverID string) error {
-	return ws.SendWithDetails(req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, serverID)
+func (ws *Websocket) SendTo(ctx context.Context, req, res *rony.MessageEnvelope, serverID string) error {
+	return ws.SendWithDetails(ctx, req, res, ws.cfg.RequestMaxRetry, ws.cfg.RequestTimeout, serverID)
 }
 
 func (ws *Websocket) SendWithDetails(
+	ctx context.Context,
 	req, res *rony.MessageEnvelope, retry int, timeout time.Duration, serverID string,
 ) error {
 	var (
@@ -399,7 +405,7 @@ func (ws *Websocket) ClusterInfo(replicaSets ...uint64) (*rony.Edges, error) {
 	res := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(res)
 	req.Fill(ws.GetRequestID(), rony.C_GetNodes, &rony.GetNodes{ReplicaSet: replicaSets})
-	if err := ws.Send(req, res); err != nil {
+	if err := ws.Send(context.Background(), req, res); err != nil {
 		return nil, err
 	}
 	switch res.GetConstructor() {

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
@@ -39,7 +41,8 @@ func (s *SampleCli) Echo(cli *SampleClient, cmd *cobra.Command, args []string) e
 	req := &EchoRequest{
 		ID: config.GetInt64("id"),
 	}
-	res, err := cli.Echo(req)
+
+	res, err := cli.Echo(context.Background(), req)
 	if err != nil {
 		cmd.Println("Receiver Error:", err.Error())
 

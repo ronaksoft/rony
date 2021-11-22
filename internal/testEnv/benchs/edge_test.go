@@ -1,6 +1,7 @@
 package benchs_test
 
 import (
+	"context"
 	"flag"
 	"os"
 	"sync/atomic"
@@ -122,7 +123,7 @@ func benchHttpSingleEdgeClient(b *testing.B) {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
 			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
-			err = edgeClient.Send(req, res)
+			err = edgeClient.Send(context.TODO(), req, res)
 			if err != nil {
 				atomic.AddInt64(&cntErr, 1)
 			} else {
@@ -161,7 +162,7 @@ func benchMultiWebsocketClient(b *testing.B) {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
 			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
-			_ = edgeClient.Send(req, res)
+			_ = edgeClient.Send(context.TODO(), req, res)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)
 		}
@@ -195,7 +196,7 @@ func benchSingleWebsocketClient(b *testing.B) {
 			req := rony.PoolMessageEnvelope.Get()
 			res := rony.PoolMessageEnvelope.Get()
 			req.Fill(edgeClient.GetRequestID(), service.C_SampleEcho, &echoRequest)
-			_ = edgeClient.Send(req, res)
+			_ = edgeClient.Send(context.TODO(), req, res)
 			rony.PoolMessageEnvelope.Put(req)
 			rony.PoolMessageEnvelope.Put(res)
 		}

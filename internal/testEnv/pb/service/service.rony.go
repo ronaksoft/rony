@@ -7,10 +7,8 @@ package service
 
 import (
 	bytes "bytes"
+	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -22,6 +20,8 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -1296,11 +1296,11 @@ func (sw *sampleWrapper) echoDelayRestServer(conn rony.RestConn, ctx *edge.Dispa
 }
 
 type ISampleClient interface {
-	Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
-	Set(req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error)
-	Get(req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error)
-	EchoTunnel(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
-	EchoDelay(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	Echo(ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	Set(ctx context.Context, req *SetRequest, kvs ...*rony.KeyValue) (*SetResponse, error)
+	Get(ctx context.Context, req *GetRequest, kvs ...*rony.KeyValue) (*GetResponse, error)
+	EchoTunnel(ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	EchoDelay(ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
 }
 
 type SampleClient struct {
@@ -1313,14 +1313,14 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 	}
 }
 func (c *SampleClient) Echo(
-	req *EchoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue,
 ) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleEcho, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1338,14 +1338,14 @@ func (c *SampleClient) Echo(
 	}
 }
 func (c *SampleClient) Set(
-	req *SetRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *SetRequest, kvs ...*rony.KeyValue,
 ) (*SetResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleSet, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1363,14 +1363,14 @@ func (c *SampleClient) Set(
 	}
 }
 func (c *SampleClient) Get(
-	req *GetRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *GetRequest, kvs ...*rony.KeyValue,
 ) (*GetResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleGet, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1388,14 +1388,14 @@ func (c *SampleClient) Get(
 	}
 }
 func (c *SampleClient) EchoTunnel(
-	req *EchoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue,
 ) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleEchoTunnel, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1413,14 +1413,14 @@ func (c *SampleClient) EchoTunnel(
 	}
 }
 func (c *SampleClient) EchoDelay(
-	req *EchoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue,
 ) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleEchoDelay, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}

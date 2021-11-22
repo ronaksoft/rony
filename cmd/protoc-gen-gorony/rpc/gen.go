@@ -29,6 +29,7 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/errors"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "google.golang.org/protobuf/proto"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "fmt"})
+			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "context"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony"})
 			g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/tools"})
 
@@ -244,14 +245,14 @@ func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
 {{- range .Methods }}
 {{- if not .TunnelOnly }}
 func (c *{{$serviceName}}Client) {{.Name}} (
-	req *{{.Input.Fullname}}, kvs ...*rony.KeyValue,
+	ctx context.Context, req *{{.Input.Fullname}}, kvs ...*rony.KeyValue,
 ) (*{{.Output.Fullname}}, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_{{.Fullname}}, req, kvs ...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +282,7 @@ type I{{.Name}}Client interface {
 {{- $serviceName := .Name -}}
 {{- range .Methods }}
 {{- if not .TunnelOnly }}
-{{.Name}} (req *{{.Input.Fullname}}, kvs ...*rony.KeyValue) (*{{.Output.Fullname}}, error)
+{{.Name}} (ctx context.Context, req *{{.Input.Fullname}}, kvs ...*rony.KeyValue) (*{{.Output.Fullname}}, error)
 {{- end }}
 {{- end }}	
 }

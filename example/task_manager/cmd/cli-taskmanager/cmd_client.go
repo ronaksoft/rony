@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -74,7 +75,7 @@ func (t *TaskManagerCLI) Register(cli *auth.AuthClient, cmd *cobra.Command, args
 		LastName:  config.GetString("lastName"),
 		Password:  config.GetString("password"),
 	}
-	res, err := cli.Register(req)
+	res, err := cli.Register(context.TODO(), req)
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func (t *TaskManagerCLI) Login(cli *auth.AuthClient, cmd *cobra.Command, args []
 		Username: config.GetString("username"),
 		Password: config.GetString("password"),
 	}
-	res, err := cli.Login(req)
+	res, err := cli.Login(context.TODO(), req)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (t *TaskManagerCLI) Create(cli *task.TaskManagerClient, cmd *cobra.Command,
 		TODOs:   config.GetStringSlice("tODOs"),
 		DueDate: config.GetInt64("dueDate"),
 	}
-	res, err := cli.Create(req, getSessionID())
+	res, err := cli.Create(context.TODO(), req, getSessionID())
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func (t *TaskManagerCLI) Get(cli *task.TaskManagerClient, cmd *cobra.Command, ar
 	req := &task.GetRequest{
 		TaskID: config.GetInt64("TaskID"),
 	}
-	res, err := cli.Get(req, getSessionID())
+	res, err := cli.Get(context.TODO(), req, getSessionID())
 	if err != nil {
 		return err
 	}
@@ -131,7 +132,7 @@ func (t *TaskManagerCLI) Delete(cli *task.TaskManagerClient, cmd *cobra.Command,
 	req := &task.DeleteRequest{
 		TaskID: config.GetInt64("TaskID"),
 	}
-	res, err := cli.Delete(req, getSessionID())
+	res, err := cli.Delete(context.TODO(), req, getSessionID())
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func (t *TaskManagerCLI) List(cli *task.TaskManagerClient, cmd *cobra.Command, a
 		Offset: config.GetInt32("offset"),
 		Limit:  config.GetInt32("limit"),
 	}
-	res, err := cli.List(req, getSessionID())
+	res, err := cli.List(context.TODO(), req, getSessionID())
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,8 @@
 package edgec
 
 import (
+	"context"
+
 	"github.com/ronaksoft/rony"
 )
 
@@ -14,7 +16,7 @@ import (
 */
 
 type Client interface {
-	Send(req, res *rony.MessageEnvelope) error
+	Send(ctx context.Context, req, res *rony.MessageEnvelope) error
 	Close() error
 	GetRequestID() uint64
 }

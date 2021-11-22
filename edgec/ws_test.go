@@ -1,6 +1,7 @@
 package edgec_test
 
 import (
+	"context"
 	"flag"
 	"os"
 	"sync"
@@ -68,7 +69,7 @@ func TestClient_Connect(t *testing.T) {
 				go func() {
 					defer wg.Done()
 					x := tools.RandomInt64(0)
-					res, err := clnt.Echo(&service.EchoRequest{Int: x})
+					res, err := clnt.Echo(context.TODO(), &service.EchoRequest{Int: x})
 					if err != nil {
 						c.Println(err.Error())
 					}
@@ -90,7 +91,7 @@ func TestClient_Connect(t *testing.T) {
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {
-				res, err := clnt.Echo(&service.EchoRequest{Int: 123})
+				res, err := clnt.Echo(context.TODO(), &service.EchoRequest{Int: 123})
 				c.So(err, ShouldBeNil)
 				c.So(res.Int, ShouldEqual, 123)
 				time.Sleep(time.Second * 2)
@@ -105,7 +106,7 @@ func TestClient_Connect(t *testing.T) {
 			c.So(err, ShouldBeNil)
 
 			for i := 0; i < 5; i++ {
-				res, err := clnt.EchoDelay(&service.EchoRequest{Int: 123})
+				res, err := clnt.EchoDelay(context.TODO(), &service.EchoRequest{Int: 123})
 				c.So(err, ShouldBeNil)
 				c.So(res.Int, ShouldEqual, 123)
 			}

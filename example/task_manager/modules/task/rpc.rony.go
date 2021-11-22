@@ -7,9 +7,8 @@ package task
 
 import (
 	bytes "bytes"
+	context "context"
 	fmt "fmt"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -21,6 +20,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -774,10 +774,10 @@ func TunnelRequestTaskManagerList(
 }
 
 type ITaskManagerClient interface {
-	Create(req *CreateRequest, kvs ...*rony.KeyValue) (*TaskView, error)
-	Get(req *GetRequest, kvs ...*rony.KeyValue) (*TaskView, error)
-	Delete(req *DeleteRequest, kvs ...*rony.KeyValue) (*Bool, error)
-	List(req *ListRequest, kvs ...*rony.KeyValue) (*TaskViewMany, error)
+	Create(ctx context.Context, req *CreateRequest, kvs ...*rony.KeyValue) (*TaskView, error)
+	Get(ctx context.Context, req *GetRequest, kvs ...*rony.KeyValue) (*TaskView, error)
+	Delete(ctx context.Context, req *DeleteRequest, kvs ...*rony.KeyValue) (*Bool, error)
+	List(ctx context.Context, req *ListRequest, kvs ...*rony.KeyValue) (*TaskViewMany, error)
 }
 
 type TaskManagerClient struct {
@@ -790,14 +790,14 @@ func NewTaskManagerClient(ec edgec.Client) *TaskManagerClient {
 	}
 }
 func (c *TaskManagerClient) Create(
-	req *CreateRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *CreateRequest, kvs ...*rony.KeyValue,
 ) (*TaskView, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_TaskManagerCreate, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -815,14 +815,14 @@ func (c *TaskManagerClient) Create(
 	}
 }
 func (c *TaskManagerClient) Get(
-	req *GetRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *GetRequest, kvs ...*rony.KeyValue,
 ) (*TaskView, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_TaskManagerGet, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -840,14 +840,14 @@ func (c *TaskManagerClient) Get(
 	}
 }
 func (c *TaskManagerClient) Delete(
-	req *DeleteRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *DeleteRequest, kvs ...*rony.KeyValue,
 ) (*Bool, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_TaskManagerDelete, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -865,14 +865,14 @@ func (c *TaskManagerClient) Delete(
 	}
 }
 func (c *TaskManagerClient) List(
-	req *ListRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *ListRequest, kvs ...*rony.KeyValue,
 ) (*TaskViewMany, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_TaskManagerList, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}

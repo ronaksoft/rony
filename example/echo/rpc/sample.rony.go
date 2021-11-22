@@ -7,10 +7,8 @@ package service
 
 import (
 	bytes "bytes"
+	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -22,6 +20,8 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -312,7 +312,7 @@ func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCt
 }
 
 type ISampleClient interface {
-	Echo(req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
+	Echo(ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue) (*EchoResponse, error)
 }
 
 type SampleClient struct {
@@ -325,14 +325,14 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 	}
 }
 func (c *SampleClient) Echo(
-	req *EchoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *EchoRequest, kvs ...*rony.KeyValue,
 ) (*EchoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleEcho, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}

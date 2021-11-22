@@ -7,10 +7,8 @@ package rpc
 
 import (
 	bytes "bytes"
+	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
@@ -20,6 +18,8 @@ import (
 	tools "github.com/ronaksoft/rony/tools"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -416,8 +416,8 @@ func (sw *sampleWrapper) infoWithServerRedirectRestServer(conn rony.RestConn, ct
 }
 
 type ISampleClient interface {
-	InfoWithClientRedirect(req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
-	InfoWithServerRedirect(req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
+	InfoWithClientRedirect(ctx context.Context, req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
+	InfoWithServerRedirect(ctx context.Context, req *InfoRequest, kvs ...*rony.KeyValue) (*InfoResponse, error)
 }
 
 type SampleClient struct {
@@ -430,14 +430,14 @@ func NewSampleClient(ec edgec.Client) *SampleClient {
 	}
 }
 func (c *SampleClient) InfoWithClientRedirect(
-	req *InfoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *InfoRequest, kvs ...*rony.KeyValue,
 ) (*InfoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleInfoWithClientRedirect, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}
@@ -455,14 +455,14 @@ func (c *SampleClient) InfoWithClientRedirect(
 	}
 }
 func (c *SampleClient) InfoWithServerRedirect(
-	req *InfoRequest, kvs ...*rony.KeyValue,
+	ctx context.Context, req *InfoRequest, kvs ...*rony.KeyValue,
 ) (*InfoResponse, error) {
 	out := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(out)
 	in := rony.PoolMessageEnvelope.Get()
 	defer rony.PoolMessageEnvelope.Put(in)
 	out.Fill(c.c.GetRequestID(), C_SampleInfoWithServerRedirect, req, kvs...)
-	err := c.c.Send(out, in)
+	err := c.c.Send(ctx, out, in)
 	if err != nil {
 		return nil, err
 	}

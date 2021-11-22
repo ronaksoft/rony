@@ -1,6 +1,7 @@
 package edgec
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,6 +21,10 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
+
+var (
+	_ Client = &Http{}
+)
 
 // HttpConfig holds the configurations for the Http client.
 type HttpConfig struct {
@@ -145,11 +150,12 @@ func (h *Http) initConn() error {
 	return nil
 }
 
-func (h *Http) Send(req *rony.MessageEnvelope, res *rony.MessageEnvelope) error {
-	return h.SendWithDetails(req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout)
+func (h *Http) Send(ctx context.Context, req *rony.MessageEnvelope, res *rony.MessageEnvelope) error {
+	return h.SendWithDetails(ctx, req, res, h.cfg.RequestMaxRetry, h.cfg.ContextTimeout)
 }
 
 func (h *Http) SendWithDetails(
+	ctx context.Context,
 	req *rony.MessageEnvelope, res *rony.MessageEnvelope,
 	retry int, timeout time.Duration,
 ) (err error) {
@@ -176,7 +182,7 @@ SendLoop:
 		rs = h.sessionReplica
 	}
 
-	// If we exceeds the maximum retry then we return
+	// If we exceed the maximum retry then we return
 	if retry--; retry < 0 {
 		err = errors.ErrRetriesExceeded(err)
 
