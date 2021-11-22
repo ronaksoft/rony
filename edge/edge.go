@@ -28,6 +28,25 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+type MessageKind byte
+
+const (
+	_ MessageKind = iota
+	GatewayMessage
+	TunnelMessage
+)
+
+var (
+	messageKindNames = map[MessageKind]string{
+		GatewayMessage: "GatewayMessage",
+		TunnelMessage:  "TunnelMessage",
+	}
+)
+
+func (c MessageKind) String() string {
+	return messageKindNames[c]
+}
+
 type Server struct {
 	// General
 	dataDir       string
@@ -516,7 +535,12 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 		return nil
 	}
 
-	return edge.gateway.GetConn(connID)
+	conn := edge.gateway.GetConn(connID)
+	if conn == nil {
+		return nil
+	}
+
+	return conn
 }
 
 // TunnelRequest sends and receives a request through the Tunnel interface of the receiver Edge node.

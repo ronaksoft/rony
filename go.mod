@@ -18,6 +18,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/nyaruka/phonenumbers v1.0.70
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
 	github.com/pkg/errors v0.9.1
