@@ -9,6 +9,9 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	http "net/http"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,8 +23,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	http "net/http"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -791,7 +792,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		}
 	}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleEcho).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleEcho).
+			SetServiceName("Sample").
+			SetMethodName("Echo").
 			SetHandler(handlerFunc(C_SampleEcho)...).
 			Append(sw.echoWrapper),
 	)
@@ -800,7 +804,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		edge.NewRestProxy(sw.echoRestClient, sw.echoRestServer),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleSet).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleSet).
+			SetServiceName("Sample").
+			SetMethodName("Set").
 			SetHandler(handlerFunc(C_SampleSet)...).
 			Append(sw.setWrapper),
 	)
@@ -809,7 +816,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		edge.NewRestProxy(sw.setRestClient, sw.setRestServer),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleGet).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleGet).
+			SetServiceName("Sample").
+			SetMethodName("Get").
 			SetHandler(handlerFunc(C_SampleGet)...).
 			Append(sw.getWrapper),
 	)
@@ -818,7 +828,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		edge.NewRestProxy(sw.getRestClient, sw.getRestServer),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleEchoTunnel).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleEchoTunnel).
+			SetServiceName("Sample").
+			SetMethodName("EchoTunnel").
 			SetHandler(handlerFunc(C_SampleEchoTunnel)...).
 			Append(sw.echoTunnelWrapper),
 	)
@@ -827,12 +840,18 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		edge.NewRestProxy(sw.echoTunnelRestClient, sw.echoTunnelRestServer),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleEchoInternal).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleEchoInternal).
+			SetServiceName("Sample").
+			SetMethodName("EchoInternal").
 			SetHandler(handlerFunc(C_SampleEchoInternal)...).
 			Append(sw.echoInternalWrapper).TunnelOnly(),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleEchoDelay).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleEchoDelay).
+			SetServiceName("Sample").
+			SetMethodName("EchoDelay").
 			SetHandler(handlerFunc(C_SampleEchoDelay)...).
 			Append(sw.echoDelayWrapper),
 	)

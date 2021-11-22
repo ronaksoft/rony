@@ -9,6 +9,8 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,7 +22,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -317,12 +318,18 @@ func (sw *authWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []edg
 		}
 	}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_AuthRegister).
+		edge.NewHandlerOptions().
+			SetConstructor(C_AuthRegister).
+			SetServiceName("Auth").
+			SetMethodName("Register").
 			SetHandler(handlerFunc(C_AuthRegister)...).
 			Append(sw.registerWrapper),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_AuthLogin).
+		edge.NewHandlerOptions().
+			SetConstructor(C_AuthLogin).
+			SetServiceName("Auth").
+			SetMethodName("Login").
 			SetHandler(handlerFunc(C_AuthLogin)...).
 			Append(sw.loginWrapper),
 	)

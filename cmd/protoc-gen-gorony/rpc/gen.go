@@ -211,11 +211,13 @@ func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c uint6
 			return nil
 		}
 	}
-	
-	
+
 	{{- range .Methods }}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_{{.Fullname}}).
+		edge.NewHandlerOptions().
+		SetConstructor(C_{{.Fullname}}).
+		SetServiceName("{{$serviceName}}").
+		SetMethodName("{{.Name}}").
 		SetHandler(handlerFunc(C_{{.Fullname}})...).
         Append(sw.{{.NameCC}}Wrapper)
 		{{- if .TunnelOnly }}.TunnelOnly(){{- end }},

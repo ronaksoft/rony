@@ -9,6 +9,9 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	http "net/http"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
@@ -18,8 +21,6 @@ import (
 	tools "github.com/ronaksoft/rony/tools"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	http "net/http"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -245,7 +246,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		}
 	}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleInfoWithClientRedirect).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleInfoWithClientRedirect).
+			SetServiceName("Sample").
+			SetMethodName("InfoWithClientRedirect").
 			SetHandler(handlerFunc(C_SampleInfoWithClientRedirect)...).
 			Append(sw.infoWithClientRedirectWrapper),
 	)
@@ -254,7 +258,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		edge.NewRestProxy(sw.infoWithClientRedirectRestClient, sw.infoWithClientRedirectRestServer),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleInfoWithServerRedirect).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleInfoWithServerRedirect).
+			SetServiceName("Sample").
+			SetMethodName("InfoWithServerRedirect").
 			SetHandler(handlerFunc(C_SampleInfoWithServerRedirect)...).
 			Append(sw.infoWithServerRedirectWrapper),
 	)

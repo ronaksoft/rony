@@ -9,6 +9,9 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	http "net/http"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,8 +23,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	http "net/http"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -225,7 +226,10 @@ func (sw *sampleWrapper) Register(e *edge.Server, handlerFunc func(c uint64) []e
 		}
 	}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_SampleEcho).
+		edge.NewHandlerOptions().
+			SetConstructor(C_SampleEcho).
+			SetServiceName("Sample").
+			SetMethodName("Echo").
 			SetHandler(handlerFunc(C_SampleEcho)...).
 			Append(sw.echoWrapper),
 	)

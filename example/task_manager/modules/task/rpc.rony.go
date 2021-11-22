@@ -9,6 +9,8 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,7 +22,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -643,22 +644,34 @@ func (sw *taskManagerWrapper) Register(e *edge.Server, handlerFunc func(c uint64
 		}
 	}
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_TaskManagerCreate).
+		edge.NewHandlerOptions().
+			SetConstructor(C_TaskManagerCreate).
+			SetServiceName("TaskManager").
+			SetMethodName("Create").
 			SetHandler(handlerFunc(C_TaskManagerCreate)...).
 			Append(sw.createWrapper),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_TaskManagerGet).
+		edge.NewHandlerOptions().
+			SetConstructor(C_TaskManagerGet).
+			SetServiceName("TaskManager").
+			SetMethodName("Get").
 			SetHandler(handlerFunc(C_TaskManagerGet)...).
 			Append(sw.getWrapper),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_TaskManagerDelete).
+		edge.NewHandlerOptions().
+			SetConstructor(C_TaskManagerDelete).
+			SetServiceName("TaskManager").
+			SetMethodName("Delete").
 			SetHandler(handlerFunc(C_TaskManagerDelete)...).
 			Append(sw.deleteWrapper),
 	)
 	e.SetHandler(
-		edge.NewHandlerOptions().SetConstructor(C_TaskManagerList).
+		edge.NewHandlerOptions().
+			SetConstructor(C_TaskManagerList).
+			SetServiceName("TaskManager").
+			SetMethodName("List").
 			SetHandler(handlerFunc(C_TaskManagerList)...).
 			Append(sw.listWrapper),
 	)

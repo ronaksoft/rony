@@ -219,17 +219,16 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	if edge.tracer != nil {
-		methodName := registry.C(in.GetConstructor())
 		var span trace.Span
 		requestCtx.ctx, span = edge.tracer.Tracer(
 			ho.serviceName,
 			trace.WithSchemaURL(""),
 		).Start(
 			requestCtx.ctx,
-			fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, methodName),
+			fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
 			trace.WithAttributes(
 				semconv.RPCServiceKey.String(ho.serviceName),
-				semconv.RPCMethodKey.String(methodName),
+				semconv.RPCMethodKey.String(ho.methodName),
 			),
 			trace.WithSpanKind(trace.SpanKindServer),
 		)
