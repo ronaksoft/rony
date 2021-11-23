@@ -45,18 +45,21 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gw.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {
-		if len(data) > 0 && data[0] == 'S' {
-			time.Sleep(time.Duration(len(data)) * time.Second)
-		}
-		err := c.WriteBinary(streamID, data)
-		if err != nil {
-			fmt.Println("MessageHandler:", err.Error())
-		}
-	}
-	gw.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {
-		// fmt.Println(c.ClientIP())
-	}
+	gw.Subscribe(&testGatewayDelegate{
+		onConnectFunc: func(c rony.Conn, kvs ...*rony.KeyValue) {
+			// fmt.Println(c.ClientIP())
+		},
+		onMessageFunc: func(c rony.Conn, streamID int64, data []byte) {
+			if len(data) > 0 && data[0] == 'S' {
+				time.Sleep(time.Duration(len(data)) * time.Second)
+			}
+			err := c.WriteBinary(streamID, data)
+			if err != nil {
+				fmt.Println("MessageHandler:", err.Error())
+			}
+		},
+		onClose: func(c rony.Conn) {},
+	})
 
 	gw.Start()
 	defer gw.Shutdown()
@@ -201,4 +204,22 @@ func TestGateway(t *testing.T) {
 			time.Sleep(time.Second)
 		})
 	})
+}
+
+type testGatewayDelegate struct {
+	onConnectFunc func(c rony.Conn, kvs ...*rony.KeyValue)
+	onMessageFunc func(c rony.Conn, streamID int64, data []byte)
+	onClose       func(c rony.Conn)
+}
+
+func (t *testGatewayDelegate) OnConnect(c rony.Conn, kvs ...*rony.KeyValue) {
+	t.onConnectFunc(c, kvs...)
+}
+
+func (t *testGatewayDelegate) OnMessage(c rony.Conn, streamID int64, data []byte) {
+	t.onMessageFunc(c, streamID, data)
+}
+
+func (t *testGatewayDelegate) OnClose(c rony.Conn) {
+	t.onClose(c)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
-	"github.com/ronaksoft/rony/internal/gateway"
 	"github.com/ronaksoft/rony/internal/gateway/tcp/cors"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -56,10 +55,6 @@ type Config struct {
 // connect to our edge servers through Gateway.
 // This is an implementation of gateway.Gateway interface with support for **Http** and **Websocket** connections.
 type Gateway struct {
-	gateway.ConnectHandler
-	gateway.MessageHandler
-	gateway.CloseHandler
-
 	// Internals
 	cfg                Config
 	transportMode      rony.GatewayProtocol
@@ -74,6 +69,7 @@ type Gateway struct {
 	cntReads           uint64
 	cntWrites          uint64
 	cors               *cors.CORS
+	delegate           rony.GatewayDelegate
 
 	// Websocket Internals
 	upgradeHandler ws.Upgrader
@@ -132,9 +128,6 @@ func New(config Config) (*Gateway, error) {
 	g.connGC = newWebsocketConnGC(g)
 
 	// set handlers
-	g.MessageHandler = func(c rony.Conn, streamID int64, data []byte) {}
-	g.CloseHandler = func(c rony.Conn) {}
-	g.ConnectHandler = func(c rony.Conn, kvs ...*rony.KeyValue) {}
 	if poller, err := netpoll.New(&netpoll.Config{
 		OnWaitError: func(e error) {
 			g.cfg.Logger.Warn("Error On NetPoller Wait",
@@ -235,6 +228,10 @@ func (g *Gateway) detectListenerAddress() error {
 	g.listenerAddressMtx.Unlock()
 
 	return nil
+}
+
+func (g *Gateway) Subscribe(d rony.GatewayDelegate) {
+	g.delegate = d
 }
 
 // Start is non-blocking and call the Run function in background
@@ -381,11 +378,11 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 
 	metrics.IncCounter(metrics.CntGatewayIncomingHttpMessage)
 
-	g.ConnectHandler(conn)
+	g.delegate.OnConnect(conn)
 
-	g.MessageHandler(conn, int64(reqCtx.ID()), reqCtx.PostBody())
+	g.delegate.OnMessage(conn, int64(reqCtx.ID()), reqCtx.PostBody())
 
-	g.CloseHandler(conn)
+	g.delegate.OnClose(conn)
 
 	releaseConnInfo(meta)
 	releaseHttpConn(conn)
@@ -423,7 +420,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 		wsConn.Set(k, v)
 	}
 
-	g.ConnectHandler(wsConn)
+	g.delegate.OnConnect(wsConn)
 
 	err = wsConn.registerDesc()
 	if err != nil {
@@ -459,7 +456,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 			wg.Add(1)
 			_ = goPoolB.Submit(func() {
 				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.MessageHandler(wc, 0, ms[idx].Payload)
+				g.delegate.OnMessage(wc, 0, ms[idx].Payload)
 				wg.Done()
 			})
 

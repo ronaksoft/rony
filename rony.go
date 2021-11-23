@@ -52,6 +52,12 @@ type ClusterDelegate interface {
 	OnLeave(hash uint64)
 }
 
+type GatewayDelegate interface {
+	OnConnect(c Conn, kvs ...*KeyValue)
+	OnMessage(c Conn, streamID int64, data []byte)
+	OnClose(c Conn)
+}
+
 // Gateway defines the gateway interface where clients could connect
 // and communicate with the Edge servers
 type Gateway interface {
@@ -61,6 +67,7 @@ type Gateway interface {
 	GetConn(connID uint64) Conn
 	Addr() []string
 	Protocol() GatewayProtocol
+	Subscribe(d GatewayDelegate)
 }
 
 type GatewayProtocol int32

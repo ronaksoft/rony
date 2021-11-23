@@ -40,18 +40,21 @@ func nonPersistentSingle(gw *dummyGateway.Gateway, testConnID uint64) func(c C) 
 	return func(c C) {
 		inputData := tools.S2B(tools.RandomID(128))
 		wg := sync.WaitGroup{}
-		gw.MessageHandler = func(conn rony.Conn, streamID int64, data []byte) {
-			err := conn.WriteBinary(streamID, data)
-			c.So(err, ShouldBeNil)
-		}
-		gw.ConnectHandler = func(conn rony.Conn, kvs ...*rony.KeyValue) {
-			// c.Println("Connect", conn.ConnID())
-			c.So(conn.ConnID(), ShouldEqual, testConnID)
-		}
-		gw.CloseHandler = func(conn rony.Conn) {
-			// c.Println("Close", conn.ConnID())
-			c.So(conn.ConnID(), ShouldEqual, testConnID)
-		}
+		gw.Subscribe(&testGatewayDelegate{
+			onConnectFunc: func(conn rony.Conn, kvs ...*rony.KeyValue) {
+				// c.Println("Connect", conn.ConnID())
+				c.So(conn.ConnID(), ShouldEqual, testConnID)
+			},
+			onMessageFunc: func(conn rony.Conn, streamID int64, data []byte) {
+				err := conn.WriteBinary(streamID, data)
+				c.So(err, ShouldBeNil)
+			},
+			onClose: func(conn rony.Conn) {
+				// c.Println("Close", conn.ConnID())
+				c.So(conn.ConnID(), ShouldEqual, testConnID)
+			},
+		})
+
 		receiver := func(connID uint64, streamID int64, data []byte) {
 			c.So(connID, ShouldEqual, testConnID)
 			c.So(data, ShouldResemble, inputData)
@@ -70,18 +73,21 @@ func nonPersistentConcurrent(gw *dummyGateway.Gateway, testConnID uint64) func(c
 	return func(c C) {
 		inputData := tools.S2B(tools.RandomID(128))
 		wg := sync.WaitGroup{}
-		gw.MessageHandler = func(conn rony.Conn, streamID int64, data []byte) {
-			err := conn.WriteBinary(streamID, data)
-			c.So(err, ShouldBeNil)
-		}
-		gw.ConnectHandler = func(conn rony.Conn, kvs ...*rony.KeyValue) {
-			// c.Println("Connect", conn.ConnID())
-			c.So(conn.ConnID(), ShouldEqual, testConnID)
-		}
-		gw.CloseHandler = func(conn rony.Conn) {
-			// c.Println("Close", conn.ConnID())
-			c.So(conn.ConnID(), ShouldEqual, testConnID)
-		}
+		gw.Subscribe(&testGatewayDelegate{
+			onConnectFunc: func(conn rony.Conn, kvs ...*rony.KeyValue) {
+				// c.Println("Connect", conn.ConnID())
+				c.So(conn.ConnID(), ShouldEqual, testConnID)
+			},
+			onMessageFunc: func(conn rony.Conn, streamID int64, data []byte) {
+				err := conn.WriteBinary(streamID, data)
+				c.So(err, ShouldBeNil)
+			},
+			onClose: func(conn rony.Conn) {
+				// c.Println("Close", conn.ConnID())
+				c.So(conn.ConnID(), ShouldEqual, testConnID)
+			},
+		})
+
 		receiver := func(connID uint64, streamID int64, data []byte) {
 			c.So(connID, ShouldEqual, testConnID)
 			c.So(data, ShouldResemble, inputData)
@@ -97,4 +103,22 @@ func nonPersistentConcurrent(gw *dummyGateway.Gateway, testConnID uint64) func(c
 		gw.CloseConn(testConnID)
 		wg.Wait()
 	}
+}
+
+type testGatewayDelegate struct {
+	onConnectFunc func(c rony.Conn, kvs ...*rony.KeyValue)
+	onMessageFunc func(c rony.Conn, streamID int64, data []byte)
+	onClose       func(c rony.Conn)
+}
+
+func (t *testGatewayDelegate) OnConnect(c rony.Conn, kvs ...*rony.KeyValue) {
+	t.onConnectFunc(c, kvs...)
+}
+
+func (t *testGatewayDelegate) OnMessage(c rony.Conn, streamID int64, data []byte) {
+	t.onMessageFunc(c, streamID, data)
+}
+
+func (t *testGatewayDelegate) OnClose(c rony.Conn) {
+	t.onClose(c)
 }

@@ -85,6 +85,22 @@ func WithCustomerCluster(c rony.Cluster) Option {
 	}
 }
 
+type gatewayDelegate struct {
+	edge *Server
+}
+
+func (g gatewayDelegate) OnConnect(c rony.Conn, kvs ...*rony.KeyValue) {
+	g.edge.onGatewayConnect(c, kvs...)
+}
+
+func (g gatewayDelegate) OnMessage(c rony.Conn, streamID int64, data []byte) {
+	g.edge.onGatewayMessage(c, streamID, data)
+}
+
+func (g gatewayDelegate) OnClose(c rony.Conn) {
+	g.edge.onGatewayClose(c)
+}
+
 type TcpGatewayConfig struct {
 	Concurrency   int
 	ListenAddress string
@@ -119,9 +135,8 @@ func WithTcpGateway(gatewayConfig TcpGatewayConfig) Option {
 		if err != nil {
 			panic(err)
 		}
-		gatewayTcp.MessageHandler = edge.onGatewayMessage
-		gatewayTcp.ConnectHandler = edge.onGatewayConnect
-		gatewayTcp.CloseHandler = edge.onGatewayClose
+
+		gatewayTcp.Subscribe(&gatewayDelegate{edge: edge})
 		edge.gateway = gatewayTcp
 	}
 }
@@ -139,10 +154,19 @@ func WithTestGateway(gatewayConfig DummyGatewayConfig) Option {
 		if err != nil {
 			panic(err)
 		}
-		gatewayDummy.MessageHandler = edge.onGatewayMessage
-		gatewayDummy.ConnectHandler = edge.onGatewayConnect
-		gatewayDummy.CloseHandler = edge.onGatewayClose
+		gatewayDummy.Subscribe(&gatewayDelegate{edge: edge})
 		edge.gateway = gatewayDummy
+	}
+}
+
+func WithCustomGateway(gateway rony.Gateway) Option {
+	return func(edge *Server) {
+		if edge.gateway != nil {
+			panic(errors.ErrGatewayAlreadyInitialized)
+		}
+
+		gateway.Subscribe(&gatewayDelegate{edge: edge})
+		edge.gateway = gateway
 	}
 }
 

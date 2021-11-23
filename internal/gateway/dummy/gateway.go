@@ -6,7 +6,6 @@ import (
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
-	"github.com/ronaksoft/rony/internal/gateway"
 )
 
 /*
@@ -23,13 +22,10 @@ type Config struct {
 }
 
 type Gateway struct {
-	gateway.ConnectHandler
-	gateway.MessageHandler
-	gateway.CloseHandler
-
 	conns      map[uint64]*Conn
 	connsMtx   sync.RWMutex
 	connsTotal int32
+	delegate   rony.GatewayDelegate
 }
 
 func New(config Config) (*Gateway, error) {
@@ -45,7 +41,11 @@ func New(config Config) (*Gateway, error) {
 	return g, nil
 }
 
-// OpenConn opens a persistent connection to the gateway. For short lived use RPC or REST methods.
+func (g *Gateway) Subscribe(d rony.GatewayDelegate) {
+	g.delegate = d
+}
+
+// OpenConn opens a persistent connection to the gateway. For short-lived use RPC or REST methods.
 func (g *Gateway) OpenConn(
 	connID uint64, persistent bool,
 	onReceiveMessage func(connID uint64, streamID int64, data []byte),
@@ -56,7 +56,7 @@ func (g *Gateway) OpenConn(
 		onReceiveMessage(connID, streamID, data)
 	}
 
-	g.ConnectHandler(dConn, hdr...)
+	g.delegate.OnConnect(dConn, hdr...)
 }
 
 func (g *Gateway) openConn(connID uint64, persistent bool) *Conn {
@@ -79,7 +79,7 @@ func (g *Gateway) CloseConn(connID uint64) {
 	if c == nil {
 		return
 	}
-	g.CloseHandler(c)
+	g.delegate.OnClose(c)
 	atomic.AddInt32(&g.connsTotal, -1)
 }
 
@@ -93,7 +93,7 @@ func (g *Gateway) RPC(connID uint64, streamID int64, data []byte) error {
 		return errors.ErrConnectionNotExists
 	}
 
-	go g.MessageHandler(conn, streamID, data)
+	go g.delegate.OnMessage(conn, streamID, data)
 
 	return nil
 }
@@ -117,7 +117,7 @@ func (g *Gateway) REST(
 	}
 	defer g.CloseConn(connID)
 
-	g.MessageHandler(conn, 0, nil)
+	g.delegate.OnMessage(conn, 0, nil)
 
 	return
 }

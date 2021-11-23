@@ -129,7 +129,7 @@ func (wc *websocketConn) release(reason int) {
 	_ = wc.conn.Close()
 
 	if !wc.closed {
-		g.CloseHandler(wc)
+		g.delegate.OnClose(wc)
 		wc.closed = true
 		wc.conn = nil
 	}
