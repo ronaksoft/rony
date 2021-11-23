@@ -8,6 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
+	"go.opentelemetry.io/otel/codes"
+
 	"github.com/ronaksoft/rony/registry"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -326,7 +330,10 @@ func (ws *Websocket) SendWithDetails(
 Loop:
 	if wsc == nil {
 		// TODO:: try to gather information about the target
-		return ErrNoConnection
+		err := ErrNoConnection
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, err.Error())
+
+		return err
 	}
 
 	wsReq := &wsRequest{
@@ -349,6 +356,14 @@ Loop:
 			rs = ws.redirect(xx)
 			wsc = ws.getConnByReplica(rs)
 
+			trace.SpanFromContext(ctx).
+				AddEvent(
+					"Redirect",
+					trace.WithAttributes(
+						attribute.Int64("rony.replicaset", int64(rs)),
+					),
+				)
+
 			goto Loop
 		default:
 			x.DeepCopy(res)
@@ -358,8 +373,13 @@ Loop:
 		delete(ws.pending, req.GetRequestID())
 		ws.pendingMtx.Unlock()
 
-		return ErrTimeout
+		err := ErrTimeout
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, err.Error())
+
+		return err
 	}
+
+	trace.SpanFromContext(ctx).SetStatus(codes.Ok, "")
 
 	return nil
 }

@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
+
 	"github.com/ronaksoft/rony/registry"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -186,7 +188,10 @@ func (h *Http) SendWithDetails(
 	rs := h.cfg.Router.GetRoute(req)
 	hc := h.getConn(rs)
 	if hc == nil {
-		return ErrNoConnection
+		err = ErrNoConnection
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, err.Error())
+
+		return
 	}
 
 SendLoop:
@@ -201,6 +206,8 @@ SendLoop:
 	rs, err = hc.send(req, res, timeout)
 	switch err {
 	case nil:
+		trace.SpanFromContext(ctx).SetStatus(codes.Ok, "")
+
 		return nil
 	case ErrReplicaSetSession, ErrReplicaSetRequest:
 		rs = h.sessionReplica
@@ -209,6 +216,7 @@ SendLoop:
 	// If we exceed the maximum retry then we return
 	if retry--; retry < 0 {
 		err = errors.ErrRetriesExceeded(err)
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, err.Error())
 
 		return
 	}
