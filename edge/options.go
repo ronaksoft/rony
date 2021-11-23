@@ -32,6 +32,9 @@ type Option func(edge *Server)
 
 func WithTracer(tracer trace.Tracer) Option {
 	return func(edge *Server) {
+		if tracer == nil {
+			return
+		}
 		edge.tracer = tracer
 	}
 }

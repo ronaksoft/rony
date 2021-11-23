@@ -171,14 +171,16 @@ func (h *Http) SendWithDetails(
 	retry int, timeout time.Duration,
 ) (err error) {
 	if h.tracer != nil {
-		h.propagator.Inject(ctx, req.Carrier())
-		_, span := h.tracer.
+		var span trace.Span
+		ctx, span = h.tracer.
 			Start(
 				ctx,
 				fmt.Sprintf("%s.%s", h.cfg.Name, registry.C(req.Constructor)),
 				trace.WithSpanKind(trace.SpanKindClient),
 			)
 		defer span.End()
+
+		h.propagator.Inject(ctx, req.Carrier())
 	}
 
 	rs := h.cfg.Router.GetRoute(req)

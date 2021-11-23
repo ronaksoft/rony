@@ -5,6 +5,8 @@ import (
 	"os"
 	"runtime"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
@@ -23,15 +25,18 @@ var ServerCmd = &cobra.Command{
 			return errors.Wrap("bind flag:")(err)
 		}
 
-		tp := initTracer()
-		defer func() {
-			tp.Shutdown(context.Background())
-		}()
+		var tr trace.Tracer
+		if tp := initTracer(); tp != nil {
+			defer func() {
+				tp.Shutdown(context.Background())
+			}()
+			tr = tp.Tracer("SampleEchoServer")
+		}
 
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
 			config.GetString("server.id"),
-			edge.WithTracer(tp.Tracer("SampleEchoServer")),
+			edge.WithTracer(tr),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),

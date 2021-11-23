@@ -10,6 +10,8 @@ import (
 	"runtime/debug"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/metrics"
@@ -18,7 +20,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
@@ -226,7 +227,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	if edge.tracer != nil {
 		requestCtx.ctx = edge.propagator.Extract(context.Background(), in.Carrier())
 		var span trace.Span
-		requestCtx.ctx, span = otel.Tracer(ho.serviceName).
+		requestCtx.ctx, span = edge.tracer.
 			Start(
 				requestCtx.ctx,
 				fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
@@ -276,6 +277,12 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	metrics.AddCounterVec(metrics.CntRPC, 1, registry.C(in.Constructor))
+
+	if requestCtx.err == nil {
+		requestCtx.Span().SetStatus(codes.Ok, "")
+	} else {
+		requestCtx.Span().SetStatus(codes.Error, requestCtx.err.Error())
+	}
 
 	switch requestCtx.Kind() {
 	case GatewayMessage:

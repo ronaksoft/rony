@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edgec"
@@ -23,16 +25,19 @@ var ClientCmd = &cobra.Command{
 			return errors.Wrap("bind flag:")(err)
 		}
 
-		tp := initTracer()
-		defer func() {
-			tp.Shutdown(context.Background())
-		}()
+		var tr trace.Tracer
+		if tp := initTracer(); tp != nil {
+			defer func() {
+				tp.Shutdown(context.Background())
+			}()
+			tr = tp.Tracer("SampleEchoCli")
+		}
 
 		// Sample code for creating a client
 		// Instantiate a websocket connection, to use http connection we could use edgec.NewHttp
 		wsc := edgec.NewWebsocket(
 			edgec.WebsocketConfig{
-				Tracer:       tp.Tracer("SampleEchoCli"),
+				Tracer:       tr,
 				SeedHostPort: fmt.Sprintf("%s:%d", config.GetString("host"), config.GetInt("port")),
 				Handler: func(m *rony.MessageEnvelope) {
 					fmt.Println(m.RequestID, registry.C(m.Constructor))

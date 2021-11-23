@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
@@ -43,21 +46,31 @@ func main() {
 }
 
 func initTracer() *trace.TracerProvider {
-	exp, err := jaeger.New(
-		jaeger.WithCollectorEndpoint(
-			jaeger.WithEndpoint("http://localhost:14268/api/traces"),
-		),
-	)
-	if err != nil {
-		panic(err)
+	if jaegerURL := config.GetString("jaeger.url"); jaegerURL != "" {
+		exp, err := jaeger.New(
+			jaeger.WithCollectorEndpoint(
+				jaeger.WithEndpoint("http://localhost:14268/api/traces"),
+			),
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		tp := trace.NewTracerProvider(
+			trace.WithBatcher(exp),
+			trace.WithResource(
+				resource.NewWithAttributes(
+					semconv.SchemaURL,
+					semconv.ServiceNameKey.String("Echo"),
+				),
+			),
+		)
+		otel.SetTracerProvider(tp)
+
+		return tp
 	}
 
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exp),
-	)
-	otel.SetTracerProvider(tp)
-
-	return tp
+	return nil
 }
 
 var RootCmd = &cobra.Command{

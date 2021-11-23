@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/ronaksoft/rony/errors"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 /*
@@ -27,9 +29,12 @@ func init() {}
 type Sample struct{}
 
 func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
-	ctx.Log().Warn("Received", zap.Int64("ID", req.ID))
 	res.ReqID = req.ID
 	res.RandomText = req.RandomText
+
+	if req.ID%2 == 0 {
+		return errors.GenUnavailableErr("ITEM", fmt.Errorf("some random error"))
+	}
 
 	return nil
 }

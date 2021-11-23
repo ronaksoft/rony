@@ -100,6 +100,7 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 		connsByID:      make(map[string]*wsConn, 64),
 		pending:        make(map[uint64]chan *rony.MessageEnvelope, 1024),
 		logger:         log.With("EdgeC(Websocket)"),
+		tracer:         config.Tracer,
 	}
 
 	c.flusherPool = tools.NewFlusherPool(1, 100, c.sendFunc)
@@ -310,14 +311,16 @@ func (ws *Websocket) SendWithDetails(
 	}
 
 	if ws.tracer != nil {
-		ws.propagator.Inject(ctx, req.Carrier())
-		_, span := ws.tracer.
+		var span trace.Span
+		ctx, span = ws.tracer.
 			Start(
 				ctx,
 				fmt.Sprintf("%s.%s", ws.cfg.Name, registry.C(req.Constructor)),
 				trace.WithSpanKind(trace.SpanKindClient),
 			)
 		defer span.End()
+
+		ws.propagator.Inject(ctx, req.Carrier())
 	}
 
 Loop:
