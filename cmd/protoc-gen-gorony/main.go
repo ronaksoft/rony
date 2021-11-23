@@ -26,6 +26,8 @@ var (
 			switch path {
 			case "github.com/scylladb/gocqlx":
 				return "github.com/scylladb/gocqlx/v2"
+			case "go.opentelemetry.io/otel/semconv":
+				return "go.opentelemetry.io/otel/semconv/v1.7.0"
 			}
 
 			return path

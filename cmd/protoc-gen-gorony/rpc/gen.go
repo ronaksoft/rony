@@ -45,6 +45,8 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 
 				if !proto.GetExtension(arg.Options(), rony.E_RonyNoClient).(bool) {
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
+					//g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "go.opentelemetry.io/otel/semconv"})
+					//g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "go.opentelemetry.io/otel/trace"})
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClientInterface").Parse(genClientInterface)), arg))
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
 				}
@@ -234,11 +236,13 @@ func (sw *{{.NameCC}}Wrapper) Register (e *edge.Server, handlerFunc func(c uint6
 
 const genClient = `
 type {{.Name}}Client struct {
+	name string 
 	c edgec.Client
 }
 
-func New{{.Name}}Client(ec edgec.Client) *{{.Name}}Client {
+func New{{.Name}}Client(name string, ec edgec.Client) *{{.Name}}Client {
 	return &{{.Name}}Client{
+		name: name,
 		c: ec,
 	}
 }
@@ -331,7 +335,7 @@ func prepare{{.Name}}Command(cmd *cobra.Command, c edgec.Client) (*{{.Name}}Clie
 		return nil, err
 	}
 	
-	return New{{.Name}}Client(c), nil
+	return New{{.Name}}Client("{{.Name}}",c), nil
 }
 
 {{- $serviceName := .Name -}}

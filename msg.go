@@ -63,6 +63,13 @@ func (x *MessageEnvelope) Set(KVs ...*KeyValue) {
 	x.Header = append(x.Header[:0], KVs...)
 }
 
+func (x *MessageEnvelope) Append(key, val string) {
+	x.Header = append(x.Header, &KeyValue{
+		Key:   key,
+		Value: val,
+	})
+}
+
 func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
 	m, err := registry.Unwrap(x)
 	if err != nil {
@@ -70,6 +77,34 @@ func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
 	}
 
 	return m.ProtoReflect(), nil
+}
+
+func (x *MessageEnvelope) Carrier() *envelopeCarrier {
+	return &envelopeCarrier{
+		e: x,
+	}
+}
+
+// envelopeCarrier is an adapted for MessageEnvelope to implement propagation.TextMapCarrier interface
+type envelopeCarrier struct {
+	e *MessageEnvelope
+}
+
+func (e envelopeCarrier) Get(key string) string {
+	return e.e.Get(key, "")
+}
+
+func (e envelopeCarrier) Set(key string, value string) {
+	e.e.Append(key, value)
+}
+
+func (e envelopeCarrier) Keys() []string {
+	var keys = make([]string, len(e.e.Header))
+	for idx := range e.e.Header {
+		keys[idx] = e.e.Header[idx].Key
+	}
+
+	return keys
 }
 
 /*

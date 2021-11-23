@@ -4,6 +4,8 @@ import (
 	"runtime"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	gossipCluster "github.com/ronaksoft/rony/internal/cluster/gossip"
@@ -14,7 +16,6 @@ import (
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
 	"github.com/ronaksoft/rony/log"
 	"github.com/scylladb/gocqlx/v2"
-	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
@@ -29,16 +30,9 @@ import (
 
 type Option func(edge *Server)
 
-type TracerConfig struct {
-	Name        string
-	Version     string
-	Environment string
-}
-
-func WithTracer(name string, tp trace.TracerProvider) Option {
+func WithTracer(tracer trace.Tracer) Option {
 	return func(edge *Server) {
-		edge.name = name
-		edge.tracer = tp
+		edge.tracer = tracer
 	}
 }
 

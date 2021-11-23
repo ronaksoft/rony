@@ -2,9 +2,16 @@ package edgec
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ronaksoft/rony/registry"
+
+	"go.opentelemetry.io/otel/propagation"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
@@ -37,6 +44,7 @@ type HttpConfig struct {
 	RequestMaxRetry int
 	Router          Router
 	Secure          bool
+	Tracer          trace.Tracer
 }
 
 // Http connects to edge servers with HTTP transport.
@@ -48,6 +56,8 @@ type Http struct {
 	sessionReplica uint64
 	hosts          map[uint64]map[string]*httpConn // holds host by replicaSet/hostID
 	logger         log.Logger
+	tracer         trace.Tracer
+	propagator     propagation.TraceContext
 }
 
 func NewHttp(config HttpConfig) *Http {
@@ -62,6 +72,7 @@ func NewHttp(config HttpConfig) *Http {
 		},
 		hosts:  make(map[uint64]map[string]*httpConn, 32),
 		logger: log.With("EdgeC(Http)"),
+		tracer: config.Tracer,
 	}
 
 	if h.cfg.Router == nil {
@@ -159,6 +170,17 @@ func (h *Http) SendWithDetails(
 	req *rony.MessageEnvelope, res *rony.MessageEnvelope,
 	retry int, timeout time.Duration,
 ) (err error) {
+	if h.tracer != nil {
+		h.propagator.Inject(ctx, req.Carrier())
+		_, span := h.tracer.
+			Start(
+				ctx,
+				fmt.Sprintf("%s.%s", h.cfg.Name, registry.C(req.Constructor)),
+				trace.WithSpanKind(trace.SpanKindClient),
+			)
+		defer span.End()
+	}
+
 	rs := h.cfg.Router.GetRoute(req)
 	hc := h.getConn(rs)
 	if hc == nil {

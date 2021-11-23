@@ -58,7 +58,7 @@ func TestClient_Connect(t *testing.T) {
 					c.Println("Received Uncaught Message", registry.C(m.Constructor))
 				},
 			})
-			clnt := service.NewSampleClient(wsc)
+			clnt := service.NewSampleClient("TestClient", wsc)
 			err := wsc.Start()
 			_, _ = c.Println(wsc.ConnInfo())
 			c.So(err, ShouldBeNil)
@@ -86,7 +86,7 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
-			clnt := service.NewSampleClient(wsc)
+			clnt := service.NewSampleClient("TestClient", wsc)
 			err := wsc.Start()
 			c.So(err, ShouldBeNil)
 
@@ -101,7 +101,7 @@ func TestClient_Connect(t *testing.T) {
 			wsc := edgec.NewWebsocket(edgec.WebsocketConfig{
 				SeedHostPort: "127.0.0.1:8081",
 			})
-			clnt := service.NewSampleClient(wsc)
+			clnt := service.NewSampleClient("TestClient", wsc)
 			err := wsc.Start()
 			c.So(err, ShouldBeNil)
 

@@ -428,12 +428,14 @@ type ISampleClient interface {
 }
 
 type SampleClient struct {
-	c edgec.Client
+	name string
+	c    edgec.Client
 }
 
-func NewSampleClient(ec edgec.Client) *SampleClient {
+func NewSampleClient(name string, ec edgec.Client) *SampleClient {
 	return &SampleClient{
-		c: ec,
+		name: name,
+		c:    ec,
 	}
 }
 func (c *SampleClient) InfoWithClientRedirect(

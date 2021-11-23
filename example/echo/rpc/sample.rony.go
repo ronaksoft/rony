@@ -320,12 +320,14 @@ type ISampleClient interface {
 }
 
 type SampleClient struct {
-	c edgec.Client
+	name string
+	c    edgec.Client
 }
 
-func NewSampleClient(ec edgec.Client) *SampleClient {
+func NewSampleClient(name string, ec edgec.Client) *SampleClient {
 	return &SampleClient{
-		c: ec,
+		name: name,
+		c:    ec,
 	}
 }
 func (c *SampleClient) Echo(
@@ -361,7 +363,7 @@ func prepareSampleCommand(cmd *cobra.Command, c edgec.Client) (*SampleClient, er
 		return nil, err
 	}
 
-	return NewSampleClient(c), nil
+	return NewSampleClient("Sample", c), nil
 }
 
 var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {

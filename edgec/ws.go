@@ -8,11 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ronaksoft/rony/registry"
+
+	"go.opentelemetry.io/otel/propagation"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -42,6 +47,7 @@ type ConnectHandler func(c *Websocket)
 
 // WebsocketConfig holds the configs for the Websocket client
 type WebsocketConfig struct {
+	Name         string
 	SeedHostPort string
 	IdleTimeout  time.Duration
 	DialTimeout  time.Duration
@@ -61,6 +67,7 @@ type WebsocketConfig struct {
 	Router Router
 	// OnConnect will be called everytime the websocket connection is established.
 	OnConnect ConnectHandler
+	Tracer    trace.Tracer
 }
 
 // Websocket client which could handle multiple connections
@@ -69,6 +76,8 @@ type Websocket struct {
 	sessionReplica uint64
 	nextReqID      uint64
 	logger         log.Logger
+	tracer         trace.Tracer
+	propagator     propagation.TraceContext
 
 	// Connection Pool
 	connsMtx       sync.RWMutex
@@ -121,6 +130,10 @@ func NewWebsocket(config WebsocketConfig) *Websocket {
 	}
 
 	return c
+}
+
+func (ws *Websocket) Tracer() trace.Tracer {
+	return ws.cfg.Tracer
 }
 
 func (ws *Websocket) GetRequestID() uint64 {
@@ -294,6 +307,17 @@ func (ws *Websocket) SendWithDetails(
 	} else {
 		rs = ws.cfg.Router.GetRoute(req)
 		wsc = ws.getConnByReplica(rs)
+	}
+
+	if ws.tracer != nil {
+		ws.propagator.Inject(ctx, req.Carrier())
+		_, span := ws.tracer.
+			Start(
+				ctx,
+				fmt.Sprintf("%s.%s", ws.cfg.Name, registry.C(req.Constructor)),
+				trace.WithSpanKind(trace.SpanKindClient),
+			)
+		defer span.End()
 	}
 
 Loop:

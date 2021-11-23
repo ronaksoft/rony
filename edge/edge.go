@@ -2,14 +2,13 @@ package edge
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"time"
-
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
@@ -19,6 +18,9 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"github.com/ronaksoft/rony/tools"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -63,13 +65,16 @@ type Server struct {
 	postHandlers []Handler
 
 	// Edge components
-	tracer     trace.TracerProvider
 	router     rony.Router
 	cluster    rony.Cluster
 	tunnel     rony.Tunnel
 	gateway    rony.Gateway
 	dispatcher Dispatcher
 	restMux    *restMux
+
+	// Tracing
+	tracer     trace.Tracer
+	propagator propagation.TraceContext
 }
 
 func NewServer(serverID string, opts ...Option) *Server {
@@ -219,19 +224,18 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	if edge.tracer != nil {
+		requestCtx.ctx = edge.propagator.Extract(context.Background(), in.Carrier())
 		var span trace.Span
-		requestCtx.ctx, span = edge.tracer.Tracer(
-			ho.serviceName,
-			trace.WithSchemaURL(""),
-		).Start(
-			requestCtx.ctx,
-			fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
-			trace.WithAttributes(
-				semconv.RPCServiceKey.String(ho.serviceName),
-				semconv.RPCMethodKey.String(ho.methodName),
-			),
-			trace.WithSpanKind(trace.SpanKindServer),
-		)
+		requestCtx.ctx, span = otel.Tracer(ho.serviceName).
+			Start(
+				requestCtx.ctx,
+				fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
+				trace.WithAttributes(
+					semconv.RPCServiceKey.String(ho.serviceName),
+					semconv.RPCMethodKey.String(ho.methodName),
+				),
+				trace.WithSpanKind(trace.SpanKindServer),
+			)
 		defer span.End()
 	}
 

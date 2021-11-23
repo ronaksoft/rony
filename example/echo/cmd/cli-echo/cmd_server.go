@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"runtime"
 
@@ -22,9 +23,15 @@ var ServerCmd = &cobra.Command{
 			return errors.Wrap("bind flag:")(err)
 		}
 
+		tp := initTracer()
+		defer func() {
+			tp.Shutdown(context.Background())
+		}()
+
 		// Instantiate the edge server
 		edgeServer = edge.NewServer(
 			config.GetString("server.id"),
+			edge.WithTracer(tp.Tracer("SampleEchoServer")),
 			edge.WithTcpGateway(edge.TcpGatewayConfig{
 				Concurrency:   runtime.NumCPU() * 100,
 				ListenAddress: config.GetString("gateway.listen"),

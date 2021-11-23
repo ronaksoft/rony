@@ -7,6 +7,9 @@ import (
 	"github.com/ronaksoft/rony/config"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 func main() {
@@ -37,6 +40,24 @@ func main() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println("we got error:", err)
 	}
+}
+
+func initTracer() *trace.TracerProvider {
+	exp, err := jaeger.New(
+		jaeger.WithCollectorEndpoint(
+			jaeger.WithEndpoint("http://localhost:14268/api/traces"),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+	)
+	otel.SetTracerProvider(tp)
+
+	return tp
 }
 
 var RootCmd = &cobra.Command{

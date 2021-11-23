@@ -23,7 +23,7 @@ import (
 //go:generate protoc -I=. -I=../../.. --gorony_out=paths=source_relative,option=no_edge_dep:. sample.proto
 func init() {}
 
-// Sample implements auto-generated service.ISample interface
+// Sample implements auto-generated ISample interface
 type Sample struct{}
 
 func (s *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse) *rony.Error {
