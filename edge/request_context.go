@@ -9,6 +9,7 @@ import (
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/tools"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -229,6 +230,12 @@ func (ctx *RequestCtx) TunnelRequest(replicaSet uint64, req, res *rony.MessageEn
 // Log returns a logger
 func (ctx *RequestCtx) Log() log.Logger {
 	return ctx.edge.logger
+}
+
+// Span returns a tracer span. Don't End the span, since it will be
+// closed automatically at the end of RequestCtx lifecycle.
+func (ctx *RequestCtx) Span() trace.Span {
+	return trace.SpanFromContext(ctx.ctx)
 }
 
 func (ctx *RequestCtx) ReplicaSet() uint64 {
