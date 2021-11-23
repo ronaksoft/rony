@@ -224,19 +224,23 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	if edge.tracer != nil {
-		requestCtx.ctx = edge.propagator.Extract(requestCtx.ctx, in.Carrier())
-		var span trace.Span
-		requestCtx.ctx, span = edge.tracer.
-			Start(
-				requestCtx.ctx,
-				fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
-				trace.WithAttributes(
-					semconv.RPCServiceKey.String(ho.serviceName),
-					semconv.RPCMethodKey.String(ho.methodName),
-				),
-				trace.WithSpanKind(trace.SpanKindServer),
-			)
-		defer span.End()
+		switch in.Constructor {
+		case rony.C_Ping, rony.C_GetAllNodes, rony.C_GetNodes:
+		default:
+			requestCtx.ctx = edge.propagator.Extract(requestCtx.ctx, in.Carrier())
+			var span trace.Span
+			requestCtx.ctx, span = edge.tracer.
+				Start(
+					requestCtx.ctx,
+					fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
+					trace.WithAttributes(
+						semconv.RPCServiceKey.String(ho.serviceName),
+						semconv.RPCMethodKey.String(ho.methodName),
+					),
+					trace.WithSpanKind(trace.SpanKindServer),
+				)
+			defer span.End()
+		}
 	}
 
 	// Run the handler
