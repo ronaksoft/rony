@@ -25,7 +25,7 @@ type RequestCtx struct {
 	// cfg holds all cancel functions which will be called at the
 	// end of the lifecycle of the RequestCtx
 	ctx context.Context
-	cfs []func()
+	cf  func()
 }
 
 func newRequestCtx() *RequestCtx {
@@ -250,11 +250,8 @@ func (ctx *RequestCtx) Router() rony.Router {
 	return ctx.edge.router
 }
 
-func (ctx *RequestCtx) WithTimeout(t time.Duration) context.Context {
-	iCtx, cf := context.WithTimeout(ctx.ctx, t)
-	ctx.cfs = append(ctx.cfs, cf)
-
-	return iCtx
+func (ctx *RequestCtx) Context() context.Context {
+	return ctx.ctx
 }
 
 var requestCtxPool = sync.Pool{}
@@ -271,7 +268,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
 	ctx.err = nil
-	ctx.ctx = context.TODO()
+	ctx.ctx, ctx.cf = context.WithCancel(context.TODO())
 
 	return ctx
 }
@@ -283,12 +280,10 @@ func releaseRequestCtx(ctx *RequestCtx) {
 	default:
 	}
 
-	// Call any possible context created in the RequestCtx lifecycle
-	for _, cf := range ctx.cfs {
-		cf()
-	}
-	ctx.cfs = ctx.cfs[:0]
+	// call cancel func
+	ctx.cf()
 
+	// reset request id
 	ctx.reqID = 0
 
 	// Put back into the pool

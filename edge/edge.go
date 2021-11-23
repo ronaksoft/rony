@@ -2,7 +2,6 @@ package edge
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -225,7 +224,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 	}
 
 	if edge.tracer != nil {
-		requestCtx.ctx = edge.propagator.Extract(context.Background(), in.Carrier())
+		requestCtx.ctx = edge.propagator.Extract(requestCtx.ctx, in.Carrier())
 		var span trace.Span
 		requestCtx.ctx, span = edge.tracer.
 			Start(
@@ -378,9 +377,6 @@ func (edge *Server) onGatewayClose(conn rony.Conn) {
 	edge.dispatcher.OnClose(conn)
 }
 func (edge *Server) onTunnelMessage(conn rony.Conn, tm *msg.TunnelMessage) {
-	// _, task := trace.NewTask(context.Background(), "onTunnelMessage")
-	// defer task.End()
-
 	// Fill the dispatch context envelope from the received tunnel message
 	dispatchCtx := acquireDispatchCtx(edge, conn, 0, tm.SenderID, TunnelMessage)
 	tm.Envelope.DeepCopy(dispatchCtx.req)
