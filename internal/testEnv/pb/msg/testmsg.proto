@@ -9,7 +9,7 @@ message Envelope1 {
 }
 
 message Envelope2 {
-  option (rony_is_envelope) = true;
+  option (rony_envelope) = true;
   uint64 constructor = 1;
   bytes message = 2;
 }

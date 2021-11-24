@@ -79,6 +79,10 @@ func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
 	return m.ProtoReflect(), nil
 }
 
+// Carrier wraps the MessageEnvelope into an envelope carrier which is useful for cross-cutting
+// tracing. With this method, instrumentation packages can pass the trace info into the wire.
+// Rony has builtin support, and you do not need to use this function explicitly.
+// Check edge.WithTracer option to enable tracing
 func (x *MessageEnvelope) Carrier() *envelopeCarrier {
 	return &envelopeCarrier{
 		e: x,

@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
@@ -15,12 +16,20 @@ import (
    Copyright Ronak Software Group 2020
 */
 
+// Message defines the behavior of messages in Rony. They must be able to
+// encode/decode ProtocolBuffer and JSON formats.
+type Message interface {
+	proto.Message
+	json.Marshaler
+	json.Unmarshaler
+}
+
 type Envelope interface {
 	GetConstructor() uint64
 	GetMessage() []byte
 }
 
-type UnwrapFunc func(envelope Envelope) (proto.Message, error)
+type UnwrapFunc func(envelope Envelope) (Message, error)
 
 var constructors = map[uint64]string{}
 var unwrapFunctions = map[uint64]UnwrapFunc{}
@@ -36,17 +45,17 @@ func Register(c uint64, n string, unwrapFunc UnwrapFunc) {
 	}
 }
 
-func ConstructorName(c uint64) string {
-	return constructors[c]
-}
-
-func Unwrap(envelope Envelope) (proto.Message, error) {
+func Unwrap(envelope Envelope) (Message, error) {
 	unwrapFunc := unwrapFunctions[envelope.GetConstructor()]
 	if unwrapFunc == nil {
 		return nil, fmt.Errorf("not found")
 	}
 
 	return unwrapFunc(envelope)
+}
+
+func ConstructorName(c uint64) string {
+	return constructors[c]
 }
 
 func C(c uint64) string {

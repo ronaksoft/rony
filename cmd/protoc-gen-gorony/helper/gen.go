@@ -241,7 +241,7 @@ const genSerializers = `
 `
 
 const genUnwrap = `
-func unwrap{{.Name}} (e registry.Envelope) (proto.Message, error) {
+func unwrap{{.Name}} (e registry.Envelope) (registry.Message, error) {
 	x := &{{.Name}}{}
 	err := x.Unmarshal(e.GetMessage())
 	if err != nil {

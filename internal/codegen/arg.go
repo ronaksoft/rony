@@ -283,7 +283,7 @@ func (ma MessageArg) IsEnvelope() bool {
 		return false
 	}
 
-	return proto.GetExtension(opt, rony.E_RonyIsEnvelope).(bool)
+	return proto.GetExtension(opt, rony.E_RonyEnvelope).(bool)
 }
 
 func (ma MessageArg) Options() *descriptorpb.MessageOptions {
