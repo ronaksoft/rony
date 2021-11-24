@@ -78,7 +78,9 @@ type MessageArg struct {
 }
 
 func GetMessageArg(m *protogen.Message) MessageArg {
-	arg := MessageArg{}
+	arg := MessageArg{
+		desc: m,
+	}
 	arg.name = string(m.Desc.Name())
 	arg.pkg = string(m.Desc.ParentFile().Package())
 	arg.C = CrcHash([]byte(m.Desc.Name()))

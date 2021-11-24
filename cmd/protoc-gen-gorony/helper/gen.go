@@ -43,12 +43,13 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: f.ImportPath})
 				}
 			}
-			appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", arg.C, arg.Name(), arg.Name()))
+			appendToInit(fmt.Sprintf("registry.Register(%d, %q, factory%s)", arg.C, arg.Name(), arg.Name()))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genPool").Parse(genPool)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
-			g.P(codegen.ExecTemplate(template.Must(template.New("genUnwrap").Parse(genUnwrap)), arg))
+			g.P(codegen.ExecTemplate(template.Must(template.New("genFactory").Parse(genFactory)), arg))
+
 			if !opt.NoEdgeDependency {
 				g.P(codegen.ExecTemplate(template.Must(template.New("genPushToContext").Parse(genPushToContext)), arg))
 			}
@@ -61,7 +62,7 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 				if m.Input.Pkg() != "" {
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: m.Input.ImportPath})
 				}
-				appendToInit(fmt.Sprintf("registry.Register(%d, %q, unwrap%s)", m.C, m.Fullname(), m.Input.Name()))
+				appendToInit(fmt.Sprintf("registry.Register(%d, %q, factory%s)", m.C, m.Fullname(), m.Input.Name()))
 				g.P("const C_", m.Fullname(), " uint64 = ", fmt.Sprintf("%d", m.C))
 			}
 		}
@@ -231,22 +232,44 @@ const genSerializers = `
 	}
 	
 	func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
+	{{- if .IsEnvelope }}
+		m := registry.JSONEnvelope{}
+		err := m.UnmarshalJSON(b)
+		if err != nil {
+			return err 
+		}
+		
+		x.Constructor = registry.N(m.Constructor)
+		x.Message, err = json.Marshal(m.Message)
+		
+		return err
+	{{- else }}
 		return protojson.Unmarshal(b, x)
+	{{- end }}
 	}
 
 	func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
+	{{- if .IsEnvelope }}
+		jsonEnvelope := registry.JSONEnvelope{
+			Constructor: registry.C(x.Constructor),
+		}
+		
+		var err error 
+		jsonEnvelope.Message, err = registry.Unwrap(x)
+		if err != nil {
+			return nil, err
+		}
+
+		return jsonEnvelope.MarshalJSON()
+	{{- else }}
 		return protojson.Marshal(x)
+	{{- end }}
+		
 	}
-	
 `
 
-const genUnwrap = `
-func unwrap{{.Name}} (e registry.Envelope) (registry.Message, error) {
-	x := &{{.Name}}{}
-	err := x.Unmarshal(e.GetMessage())
-	if err != nil {
-		return nil, err
-	}
-	return x, nil
+const genFactory = `
+func factory{{.Name}} () registry.Message {
+	return &{{.Name}}{}
 }
 `

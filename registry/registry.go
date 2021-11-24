@@ -29,29 +29,51 @@ type Envelope interface {
 	GetMessage() []byte
 }
 
-type UnwrapFunc func(envelope Envelope) (Message, error)
+type Factory func() Message
 
-var constructors = map[uint64]string{}
-var unwrapFunctions = map[uint64]UnwrapFunc{}
+var (
+	constructors     = map[uint64]string{}
+	constructorNames = map[string]uint64{}
+	factories        = map[uint64]Factory{}
+)
 
-func Register(c uint64, n string, unwrapFunc UnwrapFunc) {
+func Register(c uint64, n string, f Factory) {
 	if old, ok := constructors[c]; ok {
 		panic(fmt.Sprintf("constructor already exists %s:%s", old, n))
 	} else {
 		constructors[c] = n
+		constructorNames[n] = c
 	}
-	if unwrapFunc != nil {
-		unwrapFunctions[c] = unwrapFunc
+	if f != nil {
+		factories[c] = f
 	}
 }
 
-func Unwrap(envelope Envelope) (Message, error) {
-	unwrapFunc := unwrapFunctions[envelope.GetConstructor()]
-	if unwrapFunc == nil {
-		return nil, fmt.Errorf("not found")
+func RegisterFactory(c uint64, f Factory) {
+	factories[c] = f
+}
+
+func Get(c uint64) (Message, error) {
+	f := factories[c]
+	if f == nil {
+		return nil, errFactoryNotExists
 	}
 
-	return unwrapFunc(envelope)
+	return f(), nil
+}
+
+func Unwrap(envelope Envelope) (Message, error) {
+	m, err := Get(envelope.GetConstructor())
+	if err != nil {
+		return nil, err
+	}
+
+	err = proto.UnmarshalOptions{Merge: true}.Unmarshal(envelope.GetMessage(), m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 func ConstructorName(c uint64) string {
@@ -61,3 +83,33 @@ func ConstructorName(c uint64) string {
 func C(c uint64) string {
 	return constructors[c]
 }
+
+func ConstructorNumber(n string) uint64 {
+	return constructorNames[n]
+}
+
+func N(n string) uint64 {
+	return constructorNames[n]
+}
+
+type JSONMessage interface {
+	json.Marshaler
+	json.Unmarshaler
+}
+
+type JSONEnvelope struct {
+	Constructor string      `json:"constructor"`
+	Message     JSONMessage `json:"message"`
+}
+
+func (je JSONEnvelope) MarshalJSON() ([]byte, error) {
+	return json.Marshal(je)
+}
+
+func (je *JSONEnvelope) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, je)
+}
+
+var (
+	errFactoryNotExists = fmt.Errorf("factory not exists")
+)

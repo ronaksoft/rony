@@ -45,8 +45,6 @@ func GenFunc(g *protogen.GeneratedFile, _ *codegen.PluginOptions, files ...*prot
 
 				if !proto.GetExtension(arg.Options(), rony.E_RonyNoClient).(bool) {
 					g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "github.com/ronaksoft/rony/edgec"})
-					//g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "go.opentelemetry.io/otel/semconv"})
-					//g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "go.opentelemetry.io/otel/trace"})
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClientInterface").Parse(genClientInterface)), arg))
 					g.P(codegen.ExecTemplate(template.Must(template.New("genClient").Parse(genClient)), arg))
 				}
