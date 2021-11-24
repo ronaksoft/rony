@@ -53,6 +53,7 @@ func (c MessageKind) String() string {
 	return messageKindNames[c]
 }
 
+// Server represents Edge serve. Edge server sticks all other parts of the system together.
 type Server struct {
 	// General
 	name     string
@@ -331,7 +332,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
 	defer releaseDispatchCtx(dispatchCtx)
 
-	err := edge.dispatcher.Interceptor(dispatchCtx, data)
+	err := edge.dispatcher.Decoder(data, dispatchCtx.req)
 	if err != nil {
 		return
 	}
@@ -419,7 +420,10 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	err.ToEnvelope(envelope)
 	switch ctx.kind {
 	case GatewayMessage:
-		edge.dispatcher.OnMessage(ctx, envelope)
+		buf := pools.Buffer.GetCap(1024)
+		_ = edge.dispatcher.Encoder(envelope, buf)
+		_ = ctx.conn.WriteBinary(ctx.streamID, *buf.Bytes())
+		pools.Buffer.Put(buf)
 		rony.PoolMessageEnvelope.Put(envelope)
 	case TunnelMessage:
 		ctx.BufferPush(envelope)

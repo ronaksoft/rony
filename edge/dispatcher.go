@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
+	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -15,18 +16,10 @@ import (
 */
 
 type Dispatcher interface {
-	// OnMessage is called on every message pushed to RequestCtx.
-	// All the input arguments are valid in the function context, if you need to pass 'envelope' to other
-	// async functions, make sure to hard copy (clone) it before sending it.
-	// **NOTE**: This is not called on non-persistent connections, instead it is user's responsibility to check the
-	// ctx.BufferSize() and ctx.BufferPop() functions
-	OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope)
-	// Interceptor is called before any handler called.
-	// All the input arguments are valid in the function context, if you need to pass 'data' or 'envelope' to other
-	// async functions, make sure to hard copy (clone) it before sending it. If 'err' is not nil then envelope will be
-	// discarded, it is the user's responsibility to send back appropriate message using 'conn'
-	// Note that conn IS NOT nil in any circumstances.
-	Interceptor(ctx *DispatchCtx, data []byte) (err error)
+	// Encoder will be called on the outgoing messages to encode them into the connection.
+	Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error
+	// Decoder decodes the incoming wire messages and converts it to a rony.MessageEnvelope
+	Decoder(data []byte, me *rony.MessageEnvelope) error
 	// Done will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
@@ -39,14 +32,16 @@ type Dispatcher interface {
 // defaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
 type defaultDispatcher struct{}
 
-func (s *defaultDispatcher) OnMessage(ctx *DispatchCtx, envelope *rony.MessageEnvelope) {
-	buf := pools.Buffer.FromProto(envelope)
-	_ = ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
-	pools.Buffer.Put(buf)
+func (s *defaultDispatcher) Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error {
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
+	buf.SetBytes(&bb)
+
+	return nil
 }
 
-func (s *defaultDispatcher) Interceptor(ctx *DispatchCtx, data []byte) (err error) {
-	return ctx.FillBytes(data)
+func (s *defaultDispatcher) Decoder(data []byte, me *rony.MessageEnvelope) error {
+	return me.Unmarshal(data)
 }
 
 func (s *defaultDispatcher) Done(ctx *DispatchCtx) {

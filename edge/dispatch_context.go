@@ -81,15 +81,6 @@ func (ctx *DispatchCtx) Fill(
 	ctx.req.Fill(requestID, constructor, p, kv...)
 }
 
-func (ctx *DispatchCtx) FillBytes(data []byte) error {
-	if ctx.reqFilled {
-		panic("BUG!!! request has been already filled")
-	}
-	ctx.reqFilled = true
-
-	return proto.Unmarshal(data, ctx.req)
-}
-
 func (ctx *DispatchCtx) Set(key string, v interface{}) {
 	ctx.mtx.Lock()
 	ctx.kv[key] = v

@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
@@ -31,27 +33,26 @@ type testDispatcher struct {
 	l log.Logger
 }
 
+func (t testDispatcher) Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error {
+	mo := proto.MarshalOptions{UseCachedSize: true}
+	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
+	buf.SetBytes(&bb)
+
+	atomic.AddInt32(&receivedMessages, 1)
+
+	return nil
+}
+
+func (t testDispatcher) Decoder(data []byte, me *rony.MessageEnvelope) error {
+	return me.Unmarshal(data)
+}
+
 func (t testDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 
 }
 
 func (t testDispatcher) OnClose(conn rony.Conn) {
 
-}
-
-func (t testDispatcher) OnMessage(ctx *edge.DispatchCtx, envelope *rony.MessageEnvelope) {
-	buf := pools.Buffer.FromProto(envelope)
-	err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
-	if err != nil {
-		t.l.Warn("Error On WriteBinary", zap.Error(err))
-	}
-	pools.Buffer.Put(buf)
-
-	atomic.AddInt32(&receivedMessages, 1)
-}
-
-func (t testDispatcher) Interceptor(ctx *edge.DispatchCtx, data []byte) (err error) {
-	return ctx.FillBytes(data)
 }
 
 func (t testDispatcher) Done(ctx *edge.DispatchCtx) {

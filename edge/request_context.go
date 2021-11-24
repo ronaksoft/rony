@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ronaksoft/rony/pools"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
@@ -154,7 +156,10 @@ func (ctx *RequestCtx) PushCustomMessage(
 		ctx.dispatchCtx.BufferPush(envelope)
 	case GatewayMessage:
 		if ctx.Conn().Persistent() {
-			ctx.edge.dispatcher.OnMessage(ctx.dispatchCtx, envelope)
+			buf := pools.Buffer.GetCap(1024)
+			_ = ctx.edge.dispatcher.Encoder(envelope, buf)
+			_ = ctx.dispatchCtx.conn.WriteBinary(ctx.dispatchCtx.streamID, *buf.Bytes())
+			pools.Buffer.Put(buf)
 			rony.PoolMessageEnvelope.Put(envelope)
 		} else {
 			ctx.dispatchCtx.BufferPush(envelope)
