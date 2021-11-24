@@ -48,6 +48,9 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 			g.P(codegen.ExecTemplate(template.Must(template.New("genDeepCopy").Parse(genDeepCopy)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
+			if arg.IsEnvelope() {
+				g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "encoding/json"})
+			}
 			g.P(codegen.ExecTemplate(template.Must(template.New("genFactory").Parse(genFactory)), arg))
 
 			if !opt.NoEdgeDependency {
@@ -234,7 +237,7 @@ const genSerializers = `
 	{{- if not .SkipJson }}
 		func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
 		{{- if and .IsEnvelope }}
-			je := registry.JSONEnvelopeUnmarshaler{}
+			je := registry.JSONEnvelope{}
 			err := je.UnmarshalJSON(b)
 			if err != nil {
 				return err
@@ -265,18 +268,21 @@ const genSerializers = `
 	
 		func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
 		{{- if .IsEnvelope }}
-			je := registry.JSONEnvelopeMarshaller{
-				Constructor: registry.C(x.Constructor),
-			}
-			
 			m, err := registry.Unwrap(x)
 			if err != nil {
 				return nil, err
 			}
-			
-			je.Message = m 
-			
-			return je.MarshalJSON()
+		
+			je := registry.JSONEnvelope{
+				Constructor: registry.C(x.Constructor),
+			}
+		
+			je.Message, err = m.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+		
+			return json.Marshal(je)
 		{{- else }}
 			return protojson.Marshal(x)
 		{{- end }}

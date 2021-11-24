@@ -7,6 +7,7 @@ package testmsg
 
 import (
 	bytes "bytes"
+	json "encoding/json"
 	sync "sync"
 
 	edge "github.com/ronaksoft/rony/edge"
@@ -137,7 +138,7 @@ func (x *Envelope2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
 func (x *Envelope2) UnmarshalJSON(b []byte) error {
-	je := registry.JSONEnvelopeUnmarshaler{}
+	je := registry.JSONEnvelope{}
 	err := je.UnmarshalJSON(b)
 	if err != nil {
 		return err
@@ -150,32 +151,37 @@ func (x *Envelope2) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	err = m.UnmarshalJSON(je.Message)
-	if err != nil {
-		return err
-	}
+	//err = json.Unmarshal(je.Message, m)
+	////err = m.UnmarshalJSON(je.Message)
+	//if err != nil {
+	//	return err
+	//}
 
-	x.Message, err = m.MarshalJSON()
-	if err != nil {
-		return err
-	}
+	//x.Message, err = json.Marshal(m)
+	////x.Message, err = m.MarshalJSON()
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
 
 func (x *Envelope2) MarshalJSON() ([]byte, error) {
-	je := registry.JSONEnvelopeMarshaller{
-		Constructor: registry.C(x.Constructor),
-	}
-
 	m, err := registry.Unwrap(x)
 	if err != nil {
 		return nil, err
 	}
 
-	je.Message = m
+	je := registry.JSONEnvelope{
+		Constructor: registry.C(x.Constructor),
+	}
 
-	return je.MarshalJSON()
+	je.Message, err = m.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(je)
 }
 
 func factoryEnvelope2() registry.Message {
