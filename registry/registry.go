@@ -49,10 +49,6 @@ func Register(c uint64, n string, f Factory) {
 	}
 }
 
-func RegisterFactory(c uint64, f Factory) {
-	factories[c] = f
-}
-
 func Get(c uint64) (Message, error) {
 	f := factories[c]
 	if f == nil {
@@ -92,22 +88,22 @@ func N(n string) uint64 {
 	return constructorNames[n]
 }
 
-type JSONMessage interface {
-	json.Marshaler
-	json.Unmarshaler
+type JSONEnvelopeUnmarshaler struct {
+	Constructor string          `json:"constructor"`
+	Message     json.RawMessage `json:"message"`
 }
 
-type JSONEnvelope struct {
-	Constructor string      `json:"constructor"`
-	Message     JSONMessage `json:"message"`
-}
-
-func (je JSONEnvelope) MarshalJSON() ([]byte, error) {
-	return json.Marshal(je)
-}
-
-func (je *JSONEnvelope) UnmarshalJSON(data []byte) error {
+func (je *JSONEnvelopeUnmarshaler) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, je)
+}
+
+type JSONEnvelopeMarshaller struct {
+	Constructor string         `json:"constructor"`
+	Message     json.Marshaler `json:"message"`
+}
+
+func (je *JSONEnvelopeMarshaller) MarshalJSON() ([]byte, error) {
+	return json.Marshal(je)
 }
 
 var (

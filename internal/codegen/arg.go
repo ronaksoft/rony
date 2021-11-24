@@ -288,6 +288,15 @@ func (ma MessageArg) IsEnvelope() bool {
 	return proto.GetExtension(opt, rony.E_RonyEnvelope).(bool)
 }
 
+func (ma MessageArg) SkipJson() bool {
+	opt := ma.Options()
+	if opt == nil {
+		return false
+	}
+
+	return proto.GetExtension(opt, rony.E_SkipJson).(bool)
+}
+
 func (ma MessageArg) Options() *descriptorpb.MessageOptions {
 	opt, _ := ma.desc.Desc.Options().(*descriptorpb.MessageOptions)
 

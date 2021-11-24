@@ -230,42 +230,58 @@ const genSerializers = `
 	func (x *{{.Name}}) Marshal() ([]byte, error)  {
 		return proto.Marshal(x)
 	}
+
+	{{- if not .SkipJson }}
+		func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
+		{{- if and .IsEnvelope }}
+			je := registry.JSONEnvelopeUnmarshaler{}
+			err := je.UnmarshalJSON(b)
+			if err != nil {
+				return err
+			}
+		
+			x.Constructor = registry.N(je.Constructor)
+		
+			m, err := registry.Get(x.Constructor)
+			if err != nil {
+				return err
+			}
+		
+			err = m.UnmarshalJSON(je.Message)
+			if err != nil {
+				return err
+			}
+		
+			x.Message, err = m.MarshalJSON()
+			if err != nil {
+				return err
+			}
+		
+			return nil
+		{{- else }}
+			return protojson.Unmarshal(b, x)
+		{{- end }}
+		}
 	
-	func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
-	{{- if .IsEnvelope }}
-		m := registry.JSONEnvelope{}
-		err := m.UnmarshalJSON(b)
-		if err != nil {
-			return err 
+		func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
+		{{- if .IsEnvelope }}
+			je := registry.JSONEnvelopeMarshaller{
+				Constructor: registry.C(x.Constructor),
+			}
+			
+			m, err := registry.Unwrap(x)
+			if err != nil {
+				return nil, err
+			}
+			
+			je.Message = m 
+			
+			return je.MarshalJSON()
+		{{- else }}
+			return protojson.Marshal(x)
+		{{- end }}
 		}
-		
-		x.Constructor = registry.N(m.Constructor)
-		x.Message, err = json.Marshal(m.Message)
-		
-		return err
-	{{- else }}
-		return protojson.Unmarshal(b, x)
 	{{- end }}
-	}
-
-	func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
-	{{- if .IsEnvelope }}
-		jsonEnvelope := registry.JSONEnvelope{
-			Constructor: registry.C(x.Constructor),
-		}
-		
-		var err error 
-		jsonEnvelope.Message, err = registry.Unwrap(x)
-		if err != nil {
-			return nil, err
-		}
-
-		return jsonEnvelope.MarshalJSON()
-	{{- else }}
-		return protojson.Marshal(x)
-	{{- end }}
-		
-	}
 `
 
 const genFactory = `

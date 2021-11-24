@@ -89,6 +89,14 @@ func (x *MessageEnvelope) Carrier() *envelopeCarrier {
 	}
 }
 
+func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
+	return nil, nil
+}
+
+func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
+	return nil
+}
+
 // envelopeCarrier is an adapted for MessageEnvelope to implement propagation.TextMapCarrier interface
 type envelopeCarrier struct {
 	e *MessageEnvelope

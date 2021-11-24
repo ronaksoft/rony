@@ -6,7 +6,7 @@ import "options.proto";
 // MessageEnvelope
 // This type of message will be used to contain another ProtoBuffer Message inside
 message MessageEnvelope {
-  option (rony_envelope) = true;
+  option (skip_json) = true;
   uint64 Constructor = 1 [jstype = JS_STRING];
   fixed64 RequestID = 2;
   bytes Message = 4;

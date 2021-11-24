@@ -7,12 +7,13 @@ package singleton
 
 import (
 	bytes "bytes"
+	sync "sync"
+
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -71,14 +72,12 @@ func (x *Single1) Unmarshal(b []byte) error {
 func (x *Single1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Single1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Single1) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factorySingle1() registry.Message {
@@ -141,14 +140,12 @@ func (x *Single2) Unmarshal(b []byte) error {
 func (x *Single2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Single2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Single2) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factorySingle2() registry.Message {

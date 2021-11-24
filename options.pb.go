@@ -7,11 +7,12 @@
 package rony
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -369,6 +370,14 @@ var file_options_proto_extTypes = []protoimpl.ExtensionInfo{
 		Filename:      "options.proto",
 	},
 	{
+		ExtendedType:  (*descriptorpb.MessageOptions)(nil),
+		ExtensionType: (*bool)(nil),
+		Field:         50032,
+		Name:          "skip_json",
+		Tag:           "varint,50032,opt,name=skip_json",
+		Filename:      "options.proto",
+	},
+	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
 		ExtensionType: (*bool)(nil),
 		Field:         50001,
@@ -424,6 +433,11 @@ var (
 	E_RonyModel = &file_options_proto_extTypes[4]
 	// optional bool rony_envelope = 50031;
 	E_RonyEnvelope = &file_options_proto_extTypes[5]
+	// skip_json will not generate de/serializer for JSON. If you use this option, then you need to
+	// write them manually otherwise you will get compiler error.
+	//
+	// optional bool skip_json = 50032;
+	E_SkipJson = &file_options_proto_extTypes[6]
 )
 
 // Extension fields to descriptorpb.FieldOptions.
@@ -431,17 +445,17 @@ var (
 	// rony_index marks this field as an indexed field. Some queries will be generated for this indexed field.
 	//
 	// optional bool rony_index = 50001;
-	E_RonyIndex = &file_options_proto_extTypes[6]
+	E_RonyIndex = &file_options_proto_extTypes[7]
 	// rony_default set the help text in generated cli client. This flag only works if rony_cobra_cmd is set
 	// in the service.
 	//
 	// optional string rony_help = 50002;
-	E_RonyHelp = &file_options_proto_extTypes[7]
+	E_RonyHelp = &file_options_proto_extTypes[8]
 	// rony_default set the default value in generated cli client. This flag only works if rony_cobra_cmd is set
 	// in the service.
 	//
 	// optional string rony_default = 50003;
-	E_RonyDefault = &file_options_proto_extTypes[8]
+	E_RonyDefault = &file_options_proto_extTypes[9]
 )
 
 var File_options_proto protoreflect.FileDescriptor
@@ -509,7 +523,11 @@ var file_options_proto_rawDesc = []byte{
 	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x73,
 	0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xef, 0x86, 0x03, 0x20,
 	0x01, 0x28, 0x08, 0x52, 0x0c, 0x72, 0x6f, 0x6e, 0x79, 0x45, 0x6e, 0x76, 0x65, 0x6c, 0x6f, 0x70,
-	0x65, 0x3a, 0x3e, 0x0a, 0x0a, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12,
+	0x65, 0x3a, 0x3e, 0x0a, 0x09, 0x73, 0x6b, 0x69, 0x70, 0x5f, 0x6a, 0x73, 0x6f, 0x6e, 0x12, 0x1f,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18,
+	0xf0, 0x86, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x73, 0x6b, 0x69, 0x70, 0x4a, 0x73, 0x6f,
+	0x6e, 0x3a, 0x3e, 0x0a, 0x0a, 0x72, 0x6f, 0x6e, 0x79, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12,
 	0x1d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
 	0x66, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd1,
 	0x86, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x72, 0x6f, 0x6e, 0x79, 0x49, 0x6e, 0x64, 0x65,
@@ -557,16 +575,17 @@ var file_options_proto_depIdxs = []int32{
 	5,  // 5: rony_rest:extendee -> google.protobuf.MethodOptions
 	6,  // 6: rony_model:extendee -> google.protobuf.MessageOptions
 	6,  // 7: rony_envelope:extendee -> google.protobuf.MessageOptions
-	7,  // 8: rony_index:extendee -> google.protobuf.FieldOptions
-	7,  // 9: rony_help:extendee -> google.protobuf.FieldOptions
-	7,  // 10: rony_default:extendee -> google.protobuf.FieldOptions
-	3,  // 11: rony_cli:type_name -> CliOpt
-	0,  // 12: rony_rest:type_name -> RestOpt
-	1,  // 13: rony_model:type_name -> ModelOpt
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	11, // [11:14] is the sub-list for extension type_name
-	2,  // [2:11] is the sub-list for extension extendee
+	6,  // 8: skip_json:extendee -> google.protobuf.MessageOptions
+	7,  // 9: rony_index:extendee -> google.protobuf.FieldOptions
+	7,  // 10: rony_help:extendee -> google.protobuf.FieldOptions
+	7,  // 11: rony_default:extendee -> google.protobuf.FieldOptions
+	3,  // 12: rony_cli:type_name -> CliOpt
+	0,  // 13: rony_rest:type_name -> RestOpt
+	1,  // 14: rony_model:type_name -> ModelOpt
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	12, // [12:15] is the sub-list for extension type_name
+	2,  // [2:12] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
 }
 
@@ -632,7 +651,7 @@ func file_options_proto_init() {
 			RawDescriptor: file_options_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   4,
-			NumExtensions: 9,
+			NumExtensions: 10,
 			NumServices:   0,
 		},
 		GoTypes:           file_options_proto_goTypes,

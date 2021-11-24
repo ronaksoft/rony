@@ -7,6 +7,8 @@ package model
 
 import (
 	bytes "bytes"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,7 +22,6 @@ import (
 	table "github.com/scylladb/gocqlx/v2/table"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -79,14 +80,12 @@ func (x *Model1) Unmarshal(b []byte) error {
 func (x *Model1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Model1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Model1) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryModel1() registry.Message {
@@ -149,14 +148,12 @@ func (x *Model2) Unmarshal(b []byte) error {
 func (x *Model2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Model2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Model2) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryModel2() registry.Message {
@@ -231,14 +228,12 @@ func (x *Model3) Unmarshal(b []byte) error {
 func (x *Model3) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Model3) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Model3) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryModel3() registry.Message {

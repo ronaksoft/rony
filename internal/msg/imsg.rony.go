@@ -7,12 +7,13 @@ package msg
 
 import (
 	bytes "bytes"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -87,14 +88,12 @@ func (x *TunnelMessage) Unmarshal(b []byte) error {
 func (x *TunnelMessage) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *TunnelMessage) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *TunnelMessage) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryTunnelMessage() registry.Message {
@@ -153,14 +152,12 @@ func (x *EdgeNode) Unmarshal(b []byte) error {
 func (x *EdgeNode) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *EdgeNode) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *EdgeNode) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEdgeNode() registry.Message {

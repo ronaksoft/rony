@@ -9,6 +9,9 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	http "net/http"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,8 +23,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	http "net/http"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -72,14 +73,12 @@ func (x *EchoRequest) Unmarshal(b []byte) error {
 func (x *EchoRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *EchoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoRequest) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEchoRequest() registry.Message {
@@ -136,14 +135,12 @@ func (x *EchoResponse) Unmarshal(b []byte) error {
 func (x *EchoResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoResponse) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEchoResponse() registry.Message {

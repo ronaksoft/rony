@@ -9,6 +9,9 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	http "net/http"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -20,8 +23,6 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	http "net/http"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -70,14 +71,12 @@ func (x *GetRequest) Unmarshal(b []byte) error {
 func (x *GetRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *GetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *GetRequest) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryGetRequest() registry.Message {
@@ -134,14 +133,12 @@ func (x *GetResponse) Unmarshal(b []byte) error {
 func (x *GetResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *GetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *GetResponse) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryGetResponse() registry.Message {
@@ -198,14 +195,12 @@ func (x *SetRequest) Unmarshal(b []byte) error {
 func (x *SetRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *SetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *SetRequest) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factorySetRequest() registry.Message {
@@ -260,14 +255,12 @@ func (x *SetResponse) Unmarshal(b []byte) error {
 func (x *SetResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *SetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *SetResponse) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factorySetResponse() registry.Message {
@@ -326,14 +319,12 @@ func (x *EchoRequest) Unmarshal(b []byte) error {
 func (x *EchoRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *EchoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoRequest) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEchoRequest() registry.Message {
@@ -396,14 +387,12 @@ func (x *EchoResponse) Unmarshal(b []byte) error {
 func (x *EchoResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *EchoResponse) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEchoResponse() registry.Message {
@@ -484,14 +473,12 @@ func (x *Message1) Unmarshal(b []byte) error {
 func (x *Message1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Message1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Message1) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryMessage1() registry.Message {
@@ -562,14 +549,12 @@ func (x *Message2) Unmarshal(b []byte) error {
 func (x *Message2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Message2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Message2) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryMessage2() registry.Message {

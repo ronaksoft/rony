@@ -7,12 +7,13 @@ package testmsg
 
 import (
 	bytes "bytes"
+	sync "sync"
+
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
@@ -73,14 +74,12 @@ func (x *Envelope1) Unmarshal(b []byte) error {
 func (x *Envelope1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Envelope1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Envelope1) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEnvelope1() registry.Message {
@@ -137,33 +136,46 @@ func (x *Envelope2) Unmarshal(b []byte) error {
 func (x *Envelope2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Envelope2) UnmarshalJSON(b []byte) error {
-	m := registry.JSONEnvelope{}
-	err := m.UnmarshalJSON(b)
+	je := registry.JSONEnvelopeUnmarshaler{}
+	err := je.UnmarshalJSON(b)
 	if err != nil {
 		return err
 	}
 
-	x.Constructor = registry.N(m.Constructor)
-	x.Message, err = json.Marshal(m.Message)
+	x.Constructor = registry.N(je.Constructor)
 
-	return err
+	m, err := registry.Get(x.Constructor)
+	if err != nil {
+		return err
+	}
+
+	err = m.UnmarshalJSON(je.Message)
+	if err != nil {
+		return err
+	}
+
+	x.Message, err = m.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (x *Envelope2) MarshalJSON() ([]byte, error) {
-	jsonEnvelope := registry.JSONEnvelope{
+	je := registry.JSONEnvelopeMarshaller{
 		Constructor: registry.C(x.Constructor),
 	}
 
-	var err error
-	jsonEnvelope.Message, err = registry.Unwrap(x)
+	m, err := registry.Unwrap(x)
 	if err != nil {
 		return nil, err
 	}
 
-	return jsonEnvelope.MarshalJSON()
+	je.Message = m
 
+	return je.MarshalJSON()
 }
 
 func factoryEnvelope2() registry.Message {
@@ -218,14 +230,12 @@ func (x *Embed1) Unmarshal(b []byte) error {
 func (x *Embed1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Embed1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Embed1) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEmbed1() registry.Message {
@@ -280,14 +290,12 @@ func (x *Embed2) Unmarshal(b []byte) error {
 func (x *Embed2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
-
 func (x *Embed2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
 
 func (x *Embed2) MarshalJSON() ([]byte, error) {
 	return protojson.Marshal(x)
-
 }
 
 func factoryEmbed2() registry.Message {
