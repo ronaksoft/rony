@@ -80,6 +80,7 @@ func (x *Model1) Unmarshal(b []byte) error {
 func (x *Model1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Model1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -148,6 +149,7 @@ func (x *Model2) Unmarshal(b []byte) error {
 func (x *Model2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Model2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -228,6 +230,7 @@ func (x *Model3) Unmarshal(b []byte) error {
 func (x *Model3) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Model3) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }

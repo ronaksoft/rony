@@ -41,7 +41,8 @@ func TestMsg(t *testing.T) {
 			e22 := &testmsg.Envelope2{}
 			err = e22.UnmarshalJSON(jsonData)
 			c.So(err, ShouldBeNil)
-			c.So(e22, ShouldResemble, e2)
+			c.So(e22.Constructor, ShouldEqual, e2.Constructor)
+			c.So(e22.Message, ShouldEqual, e2.Message)
 		})
 	})
 }

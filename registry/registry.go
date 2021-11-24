@@ -89,16 +89,10 @@ func N(n string) uint64 {
 }
 
 type JSONEnvelope struct {
-	Constructor string          `json:"constructor"`
-	Message     json.RawMessage `json:"message"`
-}
-
-func (je *JSONEnvelope) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, je)
-}
-
-func (je *JSONEnvelope) MarshalJSON() ([]byte, error) {
-	return json.Marshal(je)
+	RequestID   uint64            `json:"requestID,omitempty"`
+	Header      map[string]string `json:"header,omitempty"`
+	Constructor string            `json:"constructor"`
+	Message     json.RawMessage   `json:"message,omitempty"`
 }
 
 var (

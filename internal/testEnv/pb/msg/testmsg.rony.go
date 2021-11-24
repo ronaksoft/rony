@@ -75,6 +75,7 @@ func (x *Envelope1) Unmarshal(b []byte) error {
 func (x *Envelope1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Envelope1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -137,9 +138,10 @@ func (x *Envelope2) Unmarshal(b []byte) error {
 func (x *Envelope2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Envelope2) UnmarshalJSON(b []byte) error {
 	je := registry.JSONEnvelope{}
-	err := je.UnmarshalJSON(b)
+	err := json.Unmarshal(b, &je)
 	if err != nil {
 		return err
 	}
@@ -151,17 +153,15 @@ func (x *Envelope2) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	//err = json.Unmarshal(je.Message, m)
-	////err = m.UnmarshalJSON(je.Message)
-	//if err != nil {
-	//	return err
-	//}
+	err = m.UnmarshalJSON(je.Message)
+	if err != nil {
+		return err
+	}
 
-	//x.Message, err = json.Marshal(m)
-	////x.Message, err = m.MarshalJSON()
-	//if err != nil {
-	//	return err
-	//}
+	x.Message, err = proto.Marshal(m)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -236,6 +236,7 @@ func (x *Embed1) Unmarshal(b []byte) error {
 func (x *Embed1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Embed1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -296,6 +297,7 @@ func (x *Embed2) Unmarshal(b []byte) error {
 func (x *Embed2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Embed2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }

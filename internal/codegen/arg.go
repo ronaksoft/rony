@@ -294,7 +294,7 @@ func (ma MessageArg) SkipJson() bool {
 		return false
 	}
 
-	return proto.GetExtension(opt, rony.E_SkipJson).(bool)
+	return proto.GetExtension(opt, rony.E_RonySkipJson).(bool)
 }
 
 func (ma MessageArg) Options() *descriptorpb.MessageOptions {

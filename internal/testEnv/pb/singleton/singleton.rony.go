@@ -72,6 +72,7 @@ func (x *Single1) Unmarshal(b []byte) error {
 func (x *Single1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Single1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -140,6 +141,7 @@ func (x *Single2) Unmarshal(b []byte) error {
 func (x *Single2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Single2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }

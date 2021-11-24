@@ -1,6 +1,7 @@
 package rony
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ronaksoft/rony/pools"
@@ -90,10 +91,60 @@ func (x *MessageEnvelope) Carrier() *envelopeCarrier {
 }
 
 func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
-	return nil, nil
+	m, err := registry.Unwrap(x)
+	if err != nil {
+		return nil, err
+	}
+
+	je := registry.JSONEnvelope{
+		RequestID:   x.RequestID,
+		Constructor: registry.C(x.Constructor),
+	}
+
+	if len(x.Header) > 0 {
+		je.Header = map[string]string{}
+		for _, kv := range x.Header {
+			je.Header[kv.Key] = kv.Value
+		}
+	}
+
+	je.Message, err = m.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(je)
 }
 
 func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
+	je := registry.JSONEnvelope{}
+	err := json.Unmarshal(b, &je)
+	if err != nil {
+		return err
+	}
+
+	x.RequestID = je.RequestID
+	x.Constructor = registry.N(je.Constructor)
+
+	m, err := registry.Get(x.Constructor)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range je.Header {
+		x.Append(k, v)
+	}
+
+	err = m.UnmarshalJSON(je.Message)
+	if err != nil {
+		return err
+	}
+
+	x.Message, err = proto.Marshal(m)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

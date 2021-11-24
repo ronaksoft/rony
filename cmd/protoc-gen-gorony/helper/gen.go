@@ -234,11 +234,11 @@ const genSerializers = `
 		return proto.Marshal(x)
 	}
 
-	{{- if not .SkipJson }}
+	{{ if not .SkipJson }}
 		func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
 		{{- if and .IsEnvelope }}
 			je := registry.JSONEnvelope{}
-			err := je.UnmarshalJSON(b)
+			err := json.Unmarshal(b, &je)
 			if err != nil {
 				return err
 			}
@@ -255,7 +255,7 @@ const genSerializers = `
 				return err
 			}
 		
-			x.Message, err = m.MarshalJSON()
+			x.Message, err = proto.Marshal(m)
 			if err != nil {
 				return err
 			}

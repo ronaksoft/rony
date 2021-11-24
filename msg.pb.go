@@ -87,6 +87,7 @@ type MessageEnvelope struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	//  option (rony_envelope) = true;
 	Constructor uint64      `protobuf:"varint,1,opt,name=Constructor,proto3" json:"Constructor,omitempty"`
 	RequestID   uint64      `protobuf:"fixed64,2,opt,name=RequestID,proto3" json:"RequestID,omitempty"`
 	Message     []byte      `protobuf:"bytes,4,opt,name=Message,proto3" json:"Message,omitempty"`

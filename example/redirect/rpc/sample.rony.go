@@ -71,6 +71,7 @@ func (x *InfoRequest) Unmarshal(b []byte) error {
 func (x *InfoRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *InfoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -133,6 +134,7 @@ func (x *InfoResponse) Unmarshal(b []byte) error {
 func (x *InfoResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *InfoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }

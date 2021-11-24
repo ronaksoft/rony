@@ -88,6 +88,7 @@ func (x *TunnelMessage) Unmarshal(b []byte) error {
 func (x *TunnelMessage) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *TunnelMessage) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -152,6 +153,7 @@ func (x *EdgeNode) Unmarshal(b []byte) error {
 func (x *EdgeNode) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *EdgeNode) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }

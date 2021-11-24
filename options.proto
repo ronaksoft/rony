@@ -77,9 +77,9 @@ extend google.protobuf.MethodOptions {
 extend google.protobuf.MessageOptions {
   optional ModelOpt rony_model = 50001;
   optional bool rony_envelope = 50031;
-  // skip_json will not generate de/serializer for JSON. If you use this option, then you need to
+  // rony_skip_json will not generate de/serializer for JSON. If you use this option, then you need to
   // write them manually otherwise you will get compiler error.
-  optional bool skip_json = 50032;
+  optional bool rony_skip_json = 50032;
 }
 
 extend google.protobuf.FieldOptions {

@@ -71,6 +71,7 @@ func (x *GetRequest) Unmarshal(b []byte) error {
 func (x *GetRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *GetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -133,6 +134,7 @@ func (x *GetResponse) Unmarshal(b []byte) error {
 func (x *GetResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *GetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -195,6 +197,7 @@ func (x *SetRequest) Unmarshal(b []byte) error {
 func (x *SetRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *SetRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -255,6 +258,7 @@ func (x *SetResponse) Unmarshal(b []byte) error {
 func (x *SetResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *SetResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -319,6 +323,7 @@ func (x *EchoRequest) Unmarshal(b []byte) error {
 func (x *EchoRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *EchoRequest) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -387,6 +392,7 @@ func (x *EchoResponse) Unmarshal(b []byte) error {
 func (x *EchoResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *EchoResponse) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -473,6 +479,7 @@ func (x *Message1) Unmarshal(b []byte) error {
 func (x *Message1) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Message1) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
@@ -549,6 +556,7 @@ func (x *Message2) Unmarshal(b []byte) error {
 func (x *Message2) Marshal() ([]byte, error) {
 	return proto.Marshal(x)
 }
+
 func (x *Message2) UnmarshalJSON(b []byte) error {
 	return protojson.Unmarshal(b, x)
 }
