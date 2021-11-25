@@ -45,21 +45,23 @@ func TestGateway(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gw.Subscribe(&testGatewayDelegate{
-		onConnectFunc: func(c rony.Conn, kvs ...*rony.KeyValue) {
-			// fmt.Println(c.ClientIP())
+	gw.Subscribe(
+		&testGatewayDelegate{
+			onConnectFunc: func(c rony.Conn, kvs ...*rony.KeyValue) {
+				// fmt.Println(c.ClientIP())
+			},
+			onMessageFunc: func(c rony.Conn, streamID int64, data []byte) {
+				if len(data) > 0 && data[0] == 'S' {
+					time.Sleep(time.Duration(len(data)) * time.Second)
+				}
+				err := c.WriteBinary(streamID, data)
+				if err != nil {
+					fmt.Println("MessageHandler:", err.Error())
+				}
+			},
+			onClose: func(c rony.Conn) {},
 		},
-		onMessageFunc: func(c rony.Conn, streamID int64, data []byte) {
-			if len(data) > 0 && data[0] == 'S' {
-				time.Sleep(time.Duration(len(data)) * time.Second)
-			}
-			err := c.WriteBinary(streamID, data)
-			if err != nil {
-				fmt.Println("MessageHandler:", err.Error())
-			}
-		},
-		onClose: func(c rony.Conn) {},
-	})
+	)
 
 	gw.Start()
 	defer gw.Shutdown()

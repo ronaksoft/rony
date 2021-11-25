@@ -3,6 +3,7 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
+	"github.com/ronaksoft/rony/pools/buf"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -17,7 +18,7 @@ import (
 
 type Dispatcher interface {
 	// Encoder will be called on the outgoing messages to encode them into the connection.
-	Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error
+	Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error
 	// Decoder decodes the incoming wire messages and converts it to a rony.MessageEnvelope
 	Decoder(data []byte, me *rony.MessageEnvelope) error
 	// Done will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
@@ -32,7 +33,7 @@ type Dispatcher interface {
 // defaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
 type defaultDispatcher struct{}
 
-func (s *defaultDispatcher) Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error {
+func (s *defaultDispatcher) Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
 	buf.SetBytes(&bb)

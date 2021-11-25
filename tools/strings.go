@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"unsafe"
-
-	"github.com/ronaksoft/rony/pools"
 )
 
 /*
@@ -24,45 +22,39 @@ import (
 */
 
 func AppendStrInt(sb *strings.Builder, x int) {
-	b := pools.TinyBytes.GetLen(8)
-	binary.BigEndian.PutUint64(b, uint64(x))
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], uint64(x))
+	sb.Write(b[:])
 }
 
 func AppendStrUInt(sb *strings.Builder, x uint) {
-	b := pools.TinyBytes.GetLen(8)
-	binary.BigEndian.PutUint64(b, uint64(x))
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], uint64(x))
+	sb.Write(b[:])
 }
 
 func AppendStrInt64(sb *strings.Builder, x int64) {
-	b := pools.TinyBytes.GetLen(8)
-	binary.BigEndian.PutUint64(b, uint64(x))
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], uint64(x))
+	sb.Write(b[:])
 }
 
 func AppendStrUInt64(sb *strings.Builder, x uint64) {
-	b := pools.TinyBytes.GetLen(8)
-	binary.BigEndian.PutUint64(b, x)
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], x)
+	sb.Write(b[:])
 }
 
 func AppendStrInt32(sb *strings.Builder, x int32) {
-	b := pools.TinyBytes.GetLen(4)
-	binary.BigEndian.PutUint32(b, uint32(x))
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [4]byte
+	binary.BigEndian.PutUint32(b[:], uint32(x))
+	sb.Write(b[:])
 }
 
 func AppendStrUInt32(sb *strings.Builder, x uint32) {
-	b := pools.TinyBytes.GetLen(4)
-	binary.BigEndian.PutUint32(b, x)
-	sb.Write(b)
-	pools.TinyBytes.Put(b)
+	var b [4]byte
+	binary.BigEndian.PutUint32(b[:], x)
+	sb.Write(b[:])
 }
 
 /*

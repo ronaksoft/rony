@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ronaksoft/rony/pools/buf"
+
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,12 +25,12 @@ var (
 )
 
 type Allocator struct {
-	blocks []*pools.ByteBuffer
+	blocks []*buf.Bytes
 }
 
 func NewAllocator() *Allocator {
 	return &Allocator{
-		blocks: make([]*pools.ByteBuffer, 0, 8),
+		blocks: make([]*buf.Bytes, 0, 8),
 	}
 }
 

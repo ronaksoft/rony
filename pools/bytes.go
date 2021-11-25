@@ -1,10 +1,9 @@
 package pools
 
 import (
-	"io"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
+	"github.com/ronaksoft/rony/pools/buf"
 )
 
 /*
@@ -16,9 +15,8 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var TinyBytes = NewByteSlice(4, 128)
 var Bytes = NewByteSlice(32, 64<<10)
-var Buffer = NewByteBuffer(4, 64<<10)
+var Buffer = buf.NewBytesPool(4, 64<<10)
 
 const (
 	bitSize       = 32 << (^uint(0) >> 63)
@@ -88,162 +86,6 @@ func (p *byteSlicePool) GetCap(c int) []byte {
 // and exactly len of n.
 func (p *byteSlicePool) GetLen(n int) []byte {
 	return p.Get(n, n)
-}
-
-type ByteBuffer struct {
-	ri int
-	b  []byte
-}
-
-func (bb *ByteBuffer) Read(p []byte) (n int, err error) {
-	if bb.ri >= len(bb.b)-1 {
-		return 0, io.EOF
-	}
-	n = copy(p, bb.b[bb.ri:])
-	bb.ri += n
-
-	return n, nil
-}
-
-func newByteBuffer(n, c int) *ByteBuffer {
-	if n > c {
-		panic("requested length is greater than capacity")
-	}
-
-	return &ByteBuffer{b: make([]byte, n, c)}
-}
-
-func (bb *ByteBuffer) Reset() {
-	bb.ri = 0
-	bb.b = bb.b[:bb.ri]
-}
-
-func (bb *ByteBuffer) Bytes() *[]byte {
-	return &bb.b
-}
-
-func (bb *ByteBuffer) SetBytes(b *[]byte) {
-	if b == nil {
-		return
-	}
-	bb.b = *b
-}
-
-func (bb *ByteBuffer) Fill(data []byte, start, end int) {
-	copy(bb.b[start:end], data)
-}
-
-func (bb *ByteBuffer) CopyFromWithOffset(data []byte, offset int) {
-	copy(bb.b[offset:], data)
-}
-
-func (bb *ByteBuffer) CopyFrom(data []byte) {
-	copy(bb.b, data)
-}
-
-func (bb *ByteBuffer) CopyTo(data []byte) []byte {
-	copy(data, bb.b)
-
-	return data
-}
-
-func (bb *ByteBuffer) AppendFrom(data []byte) {
-	bb.b = append(bb.b, data...)
-}
-
-func (bb *ByteBuffer) AppendTo(data []byte) []byte {
-	data = append(data, bb.b...)
-
-	return data
-}
-
-func (bb *ByteBuffer) Len() int {
-	return len(bb.b)
-}
-
-func (bb ByteBuffer) Cap() int {
-	return cap(bb.b)
-}
-
-// byteBufferPool. contains logic of reusing objects distinguishable by size in generic
-// way.
-type byteBufferPool struct {
-	pool map[int]*sync.Pool
-}
-
-// NewByteBuffer creates new byteBufferPool that reuses objects which size is in logarithmic range
-// [min, max].
-//
-// Note that it is a shortcut for Custom() constructor with Options provided by
-// WithLogSizeMapping() and WithLogSizeRange(min, max) calls.
-func NewByteBuffer(min, max int) *byteBufferPool {
-	p := &byteBufferPool{
-		pool: make(map[int]*sync.Pool),
-	}
-	logarithmicRange(min, max, func(n int) {
-		p.pool[n] = &sync.Pool{}
-	})
-
-	return p
-}
-
-// Get returns probably reused slice of bytes with at least capacity of c and
-// exactly len of n.
-func (p *byteBufferPool) Get(n, c int) *ByteBuffer {
-	if n > c {
-		panic("requested length is greater than capacity")
-	}
-
-	size := ceilToPowerOfTwo(c)
-	if pool := p.pool[size]; pool != nil {
-		v := pool.Get()
-		if v != nil {
-			bb := v.(*ByteBuffer)
-			bb.b = bb.b[:n]
-
-			return bb
-		} else {
-			return newByteBuffer(n, size)
-		}
-	}
-
-	return newByteBuffer(n, c)
-}
-
-// Put returns given slice to reuse pool.
-// It does not reuse bytes whose size is not power of two or is out of pool
-// min/max range.
-func (p *byteBufferPool) Put(bb *ByteBuffer) {
-	if pool := p.pool[cap(bb.b)]; pool != nil {
-		pool.Put(bb)
-	}
-}
-
-// GetCap returns probably reused slice of bytes with at least capacity of n.
-func (p *byteBufferPool) GetCap(c int) *ByteBuffer {
-	return p.Get(0, c)
-}
-
-// GetLen returns probably reused slice of bytes with at least capacity of n
-// and exactly len of n.
-func (p *byteBufferPool) GetLen(n int) *ByteBuffer {
-	return p.Get(n, n)
-}
-
-func (p *byteBufferPool) FromProto(m proto.Message) *ByteBuffer {
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	buf := p.GetCap(mo.Size(m))
-	bb, _ := mo.MarshalAppend(*buf.Bytes(), m)
-	buf.SetBytes(&bb)
-
-	return buf
-}
-
-func (p *byteBufferPool) FromBytes(b []byte) *ByteBuffer {
-	buf := p.GetCap(len(b))
-	buf.AppendFrom(b)
-
-	return buf
 }
 
 // logarithmicRange iterates from ceil to power of two min to max,

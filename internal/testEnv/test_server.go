@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ronaksoft/rony/pools/buf"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ronaksoft/rony"
@@ -33,7 +35,7 @@ type testDispatcher struct {
 	l log.Logger
 }
 
-func (t testDispatcher) Encoder(me *rony.MessageEnvelope, buf *pools.ByteBuffer) error {
+func (t testDispatcher) Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error {
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
 	buf.SetBytes(&bb)
