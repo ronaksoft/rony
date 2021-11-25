@@ -166,22 +166,22 @@ func (wc *websocketConn) startEvent(event netpoll.Event) {
 		atomic.StoreInt64(&wc.lastActivity, tools.CPUTicks())
 		wc.gateway.waitGroupReaders.Add(1)
 
-		err := goPoolNB.Submit(func() {
-			ms := acquireWebsocketMessage()
-			waitGroup := pools.AcquireWaitGroup()
-			err := wc.gateway.websocketReadPump(wc, waitGroup, *ms)
-			if err != nil {
-				wc.release(3)
-			} else {
-				_ = wc.gateway.poller.Resume(wc.desc)
-			}
-			waitGroup.Wait()
-			pools.ReleaseWaitGroup(waitGroup)
-			releaseWebsocketMessage(ms)
-			wc.gateway.waitGroupReaders.Done()
-		})
+		err := goPoolNB.Submit(
+			func() {
+				waitGroup := pools.AcquireWaitGroup()
+				err := wc.gateway.websocketReadPump(wc, waitGroup)
+				if err != nil {
+					wc.release(3)
+				} else {
+					_ = wc.gateway.poller.Resume(wc.desc)
+				}
+				waitGroup.Wait()
+				pools.ReleaseWaitGroup(waitGroup)
+				wc.gateway.waitGroupReaders.Done()
+			},
+		)
 		if err != nil {
-			wc.gateway.cfg.Logger.Warn("Error On StartEvent (Pool)", zap.Error(err))
+			wc.gateway.cfg.Logger.Warn("got error on start event go-routine pool", zap.Error(err))
 		}
 	}
 }

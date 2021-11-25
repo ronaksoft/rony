@@ -270,7 +270,7 @@ func BenchmarkGateway(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	b.SetParallelism(1)
+	b.SetParallelism(5)
 	b.RunParallel(func(pb *testing.PB) {
 		wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
 		if err != nil {

@@ -8,9 +8,7 @@ import (
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/msg"
-	"github.com/ronaksoft/rony/internal/testEnv"
 	udpTunnel "github.com/ronaksoft/rony/internal/tunnel/udp"
-	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
@@ -24,11 +22,6 @@ import (
    Auditor: Ehsan N. Moosa (E2)
    Copyright Ronak Software Group 2020
 */
-
-func init() {
-	testEnv.Init()
-	log.SetLevel(log.DebugLevel)
-}
 
 func TestNewTunnel(t *testing.T) {
 	Convey("Tunnel", t, func(c C) {

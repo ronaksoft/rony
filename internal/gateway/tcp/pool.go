@@ -5,7 +5,6 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/panjf2000/ants/v2"
-	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -66,21 +65,4 @@ func releaseWriteRequest(wr *writeRequest) {
 	wr.wc = nil
 	wr.payload = wr.payload[:0]
 	writeRequestPool.Put(wr)
-}
-
-var websocketMessagePool sync.Pool
-
-func acquireWebsocketMessage() *[]wsutil.Message {
-	x, ok := websocketMessagePool.Get().(*[]wsutil.Message)
-	if !ok {
-		arr := make([]wsutil.Message, 0, 8)
-
-		return &arr
-	}
-
-	return x
-}
-
-func releaseWebsocketMessage(x *[]wsutil.Message) {
-	websocketMessagePool.Put(x)
 }

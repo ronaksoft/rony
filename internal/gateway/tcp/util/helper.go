@@ -5,8 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony/pools"
+
+	"github.com/gobwas/ws"
 )
 
 // Message represents a message from peer, that could be presented in one or
@@ -21,9 +22,10 @@ type Message struct {
 // received message(s) to the third argument and returns the result of it and
 // an error if some failure happened. That is, it probably could receive more
 // than one message when peer sending fragmented message in multiple frames and
-// want to send some control frame between fragments. Then returned slice will
+// want to send some control frames between fragments. Then returned slice will
 // contain those control frames at first, and then result of gluing fragments.
 func ReadMessage(r io.Reader, s ws.State, m []Message) ([]Message, error) {
+	im := Message{}
 	rd := Reader{
 		Source: r,
 		State:  s,
@@ -41,25 +43,26 @@ func ReadMessage(r io.Reader, s ws.State, m []Message) ([]Message, error) {
 	if err != nil {
 		return m, err
 	}
-	var p []byte
+
 	if h.Fin {
-		// No more frames will be read. Use fixed sized buffer to read payload.
-		p = pools.Bytes.GetLen(int(h.Length))
+		im.Payload = pools.Bytes.GetLen(int(h.Length))
 		// It is not possible to receive io.EOF here because Reader does not
 		// return EOF if frame payload was successfully fetched.
-		// Thus we consistent here with io.Reader behavior.
-		_, err = io.ReadFull(&rd, p)
+		// Thus, we are consistent here with io.Reader behavior.
+		_, err = io.ReadFull(&rd, im.Payload)
 	} else {
 		// Frame is fragmented, thus use ioutil.ReadAll behavior.
 		var buf bytes.Buffer
 		_, err = buf.ReadFrom(&rd)
-		p = buf.Bytes()
+		im.Payload = append(im.Payload, buf.Bytes()...)
 	}
 	if err != nil {
 		return m, err
 	}
 
-	return append(m, Message{OpCode: h.OpCode, Payload: p}), nil
+	im.OpCode = h.OpCode
+
+	return append(m, im), nil
 }
 
 // WriteMessage is a helper function that writes message to the w. It

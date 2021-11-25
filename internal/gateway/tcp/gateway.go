@@ -8,6 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ronaksoft/rony/pools"
+
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
+
 	"github.com/ronaksoft/rony/errors"
 
 	"github.com/gobwas/ws"
@@ -15,7 +19,6 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/internal/gateway/tcp/cors"
-	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/log"
 	"github.com/ronaksoft/rony/tools"
@@ -438,8 +441,8 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 	}
 }
 
-func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []wsutil.Message) (err error) {
-	ms = ms[:0]
+func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup) (err error) {
+	var ms []wsutil.Message
 	ms, err = wc.read(ms)
 	if err != nil {
 		if ce := g.cfg.Logger.Check(log.DebugLevel, "got error in websocket read pump"); ce != nil {
@@ -459,16 +462,19 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 		case ws.OpPong:
 		case ws.OpPing:
 			err = wc.write(ws.OpPong, ms[idx].Payload)
-			if err != nil {
-				g.cfg.Logger.Warn("Error On Write OpPing", zap.Error(err))
-			}
+			pools.Bytes.Put(ms[idx].Payload)
 		case ws.OpBinary:
 			wg.Add(1)
-			_ = goPoolB.Submit(func() {
-				metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
-				g.delegate.OnMessage(wc, 0, ms[idx].Payload)
-				wg.Done()
-			})
+			_ = goPoolB.Submit(
+				func(idx int) func() {
+					return func() {
+						metrics.IncCounter(metrics.CntGatewayIncomingWebsocketMessage)
+						g.delegate.OnMessage(wc, 0, ms[idx].Payload)
+						pools.Bytes.Put(ms[idx].Payload)
+						wg.Done()
+					}
+				}(idx),
+			)
 
 		case ws.OpClose:
 			// remove the connection from the list

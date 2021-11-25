@@ -27,10 +27,6 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func init() {
-	testEnv.Init()
-}
-
 func TestMain(m *testing.M) {
 	edgeServer := testEnv.EdgeServer("Adam", 8081, 1000)
 	rony.SetLogLevel(log.WarnLevel)
