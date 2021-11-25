@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+
 	"github.com/ronaksoft/rony/pools"
 
 	"github.com/ronaksoft/rony"
@@ -155,6 +157,16 @@ func (ctx *RequestCtx) PushCustomMessage(
 	case TunnelMessage:
 		ctx.dispatchCtx.BufferPush(envelope)
 	case GatewayMessage:
+		if ctx.edge.tracer != nil {
+			trace.SpanFromContext(ctx.ctx).
+				AddEvent("message",
+					trace.WithAttributes(
+						semconv.MessageTypeSent,
+						semconv.MessageIDKey.Int64(int64(requestID)),
+					),
+				)
+		}
+
 		if ctx.Conn().Persistent() {
 			// TODO:: need to find a better way to handle this
 			buf := pools.Buffer.GetCap(1024)
