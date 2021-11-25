@@ -42,7 +42,7 @@ func TestMsg(t *testing.T) {
 			err = e22.UnmarshalJSON(jsonData)
 			c.So(err, ShouldBeNil)
 			c.So(e22.Constructor, ShouldEqual, e2.Constructor)
-			c.So(e22.Message, ShouldEqual, e2.Message)
+			c.So(e22.Message, ShouldResemble, e2.Message)
 		})
 	})
 }

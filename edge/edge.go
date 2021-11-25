@@ -346,7 +346,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		}
 	}
 
-	err := edge.dispatcher.Decoder(data, dispatchCtx.req)
+	err := edge.dispatcher.Decode(data, dispatchCtx.req)
 	if err != nil {
 		return
 	}
@@ -431,10 +431,7 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 	err.ToEnvelope(envelope)
 	switch ctx.kind {
 	case GatewayMessage:
-		buf := pools.Buffer.GetCap(1024)
-		_ = edge.dispatcher.Encoder(envelope, buf)
-		_ = ctx.conn.WriteBinary(ctx.streamID, *buf.Bytes())
-		pools.Buffer.Put(buf)
+		_ = edge.dispatcher.Encode(ctx.conn, ctx.streamID, envelope)
 		rony.PoolMessageEnvelope.Put(envelope)
 	case TunnelMessage:
 		ctx.BufferPush(envelope)

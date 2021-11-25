@@ -5,8 +5,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ronaksoft/rony/pools/buf"
-
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ronaksoft/rony"
@@ -35,17 +33,20 @@ type testDispatcher struct {
 	l log.Logger
 }
 
-func (t testDispatcher) Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error {
+func (t testDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
+	buf := pools.Buffer.FromProto(me)
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
 	buf.SetBytes(&bb)
+	err := conn.WriteBinary(streamID, *buf.Bytes())
+	pools.Buffer.Put(buf)
 
 	atomic.AddInt32(&receivedMessages, 1)
 
-	return nil
+	return err
 }
 
-func (t testDispatcher) Decoder(data []byte, me *rony.MessageEnvelope) error {
+func (t testDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
 	return me.Unmarshal(data)
 }
 

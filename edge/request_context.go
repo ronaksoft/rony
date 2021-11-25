@@ -7,8 +7,6 @@ import (
 
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
-	"github.com/ronaksoft/rony/pools"
-
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/log"
@@ -168,11 +166,7 @@ func (ctx *RequestCtx) PushCustomMessage(
 		}
 
 		if ctx.Conn().Persistent() {
-			// TODO:: need to find a better way to handle this
-			buf := pools.Buffer.GetCap(1024)
-			_ = ctx.edge.dispatcher.Encoder(envelope, buf)
-			_ = ctx.dispatchCtx.conn.WriteBinary(ctx.dispatchCtx.streamID, *buf.Bytes())
-			pools.Buffer.Put(buf)
+			_ = ctx.edge.dispatcher.Encode(ctx.dispatchCtx.conn, ctx.dispatchCtx.streamID, envelope)
 			rony.PoolMessageEnvelope.Put(envelope)
 		} else {
 			ctx.dispatchCtx.BufferPush(envelope)

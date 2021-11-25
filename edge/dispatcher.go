@@ -3,7 +3,6 @@ package edge
 import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
-	"github.com/ronaksoft/rony/pools/buf"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -17,10 +16,11 @@ import (
 */
 
 type Dispatcher interface {
-	// Encoder will be called on the outgoing messages to encode them into the connection.
-	Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error
-	// Decoder decodes the incoming wire messages and converts it to a rony.MessageEnvelope
-	Decoder(data []byte, me *rony.MessageEnvelope) error
+	// Encode will be called on the outgoing messages to encode them into the connection.
+	// it is responsible for write data to conn
+	Encode(conn rony.Conn, steamID int64, me *rony.MessageEnvelope) error
+	// Decode decodes the incoming wire messages and converts it to a rony.MessageEnvelope
+	Decode(data []byte, me *rony.MessageEnvelope) error
 	// Done will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
 	// messages and updates in one go.
 	Done(ctx *DispatchCtx)
@@ -33,15 +33,18 @@ type Dispatcher interface {
 // defaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
 type defaultDispatcher struct{}
 
-func (s *defaultDispatcher) Encoder(me *rony.MessageEnvelope, buf *buf.Bytes) error {
+func (s *defaultDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
+	buf := pools.Buffer.FromProto(me)
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
 	buf.SetBytes(&bb)
+	_ = conn.WriteBinary(streamID, *buf.Bytes())
+	pools.Buffer.Put(buf)
 
 	return nil
 }
 
-func (s *defaultDispatcher) Decoder(data []byte, me *rony.MessageEnvelope) error {
+func (s *defaultDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
 	return me.Unmarshal(data)
 }
 
