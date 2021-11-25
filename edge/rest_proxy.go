@@ -62,17 +62,17 @@ func (hp *restMux) Set(method, path string, f RestProxy) {
 	hp.routes[method].Insert(path, WithTag(method), WithProxyFactory(f))
 }
 
-func (hp *restMux) Search(conn rony.RestConn) RestProxy {
+func (hp *restMux) Search(conn rony.RestConn) (string, RestProxy) {
 	r := hp.routes[strings.ToUpper(conn.Method())]
 	if r == nil {
-		return nil
+		return "", nil
 	}
 	n := r.Search(conn.Path(), conn)
 	if n == nil {
-		return nil
+		return "", nil
 	}
 
-	return n.Proxy
+	return n.key, n.Proxy
 }
 
 const (

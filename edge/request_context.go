@@ -156,6 +156,7 @@ func (ctx *RequestCtx) PushCustomMessage(
 		ctx.dispatchCtx.BufferPush(envelope)
 	case GatewayMessage:
 		if ctx.Conn().Persistent() {
+			// TODO:: need to find a better way to handle this
 			buf := pools.Buffer.GetCap(1024)
 			_ = ctx.edge.dispatcher.Encoder(envelope, buf)
 			_ = ctx.dispatchCtx.conn.WriteBinary(ctx.dispatchCtx.streamID, *buf.Bytes())
@@ -273,7 +274,7 @@ func acquireRequestCtx(dispatchCtx *DispatchCtx, quickReturn bool) *RequestCtx {
 	ctx.dispatchCtx = dispatchCtx
 	ctx.edge = dispatchCtx.edge
 	ctx.err = nil
-	ctx.ctx, ctx.cf = context.WithCancel(context.TODO())
+	ctx.ctx, ctx.cf = context.WithCancel(dispatchCtx.ctx)
 
 	return ctx
 }

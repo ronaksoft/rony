@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -24,6 +25,8 @@ type DispatchCtx struct {
 	// KeyValue Store Parameters
 	mtx sync.RWMutex
 	kv  map[string]interface{}
+	ctx context.Context
+	cf  func()
 }
 
 func newDispatchCtx(edge *Server) *DispatchCtx {
@@ -180,11 +183,15 @@ func acquireDispatchCtx(
 	ctx.kind = kind
 	ctx.streamID = streamID
 	ctx.serverID = append(ctx.serverID[:0], serverID...)
+	ctx.ctx, ctx.cf = context.WithCancel(context.TODO())
 
 	return ctx
 }
 
 func releaseDispatchCtx(ctx *DispatchCtx) {
+	// call cancel func
+	ctx.cf()
+
 	// Reset the Key-Value store
 	ctx.reset()
 

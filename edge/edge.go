@@ -233,7 +233,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			requestCtx.ctx, span = edge.tracer.
 				Start(
 					requestCtx.ctx,
-					fmt.Sprintf("%s.%s/%s", edge.name, ho.serviceName, ho.methodName),
+					fmt.Sprintf("%s/%s", ho.serviceName, ho.methodName),
 					trace.WithAttributes(
 						semconv.RPCServiceKey.String(ho.serviceName),
 						semconv.RPCMethodKey.String(ho.methodName),
@@ -315,22 +315,36 @@ func (edge *Server) recoverPanic(ctx *RequestCtx, in *rony.MessageEnvelope) {
 }
 
 func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte) {
+	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
+	// byPassDispatcher argument
+	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
+	defer releaseDispatchCtx(dispatchCtx)
+
 	// if it is REST API then we take a different approach.
 	if !conn.Persistent() && edge.restMux != nil {
 		if rc, ok := conn.(rony.RestConn); ok {
-			p := edge.restMux.Search(rc)
+			path, p := edge.restMux.Search(rc)
 			if p != nil {
-				edge.onGatewayRest(rc, p)
+				if edge.tracer != nil {
+					var span trace.Span
+					dispatchCtx.ctx, span = edge.tracer.
+						Start(
+							dispatchCtx.ctx,
+							fmt.Sprintf("%s %s", rc.Method(), path),
+							trace.WithAttributes(
+								semconv.HTTPMethodKey.String(rc.Method()),
+							),
+							trace.WithSpanKind(trace.SpanKindServer),
+						)
+					defer span.End()
+				}
+
+				edge.onGatewayRest(dispatchCtx, rc, p)
 
 				return
 			}
 		}
 	}
-
-	// Fill dispatch context with data. We use the GatewayDispatcher or consume data directly based on the
-	// byPassDispatcher argument
-	dispatchCtx := acquireDispatchCtx(edge, conn, streamID, edge.serverID, GatewayMessage)
-	defer releaseDispatchCtx(dispatchCtx)
 
 	err := edge.dispatcher.Decoder(data, dispatchCtx.req)
 	if err != nil {
@@ -344,12 +358,9 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 		edge.dispatcher.Done(dispatchCtx)
 	}
 }
-func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
-	dispatchCtx := acquireDispatchCtx(edge, conn, 0, edge.serverID, GatewayMessage)
-	defer releaseDispatchCtx(dispatchCtx)
-
+func (edge *Server) onGatewayRest(ctx *DispatchCtx, conn rony.RestConn, proxy RestProxy) {
 	// apply the transformation on the client message before execute it
-	err := proxy.ClientMessage(conn, dispatchCtx)
+	err := proxy.ClientMessage(conn, ctx)
 	if err != nil {
 		conn.WriteStatus(http.StatusInternalServerError)
 		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
@@ -358,7 +369,7 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 		return
 	}
 
-	err = edge.execute(dispatchCtx)
+	err = edge.execute(ctx)
 	if err != nil {
 		conn.WriteStatus(http.StatusInternalServerError)
 		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
@@ -368,7 +379,7 @@ func (edge *Server) onGatewayRest(conn rony.RestConn, proxy RestProxy) {
 	}
 
 	// apply the transformation on the server message before sending it to the client
-	err = proxy.ServerMessage(conn, dispatchCtx)
+	err = proxy.ServerMessage(conn, ctx)
 	if err != nil {
 		conn.WriteStatus(http.StatusInternalServerError)
 		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
