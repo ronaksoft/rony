@@ -472,7 +472,7 @@ func (edge *Server) StartGateway() error {
 	)
 
 	if edge.cluster != nil {
-		return errors.Wrap("cluster:")(edge.cluster.SetGatewayAddrs(edge.gateway.Addr()))
+		return errors.WrapText("cluster:")(edge.cluster.SetGatewayAddrs(edge.gateway.Addr()))
 	}
 
 	return nil

@@ -13,12 +13,18 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func Wrap(txt string) func(err error) error {
+func WrapText(txt string) func(err error) error {
 	return func(err error) error {
 		if err == nil {
 			return nil
 		}
 
-		return fmt.Errorf("[[ %s :: %v ]]", txt, err)
+		return fmt.Errorf("%s: %v", txt, err)
+	}
+}
+
+func Wrap(wrapper error) func(err error) error {
+	return func(err error) error {
+		return fmt.Errorf("%s: %v", wrapper.Error(), err)
 	}
 }

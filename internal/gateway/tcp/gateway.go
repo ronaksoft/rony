@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ronaksoft/rony/errors"
+
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
@@ -339,10 +341,10 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	}
 
 	// extract required information from the header of the RequestCtx
-	meta := acquireConnInfo(reqCtx)
+	connInfo := acquireConnInfo(reqCtx)
 
 	// If this is a Http Upgrade then we Handle websocket
-	if meta.Upgrade() {
+	if connInfo.Upgrade() {
 		if !g.Support(rony.Websocket) {
 			reqCtx.SetConnectionClose()
 			reqCtx.SetStatusCode(http.StatusNotAcceptable)
@@ -350,13 +352,15 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 			return
 		}
 		reqCtx.HijackSetNoResponse(true)
-		reqCtx.Hijack(func(c net.Conn) {
-			wc, _ := c.(UnsafeConn).UnsafeConn().(*wrapConn)
-			wc.ReadyForUpgrade()
-			g.waitGroupAcceptors.Add(1)
-			g.websocketHandler(wc, meta)
-			releaseConnInfo(meta)
-		})
+		reqCtx.Hijack(
+			func(c net.Conn) {
+				wc, _ := c.(UnsafeConn).UnsafeConn().(*wrapConn)
+				wc.ReadyForUpgrade()
+				g.waitGroupAcceptors.Add(1)
+				g.websocketHandler(wc, connInfo)
+				releaseConnInfo(connInfo)
+			},
+		)
 
 		return
 	}
@@ -370,9 +374,9 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 	}
 
 	conn := acquireHttpConn(g, reqCtx)
-	conn.SetClientIP(meta.clientIP)
-	conn.SetClientType(meta.clientType)
-	for k, v := range meta.kvs {
+	conn.SetClientIP(connInfo.clientIP)
+	conn.SetClientType(connInfo.clientType)
+	for k, v := range connInfo.kvs {
 		conn.Set(k, v)
 	}
 
@@ -384,7 +388,7 @@ func (g *Gateway) requestHandler(reqCtx *fasthttp.RequestCtx) {
 
 	g.delegate.OnClose(conn)
 
-	releaseConnInfo(meta)
+	releaseConnInfo(connInfo)
 	releaseHttpConn(conn)
 }
 
@@ -394,7 +398,7 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 		return
 	}
 	if _, err := g.upgradeHandler.Upgrade(c); err != nil {
-		if ce := g.cfg.Logger.Check(log.InfoLevel, "Error in Connection Acceptor"); ce != nil {
+		if ce := g.cfg.Logger.Check(log.InfoLevel, "got error in websocket upgrade"); ce != nil {
 			ce.Write(
 				zap.String("IP", tools.B2S(meta.clientIP)),
 				zap.String("ClientType", tools.B2S(meta.clientType)),
@@ -412,7 +416,10 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 
 	wsConn, err := newWebsocketConn(g, c, meta.clientIP)
 	if err != nil {
-		g.cfg.Logger.Warn("Error On NetPoll Description", zap.Error(err), zap.Int("Total", g.TotalConnections()))
+		g.cfg.Logger.Warn("got error on creating websocket connection",
+			zap.Error(err),
+			zap.Int("Total", g.TotalConnections()),
+		)
 
 		return
 	}
@@ -424,7 +431,10 @@ func (g *Gateway) websocketHandler(c net.Conn, meta *connInfo) {
 
 	err = wsConn.registerDesc()
 	if err != nil {
-		g.cfg.Logger.Warn("Error On RegisterDesc", zap.Error(err))
+		g.cfg.Logger.Warn("got error in registering conn desc",
+			zap.Error(err),
+			zap.Any("Conn", wsConn.conn),
+		)
 	}
 }
 
@@ -432,14 +442,14 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup, ms []
 	ms = ms[:0]
 	ms, err = wc.read(ms)
 	if err != nil {
-		if ce := g.cfg.Logger.Check(log.DebugLevel, "Error in websocketReadPump"); ce != nil {
+		if ce := g.cfg.Logger.Check(log.DebugLevel, "got error in websocket read pump"); ce != nil {
 			ce.Write(
 				zap.Uint64("ConnID", wc.connID),
 				zap.Error(err),
 			)
 		}
 
-		return ErrUnexpectedSocketRead
+		return errors.Wrap(ErrUnexpectedSocketRead)(err)
 	}
 	atomic.AddUint64(&g.cntReads, 1)
 

@@ -29,7 +29,7 @@ var (
 	ErrMemberNotFound            = fmt.Errorf("member not found")
 	ErrGatewayAlreadyInitialized = fmt.Errorf("gateway already initialized")
 	ErrNoTunnelAddrs             = fmt.Errorf("tunnel address does not found")
-	ErrRetriesExceeded           = Wrap("maximum retries exceeded")
+	ErrRetriesExceeded           = WrapText("maximum retries exceeded")
 	ErrConnectionNotExists       = fmt.Errorf("connection does not exists")
 	ErrAlreadyExists             = fmt.Errorf("already exists")
 	ErrEmptyObject               = fmt.Errorf("empty object")

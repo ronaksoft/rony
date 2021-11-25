@@ -63,7 +63,7 @@ type SugaredLogger interface {
 
 func init() {
 	DefaultLogger = New(
-		WithSkipCaller(3),
+		WithSkipCaller(1),
 	)
 
 	NopLogger = newNOP()

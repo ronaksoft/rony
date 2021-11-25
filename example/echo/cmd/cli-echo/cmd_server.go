@@ -22,7 +22,7 @@ var ServerCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := config.BindCmdFlags(cmd)
 		if err != nil {
-			return errors.Wrap("bind flag:")(err)
+			return errors.WrapText("bind flag:")(err)
 		}
 
 		var tr trace.Tracer

@@ -5,7 +5,9 @@ package tcpGateway
 
 import (
 	"encoding/binary"
+	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/allegro/bigcache/v2"
@@ -17,9 +19,6 @@ import (
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"go.uber.org/zap"
-
-	"net"
-	"sync/atomic"
 )
 
 /*
@@ -75,7 +74,7 @@ func newWebsocketConn(g *Gateway, conn net.Conn, clientIP []byte) (*websocketCon
 	g.connsMtx.Lock()
 	g.conns[connID] = wsConn
 	g.connsMtx.Unlock()
-	if ce := g.cfg.Logger.Check(log.DebugLevel, "Websocket Connection Created"); ce != nil {
+	if ce := g.cfg.Logger.Check(log.DebugLevel, "websocket connection created"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", connID),
 			zap.String("IP", wsConn.ClientIP()),
@@ -91,13 +90,24 @@ func (wc *websocketConn) registerDesc() error {
 	atomic.StoreInt64(&wc.startTime, tools.CPUTicks())
 	err := wc.gateway.poller.Start(wc.desc, wc.startEvent)
 	if err != nil {
-		wc.release(1)
+		if err != netpoll.ErrRegistered {
+			wc.release(1)
+
+			return err
+		}
+		_ = wc.gateway.poller.Stop(wc.desc)
+		err = wc.gateway.poller.Start(wc.desc, wc.startEvent)
+		if err != nil {
+			wc.release(1)
+
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
 
-func (wc *websocketConn) release(reason int) {
+func (wc *websocketConn) release(_ int) {
 	// delete the reference from the gateway's conns
 	g := wc.gateway
 	g.connsMtx.Lock()
@@ -113,8 +123,7 @@ func (wc *websocketConn) release(reason int) {
 	// Decrease the total connection counter
 	totalConns := atomic.AddInt32(&g.connsTotal, -1)
 
-	// fmt.Println("Conn(", wc.connID, "): LifeTime:", time.Duration(tools.CPUTicks()-atomic.LoadInt64(&wc.startTime)))
-	if ce := g.cfg.Logger.Check(log.DebugLevel, "Websocket Connection Removed"); ce != nil {
+	if ce := g.cfg.Logger.Check(log.DebugLevel, "websocket connection removed"); ce != nil {
 		ce.Write(
 			zap.Uint64("ConnID", wc.connID),
 			zap.Int32("Total", totalConns),
@@ -123,8 +132,13 @@ func (wc *websocketConn) release(reason int) {
 
 	wc.mtx.Lock()
 	if wc.desc != nil {
-		_ = g.poller.Stop(wc.desc)
-		_ = wc.desc.Close()
+		_ = wc.gateway.poller.Stop(wc.desc)
+		err := wc.desc.Close()
+		if err != nil {
+			if ce := g.cfg.Logger.Check(log.DebugLevel, "got error on closing desc"); ce != nil {
+				ce.Write(zap.Error(err))
+			}
+		}
 	}
 	_ = wc.conn.Close()
 

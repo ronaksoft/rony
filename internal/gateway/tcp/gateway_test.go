@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/ronaksoft/rony"
 	tcpGateway "github.com/ronaksoft/rony/internal/gateway/tcp"
 	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
@@ -27,13 +27,29 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-func init() {
-	testEnv.Init()
+var (
+	hostPort = "127.0.0.1:8080"
+	gw       *tcpGateway.Gateway
+)
+
+func TestMain(m *testing.M) {
+	_ = os.RemoveAll("./_hdd")
+	_ = os.MkdirAll("./_hdd", os.ModePerm)
+
+	gw = setupGateway()
+	gw.Start()
+
+	// Wait for server to come up
+	time.Sleep(time.Second * 3)
+
+	code := m.Run()
+	gw.Shutdown()
+	_ = os.RemoveAll("./_hdd")
+	os.Exit(code)
 }
 
-func TestGateway(t *testing.T) {
-	// rony.SetLogLevel(-1)
-	hostPort := "127.0.0.1:8080"
+func setupGateway() *tcpGateway.Gateway {
+	//rony.SetLogLevel(log.DebugLevel)
 	gw, err := tcpGateway.New(tcpGateway.Config{
 		Concurrency:   1000,
 		ListenAddress: hostPort,
@@ -42,13 +58,13 @@ func TestGateway(t *testing.T) {
 		ExternalAddrs: []string{hostPort},
 	})
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
 	gw.Subscribe(
 		&testGatewayDelegate{
 			onConnectFunc: func(c rony.Conn, kvs ...*rony.KeyValue) {
-				// fmt.Println(c.ClientIP())
+				//fmt.Println("Open", c.ClientIP())
 			},
 			onMessageFunc: func(c rony.Conn, streamID int64, data []byte) {
 				if len(data) > 0 && data[0] == 'S' {
@@ -59,12 +75,16 @@ func TestGateway(t *testing.T) {
 					fmt.Println("MessageHandler:", err.Error())
 				}
 			},
-			onClose: func(c rony.Conn) {},
+			onClose: func(c rony.Conn) {
+				//fmt.Println("Closed", c.ClientIP())
+			},
 		},
 	)
 
-	gw.Start()
-	defer gw.Shutdown()
+	return gw
+}
+
+func TestGateway(t *testing.T) {
 	Convey("Gateway Test", t, func(c C) {
 		Convey("Ping", func(c C) {
 			wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
@@ -141,14 +161,12 @@ func TestGateway(t *testing.T) {
 			}
 			wg.Wait()
 			time.Sleep(time.Second)
-			c.Println("Total Connections", gw.TotalConnections())
 		})
 		Convey("Http With Normal Handler", func(c C) {
 			wg := pools.AcquireWaitGroup()
 			wg.Add(1)
 			go func() {
 				httpc := &fasthttp.Client{}
-				c.So(err, ShouldBeNil)
 				for i := 0; i < 400; i++ {
 					wg.Add(1)
 					go func() {
@@ -173,14 +191,12 @@ func TestGateway(t *testing.T) {
 
 			wg.Wait()
 			time.Sleep(time.Second)
-			c.Println("Total Connections", gw.TotalConnections())
 		})
 		Convey("Http With Path", func(c C) {
 			wg := pools.AcquireWaitGroup()
 			wg.Add(1)
 			go func() {
 				httpc := &fasthttp.Client{}
-				c.So(err, ShouldBeNil)
 				for i := 0; i < 400; i++ {
 					wg.Add(1)
 					go func() {
@@ -224,4 +240,55 @@ func (t *testGatewayDelegate) OnMessage(c rony.Conn, streamID int64, data []byte
 
 func (t *testGatewayDelegate) OnClose(c rony.Conn) {
 	t.onClose(c)
+}
+
+func TestGateway2(t *testing.T) {
+	msg := []byte(tools.RandomID(1024))
+	Convey("Gateway Test", t, func(c C) {
+		for j := 0; j < 100; j++ {
+			wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
+			c.So(err, ShouldBeNil)
+
+			var m []wsutil.Message
+			for i := 0; i < 10; i++ {
+				err = wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, msg)
+				c.So(err, ShouldBeNil)
+				m, err = wsutil.ReadMessage(wsc, ws.StateClientSide, m[:0])
+				c.So(err, ShouldBeNil)
+				c.So(m, ShouldHaveLength, 1)
+				c.So(m[0].Payload, ShouldResemble, msg)
+			}
+
+			err = wsc.Close()
+			c.So(err, ShouldBeNil)
+		}
+	})
+}
+
+func BenchmarkGateway(b *testing.B) {
+	msg := []byte(tools.RandomID(1024))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.SetParallelism(1)
+	b.RunParallel(func(pb *testing.PB) {
+		wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://%s", hostPort))
+		if err != nil {
+			panic(err)
+		}
+
+		var m []wsutil.Message
+		for pb.Next() {
+			err = wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, msg)
+			if err != nil {
+				b.Log(err)
+			}
+			m, err = wsutil.ReadMessage(wsc, ws.StateClientSide, m[:0])
+			if err != nil {
+				b.Log(err)
+			}
+		}
+
+		_ = wsc.Close()
+	})
 }
