@@ -84,7 +84,7 @@ func (g *Gateway) CloseConn(connID uint64) {
 }
 
 // RPC emulates sending an RPC command to the connection. It opens a non-persistent connection if connID
-// does not exists
+// does not exist
 func (g *Gateway) RPC(connID uint64, streamID int64, data []byte) error {
 	g.connsMtx.RLock()
 	conn := g.conns[connID]

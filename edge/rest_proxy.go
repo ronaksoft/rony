@@ -120,7 +120,7 @@ func WithProxyFactory(proxy RestProxy) InsertOption {
 	}
 }
 
-// WithTag sets the node's `Tag` field (may be useful for HTTP).
+// WithTag sets the node's `Tag` field (maybe useful for HTTP).
 func WithTag(tag string) InsertOption {
 	return func(n *trieNode) {
 		if n.Tag == "" {
@@ -364,7 +364,7 @@ type trieNode struct {
 	childWildcardParameter bool // or it is a wildcard (can be more than one path segments) ?
 
 	paramKeys []string // the param keys without : or *.
-	end       bool     // it is a complete node, here we stop and we can say that the node is valid.
+	end       bool     // it is a complete node, here we stop, and we can say that the node is valid.
 	key       string   // if end == true then key is filled with the original value of the insertion's key.
 	// if key != "" && its parent has childWildcardParameter == true,
 	// we need it to track the static part for the closest-wildcard's parameter storage.

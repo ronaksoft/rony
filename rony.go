@@ -1,8 +1,11 @@
 package rony
 
 import (
+	"encoding/json"
 	"mime/multipart"
 	"net"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/prometheus/client_golang/prometheus"
@@ -167,4 +170,10 @@ func RegisterPrometheus(registerer prometheus.Registerer) {
 type Router interface {
 	Set(entityID string, replicaSet uint64, replace bool) error
 	Get(entityID string) (replicaSet uint64, err error)
+}
+
+type Message interface {
+	proto.Message
+	json.Marshaler
+	json.Unmarshaler
 }

@@ -65,7 +65,11 @@ func (s *Server) SetGlobalPostHandlers(h ...edge.Handler) {
 }
 
 func (s *Server) RPC() *rpcCtx {
-	return newRPCContext(s.gw)
+	return newRPCContext(s.gw, false)
+}
+
+func (s *Server) JsonRPC() *rpcCtx {
+	return newRPCContext(s.gw, true)
 }
 
 func (s *Server) REST() *restCtx {

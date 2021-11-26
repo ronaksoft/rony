@@ -87,7 +87,7 @@ func NewServer(serverID string, opts ...Option) *Server {
 	edgeServer := &Server{
 		handlers:   make(map[uint64]*HandlerOption),
 		serverID:   []byte(serverID),
-		dispatcher: &defaultDispatcher{},
+		dispatcher: &DefaultDispatcher{},
 		logger:     log.With("EDGE"),
 	}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
-	"github.com/ronaksoft/rony/edgetest"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/internal/testEnv"
 	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
@@ -32,22 +31,47 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-var (
-	s *edgetest.Server
-)
+func TestWithDefaultDispatcher(t *testing.T) {
+	Convey("EdgeTest Gateway (Default Dispatcher)", t, func(c C) {
+		server := testEnv.TestServer("TestServer")
+		service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
+		server.Start()
+		Reset(func() {
+			server.Shutdown()
+		})
 
-func TestMain(m *testing.M) {
-	s = testEnv.TestServer("TestServer")
-	service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
-	s.Start()
-	defer s.Shutdown()
+		err := server.RPC().
+			Request(service.C_SampleEcho, &service.EchoRequest{
+				Int:       100,
+				Timestamp: 123,
+			}).
+			ErrorHandler(func(constructor uint64, e *rony.Error) {
+				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
+			}).
+			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
+				x := &service.EchoResponse{}
+				err := x.Unmarshal(b)
+				c.So(err, ShouldBeNil)
+				c.So(x.Int, ShouldEqual, 100)
+				c.So(x.Timestamp, ShouldEqual, 123)
 
-	m.Run()
+				return nil
+			}).
+			Run(time.Second)
+		c.So(err, ShouldBeNil)
+	})
 }
 
-func TestWithTestGateway(t *testing.T) {
-	Convey("EdgeTest Gateway", t, func(c C) {
-		err := s.RPC().
+func TestWithJSONDispatcher(t *testing.T) {
+	Convey("EdgeTest Gateway (JSON Dispatcher)", t, func(c C) {
+		server := testEnv.TestJSONServer("TestServer")
+		service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
+		server.Start()
+		Reset(func() {
+			server.Shutdown()
+		})
+
+		err := server.JsonRPC().
 			Request(service.C_SampleEcho, &service.EchoRequest{
 				Int:       100,
 				Timestamp: 123,
@@ -71,8 +95,15 @@ func TestWithTestGateway(t *testing.T) {
 
 func TestRestProxy(t *testing.T) {
 	Convey("Edge With RestProxy", t, func(c C) {
+		server := testEnv.TestServer("TestServer")
+		service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
+		server.Start()
+		Reset(func() {
+			server.Shutdown()
+		})
+
 		Convey("Manual", func(c C) {
-			s.RealEdge().SetRestProxy(
+			server.RealEdge().SetRestProxy(
 				rony.MethodGet, "/x/:value",
 				edge.NewRestProxy(
 					func(conn rony.RestConn, ctx *edge.DispatchCtx) error {
@@ -97,11 +128,11 @@ func TestRestProxy(t *testing.T) {
 					},
 				),
 			)
-			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
-			s.Start()
-			defer s.Shutdown()
+			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
+			server.Start()
+			defer server.Shutdown()
 
-			err := s.REST().
+			err := server.REST().
 				Request(rony.MethodGet, "/x/123", nil).
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					c.So(string(b), ShouldResemble, "123")
@@ -112,8 +143,8 @@ func TestRestProxy(t *testing.T) {
 			c.So(err, ShouldBeNil)
 		})
 		Convey("JSON", func(c C) {
-			s.RealEdge().SetRestProxy(rony.MethodPost, "/echo", service.EchoRest)
-			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
+			server.RealEdge().SetRestProxy(rony.MethodPost, "/echo", service.EchoRest)
+			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
 
 			req := &service.EchoRequest{
 				Int:        tools.RandomInt64(0),
@@ -122,7 +153,7 @@ func TestRestProxy(t *testing.T) {
 			}
 			reqJSON, err := protojson.Marshal(req)
 			c.So(err, ShouldBeNil)
-			err = s.REST().
+			err = server.REST().
 				Request(rony.MethodPost, "/echo", reqJSON).
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					res := &service.EchoResponse{}
@@ -139,12 +170,12 @@ func TestRestProxy(t *testing.T) {
 			c.So(err, ShouldBeNil)
 		})
 		Convey("JSON and Binding", func(c C) {
-			s.RealEdge().SetRestProxy(rony.MethodGet, "/echo/:value/:ts", service.EchoRestBinding)
-			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, s.RealEdge())
+			server.RealEdge().SetRestProxy(rony.MethodGet, "/echo/:value/:ts", service.EchoRestBinding)
+			service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
 
 			value := tools.RandomInt64(0)
 			ts := tools.NanoTime()
-			err := s.REST().
+			err := server.REST().
 				Request(rony.MethodGet, fmt.Sprintf("/echo/%d/%d", value, ts), nil).
 				Expect(func(b []byte, kv ...*rony.KeyValue) error {
 					res := &service.EchoResponse{}
@@ -162,7 +193,11 @@ func TestRestProxy(t *testing.T) {
 }
 
 func BenchmarkEdge(b *testing.B) {
-	rony.SetLogLevel(log.WarnLevel)
+	server := testEnv.TestServer("TestServer")
+	service.RegisterSample(&service.Sample{ServerID: "TestServer"}, server.RealEdge())
+	server.Start()
+	defer server.Shutdown()
+
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -186,7 +221,7 @@ func BenchmarkEdge(b *testing.B) {
 						rony.PoolMessageEnvelope.Put(me)
 					},
 				)
-			s.RealEdge().OnGatewayMessage(conn, 0, *buf.Bytes())
+			server.RealEdge().OnGatewayMessage(conn, 0, *buf.Bytes())
 			pools.Buffer.Put(buf)
 			service.PoolEchoRequest.Put(req)
 			rony.PoolMessageEnvelope.Put(me)

@@ -31,10 +31,10 @@ type Dispatcher interface {
 	OnClose(conn rony.Conn)
 }
 
-// defaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
-type defaultDispatcher struct{}
+// DefaultDispatcher is a default implementation of Dispatcher. You only need to set OnMessageFunc with
+type DefaultDispatcher struct{}
 
-func (s *defaultDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
+func (s *DefaultDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
 	buf := pools.Buffer.FromProto(me)
 	mo := proto.MarshalOptions{UseCachedSize: true}
 	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
@@ -45,11 +45,11 @@ func (s *defaultDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.Mess
 	return nil
 }
 
-func (s *defaultDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
+func (s *DefaultDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
 	return me.Unmarshal(data)
 }
 
-func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
+func (s *DefaultDispatcher) Done(ctx *DispatchCtx) {
 	ctx.BufferPopAll(
 		func(envelope *rony.MessageEnvelope) {
 			buf := pools.Buffer.FromProto(envelope)
@@ -59,19 +59,19 @@ func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
 	)
 }
 
-func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
+func (s *DefaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 	for _, kv := range kvs {
 		conn.Set(kv.Key, kv.Value)
 	}
 }
 
-func (s *defaultDispatcher) OnClose(conn rony.Conn) {
+func (s *DefaultDispatcher) OnClose(conn rony.Conn) {
 	// Do nothing
 }
 
-type jsonDispatcher struct{}
+type JSONDispatcher struct{}
 
-func (j *jsonDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
+func (j *JSONDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
 	b, err := me.MarshalJSON()
 	if err != nil {
 		return err
@@ -82,11 +82,11 @@ func (j *jsonDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.Message
 	return nil
 }
 
-func (j *jsonDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
+func (j *JSONDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
 	return me.UnmarshalJSON(data)
 }
 
-func (j *jsonDispatcher) Done(ctx *DispatchCtx) {
+func (j *JSONDispatcher) Done(ctx *DispatchCtx) {
 	ctx.BufferPopAll(
 		func(envelope *rony.MessageEnvelope) {
 			b, err := json.Marshal(envelope)
@@ -97,12 +97,12 @@ func (j *jsonDispatcher) Done(ctx *DispatchCtx) {
 	)
 }
 
-func (j *jsonDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
+func (j *JSONDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 	for _, kv := range kvs {
 		conn.Set(kv.Key, kv.Value)
 	}
 }
 
-func (j *jsonDispatcher) OnClose(conn rony.Conn) {
+func (j *JSONDispatcher) OnClose(conn rony.Conn) {
 	// DO NOTHING
 }

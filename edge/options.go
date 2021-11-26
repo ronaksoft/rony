@@ -41,7 +41,7 @@ func WithTracer(tracer trace.Tracer) Option {
 
 func WithJSONDispatcher() Option {
 	return func(edge *Server) {
-		edge.dispatcher = &jsonDispatcher{}
+		edge.dispatcher = &JSONDispatcher{}
 	}
 }
 

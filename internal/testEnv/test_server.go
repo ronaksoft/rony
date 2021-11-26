@@ -2,17 +2,11 @@ package testEnv
 
 import (
 	"fmt"
-	"sync/atomic"
 	"time"
-
-	"google.golang.org/protobuf/proto"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
-	"github.com/ronaksoft/rony/log"
-	"github.com/ronaksoft/rony/pools"
-	"go.uber.org/zap"
 )
 
 /*
@@ -29,53 +23,8 @@ var (
 	receivedUpdates  int32
 )
 
-type testDispatcher struct {
-	l log.Logger
-}
-
-func (t testDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
-	buf := pools.Buffer.FromProto(me)
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
-	buf.SetBytes(&bb)
-	err := conn.WriteBinary(streamID, *buf.Bytes())
-	pools.Buffer.Put(buf)
-
-	atomic.AddInt32(&receivedMessages, 1)
-
-	return err
-}
-
-func (t testDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
-	return me.Unmarshal(data)
-}
-
-func (t testDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
-
-}
-
-func (t testDispatcher) OnClose(conn rony.Conn) {
-
-}
-
-func (t testDispatcher) Done(ctx *edge.DispatchCtx) {
-	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
-		buf := pools.Buffer.FromProto(envelope)
-		err := ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
-		if err != nil {
-			t.l.Warn("Error On WriteBinary", zap.Error(err))
-		}
-		pools.Buffer.Put(buf)
-
-		atomic.AddInt32(&receivedMessages, 1)
-	})
-}
-
 func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.Option) *edge.Server {
 	opts = append(opts,
-		edge.WithCustomDispatcher(&testDispatcher{
-			l: log.DefaultLogger,
-		}),
 		edge.WithTcpGateway(edge.TcpGatewayConfig{
 			Concurrency:   concurrency,
 			ListenAddress: fmt.Sprintf(":%d", listenPort),
@@ -90,7 +39,13 @@ func EdgeServer(serverID string, listenPort int, concurrency int, opts ...edge.O
 }
 
 func TestServer(serverID string) *edgetest.Server {
-	return edgetest.NewServer(serverID, &testDispatcher{
-		l: log.DefaultLogger,
-	})
+	return edgetest.NewServer(
+		serverID, &edge.DefaultDispatcher{},
+	)
+}
+
+func TestJSONServer(serverID string) *edgetest.Server {
+	return edgetest.NewServer(
+		serverID, &edge.JSONDispatcher{},
+	)
 }

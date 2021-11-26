@@ -5,6 +5,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/goccy/go-json"
+	"github.com/ronaksoft/rony/registry"
+
 	"github.com/ronaksoft/rony"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
@@ -21,6 +24,7 @@ import (
 */
 
 type rpcCtx struct {
+	json       bool
 	mtx        sync.Mutex
 	id         uint64
 	reqC       uint64
@@ -35,12 +39,13 @@ type rpcCtx struct {
 	persistent bool
 }
 
-func newRPCContext(gw *dummyGateway.Gateway) *rpcCtx {
+func newRPCContext(gw *dummyGateway.Gateway, jsonEncoded bool) *rpcCtx {
 	c := &rpcCtx{
 		id:     atomic.AddUint64(&connID, 1),
 		expect: make(map[uint64]CheckFunc),
 		gw:     gw,
 		doneCh: make(chan struct{}, 1),
+		json:   jsonEncoded,
 	}
 
 	return c
@@ -54,18 +59,34 @@ func (c *rpcCtx) Persistent() *rpcCtx {
 }
 
 // Request set the request you wish to send to the server
-func (c *rpcCtx) Request(constructor uint64, p proto.Message, kv ...*rony.KeyValue) *rpcCtx {
-	data, _ := proto.Marshal(p)
+func (c *rpcCtx) Request(constructor uint64, p rony.Message, kvs ...*rony.KeyValue) *rpcCtx {
 	c.reqID = tools.RandomUint64(0)
-	e := &rony.MessageEnvelope{
-		Constructor: constructor,
-		RequestID:   c.reqID,
-		Message:     data,
-		Auth:        nil,
-		Header:      kv,
-	}
 	c.reqC = constructor
-	c.req, c.err = proto.Marshal(e)
+
+	if c.json {
+		data, _ := p.MarshalJSON()
+		e := &rony.MessageEnvelopeJSON{
+			Constructor: registry.C(constructor),
+			RequestID:   c.reqID,
+			Message:     data,
+			Header:      map[string]string{},
+		}
+		for _, kv := range kvs {
+			e.Header[kv.Key] = kv.Value
+		}
+		c.req, c.err = json.Marshal(e)
+	} else {
+		data, _ := proto.Marshal(p)
+		e := &rony.MessageEnvelope{
+			Constructor: constructor,
+			RequestID:   c.reqID,
+			Message:     data,
+			Auth:        nil,
+			Header:      kvs,
+		}
+
+		c.req, c.err = proto.Marshal(e)
+	}
 
 	return c
 }
