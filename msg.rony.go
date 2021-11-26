@@ -39,6 +39,7 @@ func (p *poolMessageEnvelope) Put(x *MessageEnvelope) {
 
 	x.Constructor = 0
 	x.RequestID = 0
+	x.JsonEncoded = false
 	x.Message = x.Message[:0]
 	x.Auth = x.Auth[:0]
 	for _, z := range x.Header {
@@ -54,6 +55,7 @@ var PoolMessageEnvelope = poolMessageEnvelope{}
 func (x *MessageEnvelope) DeepCopy(z *MessageEnvelope) {
 	z.Constructor = x.Constructor
 	z.RequestID = x.RequestID
+	z.JsonEncoded = x.JsonEncoded
 	z.Message = append(z.Message[:0], x.Message...)
 	z.Auth = append(z.Auth[:0], x.Auth...)
 	for idx := range x.Header {

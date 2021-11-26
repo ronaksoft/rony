@@ -634,7 +634,12 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	req := &EchoRequest{}
 	res := &EchoResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return
@@ -653,7 +658,12 @@ func (sw *sampleWrapper) setWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	req := &SetRequest{}
 	res := &SetResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return
@@ -672,7 +682,12 @@ func (sw *sampleWrapper) getWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvelo
 	req := &GetRequest{}
 	res := &GetResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return
@@ -691,7 +706,12 @@ func (sw *sampleWrapper) echoTunnelWrapper(ctx *edge.RequestCtx, in *rony.Messag
 	req := &EchoRequest{}
 	res := &EchoResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return
@@ -710,7 +730,12 @@ func (sw *sampleWrapper) echoInternalWrapper(ctx *edge.RequestCtx, in *rony.Mess
 	req := &EchoRequest{}
 	res := &EchoResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return
@@ -729,7 +754,12 @@ func (sw *sampleWrapper) echoDelayWrapper(ctx *edge.RequestCtx, in *rony.Message
 	req := &EchoRequest{}
 	res := &EchoResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return

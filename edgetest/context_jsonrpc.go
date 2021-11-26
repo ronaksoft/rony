@@ -5,10 +5,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/goccy/go-json"
+	"github.com/ronaksoft/rony/registry"
+
 	"github.com/ronaksoft/rony"
 	dummyGateway "github.com/ronaksoft/rony/internal/gateway/dummy"
 	"github.com/ronaksoft/rony/tools"
-	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -20,7 +22,7 @@ import (
    Copyright Ronak Software Group 2020
 */
 
-type rpcCtx struct {
+type jrpcCtx struct {
 	mtx        sync.Mutex
 	id         uint64
 	reqC       uint64
@@ -35,8 +37,8 @@ type rpcCtx struct {
 	persistent bool
 }
 
-func newRPCContext(gw *dummyGateway.Gateway) *rpcCtx {
-	c := &rpcCtx{
+func newJSONRPCContext(gw *dummyGateway.Gateway) *jrpcCtx {
+	c := &jrpcCtx{
 		id:     atomic.AddUint64(&connID, 1),
 		expect: make(map[uint64]CheckFunc),
 		gw:     gw,
@@ -46,44 +48,46 @@ func newRPCContext(gw *dummyGateway.Gateway) *rpcCtx {
 	return c
 }
 
-// Persistent makes the rpcCtx simulate persistent connection e.g. websocket
-func (c *rpcCtx) Persistent() *rpcCtx {
+// Persistent makes the jrpcCtx simulate persistent connection e.g. websocket
+func (c *jrpcCtx) Persistent() *jrpcCtx {
 	c.persistent = true
 
 	return c
 }
 
 // Request set the request you wish to send to the server
-func (c *rpcCtx) Request(constructor uint64, p rony.Message, kvs ...*rony.KeyValue) *rpcCtx {
+func (c *jrpcCtx) Request(constructor uint64, p rony.Message, kvs ...*rony.KeyValue) *jrpcCtx {
 	c.reqID = tools.RandomUint64(0)
 	c.reqC = constructor
-	data, _ := proto.Marshal(p)
-	e := &rony.MessageEnvelope{
-		Constructor: constructor,
+
+	data, _ := p.MarshalJSON()
+	e := &rony.MessageEnvelopeJSON{
+		Constructor: registry.C(constructor),
 		RequestID:   c.reqID,
 		Message:     data,
-		Auth:        nil,
-		Header:      kvs,
+		Header:      map[string]string{},
 	}
-
-	c.req, c.err = proto.Marshal(e)
+	for _, kv := range kvs {
+		e.Header[kv.Key] = kv.Value
+	}
+	c.req, c.err = json.Marshal(e)
 
 	return c
 }
 
 // Expect let you set what you expect to receive. If cf is set, then you can do more checks
 // on the response and return error if the response was not fully acceptable
-func (c *rpcCtx) Expect(constructor uint64, cf CheckFunc) *rpcCtx {
+func (c *jrpcCtx) Expect(constructor uint64, cf CheckFunc) *jrpcCtx {
 	c.expect[constructor] = cf
 
 	return c
 }
 
-func (c *rpcCtx) ExpectConstructor(constructor uint64) *rpcCtx {
+func (c *jrpcCtx) ExpectConstructor(constructor uint64) *jrpcCtx {
 	return c.Expect(constructor, nil)
 }
 
-func (c *rpcCtx) check(e *rony.MessageEnvelope) {
+func (c *jrpcCtx) check(e *rony.MessageEnvelope) {
 	c.mtx.Lock()
 	f, ok := c.expect[e.Constructor]
 	c.mtx.Unlock()
@@ -104,7 +108,7 @@ func (c *rpcCtx) check(e *rony.MessageEnvelope) {
 	c.mtx.Unlock()
 }
 
-func (c *rpcCtx) expectCount() int {
+func (c *jrpcCtx) expectCount() int {
 	c.mtx.Lock()
 	n := len(c.expect)
 	c.mtx.Unlock()
@@ -112,27 +116,27 @@ func (c *rpcCtx) expectCount() int {
 	return n
 }
 
-func (c *rpcCtx) ErrorHandler(f func(constructor uint64, e *rony.Error)) *rpcCtx {
+func (c *jrpcCtx) ErrorHandler(f func(constructor uint64, e *rony.Error)) *jrpcCtx {
 	c.errH = f
 
 	return c
 }
 
-func (c *rpcCtx) SetRunParameters(kvs ...*rony.KeyValue) *rpcCtx {
+func (c *jrpcCtx) SetRunParameters(kvs ...*rony.KeyValue) *jrpcCtx {
 	c.kvs = kvs
 
 	return c
 }
 
-func (c *rpcCtx) RunShort(kvs ...*rony.KeyValue) error {
+func (c *jrpcCtx) RunShort(kvs ...*rony.KeyValue) error {
 	return c.Run(time.Second*10, kvs...)
 }
 
-func (c *rpcCtx) RunLong(kvs ...*rony.KeyValue) error {
+func (c *jrpcCtx) RunLong(kvs ...*rony.KeyValue) error {
 	return c.Run(time.Minute, kvs...)
 }
 
-func (c *rpcCtx) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
+func (c *jrpcCtx) Run(timeout time.Duration, kvs ...*rony.KeyValue) error {
 	// We return error early if we have encountered error before Run
 	if c.err != nil {
 		return c.err
@@ -170,7 +174,7 @@ Loop:
 	return c.err
 }
 
-func (c *rpcCtx) receiver(connID uint64, streamID int64, data []byte) {
+func (c *jrpcCtx) receiver(connID uint64, streamID int64, data []byte) {
 	defer func() {
 		c.doneCh <- struct{}{}
 	}()

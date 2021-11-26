@@ -193,7 +193,12 @@ func (sw *sampleWrapper) echoWrapper(ctx *edge.RequestCtx, in *rony.MessageEnvel
 	req := &EchoRequest{}
 	res := &EchoResponse{}
 
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 		return

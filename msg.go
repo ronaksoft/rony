@@ -1,9 +1,9 @@
 package rony
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/goccy/go-json"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"google.golang.org/protobuf/proto"
@@ -72,7 +72,15 @@ func (x *MessageEnvelope) Append(key, val string) {
 }
 
 func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
-	m, err := registry.Unwrap(x)
+	var (
+		m   Message
+		err error
+	)
+	if x.JsonEncoded {
+		m, err = registry.UnwrapJSON(x)
+	} else {
+		m, err = registry.Unwrap(x)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +99,7 @@ func (x *MessageEnvelope) Carrier() *envelopeCarrier {
 }
 
 func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
-	m, err := registry.Unwrap(x)
+	m, err := registry.UnwrapJSON(x)
 	if err != nil {
 		return nil, err
 	}
@@ -118,31 +126,16 @@ func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
 
 func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
 	je := MessageEnvelopeJSON{}
-	err := json.Unmarshal(b, &je)
-	if err != nil {
+	if err := json.Unmarshal(b, &je); err != nil {
 		return err
 	}
 
 	x.RequestID = je.RequestID
 	x.Constructor = registry.N(je.Constructor)
-
-	m, err := registry.Get(x.Constructor)
-	if err != nil {
-		return err
-	}
-
+	x.Message = je.Message
+	x.JsonEncoded = true
 	for k, v := range je.Header {
 		x.Append(k, v)
-	}
-
-	err = m.UnmarshalJSON(je.Message)
-	if err != nil {
-		return err
-	}
-
-	x.Message, err = proto.Marshal(m)
-	if err != nil {
-		return err
 	}
 
 	return nil

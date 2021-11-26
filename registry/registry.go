@@ -1,9 +1,11 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/goccy/go-json"
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"google.golang.org/protobuf/proto"
 )
 
@@ -65,6 +67,22 @@ func Unwrap(envelope Envelope) (Message, error) {
 	}
 
 	err = proto.UnmarshalOptions{Merge: true}.Unmarshal(envelope.GetMessage(), m)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func UnwrapJSON(envelope Envelope) (Message, error) {
+	m, err := Get(envelope.GetConstructor())
+	if err != nil {
+		return nil, err
+	}
+
+	err = protojson.Unmarshal(envelope.GetMessage(), m)
+
 	if err != nil {
 		return nil, err
 	}

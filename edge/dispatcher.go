@@ -1,7 +1,8 @@
 package edge
 
 import (
-	"github.com/goccy/go-json"
+	"encoding/json"
+
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
@@ -72,7 +73,7 @@ func (s *DefaultDispatcher) OnClose(conn rony.Conn) {
 type JSONDispatcher struct{}
 
 func (j *JSONDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
-	b, err := me.MarshalJSON()
+	b, err := json.Marshal(me)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func (j *JSONDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.Message
 }
 
 func (j *JSONDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
-	return me.UnmarshalJSON(data)
+	return json.Unmarshal(data, me)
 }
 
 func (j *JSONDispatcher) Done(ctx *DispatchCtx) {

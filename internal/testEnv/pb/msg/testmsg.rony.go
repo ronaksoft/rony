@@ -7,9 +7,9 @@ package testmsg
 
 import (
 	bytes "bytes"
+	json "encoding/json"
 	sync "sync"
 
-	go_json "github.com/goccy/go-json"
 	edge "github.com/ronaksoft/rony/edge"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
@@ -141,7 +141,7 @@ func (x *Envelope2) Marshal() ([]byte, error) {
 
 func (x *Envelope2) UnmarshalJSON(b []byte) error {
 	je := registry.JSONEnvelope{}
-	err := go_json.Unmarshal(b, &je)
+	err := json.Unmarshal(b, &je)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (x *Envelope2) UnmarshalJSON(b []byte) error {
 }
 
 func (x *Envelope2) MarshalJSON() ([]byte, error) {
-	m, err := registry.Unwrap(x)
+	m, err := registry.UnwrapJSON(x)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (x *Envelope2) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	return go_json.Marshal(je)
+	return json.Marshal(je)
 }
 
 func factoryEnvelope2() registry.Message {

@@ -49,7 +49,8 @@ func GenFunc(g *protogen.GeneratedFile, opt *codegen.PluginOptions, files ...*pr
 			g.P(codegen.ExecTemplate(template.Must(template.New("genClone").Parse(genClone)), arg))
 			g.P(codegen.ExecTemplate(template.Must(template.New("genSerializers").Parse(genSerializers)), arg))
 			if arg.IsEnvelope() {
-				g.QualifiedGoIdent(protogen.GoIdent{GoName: "json", GoImportPath: "github.com/goccy/go-json"})
+				//g.QualifiedGoIdent(protogen.GoIdent{GoName: "json", GoImportPath: "github.com/goccy/go-json"})
+				g.QualifiedGoIdent(protogen.GoIdent{GoName: "", GoImportPath: "encoding/json"})
 			}
 			g.P(codegen.ExecTemplate(template.Must(template.New("genFactory").Parse(genFactory)), arg))
 
@@ -238,7 +239,7 @@ const genSerializers = `
 		func (x *{{.Name}}) UnmarshalJSON(b []byte) error {
 		{{- if and .IsEnvelope }}
 			je := registry.JSONEnvelope{}
-			err := go_json.Unmarshal(b, &je)
+			err := json.Unmarshal(b, &je)
 			if err != nil {
 				return err
 			}
@@ -268,7 +269,7 @@ const genSerializers = `
 	
 		func (x *{{.Name}}) MarshalJSON() ([]byte, error)  {
 		{{- if .IsEnvelope }}
-			m, err := registry.Unwrap(x)
+			m, err := registry.UnwrapJSON(x)
 			if err != nil {
 				return nil, err
 			}
@@ -282,7 +283,7 @@ const genSerializers = `
 				return nil, err
 			}
 		
-			return go_json.Marshal(je)
+			return json.Marshal(je)
 		{{- else }}
 			return protojson.Marshal(x)
 		{{- end }}

@@ -1,8 +1,13 @@
 package rony_test
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
+
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/tools"
@@ -93,6 +98,49 @@ func TestMessageEnvelope_Get(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func TestMessageEnvelopeJSON(t *testing.T) {
+	Convey("Test MessageEnvelopeJSON", t, func(c C) {
+		req := &service.EchoRequest{
+			Int:       100,
+			Timestamp: 123,
+		}
+		bb, err := protojson.Marshal(req)
+		c.So(err, ShouldBeNil)
+		c.Println("ProtoJSON Marshal: ", string(bb))
+
+		req2 := &service.EchoRequest{}
+		err = protojson.Unmarshal(bb, req2)
+		c.So(err, ShouldBeNil)
+		c.So(req, ShouldResemble, req2)
+
+		mej := rony.MessageEnvelopeJSON{
+			RequestID:   tools.RandomUint64(0),
+			Header:      nil,
+			Constructor: "EchoRequest",
+			Message:     json.RawMessage(`{"Int":"100","Timestamp":"123"}`),
+		}
+
+		mejBytes, err := json.Marshal(mej)
+		c.So(err, ShouldBeNil)
+		c.Println("JSON Marshal: ", string(mejBytes))
+
+		req3 := &service.EchoRequest{}
+		c.Println("Message:", string(mej.Message))
+		err = req3.UnmarshalJSON(mej.Message)
+		c.So(err, ShouldBeNil)
+		c.So(req3, ShouldResemble, req)
+
+		me := &rony.MessageEnvelope{}
+		err = json.Unmarshal(mejBytes, me)
+		c.So(err, ShouldBeNil)
+
+		m, err := me.Unwrap()
+		c.So(err, ShouldBeNil)
+		c.So(m.Interface(), ShouldResemble, req)
+	})
+}
+
 func BenchmarkMessageEnvelope_GetWithPool(b *testing.B) {
 	s := &rony.MessageEnvelope{
 		Constructor: tools.RandomUint64(0),

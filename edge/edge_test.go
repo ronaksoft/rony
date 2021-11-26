@@ -72,14 +72,18 @@ func TestWithJSONDispatcher(t *testing.T) {
 		})
 
 		err := server.JsonRPC().
-			Request(service.C_SampleEcho, &service.EchoRequest{
-				Int:       100,
-				Timestamp: 123,
-			}).
+			Request(
+				service.C_SampleEcho,
+				&service.EchoRequest{
+					Int:       100,
+					Timestamp: 123,
+				},
+			).
 			ErrorHandler(func(constructor uint64, e *rony.Error) {
 				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
 			}).
 			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
+				fmt.Println("Got Response")
 				x := &service.EchoResponse{}
 				err := x.Unmarshal(b)
 				c.So(err, ShouldBeNil)
