@@ -267,6 +267,10 @@ func BenchmarkEdgeWithWebsocket(b *testing.B) {
 				b.Log(err)
 			}
 			pools.Buffer.Put(buf)
+			_, err = wsutil.ReadMessage(wsc, ws.StateClientSide, nil)
+			if err != nil {
+				b.Log(err)
+			}
 
 			service.PoolEchoRequest.Put(req)
 			rony.PoolMessageEnvelope.Put(me)

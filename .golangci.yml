@@ -16,10 +16,11 @@ linters:
     - gocognit
     - funlen
     - gofumpt
-#    - goimports
+    - goimports
     - godot
     - gci
     - gocyclo
     - forbidigo
+    - dupl
   fast: true
 
