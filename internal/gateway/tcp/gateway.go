@@ -475,7 +475,6 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup) (err 
 					}
 				}(idx),
 			)
-
 		case ws.OpClose:
 			// remove the connection from the list
 			err = ErrOpCloseReceived

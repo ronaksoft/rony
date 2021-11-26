@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/goccy/go-json"
 	"google.golang.org/protobuf/proto"
 )
 

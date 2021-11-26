@@ -14,6 +14,7 @@ require (
 	github.com/gobuffalo/plush/v4 v4.1.6
 	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.1.0
+	github.com/goccy/go-json v0.7.10
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f

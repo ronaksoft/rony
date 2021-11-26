@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ronaksoft/rony/registry"
+	"go.opentelemetry.io/otel/attribute"
+
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
 	"github.com/ronaksoft/rony"
@@ -161,6 +164,7 @@ func (ctx *RequestCtx) PushCustomMessage(
 					trace.WithAttributes(
 						semconv.MessageTypeSent,
 						semconv.MessageIDKey.Int64(int64(requestID)),
+						attribute.String("rony.constructor", registry.C(constructor)),
 					),
 				)
 		}

@@ -49,11 +49,13 @@ func (s *defaultDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error 
 }
 
 func (s *defaultDispatcher) Done(ctx *DispatchCtx) {
-	ctx.BufferPopAll(func(envelope *rony.MessageEnvelope) {
-		buf := pools.Buffer.FromProto(envelope)
-		_ = ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
-		pools.Buffer.Put(buf)
-	})
+	ctx.BufferPopAll(
+		func(envelope *rony.MessageEnvelope) {
+			buf := pools.Buffer.FromProto(envelope)
+			_ = ctx.Conn().WriteBinary(ctx.StreamID(), *buf.Bytes())
+			pools.Buffer.Put(buf)
+		},
+	)
 }
 
 func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {

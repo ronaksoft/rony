@@ -1,9 +1,9 @@
 package rony
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/goccy/go-json"
 	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/registry"
 	"google.golang.org/protobuf/proto"

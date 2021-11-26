@@ -38,9 +38,12 @@ func NewByteSlice(min, max int) *byteSlicePool {
 	p := &byteSlicePool{
 		pool: make(map[int]*sync.Pool),
 	}
-	logarithmicRange(min, max, func(n int) {
-		p.pool[n] = &sync.Pool{}
-	})
+	logarithmicRange(
+		min, max,
+		func(n int) {
+			p.pool[n] = &sync.Pool{}
+		},
+	)
 
 	return p
 }
