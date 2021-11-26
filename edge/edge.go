@@ -441,7 +441,7 @@ func (edge *Server) onError(ctx *DispatchCtx, err *rony.Error) {
 // StartCluster is non-blocking function which runs the cluster component of the Edge server.
 func (edge *Server) StartCluster() (err error) {
 	if edge.cluster == nil {
-		edge.logger.Warn("Cluster is NOT set",
+		edge.logger.Info("Cluster is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 
@@ -465,7 +465,7 @@ func (edge *Server) StartCluster() (err error) {
 // StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	if edge.gateway == nil {
-		edge.logger.Warn("Gateway is NOT set",
+		edge.logger.Info("Gateway is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 
@@ -489,7 +489,7 @@ func (edge *Server) StartGateway() error {
 // StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
 func (edge *Server) StartTunnel() error {
 	if edge.tunnel == nil {
-		edge.logger.Warn("Tunnel is NOT set",
+		edge.logger.Info("Tunnel is NOT set",
 			zap.ByteString("ServerID", edge.serverID),
 		)
 

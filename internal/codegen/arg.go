@@ -521,8 +521,8 @@ func getRestArg(m *protogen.Method, arg *MethodArg) {
 	arg.Rest.Json = restOpt.GetJsonEncode()
 
 	var (
-		pathParams  []string
-		queryParams []string
+		pathParams  = make([]string, 0, 8)
+		queryParams = make([]string, 0, 8)
 	)
 	bindParams := map[string]string{}
 	for _, pv := range strings.Split(arg.Rest.Path, "/") {

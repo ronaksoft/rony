@@ -96,7 +96,7 @@ func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	je := registry.JSONEnvelope{
+	je := MessageEnvelopeJSON{
 		RequestID:   x.RequestID,
 		Constructor: registry.C(x.Constructor),
 	}
@@ -117,7 +117,7 @@ func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
 }
 
 func (x *MessageEnvelope) UnmarshalJSON(b []byte) error {
-	je := registry.JSONEnvelope{}
+	je := MessageEnvelopeJSON{}
 	err := json.Unmarshal(b, &je)
 	if err != nil {
 		return err
@@ -197,4 +197,12 @@ func (x *Error) Expand() (string, string) {
 
 func (x *Error) ToEnvelope(me *MessageEnvelope) {
 	// me.Fill(me.RequestID, C_Error, x)
+}
+
+// MessageEnvelopeJSON is the JSON representation of MessageEnvelope.
+type MessageEnvelopeJSON struct {
+	RequestID   uint64            `json:"requestId,omitempty"`
+	Header      map[string]string `json:"header,omitempty"`
+	Constructor string            `json:"constructor"`
+	Message     json.RawMessage   `json:"message,omitempty"`
 }

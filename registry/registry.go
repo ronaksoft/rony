@@ -89,7 +89,7 @@ func N(n string) uint64 {
 }
 
 type JSONEnvelope struct {
-	RequestID   uint64            `json:"requestID,omitempty"`
+	RequestID   uint64            `json:"requestId,omitempty"`
 	Header      map[string]string `json:"header,omitempty"`
 	Constructor string            `json:"constructor"`
 	Message     json.RawMessage   `json:"message,omitempty"`

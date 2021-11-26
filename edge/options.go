@@ -39,6 +39,12 @@ func WithTracer(tracer trace.Tracer) Option {
 	}
 }
 
+func WithJSONDispatcher() Option {
+	return func(edge *Server) {
+		edge.dispatcher = &jsonDispatcher{}
+	}
+}
+
 // WithCustomDispatcher enables custom dispatcher to write your specific event handlers.
 func WithCustomDispatcher(d Dispatcher) Option {
 	return func(edge *Server) {

@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"github.com/goccy/go-json"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
 	"google.golang.org/protobuf/proto"
@@ -18,7 +19,7 @@ import (
 type Dispatcher interface {
 	// Encode will be called on the outgoing messages to encode them into the connection.
 	// it is responsible for write data to conn
-	Encode(conn rony.Conn, steamID int64, me *rony.MessageEnvelope) error
+	Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error
 	// Decode decodes the incoming wire messages and converts it to a rony.MessageEnvelope
 	Decode(data []byte, me *rony.MessageEnvelope) error
 	// Done will be called when the context has been finished, this lets cleaning up, or in case you need to flush the
@@ -66,4 +67,42 @@ func (s *defaultDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
 
 func (s *defaultDispatcher) OnClose(conn rony.Conn) {
 	// Do nothing
+}
+
+type jsonDispatcher struct{}
+
+func (j *jsonDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
+	b, err := me.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	_ = conn.WriteBinary(streamID, b)
+
+	return nil
+}
+
+func (j *jsonDispatcher) Decode(data []byte, me *rony.MessageEnvelope) error {
+	return me.UnmarshalJSON(data)
+}
+
+func (j *jsonDispatcher) Done(ctx *DispatchCtx) {
+	ctx.BufferPopAll(
+		func(envelope *rony.MessageEnvelope) {
+			b, err := json.Marshal(envelope)
+			if err == nil {
+				_ = ctx.Conn().WriteBinary(ctx.StreamID(), b)
+			}
+		},
+	)
+}
+
+func (j *jsonDispatcher) OnOpen(conn rony.Conn, kvs ...*rony.KeyValue) {
+	for _, kv := range kvs {
+		conn.Set(kv.Key, kv.Value)
+	}
+}
+
+func (j *jsonDispatcher) OnClose(conn rony.Conn) {
+	// DO NOTHING
 }

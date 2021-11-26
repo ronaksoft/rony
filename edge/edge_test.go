@@ -1,10 +1,14 @@
 package edge_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
+
+	"github.com/gobwas/ws"
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/edge"
 	"github.com/ronaksoft/rony/edgetest"
@@ -187,5 +191,49 @@ func BenchmarkEdge(b *testing.B) {
 			service.PoolEchoRequest.Put(req)
 			rony.PoolMessageEnvelope.Put(me)
 		}
+	})
+}
+
+func BenchmarkEdgeWithWebsocket(b *testing.B) {
+	rony.SetLogLevel(log.WarnLevel)
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	hostPort := "8234"
+	es := edge.NewServer("TEST",
+		edge.WithTcpGateway(
+			edge.TcpGatewayConfig{
+				Concurrency:   1000,
+				ListenAddress: fmt.Sprintf(":%s", hostPort),
+				Protocol:      rony.TCP,
+			},
+		),
+	)
+	es.Start()
+	defer es.Shutdown()
+
+	b.RunParallel(func(pb *testing.PB) {
+		wsc, _, _, err := ws.Dial(context.Background(), fmt.Sprintf("ws://127.0.0.1:%s", hostPort))
+		if err != nil {
+			panic(err)
+		}
+
+		for pb.Next() {
+			req := service.PoolEchoRequest.Get()
+			req.Int = tools.RandomInt64(0)
+			me := rony.PoolMessageEnvelope.Get()
+			me.Fill(tools.RandomUint64(0), service.C_SampleEcho, req)
+			buf := pools.Buffer.FromProto(me)
+			err = wsutil.WriteMessage(wsc, ws.StateClientSide, ws.OpBinary, *buf.Bytes())
+			if err != nil {
+				b.Log(err)
+			}
+			pools.Buffer.Put(buf)
+
+			service.PoolEchoRequest.Put(req)
+			rony.PoolMessageEnvelope.Put(me)
+		}
+
+		_ = wsc.Close()
 	})
 }
