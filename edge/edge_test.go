@@ -83,9 +83,8 @@ func TestWithJSONDispatcher(t *testing.T) {
 				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
 			}).
 			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
-				fmt.Println("Got Response")
 				x := &service.EchoResponse{}
-				err := x.Unmarshal(b)
+				err := x.UnmarshalJSON(b)
 				c.So(err, ShouldBeNil)
 				c.So(x.Int, ShouldEqual, 100)
 				c.So(x.Timestamp, ShouldEqual, 123)

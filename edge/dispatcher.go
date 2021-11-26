@@ -91,9 +91,11 @@ func (j *JSONDispatcher) Done(ctx *DispatchCtx) {
 	ctx.BufferPopAll(
 		func(envelope *rony.MessageEnvelope) {
 			b, err := json.Marshal(envelope)
-			if err == nil {
-				_ = ctx.Conn().WriteBinary(ctx.StreamID(), b)
+			if err != nil {
+				return
 			}
+
+			_ = ctx.conn.WriteBinary(ctx.StreamID(), b)
 		},
 	)
 }

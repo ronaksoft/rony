@@ -73,7 +73,7 @@ func (x *MessageEnvelope) Append(key, val string) {
 
 func (x *MessageEnvelope) Unwrap() (protoreflect.Message, error) {
 	var (
-		m   Message
+		m   IMessage
 		err error
 	)
 	if x.JsonEncoded {
@@ -99,7 +99,15 @@ func (x *MessageEnvelope) Carrier() *envelopeCarrier {
 }
 
 func (x *MessageEnvelope) MarshalJSON() ([]byte, error) {
-	m, err := registry.UnwrapJSON(x)
+	var (
+		m   registry.Message
+		err error
+	)
+	if x.JsonEncoded {
+		m, err = registry.UnwrapJSON(x)
+	} else {
+		m, err = registry.Unwrap(x)
+	}
 	if err != nil {
 		return nil, err
 	}

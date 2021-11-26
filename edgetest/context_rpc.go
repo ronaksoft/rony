@@ -54,7 +54,7 @@ func (c *rpcCtx) Persistent() *rpcCtx {
 }
 
 // Request set the request you wish to send to the server
-func (c *rpcCtx) Request(constructor uint64, p rony.Message, kvs ...*rony.KeyValue) *rpcCtx {
+func (c *rpcCtx) Request(constructor uint64, p rony.IMessage, kvs ...*rony.KeyValue) *rpcCtx {
 	c.reqID = tools.RandomUint64(0)
 	c.reqC = constructor
 	data, _ := proto.Marshal(p)

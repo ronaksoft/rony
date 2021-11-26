@@ -56,7 +56,7 @@ func (c *jrpcCtx) Persistent() *jrpcCtx {
 }
 
 // Request set the request you wish to send to the server
-func (c *jrpcCtx) Request(constructor uint64, p rony.Message, kvs ...*rony.KeyValue) *jrpcCtx {
+func (c *jrpcCtx) Request(constructor uint64, p rony.IMessage, kvs ...*rony.KeyValue) *jrpcCtx {
 	c.reqID = tools.RandomUint64(0)
 	c.reqC = constructor
 
@@ -87,11 +87,11 @@ func (c *jrpcCtx) ExpectConstructor(constructor uint64) *jrpcCtx {
 	return c.Expect(constructor, nil)
 }
 
-func (c *jrpcCtx) check(e *rony.MessageEnvelope) {
+func (c *jrpcCtx) check(e *rony.MessageEnvelopeJSON) {
 	c.mtx.Lock()
-	f, ok := c.expect[e.Constructor]
+	f, ok := c.expect[registry.N(e.Constructor)]
 	c.mtx.Unlock()
-	if !ok && e.Constructor == rony.C_Error {
+	if !ok && registry.N(e.Constructor) == rony.C_Error {
 		err := &rony.Error{}
 		c.err = err.Unmarshal(e.Message)
 		if c.errH != nil {
@@ -101,10 +101,14 @@ func (c *jrpcCtx) check(e *rony.MessageEnvelope) {
 		return
 	}
 	if f != nil {
-		c.err = f(e.Message, e.Header...)
+		var kvs = make([]*rony.KeyValue, 0, len(e.Header))
+		for k, v := range e.Header {
+			kvs = append(kvs, &rony.KeyValue{Key: k, Value: v})
+		}
+		c.err = f(e.Message, kvs...)
 	}
 	c.mtx.Lock()
-	delete(c.expect, e.Constructor)
+	delete(c.expect, registry.N(e.Constructor))
 	c.mtx.Unlock()
 }
 
@@ -178,22 +182,10 @@ func (c *jrpcCtx) receiver(connID uint64, streamID int64, data []byte) {
 	defer func() {
 		c.doneCh <- struct{}{}
 	}()
-	e := &rony.MessageEnvelope{}
-	c.err = e.Unmarshal(data)
+	e := &rony.MessageEnvelopeJSON{}
+	c.err = json.Unmarshal(data, e)
 	if c.err != nil {
 		return
 	}
-	switch e.Constructor {
-	case rony.C_MessageContainer:
-		mc := &rony.MessageContainer{}
-		c.err = mc.Unmarshal(e.Message)
-		if c.err != nil {
-			return
-		}
-		for _, e := range mc.Envelopes {
-			c.check(e)
-		}
-	default:
-		c.check(e)
-	}
+	c.check(e)
 }

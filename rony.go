@@ -172,7 +172,7 @@ type Router interface {
 	Get(entityID string) (replicaSet uint64, err error)
 }
 
-type Message interface {
+type IMessage interface {
 	proto.Message
 	json.Marshaler
 	json.Unmarshaler
