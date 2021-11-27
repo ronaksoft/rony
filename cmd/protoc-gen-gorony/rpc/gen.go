@@ -95,6 +95,9 @@ func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestClient (conn rony.RestConn,
 	return nil
 }
 func (sw *{{$service.NameCC}}Wrapper) {{.NameCC}}RestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	{{- if .Rest.Json }}
+		conn.WriteHeader("Content-Type", "application/json")
+	{{- end }}
 	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
 		switch envelope.Constructor {
 		case {{.Output.CName}}:

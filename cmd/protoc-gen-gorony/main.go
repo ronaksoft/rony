@@ -241,9 +241,10 @@ func exportOpenAPI(plugin *protogen.Plugin) error {
 					continue
 				}
 				addOperation(swag, s, m)
-				addDefinition(swag, m.Input, m.Rest.Json)
-				addDefinition(swag, m.Output, m.Rest.Json)
 			}
+		}
+		for _, m := range arg.Messages {
+			addDefinition(swag, m, true)
 		}
 	}
 
@@ -277,25 +278,39 @@ func addDefinition(swag *spec.Swagger, m codegen.MessageArg, jsonEncode bool) {
 		if jsonEncode {
 			fName = f.JSONName()
 		}
-		switch f.GoKind {
-		case "string":
-			def.SetProperty(fName, *spec.StringProperty())
-		case "[]byte":
-			def.SetProperty(fName, *spec.ArrayProperty(spec.Int8Property()))
-		case "int8", "uint8":
-			def.SetProperty(fName, *spec.Int8Property())
-		case "int16", "uint16":
-			def.SetProperty(fName, *spec.Int16Property())
-		case "int32", "uint32":
-			def.SetProperty(fName, *spec.Int32Property())
-		case "int64", "uint64":
-			def.SetProperty(fName, *spec.Int64Property())
-		case "float32":
-			def.SetProperty(fName, *spec.Float32Property())
-		case "float64":
-			def.SetProperty(fName, *spec.Float64Property())
+
+		var wrapFunc func(schema *spec.Schema) spec.Schema
+		switch f.ProtoCardinality {
+		case protoreflect.Repeated:
+			wrapFunc = func(item *spec.Schema) spec.Schema {
+				return *spec.ArrayProperty(item)
+			}
 		default:
-			def.SetProperty(fName, *spec.StringProperty())
+			wrapFunc = func(schema *spec.Schema) spec.Schema {
+				return *schema
+			}
+		}
+		switch f.ProtoKind {
+		case protoreflect.StringKind:
+			def.SetProperty(fName, wrapFunc(spec.StringProperty()))
+		case protoreflect.BytesKind:
+			def.SetProperty(fName, wrapFunc(spec.ArrayProperty(spec.Int8Property())))
+		case protoreflect.Int32Kind, protoreflect.Uint32Kind,
+			protoreflect.Sint32Kind, protoreflect.Fixed32Kind:
+			def.SetProperty(fName, wrapFunc(spec.Int32Property()))
+		case protoreflect.Int64Kind, protoreflect.Uint64Kind,
+			protoreflect.Sint64Kind, protoreflect.Fixed64Kind:
+			def.SetProperty(fName, wrapFunc(spec.Int64Property()))
+		case protoreflect.FloatKind:
+			def.SetProperty(fName, wrapFunc(spec.Float32Property()))
+		case protoreflect.DoubleKind:
+			def.SetProperty(fName, wrapFunc(spec.Float64Property()))
+		case protoreflect.EnumKind:
+			def.SetProperty(fName, wrapFunc(spec.Int32Property()))
+		case protoreflect.MessageKind:
+			def.SetProperty(fName, wrapFunc(spec.RefProperty(fmt.Sprintf("#/definitions/%s", f.Type()))))
+		default:
+			def.SetProperty(fName, wrapFunc(spec.StringProperty()))
 		}
 	}
 

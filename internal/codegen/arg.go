@@ -305,19 +305,21 @@ func (ma MessageArg) Options() *descriptorpb.MessageOptions {
 
 // FieldArg holds the data needed by the template engine to generate code based on the protogen.Field
 type FieldArg struct {
-	file         *protogen.File
-	desc         protoreflect.FieldDescriptor
-	name         string
-	pkg          string
-	ImportPath   protogen.GoImportPath
-	ZeroValue    string
-	Kind         string
-	GoKind       string
-	CqlKind      string
-	Cardinality  string
-	HasIndex     bool
-	HelpText     string
-	DefaultValue string
+	file             *protogen.File
+	desc             protoreflect.FieldDescriptor
+	name             string
+	pkg              string
+	ImportPath       protogen.GoImportPath
+	ZeroValue        string
+	Kind             string
+	ProtoKind        protoreflect.Kind
+	ProtoCardinality protoreflect.Cardinality
+	GoKind           string
+	CqlKind          string
+	Cardinality      string
+	HasIndex         bool
+	HelpText         string
+	DefaultValue     string
 }
 
 func getFieldArg(f *protogen.Field) FieldArg {
@@ -334,6 +336,8 @@ func getFieldArg(f *protogen.Field) FieldArg {
 	}
 
 	arg.Kind = f.Desc.Kind().String()
+	arg.ProtoKind = f.Desc.Kind()
+	arg.ProtoCardinality = f.Desc.Cardinality()
 	arg.GoKind = GoKind(f.Desc)
 	arg.CqlKind = CqlKind(f.Desc)
 	arg.Cardinality = f.Desc.Cardinality().String()
