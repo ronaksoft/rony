@@ -3,6 +3,7 @@ package edge_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -40,25 +41,35 @@ func TestWithDefaultDispatcher(t *testing.T) {
 			server.Shutdown()
 		})
 
-		err := server.RPC().
-			Request(service.C_SampleEcho, &service.EchoRequest{
-				Int:       100,
-				Timestamp: 123,
-			}).
-			ErrorHandler(func(constructor uint64, e *rony.Error) {
-				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
-			}).
-			Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
-				x := &service.EchoResponse{}
-				err := x.Unmarshal(b)
+		wg := sync.WaitGroup{}
+		rt := make(chan struct{}, 100)
+		for i := 0; i < 1000; i++ {
+			wg.Add(1)
+			rt <- struct{}{}
+			go func() {
+				req := &service.EchoRequest{
+					Int:       tools.RandomInt64(0),
+					Timestamp: tools.SecureRandomInt63(0),
+					SomeData:  tools.S2B(tools.RandomID(1024)),
+				}
+				res := &service.EchoResponse{}
+				err := server.RPC().
+					Request(service.C_SampleEchoDelay, req).
+					ErrorHandler(func(constructor uint64, e *rony.Error) {
+						c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
+					}).
+					Expect(service.C_EchoResponse, func(b []byte, kv ...*rony.KeyValue) error {
+						return res.Unmarshal(b)
+					}).
+					Run(time.Second * 2)
 				c.So(err, ShouldBeNil)
-				c.So(x.Int, ShouldEqual, 100)
-				c.So(x.Timestamp, ShouldEqual, 123)
-
-				return nil
-			}).
-			Run(time.Second)
-		c.So(err, ShouldBeNil)
+				c.So(res.Int, ShouldEqual, req.Int)
+				c.So(res.Timestamp, ShouldEqual, req.Timestamp)
+				<-rt
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	})
 }
 

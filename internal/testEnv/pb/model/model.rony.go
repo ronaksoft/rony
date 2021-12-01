@@ -7,8 +7,6 @@ package model
 
 import (
 	bytes "bytes"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	di "github.com/ronaksoft/rony/di"
 	edge "github.com/ronaksoft/rony/edge"
@@ -22,6 +20,7 @@ import (
 	table "github.com/scylladb/gocqlx/v2/table"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	sync "sync"
 )
 
 var _ = pools.Imported

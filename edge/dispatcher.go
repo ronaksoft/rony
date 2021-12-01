@@ -5,7 +5,6 @@ import (
 
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/pools"
-	"google.golang.org/protobuf/proto"
 )
 
 /*
@@ -37,9 +36,6 @@ type DefaultDispatcher struct{}
 
 func (s *DefaultDispatcher) Encode(conn rony.Conn, streamID int64, me *rony.MessageEnvelope) error {
 	buf := pools.Buffer.FromProto(me)
-	mo := proto.MarshalOptions{UseCachedSize: true}
-	bb, _ := mo.MarshalAppend(*buf.Bytes(), me)
-	buf.SetBytes(&bb)
 	_ = conn.WriteBinary(streamID, *buf.Bytes())
 	pools.Buffer.Put(buf)
 

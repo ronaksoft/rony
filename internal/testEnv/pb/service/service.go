@@ -44,6 +44,7 @@ func (h *Sample) Echo(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResponse)
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+	res.SomeData = append(res.SomeData, req.SomeData...)
 
 	return nil
 }
@@ -53,6 +54,8 @@ func (h *Sample) EchoDelay(ctx *edge.RequestCtx, req *EchoRequest, res *EchoResp
 	res.Timestamp = req.Timestamp
 	res.Int = req.Int
 	res.Responder = h.ServerID
+	res.SomeData = append(res.SomeData, req.SomeData...)
+
 	time.Sleep(time.Second * 1)
 
 	return nil

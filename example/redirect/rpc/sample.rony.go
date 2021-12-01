@@ -9,9 +9,6 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	edge "github.com/ronaksoft/rony/edge"
 	edgec "github.com/ronaksoft/rony/edgec"
@@ -21,6 +18,8 @@ import (
 	tools "github.com/ronaksoft/rony/tools"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -335,6 +334,7 @@ func (sw *sampleWrapper) infoWithClientRedirectRestClient(conn rony.RestConn, ct
 	return nil
 }
 func (sw *sampleWrapper) infoWithClientRedirectRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	conn.WriteHeader("Content-Type", "application/json")
 	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
 		switch envelope.Constructor {
 		case C_InfoResponse:
@@ -383,6 +383,7 @@ func (sw *sampleWrapper) infoWithServerRedirectRestClient(conn rony.RestConn, ct
 	return nil
 }
 func (sw *sampleWrapper) infoWithServerRedirectRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	conn.WriteHeader("Content-Type", "application/json")
 	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
 		switch envelope.Constructor {
 		case C_InfoResponse:

@@ -9,9 +9,6 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -23,6 +20,8 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -298,6 +297,7 @@ func (p *poolEchoRequest) Put(x *EchoRequest) {
 	x.Int = 0
 	x.Timestamp = 0
 	x.ReplicaSet = 0
+	x.SomeData = x.SomeData[:0]
 
 	p.pool.Put(x)
 }
@@ -308,6 +308,7 @@ func (x *EchoRequest) DeepCopy(z *EchoRequest) {
 	z.Int = x.Int
 	z.Timestamp = x.Timestamp
 	z.ReplicaSet = x.ReplicaSet
+	z.SomeData = append(z.SomeData[:0], x.SomeData...)
 }
 
 func (x *EchoRequest) Clone() *EchoRequest {
@@ -365,6 +366,7 @@ func (p *poolEchoResponse) Put(x *EchoResponse) {
 	x.Timestamp = 0
 	x.Delay = 0
 	x.ServerID = ""
+	x.SomeData = x.SomeData[:0]
 
 	p.pool.Put(x)
 }
@@ -377,6 +379,7 @@ func (x *EchoResponse) DeepCopy(z *EchoResponse) {
 	z.Timestamp = x.Timestamp
 	z.Delay = x.Delay
 	z.ServerID = x.ServerID
+	z.SomeData = append(z.SomeData[:0], x.SomeData...)
 }
 
 func (x *EchoResponse) Clone() *EchoResponse {
@@ -1024,6 +1027,7 @@ func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCt
 	return nil
 }
 func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	conn.WriteHeader("Content-Type", "application/json")
 	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
 		switch envelope.Constructor {
 		case C_EchoResponse:
@@ -1474,6 +1478,7 @@ var genSampleEchoCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 		config.Int64Flag("int", tools.StrToInt64(""), ""),
 		config.Int64Flag("timestamp", tools.StrToInt64(""), ""),
 		config.Uint64Flag("replicaSet", tools.StrToUInt64(""), ""),
+		config.StringFlag("someData", "", ""),
 	)
 	return cmd
 }
@@ -1525,6 +1530,7 @@ var genSampleEchoTunnelCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 		config.Int64Flag("int", tools.StrToInt64(""), ""),
 		config.Int64Flag("timestamp", tools.StrToInt64(""), ""),
 		config.Uint64Flag("replicaSet", tools.StrToUInt64(""), ""),
+		config.StringFlag("someData", "", ""),
 	)
 	return cmd
 }
@@ -1543,6 +1549,7 @@ var genSampleEchoDelayCmd = func(h ISampleCli, c edgec.Client) *cobra.Command {
 		config.Int64Flag("int", tools.StrToInt64(""), ""),
 		config.Int64Flag("timestamp", tools.StrToInt64(""), ""),
 		config.Uint64Flag("replicaSet", tools.StrToUInt64(""), ""),
+		config.StringFlag("someData", "", ""),
 	)
 	return cmd
 }

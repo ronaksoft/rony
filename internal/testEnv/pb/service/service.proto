@@ -4,83 +4,85 @@ option go_package = "./;service";
 import "options.proto";
 
 service Sample {
-    option (rony_cli) = {};
-    rpc Echo (EchoRequest) returns (EchoResponse) {
-        option (rony_rest) = {
-            method: "get"
-            path: "/echo/:replica_set"
-            json_encode: true
-        };
-    }
-    rpc Set (SetRequest) returns (SetResponse) {
-        option (rony_rest) = {
-            method: "post"
-            path: "/set"
-        };
-    }
-    rpc Get (GetRequest) returns (GetResponse) {
-        option (rony_rest) = {
-            method: "get"
-            path: "/req/:Key/something"
-        };
-    }
-    rpc EchoTunnel (EchoRequest) returns (EchoResponse) {
-        option (rony_rest) = {
-            method: "get"
-            path: "/echo_tunnel/:X/:YY"
-            bind_path_param: "X=Int"
-            bind_path_param: "YY=Timestamp"
-        };
-    }
-    rpc EchoInternal (EchoRequest) returns (EchoResponse) {
-        option (rony_internal) = true;
-    }
-    rpc EchoDelay (EchoRequest) returns (EchoResponse);
+  option (rony_cli) = {};
+  rpc Echo (EchoRequest) returns (EchoResponse) {
+    option (rony_rest) = {
+      method: "get"
+      path: "/echo/:replica_set"
+      json_encode: true
+    };
+  }
+  rpc Set (SetRequest) returns (SetResponse) {
+    option (rony_rest) = {
+      method: "post"
+      path: "/set"
+    };
+  }
+  rpc Get (GetRequest) returns (GetResponse) {
+    option (rony_rest) = {
+      method: "get"
+      path: "/req/:Key/something"
+    };
+  }
+  rpc EchoTunnel (EchoRequest) returns (EchoResponse) {
+    option (rony_rest) = {
+      method: "get"
+      path: "/echo_tunnel/:X/:YY"
+      bind_path_param: "X=Int"
+      bind_path_param: "YY=Timestamp"
+    };
+  }
+  rpc EchoInternal (EchoRequest) returns (EchoResponse) {
+    option (rony_internal) = true;
+  }
+  rpc EchoDelay (EchoRequest) returns (EchoResponse);
 }
 
 message GetRequest {
-    bytes Key = 1 [(rony_default) = "somekey", (rony_help) = "enter some random key"];
+  bytes Key = 1 [(rony_default) = "somekey", (rony_help) = "enter some random key"];
 }
 
 message GetResponse {
-    bytes Key = 1;
-    bytes Value = 2;
+  bytes Key = 1;
+  bytes Value = 2;
 }
 
 message SetRequest {
-    bytes Key = 1;
-    bytes Value = 2;
+  bytes Key = 1;
+  bytes Value = 2;
 }
 
 message SetResponse {
-    bool OK = 1;
+  bool OK = 1;
 }
 
 message EchoRequest {
-    int64 Int = 1;
-    int64 Timestamp = 3;
-    uint64 replica_set = 4;
+  int64 Int = 1;
+  int64 Timestamp = 3;
+  uint64 replica_set = 4;
+  bytes SomeData = 5;
 }
 
 message EchoResponse {
-    int64 Int = 1;
-    string Responder = 2;
-    int64 Timestamp = 4;
-    int64 Delay = 5;
-    string ServerID = 6;
+  int64 Int = 1;
+  string Responder = 2;
+  int64 Timestamp = 4;
+  int64 Delay = 5;
+  string ServerID = 6;
+  bytes SomeData = 7;
 }
 
 message Message1 {
-    int64 Param1 = 1;
-    string Param2 = 2;
-    Message2 M2 = 3;
-    repeated Message2 M2S = 4;
+  int64 Param1 = 1;
+  string Param2 = 2;
+  Message2 M2 = 3;
+  repeated Message2 M2S = 4;
 }
 
 message Message2 {
-    fixed32 Param1 = 1;
-    bytes P2 = 2;
-    repeated int32 P3 = 3;
-    Message1 M1 = 4;
+  fixed32 Param1 = 1;
+  bytes P2 = 2;
+  repeated int32 P3 = 3;
+  Message1 M1 = 4;
 }
 

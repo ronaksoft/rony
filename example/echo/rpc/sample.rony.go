@@ -9,9 +9,6 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	http "net/http"
-	sync "sync"
-
 	rony "github.com/ronaksoft/rony"
 	config "github.com/ronaksoft/rony/config"
 	edge "github.com/ronaksoft/rony/edge"
@@ -23,6 +20,8 @@ import (
 	cobra "github.com/spf13/cobra"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
+	http "net/http"
+	sync "sync"
 )
 
 var _ = pools.Imported
@@ -271,6 +270,7 @@ func (sw *sampleWrapper) echoRestClient(conn rony.RestConn, ctx *edge.DispatchCt
 	return nil
 }
 func (sw *sampleWrapper) echoRestServer(conn rony.RestConn, ctx *edge.DispatchCtx) (err error) {
+	conn.WriteHeader("Content-Type", "application/json")
 	if !ctx.BufferPop(func(envelope *rony.MessageEnvelope) {
 		switch envelope.Constructor {
 		case C_EchoResponse:
