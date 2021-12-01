@@ -178,6 +178,7 @@ func acquireDispatchCtx(
 		ctx = newDispatchCtx(edge)
 	} else {
 		ctx = v.(*DispatchCtx)
+		ctx.req.Reset()
 	}
 	ctx.conn = conn
 	ctx.kind = kind
