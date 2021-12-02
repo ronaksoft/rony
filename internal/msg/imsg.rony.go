@@ -7,12 +7,13 @@ package msg
 
 import (
 	bytes "bytes"
+	sync "sync"
+
 	rony "github.com/ronaksoft/rony"
 	pools "github.com/ronaksoft/rony/pools"
 	registry "github.com/ronaksoft/rony/registry"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	proto "google.golang.org/protobuf/proto"
-	sync "sync"
 )
 
 var _ = pools.Imported
