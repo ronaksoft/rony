@@ -233,7 +233,7 @@ func (edge *Server) executeFunc(requestCtx *RequestCtx, in *rony.MessageEnvelope
 			requestCtx.ctx, span = edge.tracer.
 				Start(
 					requestCtx.ctx,
-					fmt.Sprintf("%s/%s", ho.serviceName, ho.methodName),
+					fmt.Sprintf("rpc.%s/%s", ho.serviceName, ho.methodName),
 					trace.WithAttributes(
 						semconv.RPCServiceKey.String(ho.serviceName),
 						semconv.RPCMethodKey.String(ho.methodName),
