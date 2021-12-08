@@ -1,17 +1,15 @@
 package rony_test
 
 import (
-	"encoding/json"
 	"sync"
 	"testing"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
-	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
-
+	"github.com/goccy/go-json"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/internal/testEnv/pb/service"
 	"github.com/ronaksoft/rony/tools"
 	. "github.com/smartystreets/goconvey/convey"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
