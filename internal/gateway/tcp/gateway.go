@@ -8,19 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ronaksoft/rony/pools"
-
-	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
-
-	"github.com/ronaksoft/rony/errors"
-
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
 	"github.com/panjf2000/ants/v2"
 	"github.com/ronaksoft/rony"
+	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/internal/gateway/tcp/cors"
+	wsutil "github.com/ronaksoft/rony/internal/gateway/tcp/util"
 	"github.com/ronaksoft/rony/internal/metrics"
 	"github.com/ronaksoft/rony/log"
+	"github.com/ronaksoft/rony/pools"
 	"github.com/ronaksoft/rony/tools"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
@@ -49,6 +46,9 @@ type Config struct {
 	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
 	Logger        log.Logger
+	// TextDataFrame if is set to TRUE then websocket data frames use OpText otherwise use OpBinary
+	TextDataFrame bool
+
 	// CORS
 	AllowedHeaders []string // Default Allow All
 	AllowedOrigins []string // Default Allow All

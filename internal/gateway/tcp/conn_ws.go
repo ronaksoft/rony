@@ -248,7 +248,11 @@ func (wc *websocketConn) WriteBinary(streamID int64, payload []byte) error {
 	}
 	wc.gateway.waitGroupWriters.Add(1)
 
-	wr := acquireWriteRequest(wc, ws.OpBinary)
+	opCode := ws.OpBinary
+	if wc.gateway.cfg.TextDataFrame {
+		opCode = ws.OpText
+	}
+	wr := acquireWriteRequest(wc, opCode)
 	wr.CopyPayload(payload)
 	err := wc.gateway.websocketWritePump(wr)
 	if err != nil {

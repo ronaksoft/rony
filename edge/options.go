@@ -111,6 +111,7 @@ type TcpGatewayConfig struct {
 	MaxIdleTime   time.Duration
 	Protocol      rony.GatewayProtocol
 	ExternalAddrs []string
+	TextDataFrame bool
 }
 
 // WithTcpGateway set the gateway to tcp which can support http and/or websocket
@@ -134,6 +135,7 @@ func WithTcpGateway(gatewayConfig TcpGatewayConfig) Option {
 			Protocol:      gatewayConfig.Protocol,
 			ExternalAddrs: gatewayConfig.ExternalAddrs,
 			Logger:        log.DefaultLogger.With("TCPGateway"),
+			TextDataFrame: gatewayConfig.TextDataFrame,
 		})
 		if err != nil {
 			panic(err)
