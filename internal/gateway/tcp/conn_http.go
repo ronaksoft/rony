@@ -108,3 +108,11 @@ func (c *httpConn) Redirect(statusCode int, newHostPort string) {
 	c.ctx.Response.SetStatusCode(statusCode)
 	fasthttp.ReleaseURI(u)
 }
+
+func (c *httpConn) RedirectURL(statusCode int, url string) {
+	u := fasthttp.AcquireURI()
+	_ = u.Parse(nil, tools.S2B(url))
+	c.ctx.Response.Header.SetCanonical(strLocation, u.FullURI())
+	c.ctx.Response.SetStatusCode(statusCode)
+	fasthttp.ReleaseURI(u)
+}
