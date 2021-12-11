@@ -55,6 +55,10 @@ func (c *Conn) Redirect(statusCode int, newHostPort string) {
 	// TODO:: implement it
 }
 
+func (c *Conn) RedirectURL(statusCode int, url string) {
+	// TODO:: implement it
+}
+
 func (c *Conn) WriteStatus(status int) {
 	c.status = status
 }

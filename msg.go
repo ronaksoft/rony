@@ -202,8 +202,8 @@ func (x *Error) ToEnvelope(me *MessageEnvelope) {
 
 // MessageEnvelopeJSON is the JSON representation of MessageEnvelope.
 type MessageEnvelopeJSON struct {
-	RequestID   uint64            `json:"requestId,omitempty"`
+	RequestID   uint64            `json:"requestId"`
 	Header      map[string]string `json:"header,omitempty"`
-	Constructor string            `json:"constructor"`
-	Message     json.RawMessage   `json:"message,omitempty"`
+	Constructor string            `json:"cmd"`
+	Message     json.RawMessage   `json:"message"`
 }
