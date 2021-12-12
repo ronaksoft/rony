@@ -85,6 +85,13 @@ func acquireConnInfo(reqCtx *fasthttp.RequestCtx) *connInfo {
 			}
 		},
 	)
+
+	reqCtx.PostArgs().VisitAll(
+		func(key, value []byte) {
+			mt.AppendKV(string(key), string(value))
+		},
+	)
+
 	reqCtx.QueryArgs().VisitAll(
 		func(key, value []byte) {
 			mt.AppendKV(string(key), string(value))
