@@ -463,7 +463,7 @@ func (g *Gateway) websocketReadPump(wc *websocketConn, wg *sync.WaitGroup) (err 
 		case ws.OpPing:
 			err = wc.write(ws.OpPong, ms[idx].Payload)
 			pools.Bytes.Put(ms[idx].Payload)
-		case ws.OpBinary:
+		case ws.OpBinary, ws.OpText:
 			wg.Add(1)
 			_ = goPoolB.Submit(
 				func(idx int) func() {
