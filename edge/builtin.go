@@ -4,6 +4,7 @@ import (
 	"github.com/ronaksoft/rony"
 	"github.com/ronaksoft/rony/errors"
 	"github.com/ronaksoft/rony/store"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -39,7 +40,13 @@ func (pm *Builtin) getNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolGetNodes.Put(req)
 	res := rony.PoolEdges.Get()
 	defer rony.PoolEdges.Put(res)
-	err := req.Unmarshal(in.Message)
+
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 
@@ -72,7 +79,13 @@ func (pm *Builtin) getAllNodes(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolGetNodes.Put(req)
 	res := rony.PoolEdges.Get()
 	defer rony.PoolEdges.Put(res)
-	err := req.Unmarshal(in.Message)
+
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 
@@ -99,7 +112,13 @@ func (pm *Builtin) ping(ctx *RequestCtx, in *rony.MessageEnvelope) {
 	defer rony.PoolPing.Put(req)
 	res := rony.PoolPong.Get()
 	defer rony.PoolPong.Put(res)
-	err := proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+
+	var err error
+	if in.JsonEncoded {
+		err = protojson.Unmarshal(in.Message, req)
+	} else {
+		err = proto.UnmarshalOptions{Merge: true}.Unmarshal(in.Message, req)
+	}
 	if err != nil {
 		ctx.PushError(errors.ErrInvalidRequest)
 

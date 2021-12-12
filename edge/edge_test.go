@@ -104,6 +104,28 @@ func TestWithJSONDispatcher(t *testing.T) {
 			}).
 			Run(time.Second)
 		c.So(err, ShouldBeNil)
+
+		id := tools.RandomInt64(0)
+		err = server.JsonRPC().
+			Request(
+				rony.C_Ping,
+				&rony.Ping{
+					ID: id,
+				},
+			).
+			ErrorHandler(func(constructor uint64, e *rony.Error) {
+				c.Println(registry.C(constructor), "-->", e.Code, e.Items, e.Description)
+			}).
+			Expect(rony.C_Pong, func(b []byte, kv ...*rony.KeyValue) error {
+				x := &rony.Pong{}
+				err := x.UnmarshalJSON(b)
+				c.So(err, ShouldBeNil)
+				c.So(x.ID, ShouldEqual, id)
+
+				return nil
+			}).
+			Run(time.Second)
+		c.So(err, ShouldBeNil)
 	})
 }
 
