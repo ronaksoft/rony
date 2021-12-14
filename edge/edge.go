@@ -371,9 +371,16 @@ func (edge *Server) onGatewayRest(ctx *DispatchCtx, conn rony.RestConn, proxy Re
 
 	err = edge.execute(ctx)
 	if err != nil {
-		conn.WriteStatus(http.StatusInternalServerError)
-		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
-		_ = conn.WriteBinary(0, b)
+		switch err := err.(type) {
+		case *rony.Error:
+			conn.WriteStatus(errors.Code(err.Code).HttpStatus())
+			b, _ := err.MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		default:
+			conn.WriteStatus(http.StatusInternalServerError)
+			b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		}
 
 		return
 	}

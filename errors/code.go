@@ -1,5 +1,7 @@
 package errors
 
+import "github.com/valyala/fasthttp"
+
 /*
    Creation Time: 2021 - May - 21
    Created by:  (ehsan)
@@ -33,6 +35,10 @@ func (c Code) Name() string {
 	return _codeName[c]
 }
 
+func (c Code) HttpStatus() int {
+	return _httpStatus[c]
+}
+
 var _codeName = map[Code]string{
 	Internal:         "Internal",
 	Invalid:          "Invalid",
@@ -48,4 +54,21 @@ var _codeName = map[Code]string{
 	PartiallyApplied: "PartiallyApplied",
 	Expired:          "Expired",
 	NotImplemented:   "NotImplemented",
+}
+
+var _httpStatus = map[Code]int{
+	Internal:         fasthttp.StatusInternalServerError,
+	Invalid:          fasthttp.StatusBadRequest,
+	Unavailable:      fasthttp.StatusNotFound,
+	TooMany:          fasthttp.StatusExpectationFailed,
+	TooFew:           fasthttp.StatusExpectationFailed,
+	Incomplete:       fasthttp.StatusUnprocessableEntity,
+	Timeout:          fasthttp.StatusRequestTimeout,
+	Access:           fasthttp.StatusForbidden,
+	AlreadyExists:    fasthttp.StatusAlreadyReported,
+	Busy:             fasthttp.StatusServiceUnavailable,
+	OutOfRange:       fasthttp.StatusRequestedRangeNotSatisfiable,
+	PartiallyApplied: fasthttp.StatusPartialContent,
+	Expired:          fasthttp.StatusExpectationFailed,
+	NotImplemented:   fasthttp.StatusNotImplemented,
 }
