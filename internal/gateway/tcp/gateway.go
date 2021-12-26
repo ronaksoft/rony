@@ -248,13 +248,14 @@ func (g *Gateway) Start() {
 func (g *Gateway) Run() {
 	// initialize the fasthttp server.
 	server := fasthttp.Server{
-		Name:               "Rony TCP-Gateway",
-		Handler:            g.requestHandler,
-		Concurrency:        g.cfg.Concurrency,
-		KeepHijackedConns:  true,
-		MaxRequestBodySize: g.cfg.MaxBodySize,
-		DisableKeepalive:   true,
-		CloseOnShutdown:    true,
+		Name:                          "Rony TCP-Gateway",
+		Handler:                       g.requestHandler,
+		Concurrency:                   g.cfg.Concurrency,
+		KeepHijackedConns:             true,
+		MaxRequestBodySize:            g.cfg.MaxBodySize,
+		DisableKeepalive:              true,
+		CloseOnShutdown:               true,
+		DisableHeaderNamesNormalizing: true,
 	}
 
 	// start serving in blocking mode
