@@ -72,3 +72,13 @@ func (u *udpConn) Set(key string, val interface{}) {
 	u.kv[key] = val
 	u.mtx.Unlock()
 }
+
+func (u *udpConn) Walk(f func(k string, v interface{}) bool) {
+	u.mtx.RLock()
+	defer u.mtx.RUnlock()
+	for k, v := range u.kv {
+		if !f(k, v) {
+			return
+		}
+	}
+}

@@ -327,6 +327,7 @@ func (edge *Server) onGatewayMessage(conn rony.Conn, streamID int64, data []byte
 			if p != nil {
 				if edge.tracer != nil {
 					var span trace.Span
+					dispatchCtx.ctx = edge.propagator.Extract(dispatchCtx.ctx, &carrier{c: rc})
 					dispatchCtx.ctx, span = edge.tracer.
 						Start(
 							dispatchCtx.ctx,
@@ -665,4 +666,29 @@ func (edge *Server) sendRemoteCommand(target rony.ClusterMember, req, res *rony.
 	tmIn.Envelope.DeepCopy(res)
 
 	return nil
+}
+
+type carrier struct {
+	c rony.RestConn
+}
+
+func (c *carrier) Get(key string) string {
+	v, _ := c.c.Get(key).(string)
+
+	return v
+}
+
+func (c *carrier) Set(key string, value string) {
+	c.c.Set(key, value)
+}
+
+func (c *carrier) Keys() []string {
+	var keys []string
+	c.c.Walk(func(k string, v interface{}) bool {
+		keys = append(keys, k)
+
+		return true
+	})
+
+	return keys
 }

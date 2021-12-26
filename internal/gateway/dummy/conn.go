@@ -98,6 +98,16 @@ func (c *Conn) Set(key string, val interface{}) {
 	c.kv[key] = val
 }
 
+func (c *Conn) Walk(f func(k string, v interface{}) bool) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	for k, v := range c.kv {
+		if !f(k, v) {
+			return
+		}
+	}
+}
+
 func (c *Conn) ConnID() uint64 {
 	return c.id
 }

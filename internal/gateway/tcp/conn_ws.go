@@ -227,6 +227,17 @@ func (wc *websocketConn) Set(key string, val interface{}) {
 	wc.kvLock.Unlock()
 }
 
+func (wc *websocketConn) Walk(f func(k string, v interface{}) bool) {
+	wc.kvLock.Lock()
+	defer wc.kvLock.Unlock()
+
+	for k, v := range wc.kv {
+		if !f(k, v) {
+			return
+		}
+	}
+}
+
 func (wc *websocketConn) ConnID() uint64 {
 	return atomic.LoadUint64(&wc.connID)
 }

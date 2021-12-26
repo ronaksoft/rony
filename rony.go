@@ -139,6 +139,7 @@ type Conn interface {
 	Persistent() bool
 	Get(key string) interface{}
 	Set(key string, val interface{})
+	Walk(func(k string, v interface{}) bool)
 }
 
 // RestConn is same as Conn, but it supports REST format apis.

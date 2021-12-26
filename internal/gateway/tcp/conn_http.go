@@ -45,6 +45,17 @@ func (c *httpConn) Set(key string, val interface{}) {
 	c.mtx.Unlock()
 }
 
+func (c *httpConn) Walk(f func(k string, v interface{}) bool) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	for k, v := range c.kv {
+		if !f(k, v) {
+			return
+		}
+	}
+}
+
 func (c *httpConn) ConnID() uint64 {
 	return c.ctx.ConnID()
 }
