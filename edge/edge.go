@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/codes"
@@ -674,9 +673,9 @@ type carrier struct {
 }
 
 func (c *carrier) Get(key string) string {
-	v, _ := c.c.Get(key).(string)
+	v, _ := c.c.Get(tools.ToCamel(key)).(string)
 
-	return strings.ToLower(v)
+	return v
 }
 
 func (c *carrier) Set(key string, value string) {
@@ -686,7 +685,7 @@ func (c *carrier) Set(key string, value string) {
 func (c *carrier) Keys() []string {
 	var keys []string
 	c.c.Walk(func(k string, v interface{}) bool {
-		keys = append(keys, strings.ToLower(k))
+		keys = append(keys, k)
 
 		return true
 	})
