@@ -470,7 +470,7 @@ func (edge *Server) StartCluster() (err error) {
 	return
 }
 
-// StartGateway is non-blocking function runs the gateway in background so we can accept clients requests
+// StartGateway is non-blocking function runs the gateway in background, so we can accept clients requests
 func (edge *Server) StartGateway() error {
 	if edge.gateway == nil {
 		edge.logger.Info("Gateway is NOT set",
@@ -494,7 +494,7 @@ func (edge *Server) StartGateway() error {
 	return nil
 }
 
-// StartTunnel is non-blocking function runs the gateway in background so we can accept other servers requests
+// StartTunnel is non-blocking function runs the gateway in background, so we can accept other servers requests
 func (edge *Server) StartTunnel() error {
 	if edge.tunnel == nil {
 		edge.logger.Info("Tunnel is NOT set",
@@ -592,6 +592,7 @@ func (edge *Server) GetGatewayConn(connID uint64) rony.Conn {
 func (edge *Server) TunnelRequest(replicaSet uint64, req, res *rony.MessageEnvelope) error {
 	return edge.TryTunnelRequest(1, 0, replicaSet, req, res)
 }
+
 func (edge *Server) TryTunnelRequest(
 	attempts int, retryWait time.Duration, replicaSet uint64,
 	req, res *rony.MessageEnvelope,

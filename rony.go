@@ -149,6 +149,7 @@ type RestConn interface {
 	WriteStatus(status int)
 	WriteHeader(key, value string)
 	MultiPart() (*multipart.Form, error)
+	Schema() string
 	Method() string
 	Path() string
 	Body() []byte
