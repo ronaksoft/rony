@@ -95,6 +95,10 @@ func (c *httpConn) MultiPart() (*multipart.Form, error) {
 	return c.ctx.MultipartForm()
 }
 
+func (c *httpConn) RequestURI() string {
+	return tools.B2S(c.ctx.Request.Header.RequestURI())
+}
+
 func (c *httpConn) Schema() string {
 	return tools.B2S(c.ctx.Request.URI().Scheme())
 }
