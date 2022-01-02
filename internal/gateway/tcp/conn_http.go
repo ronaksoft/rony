@@ -103,6 +103,10 @@ func (c *httpConn) Schema() string {
 	return tools.B2S(c.ctx.Request.URI().Scheme())
 }
 
+func (c *httpConn) Host() string {
+	return tools.B2S(c.ctx.Request.URI().Host())
+}
+
 func (c *httpConn) Method() string {
 	return tools.B2S(c.ctx.Method())
 }

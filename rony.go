@@ -152,6 +152,7 @@ type RestConn interface {
 	RequestURI() string
 	Schema() string
 	Method() string
+	Host() string
 	Path() string
 	Body() []byte
 	Redirect(statusCode int, newHostPort string)
