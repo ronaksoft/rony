@@ -1,6 +1,9 @@
 package errors
 
-import "github.com/valyala/fasthttp"
+import (
+	"github.com/ronaksoft/rony/tools"
+	"github.com/valyala/fasthttp"
+)
 
 /*
    Creation Time: 2021 - May - 21
@@ -36,7 +39,16 @@ func (c Code) Name() string {
 }
 
 func (c Code) HttpStatus() int {
-	return _httpStatus[c]
+	code := _httpStatus[c]
+	if code != 0 {
+		return code
+	}
+	code = tools.StrToInt(string(c))
+	if code != 0 {
+		return code
+	}
+
+	return fasthttp.StatusInternalServerError
 }
 
 var _codeName = map[Code]string{
