@@ -363,9 +363,16 @@ func (edge *Server) onGatewayRest(ctx *DispatchCtx, conn rony.RestConn, proxy Re
 	// apply the transformation on the client message before execute it
 	err := proxy.ClientMessage(conn, ctx)
 	if err != nil {
-		conn.WriteStatus(http.StatusInternalServerError)
-		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
-		_ = conn.WriteBinary(0, b)
+		switch err := err.(type) {
+		case *rony.Error:
+			conn.WriteStatus(errors.Code(err.Code).HttpStatus())
+			b, _ := err.MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		default:
+			conn.WriteStatus(http.StatusInternalServerError)
+			b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		}
 
 		return
 	}
@@ -389,9 +396,16 @@ func (edge *Server) onGatewayRest(ctx *DispatchCtx, conn rony.RestConn, proxy Re
 	// apply the transformation on the server message before sending it to the client
 	err = proxy.ServerMessage(conn, ctx)
 	if err != nil {
-		conn.WriteStatus(http.StatusInternalServerError)
-		b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
-		_ = conn.WriteBinary(0, b)
+		switch err := err.(type) {
+		case *rony.Error:
+			conn.WriteStatus(errors.Code(err.Code).HttpStatus())
+			b, _ := err.MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		default:
+			conn.WriteStatus(http.StatusInternalServerError)
+			b, _ := errors.New(errors.Internal, err.Error()).MarshalJSON()
+			_ = conn.WriteBinary(0, b)
+		}
 	}
 }
 func (edge *Server) onGatewayConnect(conn rony.Conn, kvs ...*rony.KeyValue) {
