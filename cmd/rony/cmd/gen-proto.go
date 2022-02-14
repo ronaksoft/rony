@@ -40,6 +40,7 @@ var GenProtoCmd = &cobra.Command{
 			args = append(args, "rpc", "model")
 		}
 
+		fmt.Println(os.Getenv("GOPATH"))
 		cmd.Println("Folders:", args)
 
 		g := genny.New()
@@ -61,13 +62,11 @@ var GenProtoCmd = &cobra.Command{
 func compileProto(g *genny.Generator, folders []string) {
 	// Compile proto files
 	var (
-		files             []string
 		projectPathAbs, _ = filepath.Abs(".")
 		folderPathAbs     string
 	)
 
 	for _, folder := range folders {
-		files = files[:0]
 		fmt.Printf("generate protos in [%s]\n", folder)
 		fmt.Printf("- Import: %s\n", projectPathAbs)
 		fmt.Printf("- Import: %s\n", folderPathAbs)
@@ -77,8 +76,6 @@ func compileProto(g *genny.Generator, folders []string) {
 				return nil
 			}
 			if filepath.Ext(info.Name()) == ".proto" {
-				//files = append(files, filepath.Join(folderPathAbs, filepath.Base(path)))
-				files = append(files, path)
 				// call protoc-gen-go
 				cmd1 := exec.Command(
 					"protoc",

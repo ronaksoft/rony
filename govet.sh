@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Copy Proto files to GOPATH
+mkdir -p "$GOPATH"/src/github.com/ronaksoft/rony
+cp ./*.proto "$GOPATH"/src/github.com/ronaksoft/rony
+
 # Generate codes
 go generate ./... || exit
 
@@ -15,8 +19,6 @@ for d in $dirs; do goimports -w $d/*.go; done
 go install ./cmd/protoc-gen-gorony
 go install ./cmd/rony
 
-mkdir -p "$GOPATH"/src/github.com/ronaksoft/rony
-cp ./*.proto "$GOPATH"/src/github.com/ronaksoft/rony
 
 
 golangci-lint run
