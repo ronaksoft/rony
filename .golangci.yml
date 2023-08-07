@@ -22,5 +22,6 @@ linters:
     - gocyclo
     - forbidigo
     - dupl
+    - depguard
   fast: true
 

@@ -42,6 +42,8 @@ type Tunnel struct {
 	connID   uint64
 }
 
+var _ gnet.EventHandler = (*Tunnel)(nil)
+
 func New(config Config) (*Tunnel, error) {
 	if config.Logger == nil {
 		config.Logger = log.DefaultLogger
@@ -155,8 +157,12 @@ func (t *Tunnel) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	return gnet.None
 }
 
-func (t *Tunnel) PreWrite() {
+func (t *Tunnel) PreWrite(c gnet.Conn) {
+	//TODO implement me
+	panic("implement me")
 }
+
+func (t *Tunnel) AfterWrite(c gnet.Conn, b []byte) {}
 
 func (t *Tunnel) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
 	if atomic.LoadInt32(&t.shutdown) == 1 {
